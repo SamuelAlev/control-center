@@ -1,5 +1,6 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart' hide Column, isNull, isNotNull;
+import 'package:sqlite3/sqlite3.dart' show SqliteException;
 import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
@@ -36,21 +37,14 @@ void main() {
       expect(result, 'v2');
     });
 
-    test('putIfAbsent lets exactly one concurrent claim win', () async {
-      final results = await Future.wait([
-        for (var i = 0; i < 5; i++)
-          db.cacheDao.putIfAbsent('ws-1', 'takeover', 'sp-1', 'claim-$i'),
-      ]);
-      expect(results.where((won) => won), hasLength(1));
-      final winner = results.indexOf(true);
-      expect(
-        await db.cacheDao.read('ws-1', 'takeover', 'sp-1'),
-        'claim-$winner',
+    test('a kind nobody declared is refused', () async {
+      // Durable state written into the cache would be pruned by nobody (the
+      // sweep only knows declared kinds) or by a guess: it gets a table.
+      await expectLater(
+        db.cacheDao.put('ws-1', 'takeover', 'sp-1', '{}'),
+        throwsA(isA<SqliteException>()),
       );
-      expect(
-        await db.cacheDao.putIfAbsent('ws-2', 'takeover', 'sp-1', 'other'),
-        isTrue,
-      );
+      expect(await db.cacheDao.read('ws-1', 'takeover', 'sp-1'), isNull);
     });
 
     test('different workspaceId are isolated', () async {
@@ -80,74 +74,74 @@ void main() {
 
   group('CacheDao - watch', () {
     test('watch emits null when no entry exists', () async {
-      final stream = db.cacheDao.watch('ws-1', 'kind', 'key');
+      final stream = db.cacheDao.watch('ws-1', 'prDiff', 'key');
       final first = await stream.first;
       expect(first, isNull);
     });
 
     test('watch emits payload after put', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'key', 'hello');
-      final stream = db.cacheDao.watch('ws-1', 'kind', 'key');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', 'hello');
+      final stream = db.cacheDao.watch('ws-1', 'prDiff', 'key');
       final first = await stream.first;
       expect(first, 'hello');
     });
 
     test('watch emits updated payload after overwrite', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'key', 'v1');
-      final sub = db.cacheDao.watch('ws-1', 'kind', 'key');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', 'v1');
+      final sub = db.cacheDao.watch('ws-1', 'prDiff', 'key');
       expect(await sub.first, 'v1');
 
-      await db.cacheDao.put('ws-1', 'kind', 'key', 'v2');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', 'v2');
       expect(await sub.first, 'v2');
     });
   });
 
   group('CacheDao - deleteEntry', () {
     test('deletes a single entry', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'key', 'data');
-      await db.cacheDao.deleteEntry('ws-1', 'kind', 'key');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', 'data');
+      await db.cacheDao.deleteEntry('ws-1', 'prDiff', 'key');
 
-      final result = await db.cacheDao.read('ws-1', 'kind', 'key');
+      final result = await db.cacheDao.read('ws-1', 'prDiff', 'key');
       expect(result, isNull);
     });
 
     test('deleteEntry is no-op when entry does not exist', () async {
-      await db.cacheDao.deleteEntry('ws-1', 'kind', 'nonexistent');
+      await db.cacheDao.deleteEntry('ws-1', 'prDiff', 'nonexistent');
       // Should not throw
     });
 
     test('deleteEntry does not affect other entries', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'key1', 'data1');
-      await db.cacheDao.put('ws-1', 'kind', 'key2', 'data2');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key1', 'data1');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key2', 'data2');
 
-      await db.cacheDao.deleteEntry('ws-1', 'kind', 'key1');
+      await db.cacheDao.deleteEntry('ws-1', 'prDiff', 'key1');
 
-      expect(await db.cacheDao.read('ws-1', 'kind', 'key1'), isNull);
-      expect(await db.cacheDao.read('ws-1', 'kind', 'key2'), 'data2');
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'key1'), isNull);
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'key2'), 'data2');
     });
   });
 
   group('CacheDao - deleteKind', () {
     test('deletes all entries for a kind', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'key1', 'd1');
-      await db.cacheDao.put('ws-1', 'kind', 'key2', 'd2');
-      await db.cacheDao.put('ws-1', 'other', 'key1', 'd3');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key1', 'd1');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key2', 'd2');
+      await db.cacheDao.put('ws-1', 'prFiles', 'key1', 'd3');
 
-      await db.cacheDao.deleteKind('ws-1', 'kind');
+      await db.cacheDao.deleteKind('ws-1', 'prDiff');
 
-      expect(await db.cacheDao.read('ws-1', 'kind', 'key1'), isNull);
-      expect(await db.cacheDao.read('ws-1', 'kind', 'key2'), isNull);
-      expect(await db.cacheDao.read('ws-1', 'other', 'key1'), 'd3');
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'key1'), isNull);
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'key2'), isNull);
+      expect(await db.cacheDao.read('ws-1', 'prFiles', 'key1'), 'd3');
     });
 
     test('deleteKind does not affect other workspaces', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'key', 'ws1');
-      await db.cacheDao.put('ws-2', 'kind', 'key', 'ws2');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', 'ws1');
+      await db.cacheDao.put('ws-2', 'prDiff', 'key', 'ws2');
 
-      await db.cacheDao.deleteKind('ws-1', 'kind');
+      await db.cacheDao.deleteKind('ws-1', 'prDiff');
 
-      expect(await db.cacheDao.read('ws-1', 'kind', 'key'), isNull);
-      expect(await db.cacheDao.read('ws-2', 'kind', 'key'), 'ws2');
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'key'), isNull);
+      expect(await db.cacheDao.read('ws-2', 'prDiff', 'key'), 'ws2');
     });
 
     test('deleteKind is no-op when no entries exist', () async {
@@ -158,66 +152,69 @@ void main() {
 
   group('CacheDao - deleteKindWithPrefix', () {
     test('deletes entries whose key starts with prefix', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'pr-42-detail', 'detail');
-      await db.cacheDao.put('ws-1', 'kind', 'pr-42-files', 'files');
-      await db.cacheDao.put('ws-1', 'kind', 'pr-99-detail', 'other');
+      await db.cacheDao.put('ws-1', 'prDiff', 'pr-42-detail', 'detail');
+      await db.cacheDao.put('ws-1', 'prDiff', 'pr-42-files', 'files');
+      await db.cacheDao.put('ws-1', 'prDiff', 'pr-99-detail', 'prFiles');
 
-      await db.cacheDao.deleteKindWithPrefix('ws-1', 'kind', 'pr-42');
+      await db.cacheDao.deleteKindWithPrefix('ws-1', 'prDiff', 'pr-42');
 
-      expect(await db.cacheDao.read('ws-1', 'kind', 'pr-42-detail'), isNull);
-      expect(await db.cacheDao.read('ws-1', 'kind', 'pr-42-files'), isNull);
-      expect(await db.cacheDao.read('ws-1', 'kind', 'pr-99-detail'), 'other');
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'pr-42-detail'), isNull);
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'pr-42-files'), isNull);
+      expect(
+        await db.cacheDao.read('ws-1', 'prDiff', 'pr-99-detail'),
+        'prFiles',
+      );
     });
 
     test('deleteKindWithPrefix does not match partial prefixes', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'pr-4', 'data');
+      await db.cacheDao.put('ws-1', 'prDiff', 'pr-4', 'data');
 
-      await db.cacheDao.deleteKindWithPrefix('ws-1', 'kind', 'pr-42');
+      await db.cacheDao.deleteKindWithPrefix('ws-1', 'prDiff', 'pr-42');
 
-      expect(await db.cacheDao.read('ws-1', 'kind', 'pr-4'), 'data');
+      expect(await db.cacheDao.read('ws-1', 'prDiff', 'pr-4'), 'data');
     });
 
     test('deleteKindWithPrefix is limited to workspace and kind', () async {
-      await db.cacheDao.put('ws-1', 'kind1', 'pr-42-x', 'data');
-      await db.cacheDao.put('ws-2', 'kind1', 'pr-42-x', 'other');
+      await db.cacheDao.put('ws-1', 'prCommits', 'pr-42-x', 'data');
+      await db.cacheDao.put('ws-2', 'prCommits', 'pr-42-x', 'prFiles');
 
-      await db.cacheDao.deleteKindWithPrefix('ws-1', 'kind1', 'pr-42');
+      await db.cacheDao.deleteKindWithPrefix('ws-1', 'prCommits', 'pr-42');
 
-      expect(await db.cacheDao.read('ws-1', 'kind1', 'pr-42-x'), isNull);
-      expect(await db.cacheDao.read('ws-2', 'kind1', 'pr-42-x'), 'other');
+      expect(await db.cacheDao.read('ws-1', 'prCommits', 'pr-42-x'), isNull);
+      expect(await db.cacheDao.read('ws-2', 'prCommits', 'pr-42-x'), 'prFiles');
     });
 
     test('deleteKindWithPrefix is no-op when no entries match', () async {
-      await db.cacheDao.deleteKindWithPrefix('ws-1', 'kind', 'nonexistent');
+      await db.cacheDao.deleteKindWithPrefix('ws-1', 'prDiff', 'nonexistent');
       // Should not throw
     });
   });
 
   group('CacheDao - empty and special values', () {
     test('put and read empty payload', () async {
-      await db.cacheDao.put('ws-1', 'kind', 'key', '');
-      final result = await db.cacheDao.read('ws-1', 'kind', 'key');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', '');
+      final result = await db.cacheDao.read('ws-1', 'prDiff', 'key');
       expect(result, '');
     });
 
     test('put and read payload with special characters', () async {
       const payload = '{"key": "value with / slashes and \\ backslashes"}';
-      await db.cacheDao.put('ws-1', 'kind', 'key', payload);
-      final result = await db.cacheDao.read('ws-1', 'kind', 'key');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', payload);
+      final result = await db.cacheDao.read('ws-1', 'prDiff', 'key');
       expect(result, payload);
     });
 
     test('put and read payload with newlines', () async {
       const payload = 'line1\nline2\nline3';
-      await db.cacheDao.put('ws-1', 'kind', 'key', payload);
-      final result = await db.cacheDao.read('ws-1', 'kind', 'key');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', payload);
+      final result = await db.cacheDao.read('ws-1', 'prDiff', 'key');
       expect(result, payload);
     });
 
     test('put and read long payload', () async {
       final payload = 'x' * 10000;
-      await db.cacheDao.put('ws-1', 'kind', 'key', payload);
-      final result = await db.cacheDao.read('ws-1', 'kind', 'key');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', payload);
+      final result = await db.cacheDao.read('ws-1', 'prDiff', 'key');
       expect(result, payload);
     });
   });
@@ -226,14 +223,14 @@ void main() {
     test(
       'primary key constraint prevents duplicates with same composite key',
       () async {
-        await db.cacheDao.put('ws-1', 'kind', 'key', 'first');
-        await db.cacheDao.put('ws-1', 'kind', 'key', 'second');
+        await db.cacheDao.put('ws-1', 'prDiff', 'key', 'first');
+        await db.cacheDao.put('ws-1', 'prDiff', 'key', 'second');
 
         final count =
             await (db.select(db.cachesTable)..where(
                   (t) =>
                       t.workspaceId.equals('ws-1') &
-                      t.kind.equals('kind') &
+                      t.kind.equals('prDiff') &
                       t.key.equals('key'),
                 ))
                 .get();
@@ -244,12 +241,12 @@ void main() {
 
     test('updatedAt is set on put', () async {
       final before = DateTime.now();
-      await db.cacheDao.put('ws-1', 'kind', 'key', 'data');
+      await db.cacheDao.put('ws-1', 'prDiff', 'key', 'data');
       final row =
           await (db.select(db.cachesTable)..where(
                 (t) =>
                     t.workspaceId.equals('ws-1') &
-                    t.kind.equals('kind') &
+                    t.kind.equals('prDiff') &
                     t.key.equals('key'),
               ))
               .getSingleOrNull();

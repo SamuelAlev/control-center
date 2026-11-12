@@ -2,7 +2,7 @@
 title: เหตุการณ์โดเมน
 description: แค็ตตาล็อกฉบับสมบูรณ์ของเหตุการณ์โดเมนทั้ง 54 รายการ เพย์โหลดของแต่ละรายการ และผู้สมัครรับฝั่งเซิร์ฟเวอร์ที่บริโภคเหตุการณ์เหล่านี้
 slug: th-TH/คู่มือ/อ้างอิง/เหตุการณ์โดเมน
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## บัสเหตุการณ์
@@ -112,7 +112,7 @@ enum `TaskPhase` มีสมาชิก `queued` ด้วย แต่ไม�
 | เหตุการณ์                    | เพย์โหลด                                                                                                  | เกิดเมื่อ                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | สร้างรายการร่องรอยการตรวจสอบ |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | การใช้จ่ายเกินเกณฑ์   |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | การใช้จ่ายเกินเกณฑ์   |
 
 ## เหตุการณ์ตัวตนและสมาชิกภาพ
 

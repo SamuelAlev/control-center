@@ -45,7 +45,7 @@ class EvalScorecard {
     required this.batchSize,
     required this.passRate,
     required this.passRateStdDev,
-    required this.avgCostCents,
+    required this.avgCostMicros,
     required this.costStdDev,
     required this.avgTurns,
     required this.avgDurationMs,
@@ -60,7 +60,7 @@ class EvalScorecard {
         batchSize: 0,
         passRate: 0,
         passRateStdDev: 0,
-        avgCostCents: 0,
+        avgCostMicros: 0,
         costStdDev: 0,
         avgTurns: 0,
         avgDurationMs: 0,
@@ -73,7 +73,7 @@ class EvalScorecard {
     final passRate = passed / n;
     final passSamples = reps.map((r) => r.passed ? 1.0 : 0.0).toList();
     final costSamples = reps
-        .map((r) => r.outcome.costCents.toDouble())
+        .map((r) => r.outcome.costMicros.toDouble())
         .toList();
     final turns = reps.map((r) => r.outcome.turnCount).toList();
     final durations = reps.map((r) => r.outcome.durationMs).toList();
@@ -98,7 +98,7 @@ class EvalScorecard {
       batchSize: n,
       passRate: passRate,
       passRateStdDev: _stdDev(passSamples),
-      avgCostCents: _mean(costSamples),
+      avgCostMicros: _mean(costSamples),
       costStdDev: _stdDev(costSamples),
       avgTurns: turns.isEmpty ? 0 : turns.reduce((a, b) => a + b) / n,
       avgDurationMs: durations.isEmpty
@@ -114,7 +114,7 @@ class EvalScorecard {
     batchSize: (json['batchSize'] as num?)?.toInt() ?? 0,
     passRate: (json['passRate'] as num?)?.toDouble() ?? 0,
     passRateStdDev: (json['passRateStdDev'] as num?)?.toDouble() ?? 0,
-    avgCostCents: (json['avgCostCents'] as num?)?.toDouble() ?? 0,
+    avgCostMicros: (json['avgCostMicros'] as num?)?.toDouble() ?? 0,
     costStdDev: (json['costStdDev'] as num?)?.toDouble() ?? 0,
     avgTurns: (json['avgTurns'] as num?)?.toDouble() ?? 0,
     avgDurationMs: (json['avgDurationMs'] as num?)?.toDouble() ?? 0,
@@ -133,8 +133,8 @@ class EvalScorecard {
   /// Standard deviation of the per-rep pass indicator (variance band).
   final double passRateStdDev;
 
-  /// Mean metered cost in cents.
-  final double avgCostCents;
+  /// Mean metered cost in micro-dollars.
+  final double avgCostMicros;
 
   /// Standard deviation of per-rep cost.
   final double costStdDev;
@@ -161,7 +161,7 @@ class EvalScorecard {
     'batchSize': batchSize,
     'passRate': passRate,
     'passRateStdDev': passRateStdDev,
-    'avgCostCents': avgCostCents,
+    'avgCostMicros': avgCostMicros,
     'costStdDev': costStdDev,
     'avgTurns': avgTurns,
     'avgDurationMs': avgDurationMs,
@@ -192,7 +192,7 @@ class EvalScorecard {
           batchSize == other.batchSize &&
           passRate == other.passRate &&
           passRateStdDev == other.passRateStdDev &&
-          avgCostCents == other.avgCostCents &&
+          avgCostMicros == other.avgCostMicros &&
           costStdDev == other.costStdDev &&
           avgTurns == other.avgTurns &&
           avgDurationMs == other.avgDurationMs &&
@@ -204,7 +204,7 @@ class EvalScorecard {
     batchSize,
     passRate,
     passRateStdDev,
-    avgCostCents,
+    avgCostMicros,
     costStdDev,
     avgTurns,
     avgDurationMs,

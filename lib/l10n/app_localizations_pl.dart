@@ -14592,13 +14592,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get backupSnapshotComplete => 'Kompletna';
 
   @override
-  String get backupSnapshotIncomplete => 'Niekompletna';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Brakuje manifestu albo wymienia pliki, których nie ma, więc ta migawka nie może przywrócić całej instalacji. Pliki obszarów roboczych, które ma, można jednak adoptować po kolei.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Usuń migawkę';
 
   @override
@@ -18784,4 +18777,243 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Możesz obserwować tę maszynę. Korzysta ona z logowań osoby, dla której została otwarta, więc tylko ona może sterować nią, przekierowywać jej porty, wklejać do niej treści i upuszczać na nią pliki.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Baza danych serwera jest teraz zajęta. Spróbuj ponownie za chwilę.';
+
+  @override
+  String get refusalStorageFull =>
+      'Na serwerze skończyło się miejsce na dysku, więc nic nie można zapisać. Właściciel serwera musi zwolnić trochę miejsca.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Dane tego obszaru roboczego są uszkodzone. Właściciel serwera musi przywrócić je z kopii zapasowej.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Ten obszar roboczy jest tylko do odczytu, dopóki właściciel serwera nie przywróci go z kopii zapasowej, więc zmiany nie mogą być zapisane.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Te dane zostały zapisane przez nowszą wersję serwera. Zaktualizuj serwer i spróbuj ponownie.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Serwer znalazł plik bazy danych, którego nie zapisał. Właściciel serwera musi sprawdzić folder danych serwera.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Ten obszar roboczy został usunięty.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'To żądanie jest nadal przetwarzane. Poczekaj, aż się zakończy, a potem sprawdź wynik.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Na serwerze nie ma pliku pod tą ścieżką. Nic nie zostało zastąpione.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Ten plik jest uszkodzony, więc nie można go przywrócić. Nic nie zostało zastąpione.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Ten plik nie zgadza się z sumą kontrolną zapisaną w kopii, więc mógł zostać zmieniony lub uszkodzony. Nic nie zostało zastąpione.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Ten plik został zapisany przez nowszą wersję serwera. Zaktualizuj serwer, aby go przywrócić. Nic nie zostało zastąpione.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Ten plik nie jest bazą danych obszaru roboczego. Nic nie zostało zastąpione.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Nie udało się doprowadzić tego pliku do formatu tego serwera. Nic nie zostało zastąpione.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Ten plik zawiera linki należące do innego obszaru roboczego na tym serwerze, a ich przywrócenie przejęłoby je. Nic nie zostało zastąpione.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Ten obszar roboczy jest tylko do odczytu';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Jego dane nie przeszły kontroli integralności, więc zmiany nie mogą być zapisane. Wszystko nadal można odczytać. Właściciel serwera może przywrócić go z kopii zapasowej.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Jego dane nie przeszły kontroli integralności, więc zmiany nie mogą być zapisane. Wszystko nadal można odczytać. Przywróć go z kopii zapasowej, aby znów dało się go edytować.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Otwórz kopie zapasowe';
+
+  @override
+  String get serverNoticesLabel => 'Wymaga uwagi';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Tylko do odczytu';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Od $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Jego baza danych nie przeszła kontroli integralności, więc działa tylko do odczytu i odrzuca każdą zmianę. Przywróć ją z kopii zapasowej z listy poniżej; jej ostatnia dobra kopia zostaje zachowana, dopóki tego nie zrobisz.';
+
+  @override
+  String get serverNoticeDetails => 'Szczegóły';
+
+  @override
+  String get backupSnapshotUnverified => 'Niezweryfikowana';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Tej migawki nie można zweryfikować. Nigdy się nie zakończyła albo powstała przed tym, zanim migawki zaczęły zapisywać sumy kontrolne, więc nie może przywrócić całej instalacji. Pliki obszaru roboczego, które zawiera, nadal można przywrócić pojedynczo.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Ostatnia dobra kopia';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Zachowana, bo zawiera ostatnią dobrą kopię uszkodzonego obszaru roboczego. Czyszczenie nie rusza jej, dopóki ten obszar roboczy nie zostanie przywrócony.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'To jest ostatnia dobra kopia uszkodzonego obszaru roboczego. Jeśli ją usuniesz, nie będzie już niczego, z czego można by przywrócić ten obszar roboczy.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count uprawnień wstrzymano do przeglądu. Są wymienione na górze tej strony.',
+      many:
+          '$count uprawnień wstrzymano do przeglądu. Są wymienione na górze tej strony.',
+      few:
+          '$count uprawnienia wstrzymano do przeglądu. Są wymienione na górze tej strony.',
+      one:
+          '1 uprawnienie wstrzymano do przeglądu. Jest wymienione na górze tej strony.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Wstrzymane w przywróconych kopiach';
+
+  @override
+  String get importHoldsExplainer =>
+      'Przywrócona kopia sama z siebie nie może niczego przyznać na tym serwerze. Te uprawnienia były w niej: zaakceptuj jedno, aby przyznać je ponownie, albo odrzuć, aby je usunąć.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agenci mogą to robić bez zatwierdzenia: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agenci mogą to robić, gdy osoba zatwierdzi: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Uruchamianie poleceń zaczynających się od $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Wszędzie w tym obszarze roboczym';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'W przestrzeni $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Dla agenta $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Piaskownice mogą uruchamiać $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person może zmieniać $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person może przeglądać pull requesty w $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person ma dostęp $level do $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person otrzymuje rolę $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Otwarte zaproszenie do dołączenia z rolą $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Otwarte zaproszenie do dołączenia z rolą $role i dostępem do przeglądu lub zapisu w $count repozytoriach',
+      many:
+          'Otwarte zaproszenie do dołączenia z rolą $role i dostępem do przeglądu lub zapisu w $count repozytoriach',
+      few:
+          'Otwarte zaproszenie do dołączenia z rolą $role i dostępem do przeglądu lub zapisu w $count repozytoriach',
+      one:
+          'Otwarte zaproszenie do dołączenia z rolą $role i dostępem do przeglądu lub zapisu w 1 repozytorium',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Uprawnienie, którego ta wersja aplikacji nie potrafi opisać';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Przywrócono $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Zaakceptuj';
+
+  @override
+  String get importHoldDismiss => 'Odrzuć';
+
+  @override
+  String get importHoldAcceptTitle => 'Przyznać to uprawnienie?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nZaakceptowanie przyznaje je na serwerze od razu.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Uprawnienie przyznane.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Nic nie przyznano: osoba lub zasób, którego to dotyczyło, nie istnieje już w tym obszarze roboczym.';
 }

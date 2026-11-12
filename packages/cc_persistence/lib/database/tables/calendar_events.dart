@@ -1,4 +1,6 @@
 import 'package:cc_persistence/database/tables/calendar_accounts.dart';
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:drift/drift.dart';
 
 @TableIndex(
@@ -6,10 +8,8 @@ import 'package:drift/drift.dart';
   columns: {#accountId, #externalEventId},
   unique: true,
 )
-@TableIndex(
-  name: 'idx_calendar_events_ws_start',
-  columns: {#workspaceId, #startTime},
-)
+// The range watch and the "starting soon" alert scan.
+@TableIndex(name: 'idx_calendar_events_start', columns: {#startTime})
 /// Drift table for events synced (read-only) from a connected calendar.
 ///
 /// Workspace-scoped via [workspaceId]; idempotent on `(accountId,
@@ -35,7 +35,8 @@ class CalendarEventsTable extends Table {
   /// The provider's event id (per-instance for expanded recurrences).
   TextColumn get externalEventId => text()();
 
-  /// The provider calendar id this event belongs to.
+  /// The provider calendar id this event belongs to. No foreign key: it is
+  /// the provider's id, which `calendar_sources` carries per account.
   TextColumn get calendarId => text()();
 
   /// Event title.
@@ -57,13 +58,24 @@ class CalendarEventsTable extends Table {
   BoolColumn get isAllDay => boolean().withDefault(const Constant(false))();
 
   /// Attendees as a JSON array (low query value, stored as a blob).
-  TextColumn get attendeesJson => text().withDefault(const Constant('[]'))();
+  TextColumn get attendeesJson => text()
+      .check(
+        // ignore: recursive_getters
+        isJsonArray(attendeesJson),
+      )
+      .withDefault(const Constant('[]'))();
 
   /// Resolved video-conference (Meet) URL, when present.
   TextColumn get meetingUrl => text().nullable()();
 
-  /// Event status (`confirmed` / `tentative` / `cancelled`).
-  TextColumn get status => text().withDefault(const Constant('confirmed'))();
+  /// Event status (`confirmed` / `tentative` / `cancelled`,
+  /// `CalendarEventStatus.toStorage()`).
+  TextColumn get status => text()
+      .check(
+        // ignore: recursive_getters
+        status.isIn(SpacesStoredValues.calendarEventStatus),
+      )
+      .withDefault(const Constant('confirmed'))();
 
   /// The master recurring-event id, when this is a recurrence instance.
   TextColumn get recurringEventId => text().nullable()();

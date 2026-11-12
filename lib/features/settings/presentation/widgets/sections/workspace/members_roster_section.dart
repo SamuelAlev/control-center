@@ -9,6 +9,7 @@ import 'package:control_center/features/settings/presentation/widgets/sections/w
 import 'package:control_center/features/settings/providers/governance_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -298,7 +299,7 @@ class _MemberRow extends ConsumerWidget {
       if (context.mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }
@@ -332,7 +333,7 @@ class _MemberRow extends ConsumerWidget {
       if (context.mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }
@@ -374,7 +375,7 @@ class _MemberRow extends ConsumerWidget {
       if (context.mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }
@@ -500,7 +501,7 @@ class _InviteRow extends ConsumerWidget {
       if (context.mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }

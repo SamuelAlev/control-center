@@ -177,6 +177,53 @@ void main() {
     });
   });
 
+  group('DaoApprovalRepository recordDecision', () {
+    test('writes only while the expected status still holds', () async {
+      await repo.upsert(approval(id: 'ap-1', title: 'merge it'));
+      final approved = approval(
+        id: 'ap-1',
+        title: 'stale title',
+        status: ApprovalStatus.approved,
+        decidedById: 'u-1',
+        decidedAt: DateTime(2026, 1, 2),
+      );
+      expect(
+        await repo.recordDecision(approved, expected: ApprovalStatus.pending),
+        isTrue,
+      );
+      final rejected = approval(
+        id: 'ap-1',
+        status: ApprovalStatus.rejected,
+        decidedById: 'u-2',
+      );
+      // The second decider still believes the approval is pending.
+      expect(
+        await repo.recordDecision(rejected, expected: ApprovalStatus.pending),
+        isFalse,
+      );
+      final loaded = (await repo.getById('w-1', 'ap-1'))!;
+      expect(loaded.status, ApprovalStatus.approved);
+      expect(loaded.decidedById, 'u-1');
+      // A decision writes the decision columns, never the request.
+      expect(loaded.title, 'merge it');
+    });
+
+    test('never reaches another workspace', () async {
+      await repo.upsert(approval(id: 'ap-1', workspaceId: 'w-2'));
+      expect(
+        await repo.recordDecision(
+          approval(id: 'ap-1', status: ApprovalStatus.approved),
+          expected: ApprovalStatus.pending,
+        ),
+        isFalse,
+      );
+      expect(
+        (await repo.getById('w-2', 'ap-1'))!.status,
+        ApprovalStatus.pending,
+      );
+    });
+  });
+
   group('DaoApprovalRepository workspace isolation', () {
     test('watchByWorkspace emits only the workspace rows', () async {
       await repo.upsert(approval(id: 'ap-1', workspaceId: 'w-1'));

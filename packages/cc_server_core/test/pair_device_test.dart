@@ -37,7 +37,7 @@ void main() {
         final device = await db.pairedDeviceDao.getById('web-client');
         expect(device, isNotNull);
         expect(device!.status, PairedDeviceStatus.active);
-        expect(device.workspaceId, isNull);
+        expect(device.landingWorkspaceId, isNull);
         // The owner is still minted and bound to the device.
         expect(device.userId, isNotNull);
       } finally {
@@ -62,7 +62,7 @@ void main() {
         final workspaces = await db.workspaceRegistryDao.getAll();
         expect(workspaces.map((w) => w.id), ['ws-existing']);
         final device = await db.pairedDeviceDao.getById('web-client');
-        expect(device!.workspaceId, 'ws-existing');
+        expect(device!.landingWorkspaceId, 'ws-existing');
       } finally {
         await db.close();
       }

@@ -53,7 +53,10 @@ class MemoryBelief {
   /// The cluster this belief came from.
   final String clusterId;
 
-  /// What harmonization did: `create`, `update`, or `dampen`.
+  /// Every [action] a belief may carry; the store refuses any other.
+  static const List<String> actions = ['create', 'update', 'dampen'];
+
+  /// What harmonization did: one of [actions].
   final String action;
 
   /// When created.

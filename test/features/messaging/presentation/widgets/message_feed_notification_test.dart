@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -47,14 +48,14 @@ class _PersistedReads implements SpaceReadRepository {
   }
 
   @override
-  Stream<DateTime?> watchUserLastReadAt(
+  Stream<FeedPosition?> watchUserLastReadAt(
     String workspaceId,
     String spaceId,
     String userId,
   ) => Stream.value(null);
 
   @override
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
     String workspaceId,
     String userId,
   ) => Stream.value(const {});

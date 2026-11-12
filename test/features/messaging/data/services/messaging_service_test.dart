@@ -380,12 +380,6 @@ class _FakeMessagingRepo implements MessagingRepository {
   ) async => [];
 
   @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
-  }) async => [];
-
-  @override
   Future<Message?> getMessageById(String workspaceId, String messageId) async {
     // A message is reachable only through its space, so the space's
     // workspace scopes the lookup.
@@ -550,7 +544,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
       required String credentialId,
     })?
     onHarnessCredentialExhausted,
-    int? costCapCents,
+    int? costCapMicros,
   }) {
     lastPrompt = prompt;
     lastImagePaths = imagePaths;
@@ -630,7 +624,7 @@ class _FakeDispatchAgentUseCase extends Fake implements DispatchAgentUseCase {
         conversationEntries: const [],
         turnSections: const [],
       ),
-      effectiveConversationId: conversationId ?? spaceId,
+      effectiveConversationId: conversationId,
       agent: null,
       mode: Mode.chat,
       resolvedAdapterId: null,

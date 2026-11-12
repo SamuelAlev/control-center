@@ -1,3 +1,6 @@
+import 'package:cc_persistence/database/tables/agent_run_logs.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
+import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table holding the per-REQUEST accounting ledger for agent runs.
@@ -13,33 +16,38 @@ import 'package:drift/drift.dart';
 /// upsert of the same call (a replay, a cumulative CLI ledger re-read, a retry
 /// re-report) collapses onto the existing row instead of double charging the
 /// run.
-@TableIndex(name: 'idx_run_call_usages_runId', columns: {#runId})
-@TableIndex(name: 'idx_run_call_usages_workspace', columns: {#workspaceId})
+///
+/// A call goes with its run (it is that run's accounting); a call with no run
+/// (a scheduler's) stands alone.
+@TableIndex(name: 'idx_run_call_usages_runId', columns: {#runId, #startedAt})
 @TableIndex(
   name: 'idx_run_call_usages_conversation',
-  columns: {#workspaceId, #conversationId},
-)
-@TableIndex(
-  name: 'idx_run_call_usages_started',
-  columns: {#workspaceId, #startedAt},
+  columns: {#conversationId, #startedAt},
 )
 class RunCallUsagesTable extends Table {
   /// Deterministic dedup key: `runId/requestId/attempt`.
   TextColumn get id => text()();
 
-  /// Run this call belongs to. Nullable: a call can be recorded before its run
-  /// row exists (or by a scheduler that has no run log), and dropping the usage
-  /// in that case would lose real spend.
-  TextColumn get runId => text().nullable()();
+  /// Run this call belongs to. Nullable: a scheduler with no run log still
+  /// records its calls. A call of a run is written while that run's log
+  /// exists (the accounting runs inside the run), and goes with it.
+  TextColumn get runId => text().nullable().references(
+    AgentRunLogsTable,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
-  /// Workspace the call was made in. Nullable for the same reason as [runId];
-  /// rows are still filed in that workspace's own database file, so the file
-  /// boundary is the isolation boundary either way.
-  TextColumn get workspaceId => text().nullable()();
+  /// Workspace the call was made in: always the file's workspace, which the
+  /// repository writes whatever the record carried.
+  TextColumn get workspaceId => text()();
 
   /// Conversation the run belongs to, when known. Backs the conversation-level
-  /// cost breakdown.
-  TextColumn get conversationId => text().nullable()();
+  /// cost breakdown. `SET NULL`: the spend outlives the conversation.
+  TextColumn get conversationId => text().nullable().references(
+    ConversationsTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// Provider-assigned/loop-assigned request id (stable across retries).
   TextColumn get requestId => text()();
@@ -47,15 +55,20 @@ class RunCallUsagesTable extends Table {
   /// 1-based attempt number for calls sharing [requestId].
   IntColumn get attempt => integer().withDefault(const Constant(1))();
 
-  /// What the call was for: `main` | `compaction` | `advisor` |
-  /// `side_request` | `subagent`.
-  TextColumn get purpose => text().withDefault(const Constant('main'))();
+  /// What the call was for: an `LlmCallPurpose` wire name.
+  TextColumn get purpose => text()
+      .check(
+        // ignore: recursive_getters
+        purpose.isIn(AgentsStoredValues.llmCallPurpose),
+      )
+      .withDefault(const Constant('main'))();
 
-  /// Provider that served the call (e.g. `anthropic`, `claude-cli`).
+  /// Provider that served the call (e.g. `anthropic`, `claude-cli`). Open
+  /// set: provider ids.
   TextColumn get provider => text().withDefault(const Constant(''))();
 
   /// The model that ACTUALLY served the call (a re-route is not the requested
-  /// alias).
+  /// alias). Open set: provider model ids.
   TextColumn get modelId => text().withDefault(const Constant(''))();
 
   /// Non-cached input tokens.
@@ -78,9 +91,13 @@ class RunCallUsagesTable extends Table {
   /// must not be flattened to zero in a cost report.
   IntColumn get costMicros => integer().nullable()();
 
-  /// How [costMicros] was obtained: `estimated` | `providerReported` |
-  /// `subscription` | `mixed`.
-  TextColumn get costBasis => text().withDefault(const Constant('estimated'))();
+  /// How [costMicros] was obtained: a `CostBasis` name.
+  TextColumn get costBasis => text()
+      .check(
+        // ignore: recursive_getters
+        costBasis.isIn(AgentsStoredValues.costBasis),
+      )
+      .withDefault(const Constant('estimated'))();
 
   /// Milliseconds from request start to the first response byte on the
   /// transport. Null when unobservable (a CLI that hides its socket) — never
@@ -94,8 +111,13 @@ class RunCallUsagesTable extends Table {
   /// Total call duration in milliseconds, when measured.
   IntColumn get durationMs => integer().nullable()();
 
-  /// How the call ended: `success` | `failure` | `cancelled`.
-  TextColumn get outcome => text().withDefault(const Constant('success'))();
+  /// How the call ended: an `LlmCallOutcome` wire name.
+  TextColumn get outcome => text()
+      .check(
+        // ignore: recursive_getters
+        outcome.isIn(AgentsStoredValues.llmCallOutcome),
+      )
+      .withDefault(const Constant('success'))();
 
   /// Structured provider error code when the call did not succeed.
   TextColumn get errorCode => text().nullable()();

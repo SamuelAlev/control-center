@@ -1,7 +1,7 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/fleet/domain/value_objects/worker_status.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/observability/presentation/obs_format.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/fleet_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -334,7 +334,7 @@ class _JobRowState extends State<_JobRow> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      fmtCents(job.costCents),
+                      fmtMicros(job.costMicros),
                       style: CcTypography.monoNum.copyWith(
                         color: t.textPrimary,
                       ),

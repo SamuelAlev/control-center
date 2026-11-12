@@ -167,28 +167,58 @@ void main() {
     });
   });
 
-  group('encodeForFlush', () {
-    test('re-encodes only changed segments across flushes', () {
+  group('takeChangedSegments', () {
+    test('hands out only new or changed segments across flushes', () {
       folder
         ..add(ToolCallEvent(toolName: 'Read', toolCallId: 'a'))
         ..add(ToolResultEvent(toolCallId: 'a', outputs: 'out'));
-      final first = folder.encodeForFlush();
+      final first = folder.takeChangedSegments();
 
       folder.add(ToolCallEvent(toolName: 'Grep', toolCallId: 'b'));
-      final second = folder.encodeForFlush();
+      final second = folder.takeChangedSegments();
+      final third = folder.takeChangedSegments();
 
-      expect(first, hasLength(1));
-      expect(second, hasLength(2));
-      // The untouched closed segment keeps its identical cached entry.
-      expect(second[0], same(first[0]));
+      expect(first.keys, [0]);
+      expect(second.keys, [1]);
+      expect(third, isEmpty);
     });
 
-    test('encodes open segments with their buffered text', () {
+    test('an open segment comes back each time its buffer grows', () {
       folder
         ..add(TextEvent(content: 'a'))
         ..add(TextEvent(content: 'b'));
+      expect(folder.takeChangedSegments()[0]?['text'], 'ab');
+      expect(folder.takeChangedSegments(), isEmpty);
 
-      expect(folder.encodeForFlush().single['text'], 'ab');
+      folder.add(TextEvent(content: 'c'));
+      expect(folder.takeChangedSegments()[0]?['text'], 'abc');
+    });
+
+    test('a long turn costs each flush only what it touched', () {
+      var handedOut = 0;
+      for (var i = 0; i < 200; i++) {
+        folder
+          ..add(ToolCallEvent(toolName: 'Read', toolCallId: 'c$i'))
+          ..add(ToolResultEvent(toolCallId: 'c$i', outputs: 'out $i'));
+        final changed = folder.takeChangedSegments();
+        expect(changed.keys, [i]);
+        handedOut += changed.length;
+      }
+
+      expect(folder.length, 200);
+      expect(handedOut, 200);
+    });
+
+    test('forgetFlushed hands everything out again', () {
+      folder
+        ..add(ToolCallEvent(toolName: 'Read', toolCallId: 'a'))
+        ..add(ToolResultEvent(toolCallId: 'a', outputs: 'out'))
+        ..add(TextEvent(content: 'done'));
+      folder.takeChangedSegments();
+
+      folder.forgetFlushed();
+
+      expect(folder.takeChangedSegments().keys, [0, 1]);
     });
   });
 

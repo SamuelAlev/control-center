@@ -3,7 +3,7 @@ title: Architectuur
 description: Hoe Control Center is opgebouwd met een thin-client-servermodel, feature-first Clean Architecture en poorten en adapters.
 dateModified: 2026-09-19
 slug: nl-NL/handleiding/concepten/architectuur
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Overzicht
@@ -100,9 +100,9 @@ De compositieroot van de app (`di/providers.dart`) koppelt poorten aan de client
 **Drift** (SQLite), opgesplitst in twee databases, beide in `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — een korte lijst met tabellen die echt serverbreed zijn: het werkruimteregister, gebruikers/voorkeuren/gekoppelde apparaten, SSO-verbindingen, installatiebrede serverinstellingen, beheerde actiebeleidsregels (een installatiebrede begrenzing die beveiligingen van werkruimtes alleen maar strenger kan maken), de nieuwsfeed per gebruiker, de fleetwachtrij (workers/jobs/plaatsingslog), de pre-auth-index `workspace_routes` en installatiemetadata. Bij het opstarten wordt alleen dit bestand geopend, dus de opstartkosten blijven vlak, hoeveel geschiedenis de werkruimtes ook opbouwen. Een tabel hier toevoegen is een isolatiebeslissing waarvoor een ratchet-test je dwingt te argumenteren.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — één _map_ per werkruimte, met daarin één SQLite-bestand plus alles wat alleen bij die werkruimte hoort, zodat de worktrees en agentbestanden van een gesprek naast de database staan en ermee worden verwijderd. Bijna alles staat hier: agents, ruimtes, tickets, geheugen, pipelines, vergaderingen, de codegraph, reviews, repos. Bestanden worden lazy geopend bij het eerste gebruik via `WorkspaceDatabaseManager.of(workspaceId)` en betalen dan hun eigen `quick_check`, FTS/trigger-installatie en `vector_init`.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — één _map_ per werkruimte, met daarin één SQLite-bestand plus alles wat alleen bij die werkruimte hoort, zodat de worktrees en agentbestanden van een gesprek naast de database staan en ermee worden verwijderd. Bijna alles staat hier: agents, ruimtes, tickets, geheugen, pipelines, vergaderingen, reviews, repos. De codegraph is een tweede bestand in dezelfde map, `code_index.db`, dat opnieuw wordt opgebouwd in plaats van geback-upt. Bestanden worden lazy geopend bij het eerste gebruik via `WorkspaceDatabaseManager.of(workspaceId)` en betalen dan hun eigen `quick_check`, FTS/trigger-installatie en `vector_init`.
 
-Beide helften begonnen met een samengevoegde v1-basislijn — `onCreate` bouwt het huidige schema — waarbij migratiestappen alleen worden toegevoegd wanneer een gedeployde database moet worden meegenomen.
+Geen van beide helften heeft migratiestappen. Een nieuw bestand wordt gebouwd uit de tabeldefinities. Een bestand van een oudere versie wordt eerst opzij gezet (`pre_upgrade/`) en bij het openen op dezelfde definities gebracht, zodat een nieuwe installatie en een bijgewerkte uiteindelijk hetzelfde schema hebben. Een bestand dat een nieuwere versie heeft geschreven, wordt geweigerd.
 
 Omdat één werkruimte één bestand is, is het exporteren van een werkruimte één `VACUUM INTO`-statement (`workspace.export`), geen dump tabel voor tabel; `workspace.import` neemt zo'n bestand over en gebruikt de ingebedde `workspace_meta` om te bepalen of het zijn eigen, opnieuw overgenomen bestand betreft of een bestand van een andere installatie.
 

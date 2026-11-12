@@ -1,7 +1,6 @@
 import 'package:cc_domain/features/evals/domain/entities/evals_entities.dart';
 import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
 
-
 /// Persistence contract for agent evals, replay & regression (PRD 21).
 ///
 /// Every method is workspace-scoped (workspace isolation invariant): reads
@@ -110,7 +109,7 @@ abstract interface class EvalsRepository {
     required String status,
     String? scorecardJson,
     double? passRate,
-    int? costCents,
+    int? costMicros,
     DateTime? startedAt,
     DateTime? finishedAt,
   });
@@ -151,7 +150,10 @@ abstract interface class EvalsRepository {
   // ── Skill evaluation campaigns ──
 
   Future<void> upsertSkillCampaign(SkillEvaluationCampaign campaign);
-  Future<SkillEvaluationCampaign?> skillCampaignById(String workspaceId, String id);
+  Future<SkillEvaluationCampaign?> skillCampaignById(
+    String workspaceId,
+    String id,
+  );
   Future<List<SkillEvaluationCampaign>> skillCampaigns(
     String workspaceId, {
     String? skillKey,
@@ -161,7 +163,10 @@ abstract interface class EvalsRepository {
     String workspaceId, {
     String? skillKey,
   });
-  Stream<SkillEvaluationCampaign?> watchSkillCampaign(String workspaceId, String id);
+  Stream<SkillEvaluationCampaign?> watchSkillCampaign(
+    String workspaceId,
+    String id,
+  );
   Future<void> upsertSkillAttempt(SkillEvaluationAttemptRecord attempt);
   Future<List<SkillEvaluationAttemptRecord>> skillAttempts(
     String workspaceId,
@@ -173,7 +178,9 @@ abstract interface class EvalsRepository {
     String id,
   );
   Future<void> upsertSkillPolicy(SkillEvaluationPolicy policy);
-  Future<SkillEvaluationPolicy?> skillPolicy(String workspaceId, String skillKey);
+  Future<SkillEvaluationPolicy?> skillPolicy(
+    String workspaceId,
+    String skillKey,
+  );
   Future<List<SkillEvaluationPolicy>> enabledSkillPolicies(String workspaceId);
-
 }

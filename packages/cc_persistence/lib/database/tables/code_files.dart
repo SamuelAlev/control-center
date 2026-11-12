@@ -1,39 +1,27 @@
-import 'package:cc_persistence/database/tables/isolated_repos.dart'
-    show IsolatedReposTable;
-import 'package:cc_persistence/database/tables/repos.dart' show ReposTable;
 import 'package:drift/drift.dart';
 
 /// Drift table tracking indexed source files, for incremental re-indexing.
 ///
 /// One row per indexed file. [contentHash] (SHA-256) lets the indexer skip
-/// files whose content is unchanged since the last run. Scoped by
-/// [workspaceId] as well as [repoId] so each workspace tracks its own
-/// worktree's file state independently and by [checkoutId] so each
-/// conversation/PR worktree gets its own partition within that graph.
-@TableIndex(name: 'idx_code_files_workspaceId', columns: {#workspaceId})
-@TableIndex(name: 'idx_code_files_repoId', columns: {#repoId})
-@TableIndex(name: 'idx_code_files_checkoutId', columns: {#checkoutId})
+/// files whose content is unchanged since the last run. Partitioned by
+/// [repoId] and by [checkoutId], so each conversation/PR worktree tracks its
+/// own file state. Lives in a workspace's `code_index.db`: no workspace
+/// column, no foreign key into `workspace.db`.
+@TableIndex(
+  name: 'idx_code_files_partition_path',
+  columns: {#repoId, #checkoutId, #path},
+)
 class CodeFilesTable extends Table {
-  /// Deterministic id: hash(workspaceId | repoId | path) for the linked
-  /// checkout; hash(workspaceId | repoId | checkoutId | path) for a worktree
-  /// partition.
+  /// Deterministic content-addressed id (see `code_graph_ids`); the
+  /// worktree partition's ids add a checkoutId segment.
   TextColumn get id => text()();
 
-  /// Owning workspace.
-  TextColumn get workspaceId => text()();
-
-  /// Owning repository.
-  TextColumn get repoId =>
-      text().references(ReposTable, #id, onDelete: KeyAction.cascade)();
+  /// The repository (`repos.id` in `workspace.db`).
+  TextColumn get repoId => text()();
 
   /// The checkout partition: NULL = the linked checkout, otherwise an
-  /// `isolated_repos` row id. Cascades away with the worktree row, so a GC'd
-  /// conversation/PR worktree takes its file-index state with it.
-  TextColumn get checkoutId => text().nullable().references(
-    IsolatedReposTable,
-    #id,
-    onDelete: KeyAction.cascade,
-  )();
+  /// `isolated_repos` row id.
+  TextColumn get checkoutId => text().nullable()();
 
   /// Repo-relative file path.
   TextColumn get path => text()();

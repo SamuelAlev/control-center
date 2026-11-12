@@ -221,6 +221,9 @@ class DemoSeeder {
     await _seedRepos(workspaceId);
     final agents = await _seedAgents(workspaceId);
     await _seedTeam(workspaceId, agents);
+    // Tickets right after their assignees: worktrees, run logs, work products
+    // and the orchestration all keep a key to the ticket they serve.
+    await _seedTickets(workspaceId, agents);
     await _seedPullRequests(workspaceId);
     final spaces = await _seedSpaces(workspaceId, agents);
     await _seedIsolatedRepos(workspaceId, spaces);
@@ -230,7 +233,6 @@ class DemoSeeder {
     await _seedFleet(workspaceId);
     await _seedPipelineRuns(workspaceId, spaces);
     await _seedTodos(workspaceId, spaces);
-    await _seedTickets(workspaceId, agents);
     await _seedOrchestration(workspaceId, agents, spaces);
     await _seedMemory(workspaceId, agents);
     await _seedMemoryPolicies(workspaceId);
@@ -897,7 +899,6 @@ class DemoSeeder {
           cachedReadTokens: 2100,
           cachedWriteTokens: 480,
           thoughtTokens: 90,
-          estimatedCostCents: 14,
           costMicros: 140000,
         ),
       ),
@@ -997,7 +998,7 @@ class DemoSeeder {
           finishedAt: spec.status.isTerminal ? finishedAt : null,
           activeMs: finishedAt.difference(startedAt).inMilliseconds,
           errorMessage: spec.error,
-          totalCostCents: spec.costCents,
+          totalCostMicros: spec.costMicros,
           totalTokens: spec.tokens,
         ),
       );
@@ -1388,15 +1389,20 @@ class DemoSeeder {
         approvedRevision: 1,
         teamId: '$workspaceId:team-ml-eng',
         projectId: 'demo-project-helix',
-        estimatedCostCents: 42,
-        maxCostCents: 200,
+        estimatedCostMicros: 420000,
+        maxCostMicros: 2000000,
       ),
     );
+    // A plan belongs to a conversation, never to the space itself: the
+    // space's standing conversation holds it.
+    final standing = await DaoConversationRepository(
+      _dbs,
+    ).ensure(workspaceId: workspaceId, spaceId: space.id);
     await _planDocuments.upsert(
       PlanDocument(
         id: '$workspaceId:plan-hx129',
         workspaceId: workspaceId,
-        conversationId: space.id,
+        conversationId: standing.id,
         agentId: wren.id,
         goal: proposal.goal,
         graph: PlanGraph(
@@ -2092,19 +2098,19 @@ class DemoSeeder {
       final rev1Id = '${artifact.id}-rev-1';
       final rev2Id = '${artifact.id}-rev-2';
       final humanEdited = artifact.humanEdit.isNotEmpty;
-      await _workProducts.upsert(
-        WorkProduct(
-          id: artifact.id,
-          workspaceId: workspaceId,
-          title: artifact.title,
-          artifactType: artifact.type,
-          ticketId: artifact.ticketId,
-          agentId: artifact.agentId,
-          currentRevisionId: humanEdited ? rev2Id : rev1Id,
-          createdAt: createdAt,
-          updatedAt: now.subtract(const Duration(hours: 6)),
-        ),
+      // The product first, then its revisions, then the pointer to the
+      // current one: the product keys its revisions and the pointer keys back.
+      final product = WorkProduct(
+        id: artifact.id,
+        workspaceId: workspaceId,
+        title: artifact.title,
+        artifactType: artifact.type,
+        ticketId: artifact.ticketId,
+        agentId: artifact.agentId,
+        createdAt: createdAt,
+        updatedAt: now.subtract(const Duration(hours: 6)),
       );
+      await _workProducts.upsert(product);
       await _workProducts.addRevision(
         WorkProductRevision(
           id: rev1Id,
@@ -2134,6 +2140,9 @@ class DemoSeeder {
           ),
         );
       }
+      await _workProducts.upsert(
+        product.copyWith(currentRevisionId: humanEdited ? rev2Id : rev1Id),
+      );
     }
   }
 
@@ -2190,7 +2199,7 @@ class DemoSeeder {
       await dao.insertEntry(
         ActivityLogTableCompanion.insert(
           id: 'demo-activity-$i',
-          workspaceId: drift.Value(workspaceId),
+          workspaceId: workspaceId,
           actorType: 'agent',
           // `actorId` FKs `agents.id`, so it must name a row that exists.
           actorId: drift.Value(agents[i % agents.length].id),
@@ -2807,7 +2816,10 @@ class DemoSeeder {
         'required': ['gaps'],
       },
     ),
-    budget: const BudgetSpec(estimatedCostCents: 42, maxCostCents: 200),
+    budget: const BudgetSpec(
+      estimatedCostMicros: 420000,
+      maxCostMicros: 2000000,
+    ),
   );
 
   /// A stable, filesystem-safe fragment of [url] for composing a row id.

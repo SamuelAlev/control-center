@@ -48,6 +48,7 @@ class DaoAgentRuntimeStateRepository implements AgentRuntimeStateRepository {
   Future<List<AgentRuntimeState>> listAll() async {
     final perWorkspace = await _cross.fanOut(
       (db) => db.agentRuntimeStateDao.getAll(),
+      backgroundWriter: 'runtime-health sweeper',
     );
     return _mapper.toDomainList([for (final rows in perWorkspace) ...rows]);
   }

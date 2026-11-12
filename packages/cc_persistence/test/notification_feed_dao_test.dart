@@ -39,7 +39,7 @@ void main() {
       }
 
       final rows = await dao.watchRecent('ws-1', limit: 3).first;
-      expect(rows.map((r) => r.id), ['n4', 'n3', 'n2']);
+      expect(rows.map((r) => r.row.id), ['n4', 'n3', 'n2']);
     });
 
     test('watchRecent only sees the given workspace id', () async {
@@ -49,7 +49,19 @@ void main() {
       );
 
       final rows = await dao.watchRecent('ws-1').first;
-      expect(rows.map((r) => r.id), ['mine']);
+      expect(rows.map((r) => r.row.id), ['mine']);
+    });
+
+    test('watchRecent orders same-second rows by insertion', () async {
+      final second = DateTime(2026, 8, 16, 12);
+      final seqs = [
+        for (final id in ['b', 'a', 'c'])
+          await dao.insertAndPrune(entry(id, second)),
+      ];
+
+      final rows = await dao.watchRecent('ws-1').first;
+      expect(rows.map((r) => r.row.id), ['c', 'a', 'b']);
+      expect(rows.map((r) => r.seq), seqs.reversed);
     });
 
     test('insertAndPrune retains only the newest rows', () async {
@@ -65,7 +77,7 @@ void main() {
 
       // The survivors are the newest ones.
       final rows = await dao.watchRecent('ws-1', limit: 1).first;
-      expect(rows.single.id, 'n${NotificationFeedDao.retainedRows + 9}');
+      expect(rows.single.row.id, 'n${NotificationFeedDao.retainedRows + 9}');
     });
   });
 
@@ -93,6 +105,35 @@ void main() {
       final mark = await dao.watchReadMark('ws-1', 'user-1').first;
       expect(mark!.lastSeenAt, at);
       expect(mark.clearedBefore, at);
+    });
+
+    test('marks hold the newest item position, not the clock', () async {
+      final second = DateTime(2026, 8, 16, 12);
+      await dao.insertAndPrune(entry('n1', second));
+      final seq2 = await dao.insertAndPrune(entry('n2', second));
+
+      await dao.markAllRead(
+        'ws-1',
+        'user-1',
+        second.add(const Duration(hours: 1)),
+      );
+      var mark = (await dao.watchReadMark('ws-1', 'user-1').first)!;
+      expect(mark.lastSeenAt, second);
+      expect(mark.lastSeenSeq, seq2);
+
+      // An item recorded in the same second after the read follows the mark.
+      final seq3 = await dao.insertAndPrune(entry('n3', second));
+      expect(seq3, greaterThan(mark.lastSeenSeq));
+
+      await dao.clearAll(
+        'ws-1',
+        'user-1',
+        second.add(const Duration(hours: 1)),
+      );
+      mark = (await dao.watchReadMark('ws-1', 'user-1').first)!;
+      expect(mark.clearedBefore, second);
+      expect(mark.clearedBeforeSeq, seq3);
+      expect(mark.lastSeenSeq, seq3);
     });
 
     test('marks are per user', () async {
@@ -291,6 +332,22 @@ void main() {
       expect(await dao.watchItemStates('ws-1', 'user-1').first, isEmpty);
     });
 
+    test('a same-second item after the watermark is still marked', () async {
+      await dao.insertAndPrune(message('seen', base));
+      await dao.markAllRead('ws-1', 'user-1', base);
+      await dao.insertAndPrune(message('same-second', base));
+
+      await dao.markConversationMessagesRead(
+        'ws-1',
+        'user-1',
+        spaceId: 'space-1',
+        conversationId: 'conv-1',
+        readAt: base,
+      );
+
+      expect(await readIds('user-1'), {'same-second'});
+    });
+
     test('keeps an explicit "mark as unread"', () async {
       await dao.insertAndPrune(message('m1', base));
       await dao.setItemRead('ws-1', 'user-1', 'm1', null);
@@ -343,8 +400,8 @@ void main() {
 
     Future<Map<String, Object?>> resolvedAt() async => {
       for (final row in await dao.watchRecent('ws-1').first)
-        row.id:
-            (jsonDecode(row.paramsJson)
+        row.row.id:
+            (jsonDecode(row.row.paramsJson)
                 as Map<String, dynamic>)[NotificationFeedItem.resolvedAtKey],
     };
 
@@ -364,10 +421,10 @@ void main() {
       expect(stamps['n3'], isNull, reason: 'only agent wait rows');
       // The rest of the frame is untouched.
       final n1 = (await dao.watchRecent('ws-1').first).firstWhere(
-        (r) => r.id == 'n1',
+        (r) => r.row.id == 'n1',
       );
       expect(
-        (jsonDecode(n1.paramsJson) as Map<String, dynamic>)['kind'],
+        (jsonDecode(n1.row.paramsJson) as Map<String, dynamic>)['kind'],
         'approval',
       );
     });

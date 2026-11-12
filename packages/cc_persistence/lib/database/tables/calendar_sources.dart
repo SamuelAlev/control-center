@@ -1,7 +1,6 @@
 import 'package:cc_persistence/database/tables/calendar_accounts.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_calendar_sources_workspaceId', columns: {#workspaceId})
 @TableIndex(
   name: 'uq_calendar_sources_account_cal',
   columns: {#accountId, #calendarId},

@@ -1,16 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_paths.dart' show writePrivateFile;
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:path/path.dart' as p;
 
-/// The server's one secrets file and file-backed [PairedDeviceSecretsPort].
+/// The server's one secrets file, the file-backed [PairedDeviceSecretsPort]
+/// and the [SecretStorePort] that keeps webhook secrets out of the databases.
 ///
 /// 0600 JSON map; in-memory cache invalidated when mtime/length change (cross-process writes).
 /// Never logs or returns secret values over RPC.
-class FileSecretsStore implements PairedDeviceSecretsPort {
+class FileSecretsStore implements PairedDeviceSecretsPort, SecretStorePort {
   /// Creates a store rooted at [dataDir]; secrets live in `secrets.json`.
   FileSecretsStore({required String dataDir})
     : _file = File(p.join(dataDir, fileName));
@@ -229,6 +231,16 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     await _flush();
   }
 
+  /// Reads [key], seeing a value another process wrote (see [readFresh]).
+  @override
+  Future<String?> read(String key) => readFresh(key);
+
+  @override
+  Future<void> write(String key, String value) => writePsk(key, value);
+
+  @override
+  Future<void> delete(String key) => deletePsk(key);
+
   /// Every stored key for which [matches] is true (never the values).
   Future<List<String>> keysMatching(bool Function(String key) matches) async {
     final map = await _load();
@@ -241,6 +253,7 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
   /// Deletes every key for which [matches] is true. Returns how many were
   /// removed. Used when a workspace is deleted so its App key and per-member
   /// overlay tokens do not outlive the tenant.
+  @override
   Future<int> deleteMatching(bool Function(String key) matches) async {
     final map = await _load();
     final keys = [

@@ -3,6 +3,7 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_output_port.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
@@ -11,9 +12,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 // ── Fakes ────────────────────────────────────────────────────────────────────
 
-class _RecordingRunLogRepo implements AgentRunLogRepository {
+/// Serves runs and records output writes. Any other write, `upsert` included,
+/// throws: the harvest races the run's terminal write and must never write
+/// back the run it read.
+class _RecordingRunLogRepo
+    implements AgentRunLogRepository, AgentRunOutputPort {
   final Map<String, AgentRunLog> _store = {};
-  int upsertCount = 0;
+  int outputWrites = 0;
 
   void seed(AgentRunLog log) => _store[log.id] = log;
 
@@ -22,9 +27,13 @@ class _RecordingRunLogRepo implements AgentRunLogRepository {
       _store[id];
 
   @override
-  Future<void> upsert(AgentRunLog log) async {
-    upsertCount++;
-    _store[log.id] = log;
+  Future<void> recordOutput(
+    String workspaceId,
+    String runId,
+    Map<String, dynamic> output,
+  ) async {
+    outputWrites++;
+    _store[runId] = _store[runId]!.copyWith(outputJson: output);
   }
 
   @override
@@ -139,6 +148,7 @@ void main() {
     completer = AgentRunTaskCompleter(
       eventBus: bus,
       runLogRepository: runLogs,
+      runOutputs: runLogs,
       messagingRepository: messaging,
     )..start();
   });
@@ -168,30 +178,30 @@ void main() {
     test('no runId → ignored', () async {
       runLogs.seed(_run());
       await complete(null);
-      expect(runLogs.upsertCount, 0);
+      expect(runLogs.outputWrites, 0);
     });
 
     test('no conversationId → ignored', () async {
       runLogs.seed(_run());
       await complete('run-1', conversationId: null);
-      expect(runLogs.upsertCount, 0);
+      expect(runLogs.outputWrites, 0);
     });
 
     test('run not found → ignored', () async {
       await complete('missing');
-      expect(runLogs.upsertCount, 0);
+      expect(runLogs.outputWrites, 0);
     });
 
     test('non-pipeline run → ignored', () async {
       runLogs.seed(_run(pipelineRunId: null, pipelineStepId: null));
       await complete('run-1');
-      expect(runLogs.upsertCount, 0);
+      expect(runLogs.outputWrites, 0);
     });
 
     test('run already has outputJson → ignored', () async {
       runLogs.seed(_run(outputJson: {'result': 'already here'}));
       await complete('run-1');
-      expect(runLogs.upsertCount, 0);
+      expect(runLogs.outputWrites, 0);
     });
 
     test(
@@ -199,7 +209,7 @@ void main() {
       () async {
         runLogs.seed(_run(expectedOutputSchema: {'type': 'object'}));
         await complete('run-1');
-        expect(runLogs.upsertCount, 0);
+        expect(runLogs.outputWrites, 0);
       },
     );
   });
@@ -224,7 +234,7 @@ void main() {
 
       await complete('run-1');
 
-      expect(runLogs.upsertCount, 1);
+      expect(runLogs.outputWrites, 1);
       final updated = await runLogs.getById('ws-1', 'run-1');
       expect(updated!.outputJson, {'result': 'final answer'});
     });
@@ -242,7 +252,7 @@ void main() {
 
         await complete('run-1');
 
-        expect(runLogs.upsertCount, 0);
+        expect(runLogs.outputWrites, 0);
         final updated = await runLogs.getById('ws-1', 'run-1');
         expect(updated!.outputJson, isNull);
       },
@@ -254,7 +264,7 @@ void main() {
 
       await complete('run-1');
 
-      expect(runLogs.upsertCount, 0);
+      expect(runLogs.outputWrites, 0);
     });
 
     test('a run already recorded as failed is not harvested', () async {
@@ -264,7 +274,7 @@ void main() {
 
       await complete('run-1');
 
-      expect(runLogs.upsertCount, 0);
+      expect(runLogs.outputWrites, 0);
       expect((await runLogs.getById('ws-1', 'run-1'))!.outputJson, isNull);
     });
 
@@ -331,6 +341,7 @@ void main() {
       completer = AgentRunTaskCompleter(
         eventBus: bus,
         runLogRepository: runLogs,
+        runOutputs: runLogs,
         messagingRepository: messaging,
         latestAgentContent:
             ({

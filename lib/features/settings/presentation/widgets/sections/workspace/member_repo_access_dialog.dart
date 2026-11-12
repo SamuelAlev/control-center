@@ -5,6 +5,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -126,7 +127,7 @@ class _MemberRepoAccessDialogState
       }
       CcToastScope.of(
         context,
-      ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       await _reload();
     }
   }
@@ -143,7 +144,7 @@ class _MemberRepoAccessDialogState
     final Widget content;
     if (_loadError != null) {
       content = Text(
-        l10n.failedWithError('$_loadError'),
+        failureMessage(l10n, _loadError!),
         style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
       );
     } else if (grants == null) {

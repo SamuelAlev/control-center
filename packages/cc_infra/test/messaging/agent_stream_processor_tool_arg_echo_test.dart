@@ -178,63 +178,86 @@ void main() {
     });
   });
 
-  test('a tool-only flush leaves the list projection', () async {
-    final projected = <bool>[];
-    final contents = <String?>[];
-    final localRegistry = ActiveStreamRegistry();
-    final localEvents = StreamController<AgentProcessEvent>();
-    addTearDown(localEvents.close);
-    final local = AgentStreamProcessor(
-      agentDispatchService: FakeAgentDispatchService(),
-      repo: repo,
-      streamRegistry: localRegistry,
-      flushMessage:
-          (
-            String workspaceId,
-            String messageId, {
-            String? content,
-            required Map<String, dynamic> metadata,
-            required bool projectList,
-          }) async {
-            projected.add(projectList);
-            contents.add(content);
-          },
-    );
-    const id = 'msg-flush';
-    localRegistry.register(id, spaceId: 'chan-1');
-    local.processStream(
-      workspaceId: 'ws-1',
-      stream: localEvents.stream,
-      dispatchResult: AgentDispatchResult(
-        stream: const Stream.empty(),
-        dispatchId: 'dispatch-flush',
-        runLog: AgentRunLog(
-          id: 'run-flush',
-          workspaceId: 'ws-1',
-          agentId: 'agent-1',
-          status: RunStatus.running,
-          startedAt: DateTime.utc(2026, 7, 25),
+  test(
+    'a tool-only flush keeps the metadata and sends only new segments',
+    () async {
+      final projected = <bool>[];
+      final changed = <List<int>>[];
+      final counts = <int>[];
+      final contents = <String?>[];
+      final localRegistry = ActiveStreamRegistry();
+      final localEvents = StreamController<AgentProcessEvent>();
+      addTearDown(localEvents.close);
+      final local = AgentStreamProcessor(
+        agentDispatchService: FakeAgentDispatchService(),
+        repo: repo,
+        streamRegistry: localRegistry,
+        flushMessage:
+            (
+              String workspaceId,
+              String messageId, {
+              String? content,
+              required Map<String, dynamic> metadata,
+              required Map<int, Map<String, dynamic>> changedSegments,
+              required int segmentCount,
+              required bool writeMetadata,
+            }) async {
+              projected.add(writeMetadata);
+              contents.add(content);
+              changed.add(changedSegments.keys.toList());
+              counts.add(segmentCount);
+              expect(metadata.containsKey('segments'), isFalse);
+            },
+      );
+      const id = 'msg-flush';
+      localRegistry.register(id, spaceId: 'chan-1');
+      local.processStream(
+        workspaceId: 'ws-1',
+        stream: localEvents.stream,
+        dispatchResult: AgentDispatchResult(
+          stream: const Stream.empty(),
+          dispatchId: 'dispatch-flush',
+          runLog: AgentRunLog(
+            id: 'run-flush',
+            workspaceId: 'ws-1',
+            agentId: 'agent-1',
+            status: RunStatus.running,
+            startedAt: DateTime.utc(2026, 7, 25),
+          ),
         ),
-      ),
-      spaceId: 'chan-1',
-      agentId: 'agent-1',
-      agentName: 'ceo',
-      messageId: id,
-    );
-    localEvents.add(TextEvent(content: 'hello'));
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    localEvents.add(
-      ToolCallEvent(
-        toolName: 'read',
-        toolCallId: 'call_flush',
-        inputs: {'path': 'lib/main.dart'},
-      ),
-    );
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    expect(projected, [true, false]);
-    expect(contents, ['hello', null]);
-    expect(repo.updates, 0);
-  });
+        spaceId: 'chan-1',
+        agentId: 'agent-1',
+        agentName: 'ceo',
+        messageId: id,
+      );
+      localEvents.add(TextEvent(content: 'hello'));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      localEvents.add(
+        ToolCallEvent(
+          toolName: 'read',
+          toolCallId: 'call_flush',
+          inputs: {'path': 'lib/main.dart'},
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      localEvents.add(
+        ToolCallEvent(
+          toolName: 'read',
+          toolCallId: 'call_flush_2',
+          inputs: {'path': 'lib/app.dart'},
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      expect(projected, [true, false, false]);
+      expect(contents, ['hello', null, null]);
+      expect(counts, [1, 2, 3]);
+      expect(changed.first, [0]);
+      expect(changed[1], contains(1));
+      // The first tool call is still running and unchanged: not resent.
+      expect(changed.last, [2]);
+      expect(repo.updates, 0);
+    },
+  );
 }
 
 class FakeMessagingRepository implements MessagingRepository {

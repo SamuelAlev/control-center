@@ -2,7 +2,7 @@
 title: Eventos de domínio
 description: Catálogo completo dos 54 eventos de domínio, com os respetivos payloads e os subscritores do lado do servidor que os consomem.
 slug: pt-PT/manual/referencia/eventos-de-dominio
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Barramento de eventos
@@ -112,7 +112,7 @@ Só são publicadas as transições terminais. Não existe nenhum `PipelineRunSt
 | Evento                   | Payload                                                                                                  | Emitido quando                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | É criada uma entrada no registo de auditoria |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | O gasto ultrapassa o limite   |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | O gasto ultrapassa o limite   |
 
 ## Eventos de identidade e associação
 

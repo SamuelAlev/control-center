@@ -10,6 +10,8 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_step.dart';
+import 'package:cc_persistence/database/daos/messaging_dao.dart'
+    show ListedMessageRow;
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 
 /// Maps database rows to messaging domain entities.
@@ -57,37 +59,17 @@ class MessagingMapper {
   ) => rows.map(participantToDomain).toList(growable: false);
 
   /// Converts a database space message row to a domain [Message].
-  Message messageToDomain(ConversationMessagesTableData row) {
-    MessageType messageType;
-    switch (row.messageType) {
-      case 'system':
-        messageType = MessageType.system;
-      case 'ticket_card':
-        messageType = MessageType.ticketCard;
-      case 'agent_turn':
-        messageType = MessageType.agentTurn;
-      case 'review_node':
-        messageType = MessageType.reviewNode;
-      case 'hire_proposal':
-        messageType = MessageType.hireProposal;
-      case 'review_summary':
-        messageType = MessageType.reviewSummary;
-      case 'plan':
-        messageType = MessageType.plan;
-      case 'user_question':
-        messageType = MessageType.userQuestion;
-      case 'orchestration_proposal':
-        messageType = MessageType.orchestrationProposal;
-      case 'artifact':
-        messageType = MessageType.artifact;
-      case 'compaction':
-        messageType = MessageType.compaction;
-      case 'steering':
-        messageType = MessageType.steering;
-      default:
-        messageType = MessageType.text;
-    }
-
+  ///
+  /// [segmentBodies], when the read loaded the message's transcript, become
+  /// `metadata['segments']`, the shape every renderer reads. [listed] is what
+  /// a list read knows about a transcript it did not load: the row gets
+  /// `segments_elided` and, once the turn finished, `segment_count`.
+  Message messageToDomain(
+    ConversationMessagesTableData row, {
+    List<String>? segmentBodies,
+    ({bool hasTranscript, int? segmentCount})? listed,
+  }) {
+    final messageType = MessageType.fromWire(row.messageType);
     final senderType = SenderType.fromWire(row.senderType);
 
     Map<String, dynamic>? metadata;
@@ -97,6 +79,32 @@ class MessagingMapper {
       } catch (_) {
         metadata = null;
       }
+    }
+    // Three keys live in their own columns, not in the stored JSON: the hot
+    // queries filter on them. Domain code still reads them from the map.
+    if (row.answered || row.planStatus != null || row.steerState != null) {
+      metadata = {
+        ...?metadata,
+        if (row.answered) 'answered': true,
+        'planStatus': ?row.planStatus,
+        'steerState': ?row.steerState,
+      };
+    }
+    if (segmentBodies != null) {
+      metadata = {
+        ...?metadata,
+        'segments': [
+          for (final body in segmentBodies)
+            if (_decodeSegment(body) case final Map<String, dynamic> segment)
+              segment,
+        ],
+      };
+    } else if (listed != null && listed.hasTranscript) {
+      metadata = {
+        ...?metadata,
+        'segments_elided': true,
+        'segment_count': ?listed.segmentCount,
+      };
     }
 
     return Message(
@@ -115,20 +123,49 @@ class MessagingMapper {
     );
   }
 
-  /// Converts a list of database space message rows to domain [Message]s.
-  List<Message> messagesToDomain(List<ConversationMessagesTableData> rows) =>
-      rows.map(messageToDomain).toList(growable: false);
+  /// One stored segment body, or null for one that does not decode to an
+  /// object: a damaged row costs that segment, not the turn.
+  static Map<String, dynamic>? _decodeSegment(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } on FormatException {
+      return null;
+    }
+  }
 
-  /// Converts a DB row into an [EmbeddedMessage] carrying the raw
-  /// embedding bytes alongside the domain entity.
-  EmbeddedMessage embeddedMessageToDomain(ConversationMessagesTableData row) =>
-      EmbeddedMessage(
-        message: messageToDomain(row),
-        embedding: row.embedding ?? Uint8List(0),
-      );
+  /// Converts database space message rows to domain [Message]s, each with
+  /// the transcript [segmentBodies] holds for it (by message id), if any.
+  List<Message> messagesToDomain(
+    List<ConversationMessagesTableData> rows, {
+    Map<String, List<String>> segmentBodies = const {},
+  }) => [
+    for (final row in rows)
+      messageToDomain(row, segmentBodies: segmentBodies[row.id]),
+  ];
 
-  /// Converts a list of DB rows into [EmbeddedMessage]s.
+  /// Converts list rows to domain [Message]s: no transcript, but whether
+  /// there is one and how long it is.
+  List<Message> listedMessagesToDomain(List<ListedMessageRow> rows) => [
+    for (final row in rows) listedMessageToDomain(row),
+  ];
+
+  /// Converts one list row to a domain [Message].
+  Message listedMessageToDomain(ListedMessageRow row) => messageToDomain(
+    row.data,
+    listed: (hasTranscript: row.hasTranscript, segmentCount: row.segmentCount),
+  );
+
+  /// Converts a row and its vector into an [EmbeddedMessage].
+  EmbeddedMessage embeddedMessageToDomain(
+    ({ConversationMessagesTableData data, Uint8List embedding}) row,
+  ) => EmbeddedMessage(
+    message: messageToDomain(row.data),
+    embedding: row.embedding,
+  );
+
+  /// Converts rows and their vectors into [EmbeddedMessage]s.
   List<EmbeddedMessage> embeddedMessagesToDomain(
-    List<ConversationMessagesTableData> rows,
+    List<({ConversationMessagesTableData data, Uint8List embedding})> rows,
   ) => rows.map(embeddedMessageToDomain).toList(growable: false);
 }

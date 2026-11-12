@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for projects — a workspace-scoped grouping of tickets (e.g.
@@ -7,10 +8,7 @@ import 'package:drift/drift.dart';
 /// Tickets reference a project through `tickets.project_id` (nullable, set to
 /// null when the project is deleted), so deleting a project orphans its tickets
 /// rather than removing them.
-@TableIndex(
-  name: 'idx_projects_workspace_status',
-  columns: {#workspaceId, #status},
-)
+@TableIndex(name: 'idx_projects_created', columns: {#createdAt})
 class ProjectsTable extends Table {
   /// Unique project id (UUID v4).
   TextColumn get id => text()();
@@ -26,10 +24,16 @@ class ProjectsTable extends Table {
 
   /// Color token key (see `ProjectColor`). Paired with the name in the UI —
   /// never status-by-color-alone.
-  TextColumn get color => text().withDefault(const Constant('gray'))();
+  TextColumn get color => text()
+      // ignore: recursive_getters
+      .check(color.isIn(AgentsStoredValues.projectColor))
+      .withDefault(const Constant('gray'))();
 
-  /// Lifecycle status: `active` | `completed` | `archived`.
-  TextColumn get status => text().withDefault(const Constant('active'))();
+  /// Lifecycle status: a `ProjectStatus` storage string.
+  TextColumn get status => text()
+      // ignore: recursive_getters
+      .check(status.isIn(AgentsStoredValues.projectStatus))
+      .withDefault(const Constant('active'))();
 
   /// Creation timestamp.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

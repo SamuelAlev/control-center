@@ -105,10 +105,17 @@ class ReviewStudioDao extends DatabaseAccessor<WorkspaceDatabase>
 
   // ── API contract snapshots ──
 
-  /// Inserts or replaces a contract snapshot (deterministic id → PK upsert).
+  /// Inserts or replaces the contract snapshot of one spec file of a PR, keyed
+  /// by `(prExternalId, specPath)` (the row already there keeps its id).
   Future<void> upsertContractSnapshot(
     ApiContractSnapshotsTableCompanion entry,
-  ) => into(apiContractSnapshotsTable).insertOnConflictUpdate(entry);
+  ) => into(apiContractSnapshotsTable).insert(
+    entry,
+    onConflict: _upsertOn(entry.copyWith(id: const Value.absent()), [
+      apiContractSnapshotsTable.prExternalId,
+      apiContractSnapshotsTable.specPath,
+    ]),
+  );
 
   /// The contract snapshots for [prExternalId] within [workspaceId].
   Future<List<ApiContractSnapshotsTableData>> contractSnapshotsForPr(
@@ -161,9 +168,16 @@ class ReviewStudioDao extends DatabaseAccessor<WorkspaceDatabase>
 
   // ── Visual diff snapshots ──
 
-  /// Inserts or replaces a visual snapshot (deterministic id → PK upsert).
+  /// Inserts or replaces the visual snapshot of one component of a PR, keyed
+  /// by `(prExternalId, componentKey)` (the row already there keeps its id).
   Future<void> upsertVisualSnapshot(VisualDiffSnapshotsTableCompanion entry) =>
-      into(visualDiffSnapshotsTable).insertOnConflictUpdate(entry);
+      into(visualDiffSnapshotsTable).insert(
+        entry,
+        onConflict: _upsertOn(entry.copyWith(id: const Value.absent()), [
+          visualDiffSnapshotsTable.prExternalId,
+          visualDiffSnapshotsTable.componentKey,
+        ]),
+      );
 
   /// The visual snapshots for [prExternalId] within [workspaceId].
   Future<List<VisualDiffSnapshotsTableData>> visualSnapshotsForPr(
@@ -205,9 +219,26 @@ class ReviewStudioDao extends DatabaseAccessor<WorkspaceDatabase>
 
   // ── Axis results ──
 
-  /// Inserts or replaces an axis result (deterministic id → PK upsert).
+  /// Inserts or replaces the result of one axis of a PR, keyed by
+  /// `(prExternalId, axis)` (the row already there keeps its id).
   Future<void> upsertAxisResult(ReviewAxisResultsTableCompanion entry) =>
-      into(reviewAxisResultsTable).insertOnConflictUpdate(entry);
+      into(reviewAxisResultsTable).insert(
+        entry,
+        onConflict: _upsertOn(entry.copyWith(id: const Value.absent()), [
+          reviewAxisResultsTable.prExternalId,
+          reviewAxisResultsTable.axis,
+        ]),
+      );
+
+  /// Updates the row holding the id or the natural key [naturalKey] with
+  /// [update].
+  static UpsertClause<T, D> _upsertOn<T extends Table, D>(
+    Insertable<D> update,
+    List<Column> naturalKey,
+  ) => UpsertMultiple([
+    DoUpdate((_) => update),
+    DoUpdate((_) => update, target: naturalKey),
+  ]);
 
   /// The axis results for [prExternalId] within [workspaceId].
   Future<List<ReviewAxisResultsTableData>> axisResultsForPr(

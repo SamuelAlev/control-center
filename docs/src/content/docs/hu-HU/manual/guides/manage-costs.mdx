@@ -2,14 +2,14 @@
 title: Költségek kezelése
 description: Nézze meg, mennyit költenek az ügynökei, korlátozza egy autonóm futtatás költését és csökkentse a tokenfelhasználást.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/koltsegek-kezelese
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Ez az útmutató megmutatja, hogyan láthatja, mennyibe kerülnek az ügynökfuttatások, és hogyan korlátozhatja egy autonóm futtatás költését.
 
 ## Hogyan rögzülnek a költségek
 
-Minden ügynökfuttatás ír egy futtatási naplót, amely hordozza a bemeneti tokenjeit, a kimeneti tokenjeit, a gondolkodási tokenjeit, a gyorsítótárazott olvasási és gyorsítótárazott írási tokenjeit, egy centben kifejezett becsült költséget, valamint az általa indított alügynökök költségét.
+Minden ügynökfuttatás ír egy futtatási naplót, amely hordozza a bemeneti tokenjeit, a kimeneti tokenjeit, a gondolkodási tokenjeit, a gyorsítótárazott olvasási és gyorsítótárazott írási tokenjeit, egy mikrodollárban kifejezett becsült költséget (egy amerikai dollár milliomod része), valamint az általa indított alügynökök költségét.
 
 Az árazás a models.dev katalógusból származik, amelyet kizárólag arra használunk, hogy a modelllistát árral és kontextusablakkal egészítse ki — soha nem modellazonosítók forrásaként. Egy olyan modell, amelyet a katalógus nem tud beárazni, **0 $**-t rögzít, és a nulla költségű futtatások kimaradnak a **Használat és költség** összegzésből. Egy helyi Ollama-modell ezért egyáltalán nem mutat költést, bár a tokenjei továbbra is rögzülnek. Egy átalánydíjas csomag (kimi-code, egy Claude-előfizetés) csak akkor ugyanilyen, ha a katalógusban nincs ár a kiszolgált modellhez; ha van, a futtatás akkor is azokkal az árakkal becsülődik. Tartalékmodell-lánc esetén a futtatás árazása ahhoz a modellhez igazodik, amely ténylegesen kiszolgálta, nem ahhoz, amelyet kértek.
 
@@ -78,7 +78,7 @@ Nyissa meg a Betekintések futtatási naplóját (a legutóbbi 50 szűrt futtat�
 
 ## Mi történik, ha egy költségvetést sávon kívül állítanak be
 
-A teljesség kedvéért, ha a `monthlyBudgetCents` vagy egy költségvetési szabályzat közvetlenül egy ügynöksorba íródik:
+A teljesség kedvéért, ha a `monthlyBudgetMicros` vagy egy költségvetési szabályzat közvetlenül egy ügynöksorba íródik:
 
 - A költségvetések kiértékelése egy futtatás befejezése **után** történik, nem az indítás előtt. A futtatás befejezésére feliratkozó figyelő összehasonlítja az ügynök hónap eleje óta tartó költését a felső korlátjával.
 - A lágy küszöb átlépése (alapértelmezés szerint 80%) figyelmeztető incidenst rögzít, és kivált egy `BudgetThresholdCrossed` eseményt, amelyre pipeline-eseményindítót akaszthat.

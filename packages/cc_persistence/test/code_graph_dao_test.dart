@@ -1,49 +1,81 @@
 import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
 
 void main() {
-  late WorkspaceDatabase db;
+  late CodeIndexDatabase db;
 
   CodeSymbolsTableCompanion symbol(
     String id,
     String name,
-    String qualifiedName,
-  ) => CodeSymbolsTableCompanion.insert(
+    String qualifiedName, {
+    String repoId = 'repo1',
+    String? checkoutId,
+    String filePath = 'a.dart',
+  }) => CodeSymbolsTableCompanion.insert(
     id: id,
-    workspaceId: 'ws1',
-    repoId: 'repo1',
+    repoId: repoId,
+    checkoutId: Value(checkoutId),
     kind: 'method',
     name: name,
     qualifiedName: qualifiedName,
-    filePath: 'a.dart',
+    filePath: filePath,
     language: 'dart',
     startLine: 1,
     endLine: 2,
   );
 
+  CodeEdgesTableCompanion calls(
+    String id,
+    String source,
+    String target, {
+    String repoId = 'repo1',
+    String? checkoutId,
+  }) => CodeEdgesTableCompanion.insert(
+    id: id,
+    repoId: repoId,
+    checkoutId: Value(checkoutId),
+    sourceSymbolId: source,
+    kind: CodeEdgeKind.calls.name,
+    targetSymbolId: Value(target),
+    sourceFilePath: const Value('a.dart'),
+  );
+
+  CodeFilesTableCompanion file(
+    String id, {
+    String repoId = 'repo1',
+    String? checkoutId,
+  }) => CodeFilesTableCompanion.insert(
+    id: id,
+    repoId: repoId,
+    checkoutId: Value(checkoutId),
+    path: 'a.dart',
+    contentHash: 'h',
+  );
+
+  CodeIndexCheckpointsTableCompanion checkpoint(
+    String id, {
+    String repoId = 'repo1',
+    String? checkoutId,
+  }) => CodeIndexCheckpointsTableCompanion.insert(
+    id: id,
+    repoId: repoId,
+    checkoutId: Value(checkoutId),
+    headSha: 'head',
+    worktreeDigest: 'digest',
+    indexerFingerprint: 'fp',
+  );
+
   setUp(() async {
-    db = createTestDatabase();
-    await db.repoDao.upsertRepo(
-      ReposTableCompanion.insert(id: 'repo1', name: 'r', path: '/tmp/r'),
-    );
+    db = createTestCodeIndexDatabase();
     await db.codeGraphDao.upsertSymbols([
       symbol('s_foo', 'foo', 'A.foo'),
       symbol('s_bar', 'bar', 'A.bar'),
     ]);
-    await db.codeGraphDao.upsertEdges([
-      CodeEdgesTableCompanion.insert(
-        id: 'e1',
-        workspaceId: 'ws1',
-        repoId: 'repo1',
-        sourceSymbolId: 's_foo',
-        kind: CodeEdgeKind.calls.name,
-        targetSymbolId: const Value('s_bar'),
-        sourceFilePath: const Value('a.dart'),
-      ),
-    ]);
+    await db.codeGraphDao.upsertEdges([calls('e1', 's_foo', 's_bar')]);
   });
 
   tearDown(() async {
@@ -52,109 +84,191 @@ void main() {
 
   group('CodeGraphDao', () {
     test('FTS search finds a symbol by name', () async {
-      final hits = await db.codeGraphDao.searchFts('ws1', 'repo1', 'foo');
+      final hits = await db.codeGraphDao.searchFts('repo1', 'foo');
       expect(hits.map((s) => s.id), contains('s_foo'));
     });
 
-    test('FTS search is scoped to the workspace', () async {
-      final hits = await db.codeGraphDao.searchFts('other_ws', 'repo1', 'foo');
-      expect(hits, isEmpty);
+    test('FTS search is scoped to the repo', () async {
+      await db.codeGraphDao.upsertSymbols([
+        symbol('s_foo_r2', 'foo', 'A.foo', repoId: 'repo2'),
+      ]);
+      expect(
+        (await db.codeGraphDao.searchFts('repo1', 'foo')).map((s) => s.id),
+        ['s_foo'],
+      );
+      expect(
+        (await db.codeGraphDao.searchFts('repo2', 'foo')).map((s) => s.id),
+        ['s_foo_r2'],
+      );
     });
 
     test('getCallees returns outgoing call targets', () async {
-      final callees = await db.codeGraphDao.getCallees('ws1', 's_foo');
+      final callees = await db.codeGraphDao.getCallees('s_foo');
       expect(callees.map((s) => s.id), ['s_bar']);
     });
 
     test('getCallers returns incoming callers', () async {
-      final callers = await db.codeGraphDao.getCallers('ws1', 's_bar');
+      final callers = await db.codeGraphDao.getCallers('s_bar');
       expect(callers.map((s) => s.id), ['s_foo']);
     });
 
-    test('graph traversal is scoped to the workspace', () async {
-      expect(await db.codeGraphDao.getCallees('other_ws', 's_foo'), isEmpty);
-      expect(await db.codeGraphDao.getCallers('other_ws', 's_bar'), isEmpty);
-    });
-
     test('getImpactRadius walks reverse dependencies with depth', () async {
-      final impact = await db.codeGraphDao.getImpactRadius('ws1', 's_bar');
+      final impact = await db.codeGraphDao.getImpactRadius('s_bar');
       expect(impact.depthById['s_bar'], 0);
       expect(impact.depthById['s_foo'], 1);
       expect(impact.nodes.length, 2);
     });
 
-    test('deleteByFile removes a file\'s symbols and edges', () async {
-      await db.codeGraphDao.deleteByFile('ws1', 'repo1', 'a.dart');
-      final remaining = await db.codeGraphDao.getSymbolsByRepo('ws1', 'repo1');
-      expect(remaining, isEmpty);
-      final callees = await db.codeGraphDao.getCallees('ws1', 's_foo');
-      expect(callees, isEmpty);
+    test("deleteByFile removes a file's symbols and edges", () async {
+      await db.codeGraphDao.deleteByFile('repo1', 'a.dart');
+      expect(await db.codeGraphDao.getSymbolsByRepo('repo1'), isEmpty);
+      expect(await db.codeGraphDao.getCallees('s_foo'), isEmpty);
+    });
+
+    test('setEdgeTarget rebinds an edge by id', () async {
+      await db.codeGraphDao.upsertSymbols([symbol('s_baz', 'baz', 'A.baz')]);
+      await db.codeGraphDao.setEdgeTarget('e1', 's_baz');
+      final callees = await db.codeGraphDao.getCallees('s_foo');
+      expect(callees.map((s) => s.id), ['s_baz']);
     });
   });
 
-  group('CodeGraphDao workspace isolation', () {
-    // A second workspace sharing the same repo, with a symbol whose name and
-    // qualified name collide with ws1's 'foo'. The FTS index must not leak it
-    // across the workspace boundary.
+  group('partition deletes', () {
     setUp(() async {
       await db.codeGraphDao.upsertSymbols([
-        CodeSymbolsTableCompanion.insert(
-          id: 's_foo_ws2',
-          workspaceId: 'ws2',
-          repoId: 'repo1',
-          kind: 'method',
-          name: 'foo',
-          qualifiedName: 'A.foo',
-          filePath: 'a.dart',
-          language: 'dart',
-          startLine: 1,
-          endLine: 2,
-        ),
+        symbol('s_wt', 'wt', 'A.wt', checkoutId: 'wt1'),
+        symbol('s_other', 'other', 'B.other', repoId: 'repo2'),
       ]);
+      await db.codeGraphDao.upsertEdges([
+        calls('e_wt', 's_wt', 's_bar', checkoutId: 'wt1'),
+        calls('e_other', 's_other', 's_other', repoId: 'repo2'),
+      ]);
+      await db.codeGraphDao.upsertFile(file('f1'));
+      await db.codeGraphDao.upsertFile(file('f_wt', checkoutId: 'wt1'));
+      await db.codeGraphDao.upsertFile(file('f_other', repoId: 'repo2'));
+      await db.codeGraphDao.upsertCheckpoint(checkpoint('c1'));
+      await db.codeGraphDao.upsertCheckpoint(
+        checkpoint('c_wt', checkoutId: 'wt1'),
+      );
+      await db.codeGraphDao.upsertCheckpoint(
+        checkpoint('c_other', repoId: 'repo2'),
+      );
     });
 
-    test(
-      'FTS search never returns a colliding symbol from another workspace',
-      () async {
-        final ws1Hits = await db.codeGraphDao.searchFts('ws1', 'repo1', 'foo');
-        expect(ws1Hits.map((s) => s.id), contains('s_foo'));
-        expect(ws1Hits.map((s) => s.id), isNot(contains('s_foo_ws2')));
+    Future<Map<String, List<String>>> rows() async => {
+      for (final table in const [
+        'code_symbols',
+        'code_edges',
+        'code_files',
+        'code_index_checkpoints',
+      ])
+        table: [
+          for (final row
+              in await db
+                  .customSelect('SELECT id FROM $table ORDER BY id')
+                  .get())
+            row.read<String>('id'),
+        ],
+    };
 
-        final ws2Hits = await db.codeGraphDao.searchFts('ws2', 'repo1', 'foo');
-        expect(ws2Hits.map((s) => s.id), ['s_foo_ws2']);
+    test('deleteByRepo removes every partition of the repo and nothing '
+        'else', () async {
+      await db.codeGraphDao.deleteByRepo('repo1');
+
+      expect(await rows(), {
+        'code_symbols': ['s_other'],
+        'code_edges': ['e_other'],
+        'code_files': ['f_other'],
+        'code_index_checkpoints': ['c_other'],
+      });
+      expect(await db.codeGraphDao.searchFts('repo1', 'foo'), isEmpty);
+    });
+
+    test('deleteByCheckout removes the worktree partition only', () async {
+      await db.codeGraphDao.deleteByCheckout('repo1', 'wt1');
+
+      expect(await rows(), {
+        'code_symbols': ['s_bar', 's_foo', 's_other'],
+        'code_edges': ['e1', 'e_other'],
+        'code_files': ['f1', 'f_other'],
+        'code_index_checkpoints': ['c1', 'c_other'],
+      });
+      expect(
+        await db.codeGraphDao.searchFts('repo1', 'wt', checkoutId: 'wt1'),
+        isEmpty,
+      );
+    });
+  });
+
+  group('query plans', () {
+    /// The `detail` lines of `EXPLAIN QUERY PLAN` for [sql].
+    Future<String> plan(String sql, List<Object> args) async {
+      final rows = await db
+          .customSelect(
+            'EXPLAIN QUERY PLAN $sql',
+            variables: [for (final a in args) Variable(a)],
+          )
+          .get();
+      return rows.map((r) => r.read<String>('detail')).join('\n');
+    }
+
+    test(
+      'symbols of a file in a partition come from the partition index',
+      () async {
+        expect(
+          await plan(
+            'SELECT id FROM code_symbols '
+            'WHERE repo_id = ? AND checkout_id IS NULL AND file_path = ?',
+            ['repo1', 'a.dart'],
+          ),
+          contains('USING INDEX idx_code_symbols_partition_file'),
+        );
       },
     );
 
-    test('getSymbolById is scoped to the workspace', () async {
-      expect(await db.codeGraphDao.getSymbolById('ws1', 's_foo'), isNotNull);
-      // ws2 owns a different repo checkout and must not resolve ws1's symbol id.
-      expect(await db.codeGraphDao.getSymbolById('ws2', 's_foo'), isNull);
+    test('edges by source and by target use their own indexes', () async {
+      expect(
+        await plan(
+          'SELECT id FROM code_edges e '
+          'WHERE e.source_symbol_id = ? AND e.checkout_id IS NULL',
+          ['s_foo'],
+        ),
+        contains('idx_code_edges_source'),
+      );
+      expect(
+        await plan(
+          'SELECT id FROM code_edges e '
+          'WHERE e.target_symbol_id = ? AND e.checkout_id IS NULL',
+          ['s_bar'],
+        ),
+        contains('idx_code_edges_target'),
+      );
     });
 
-    test('setEdgeTarget cannot rebind another workspace\'s edge', () async {
-      // ws2 tries to repoint ws1's edge 'e1' — the workspace-scoped WHERE makes
-      // it a no-op, so ws1's call graph is unchanged.
-      await db.codeGraphDao.setEdgeTarget('ws2', 'e1', 's_foo_ws2');
-      final callees = await db.codeGraphDao.getCallees('ws1', 's_foo');
-      expect(callees.map((s) => s.id), ['s_bar']);
+    test('a checkpoint is found by repo and checkout', () async {
+      expect(
+        await plan(
+          'SELECT id FROM code_index_checkpoints '
+          'WHERE repo_id = ? AND checkout_id = ?',
+          ['repo1', 'wt1'],
+        ),
+        contains('USING INDEX idx_code_index_checkpoints_partition'),
+      );
     });
-  });
 
-  group('removing a repo cleans up the code index', () {
-    // `repos` is workspace-scoped now, so the former
-    // `WorkspaceDao.unlinkRepoFromWorkspace` is simply `RepoDao.deleteRepo` —
-    // and it still owns dropping the repo's code index in the same transaction.
-    test('deleteRepo drops the repo\'s symbols and edges', () async {
-      // Sanity: the index is populated by setUp.
-      expect(await db.codeGraphDao.getSymbolById('ws1', 's_foo'), isNotNull);
-
-      await db.repoDao.deleteRepo('repo1');
-
-      // Symbols + edges for (ws1, repo1) are gone — no stale index accumulates.
-      expect(await db.codeGraphDao.getSymbolById('ws1', 's_foo'), isNull);
-      expect(await db.codeGraphDao.getSymbolById('ws1', 's_bar'), isNull);
-      final callees = await db.codeGraphDao.getCallees('ws1', 's_foo');
-      expect(callees, isEmpty);
-    });
+    test(
+      'unresolved edges of a partition come from the partial index',
+      () async {
+        expect(
+          await plan(
+            'SELECT COUNT(*) FROM code_edges '
+            'WHERE repo_id = ? AND checkout_id IS NULL '
+            'AND target_symbol_id IS NULL AND target_name IS NOT NULL',
+            ['repo1'],
+          ),
+          contains('idx_code_edges_unresolved'),
+        );
+      },
+    );
   });
 }

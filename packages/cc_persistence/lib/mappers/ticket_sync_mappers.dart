@@ -14,8 +14,12 @@ class TicketSyncMapper {
 
   // ── config ──
 
-  /// Domain config → companion.
-  TicketSyncConfigsTableCompanion configToCompanion(TicketSyncConfig c) {
+  /// Domain config → companion. The row keeps [webhookSecretRef], the
+  /// secrets-store reference of the webhook secret, never the secret.
+  TicketSyncConfigsTableCompanion configToCompanion(
+    TicketSyncConfig c, {
+    required String? webhookSecretRef,
+  }) {
     return TicketSyncConfigsTableCompanion(
       id: Value(c.id),
       workspaceId: Value(c.workspaceId),
@@ -24,15 +28,19 @@ class TicketSyncMapper {
       direction: Value(c.direction.toStorageString()),
       fieldMapping: Value(c.fieldPolicy.toJson()),
       credentialRef: Value(c.credentialRef),
-      webhookSecret: Value(c.webhookSecret),
+      webhookSecretRef: Value(webhookSecretRef),
       enabled: Value(c.enabled),
       createdAt: Value(c.createdAt),
       updatedAt: Value(c.updatedAt),
     );
   }
 
-  /// Row → domain config.
-  TicketSyncConfig configFromRow(TicketSyncConfigsTableData row) {
+  /// Row → domain config, with [webhookSecret] resolved from the row's
+  /// secrets-store reference.
+  TicketSyncConfig configFromRow(
+    TicketSyncConfigsTableData row, {
+    required String? webhookSecret,
+  }) {
     return TicketSyncConfig(
       id: row.id,
       workspaceId: row.workspaceId,
@@ -41,7 +49,7 @@ class TicketSyncMapper {
       direction: SyncDirection.fromStorage(row.direction),
       fieldPolicy: TicketFieldConflictPolicy.fromJson(row.fieldMapping),
       credentialRef: row.credentialRef,
-      webhookSecret: row.webhookSecret,
+      webhookSecret: webhookSecret,
       enabled: row.enabled,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

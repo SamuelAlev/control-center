@@ -468,4 +468,61 @@ void main() {
       },
     );
   });
+
+  group('deleting a ticket with children', () {
+    test('a single delete leaves the children as roots', () async {
+      await repo.insert(_ticket(id: 'parent'));
+      await repo.insert(_ticket(id: 'child', parentTicketId: 'parent'));
+      await repo.insert(_ticket(id: 'grandchild', parentTicketId: 'child'));
+
+      await repo.delete('parent', workspaceId: 'ws-1');
+
+      expect(await repo.getById('ws-1', 'parent'), isNull);
+      final child = await repo.getById('ws-1', 'child');
+      expect(child, isNotNull);
+      expect(child!.parentTicketId, isNull);
+      expect(
+        (await repo.getById('ws-1', 'grandchild'))!.parentTicketId,
+        'child',
+      );
+    });
+
+    test('deleteWithSubtree removes the tree and its routes only', () async {
+      await repo.insert(_ticket(id: 'root'));
+      await repo.insert(
+        _ticket(
+          id: 'child',
+          parentTicketId: 'root',
+          provider: TicketProvider.linear,
+          externalKey: 'ENG-2',
+        ),
+      );
+      await repo.insert(_ticket(id: 'grandchild', parentTicketId: 'child'));
+      await repo.insert(_ticket(id: 'sibling'));
+
+      await repo.deleteWithSubtree('root', workspaceId: 'ws-1');
+
+      for (final id in ['root', 'child', 'grandchild']) {
+        expect(await repo.getById('ws-1', id), isNull, reason: id);
+      }
+      expect(await repo.getById('ws-1', 'sibling'), isNotNull);
+      expect(
+        await global.workspaceRouteDao.resolve(
+          WorkspaceRouteKind.ticketExternalKey,
+          'linear:ENG-2',
+        ),
+        isNull,
+      );
+    });
+
+    test('deleteWithSubtree in another workspace deletes nothing', () async {
+      await repo.insert(_ticket(id: 'root'));
+      await repo.insert(_ticket(id: 'child', parentTicketId: 'root'));
+
+      await repo.deleteWithSubtree('root', workspaceId: 'ws-2');
+
+      expect(await repo.getById('ws-1', 'root'), isNotNull);
+      expect(await repo.getById('ws-1', 'child'), isNotNull);
+    });
+  });
 }

@@ -67,48 +67,51 @@ void main() {
     List<int> body = const [1, 2, 3],
     String? textBody,
   }) {
-    BackupTransfer.clientFactory = () => MockClient.streaming((
-      request,
-      bodyStream,
-    ) async {
-      requested.add(request.url);
-      final bytes = textBody != null
-          ? utf8.encode(textBody)
-          : Uint8List.fromList(body);
-      return http.StreamedResponse(Stream.value(bytes), status);
-    });
+    BackupTransfer.clientFactory = () =>
+        MockClient.streaming((request, bodyStream) async {
+          requested.add(request.url);
+          final bytes = textBody != null
+              ? utf8.encode(textBody)
+              : Uint8List.fromList(body);
+          return http.StreamedResponse(Stream.value(bytes), status);
+        });
   }
 
   test('is unavailable only without a media proxy', () {
     // Every connected session, direct or relayed, has one; without it the UI
     // disables the controls rather than offering a button that cannot work.
-    expect(containerWith(config: null).read(backupTransferAvailableProvider),
-        isFalse);
+    expect(
+      containerWith(config: null).read(backupTransferAvailableProvider),
+      isFalse,
+    );
     expect(
       containerWith(config: proxy).read(backupTransferAvailableProvider),
       isTrue,
     );
   });
 
-  test('a workspace download is signed and lands where it was asked to', () async {
-    respondWith(body: const [7, 7, 7]);
+  test(
+    'a workspace download is signed and lands where it was asked to',
+    () async {
+      respondWith(body: const [7, 7, 7]);
 
-    final result = await containerWith(config: proxy)
-        .read(backupTransferProvider)
-        .downloadWorkspace(workspaceId: 'ws-1', suggestedName: 'ws-1.db');
+      final result = await containerWith(config: proxy)
+          .read(backupTransferProvider)
+          .downloadWorkspace(workspaceId: 'ws-1', suggestedName: 'ws-1.db');
 
-    expect(result.outcome, BackupDownloadOutcome.saved);
-    expect(result.path, '/tmp/chosen.db');
-    expect(writtenTo, '/tmp/chosen.db');
-    expect(written, const [7, 7, 7]);
-    // Signed for THIS workspace, and carrying the device id the host resolves
-    // the verifying key from.
-    final url = requested.single;
-    expect(url.path, '/backup/workspace');
-    expect(url.queryParameters['w'], 'ws-1');
-    expect(url.queryParameters['d'], 'device-1');
-    expect(url.queryParameters['s'], isNotEmpty);
-  });
+      expect(result.outcome, BackupDownloadOutcome.saved);
+      expect(result.path, '/tmp/chosen.db');
+      expect(writtenTo, '/tmp/chosen.db');
+      expect(written, const [7, 7, 7]);
+      // Signed for THIS workspace, and carrying the device id the host resolves
+      // the verifying key from.
+      final url = requested.single;
+      expect(url.path, '/backup/workspace');
+      expect(url.queryParameters['w'], 'ws-1');
+      expect(url.queryParameters['d'], 'device-1');
+      expect(url.queryParameters['s'], isNotEmpty);
+    },
+  );
 
   test('a cancelled save dialog downloads nothing', () async {
     BackupTransfer.chooseSaveLocation = (_) async => null;
@@ -221,19 +224,47 @@ void main() {
     );
   });
 
+  test('a refused upload is worded by its import kind', () async {
+    // The upload lane answers `400 {error, kind}`; the kind, not the server's
+    // English, is what the person reads.
+    respondWith(
+      status: 400,
+      textBody:
+          '{"error":"database disk image is malformed","kind":"import.damaged"}',
+    );
+
+    Object? refusal;
+    try {
+      await containerWith(config: proxy)
+          .read(backupTransferProvider)
+          .restoreFromFile(
+            workspaceId: 'ws-9',
+            file: XFile.fromData(
+              Uint8List.fromList(const [1]),
+              name: 'workspace.db',
+            ),
+          );
+    } on BackupTransferException catch (error) {
+      refusal = error;
+    }
+    final l10n = AppLocalizationsEn();
+    expect(
+      describeBackupTransferError(l10n, refusal!),
+      l10n.refusalImportDamaged,
+    );
+  });
+
   test('a restore posts the file to the signed restore URL', () async {
     final uploaded = <int>[];
-    BackupTransfer.clientFactory = () => MockClient.streaming((
-      request,
-      bodyStream,
-    ) async {
-      requested.add(request.url);
-      uploaded.addAll(await bodyStream.toBytes());
-      return http.StreamedResponse(
-        Stream.value(utf8.encode('{"ok":true}')),
-        200,
-      );
-    });
+    BackupTransfer.clientFactory = () =>
+        MockClient.streaming((request, bodyStream) async {
+          requested.add(request.url);
+          uploaded.addAll(await bodyStream.toBytes());
+          return http.StreamedResponse(
+            Stream.value(utf8.encode('{"ok":true}')),
+            200,
+          );
+        });
 
     await containerWith(config: proxy)
         .read(backupTransferProvider)
@@ -255,21 +286,19 @@ void main() {
   test('a download reports progress, and always lands on the total', () async {
     // Three chunks with a declared length: the bar has a denominator and the
     // last report is the whole file, so it finishes full rather than at 97%.
-    BackupTransfer.clientFactory = () => MockClient.streaming((
-      request,
-      body,
-    ) async {
-      requested.add(request.url);
-      return http.StreamedResponse(
-        Stream.fromIterable([
-          [1, 2, 3, 4],
-          [5, 6, 7, 8],
-          [9, 10],
-        ]),
-        200,
-        contentLength: 10,
-      );
-    });
+    BackupTransfer.clientFactory = () =>
+        MockClient.streaming((request, body) async {
+          requested.add(request.url);
+          return http.StreamedResponse(
+            Stream.fromIterable([
+              [1, 2, 3, 4],
+              [5, 6, 7, 8],
+              [9, 10],
+            ]),
+            200,
+            contentLength: 10,
+          );
+        });
     final reports = <({int transferred, int? total})>[];
 
     await containerWith(config: proxy)
@@ -289,13 +318,10 @@ void main() {
   });
 
   test('a length-less response reports bytes with no denominator', () async {
-    BackupTransfer.clientFactory = () => MockClient.streaming((
-      request,
-      body,
-    ) async => http.StreamedResponse(
-      Stream.value(const [1, 2, 3]),
-      200,
-    ));
+    BackupTransfer.clientFactory = () => MockClient.streaming(
+      (request, body) async =>
+          http.StreamedResponse(Stream.value(const [1, 2, 3]), 200),
+    );
     final reports = <({int transferred, int? total})>[];
 
     await containerWith(config: proxy)
@@ -313,16 +339,14 @@ void main() {
   });
 
   test('an upload reports progress against the file length', () async {
-    BackupTransfer.clientFactory = () => MockClient.streaming((
-      request,
-      bodyStream,
-    ) async {
-      await bodyStream.toBytes();
-      return http.StreamedResponse(
-        Stream.value(utf8.encode('{"ok":true}')),
-        200,
-      );
-    });
+    BackupTransfer.clientFactory = () =>
+        MockClient.streaming((request, bodyStream) async {
+          await bodyStream.toBytes();
+          return http.StreamedResponse(
+            Stream.value(utf8.encode('{"ok":true}')),
+            200,
+          );
+        });
     final reports = <({int transferred, int? total})>[];
 
     await containerWith(config: proxy)

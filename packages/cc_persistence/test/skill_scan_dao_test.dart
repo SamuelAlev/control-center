@@ -101,7 +101,7 @@ void main() {
 
     test('staleScans is scoped by workspace', () async {
       await insertScan('s-1', 'w-1', 'h', rulesVersion: 1);
-      await insertScan('s-2', 'w-2', 'h', rulesVersion: 1);
+      await insertScan('s-2', 'w-2', 'h-other', rulesVersion: 1);
       final stale = await db.skillScanDao.staleScans('w-1', 3);
       expect(stale.map((s) => s.id), ['s-1']);
     });

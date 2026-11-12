@@ -25,6 +25,9 @@ abstract interface class FileCatalogRepository {
   Future<bool> hasPath(String workspaceId, String path);
 
   /// Validates every file before changing any, then permanently claims drafts.
+  ///
+  /// Which message holds a claimed file is recorded by the message write
+  /// itself, not here: the claim runs before the message exists.
   Future<void> claim(
     String workspaceId,
     String userId,
@@ -36,6 +39,9 @@ abstract interface class FileCatalogRepository {
 
   /// Only after a completed explicit discard, under the blob hash lock.
   /// Bytes the upload did not create (it deduplicated against existing
-  /// content) are never eligible.
+  /// content) are never eligible, and neither are bytes any live catalog row
+  /// (a draft, an attachment a message holds, an artifact) still names. The
+  /// answer comes from the catalog alone: every message attachment of an
+  /// uploaded blob is claimed through it.
   Future<bool> canReclaim(String workspaceId, String path);
 }

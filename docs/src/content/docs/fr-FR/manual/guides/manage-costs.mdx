@@ -2,14 +2,14 @@
 title: Gérer les coûts
 description: Voyez ce que dépensent vos agents, plafonnez une exécution autonome et réduisez la consommation de jetons.
 slug: fr-FR/manuel/guides/gerer-couts
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Ce guide vous montre comment voir ce que coûtent les exécutions d’agents et comment plafonner une exécution autonome.
 
 ## Comment les coûts sont enregistrés
 
-Chaque exécution d’agent écrit un journal d’exécution qui porte ses jetons d’entrée, ses jetons de sortie, ses jetons de raisonnement, ses jetons de lecture en cache et d’écriture en cache, un coût estimé en cents et le coût des sous-agents qu’elle a lancés.
+Chaque exécution d’agent écrit un journal d’exécution qui porte ses jetons d’entrée, ses jetons de sortie, ses jetons de raisonnement, ses jetons de lecture en cache et d’écriture en cache, un coût estimé en micro-dollars (millionièmes de dollar américain) et le coût des sous-agents qu’elle a lancés.
 
 Les tarifs proviennent du catalogue models.dev, qui sert uniquement à enrichir la liste des modèles avec un prix et une fenêtre de contexte — jamais comme source d’identifiants de modèles. Un modèle que le catalogue ne peut pas tarifer est enregistré à **0 $** et les exécutions à coût nul sont exclues du récapitulatif **Utilisation et coût**. Un modèle Ollama local n’affiche donc aucune dépense, même si ses compteurs de jetons restent enregistrés. Un forfait à tarif fixe (kimi-code, un abonnement Claude) se comporte de la même façon uniquement lorsque le catalogue n’a pas de prix pour le modèle servi ; s’il en a un, l’exécution est quand même estimée à ces tarifs. Avec une chaîne de repli, l’exécution est tarifée d’après le modèle qui l’a réellement servie, et non celui qui a été demandé.
 
@@ -78,7 +78,7 @@ Ouvrez le journal d’exécution d’Aperçu (les 50 exécutions filtrées les p
 
 ## Ce qui se passe lorsqu’un budget est défini hors circuit
 
-Pour être complet, si `monthlyBudgetCents` ou une politique budgétaire est écrit directement dans la ligne d’un agent :
+Pour être complet, si `monthlyBudgetMicros` ou une politique budgétaire est écrit directement dans la ligne d’un agent :
 
 - Les budgets sont évalués **après** la fin d’une exécution, et non avant le lancement. Un écouteur sur la fin d’exécution compare les dépenses de l’agent depuis le début du mois à son plafond.
 - Le franchissement du seuil souple (80 % par défaut) enregistre un incident d’avertissement et déclenche un événement `BudgetThresholdCrossed` sur lequel vous pouvez brancher un déclencheur de pipeline.

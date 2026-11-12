@@ -144,6 +144,8 @@ void main() {
           .singleWhere((w) => w['id'] == freshId);
       expect(row['owner_user_id'], isNotNull);
       expect(row['connect_mode'], 'inherit');
+      // …and says whether its database takes writes.
+      expect(row['storage_state'], 'ok');
 
       // The generic update never changes the Connect choice: only
       // `workspaceConnect.set` does.

@@ -2,7 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:cc_host/cc_host.dart' show CcHostLog;
+import 'package:cc_infra/cc_paths.dart' show writePrivateFile;
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart';
+import 'package:path/path.dart' as p;
 
 /// This server's cryptographic identity: an Ed25519 keypair minted at first
 /// boot and kept for life (PRD 15 §9), plus the relay-room coordinates
@@ -55,19 +59,29 @@ class ServerIdentity {
 /// Loads (or mints, on first boot) the server identity from
 /// `<dataDir>/server_identity.json`.
 ///
-/// The file is chmod-600-equivalent by directory convention (the data dir
-/// already holds the SQLite DB and PSK store); rotating it is equivalent to
-/// standing up a new server — every client must re-pair, which is exactly
-/// the TOFU semantics.
+/// The file is written owner-only (`0600` at creation, flushed, renamed into
+/// place). Rotating it is equivalent to standing up a new server: every client
+/// must pair again, which is exactly the TOFU semantics. That is why a file
+/// that exists but cannot be read is never replaced by a fresh identity: it is
+/// quarantined and the boot refused ([ServerIdentityUnreadable]).
 final class ServerIdentityStore {
   ServerIdentityStore._();
 
   /// The identity file name inside the data dir.
   static const String fileName = 'server_identity.json';
 
-  /// Loads the identity, creating and persisting a fresh one when absent or
-  /// unreadable. [serverName] overrides the stored/derived display name for
-  /// this run (config wins over hostname).
+  /// The suffix a quarantined identity file carries, followed by a timestamp.
+  static const String quarantineSuffix = '.corrupt-';
+
+  /// Loads the identity, creating and persisting a fresh one only when there
+  /// is none at all. [serverName] overrides the stored/derived display name
+  /// for this run (config wins over hostname).
+  ///
+  /// Throws [ServerIdentityUnreadable] when the file cannot be parsed or lacks
+  /// its id or seed (the file is moved aside first), and also when a file
+  /// quarantined by an earlier boot is still there and no identity file
+  /// replaced it: a supervisor that restarts the server must not turn the
+  /// refusal into a silent new identity on the second try.
   static Future<ServerIdentity> load(
     String dataDir, {
     String? serverName,
@@ -75,33 +89,26 @@ final class ServerIdentityStore {
     final file = File('$dataDir/$fileName');
     Map<String, dynamic>? stored;
     if (file.existsSync()) {
-      try {
-        final decoded = jsonDecode(file.readAsStringSync());
-        if (decoded is Map<String, dynamic>) {
-          stored = decoded;
-        }
-      } catch (_) {
-        // Unreadable identity → treated as first boot (a fresh identity is
-        // the only safe recovery; clients will refuse via TOFU until
-        // re-paired, which is the correct loud failure).
+      stored = _parse(file);
+    } else {
+      final quarantined = _quarantined(dataDir);
+      if (quarantined.isNotEmpty) {
+        throw ServerIdentityUnreadable(
+          path: file.path,
+          quarantinedAt: quarantined.first,
+        );
       }
     }
 
-    var serverId = stored?['server_id'] as String? ?? '';
-    var seed = stored?['identity_seed'] as String? ?? '';
-    var relayRoom = stored?['relay_room'] as String? ?? '';
-    var relayOwnerToken = stored?['relay_owner_token'] as String? ?? '';
-    final storedName = stored?['server_name'] as String? ?? '';
-    var dirty = false;
+    final serverId = stored?['server_id'] as String? ?? _uuidV4();
+    final seed =
+        stored?['identity_seed'] as String? ??
+        await ServerIdentityCrypto.generateSeed();
+    var relayRoom = _string(stored, 'relay_room');
+    var relayOwnerToken = _string(stored, 'relay_owner_token');
+    final storedName = _string(stored, 'server_name');
+    var dirty = stored == null;
 
-    if (serverId.isEmpty) {
-      serverId = _uuidV4();
-      dirty = true;
-    }
-    if (seed.isEmpty) {
-      seed = await ServerIdentityCrypto.generateSeed();
-      dirty = true;
-    }
     if (relayRoom.isEmpty) {
       relayRoom = RemoteControlCrypto.generateRoomCode();
       dirty = true;
@@ -118,15 +125,18 @@ final class ServerIdentityStore {
     }
 
     if (dirty) {
-      file.parent.createSync(recursive: true);
-      file.writeAsStringSync(
-        const JsonEncoder.withIndent('  ').convert({
-          'server_id': serverId,
-          'identity_seed': seed,
-          'relay_room': relayRoom,
-          'relay_owner_token': relayOwnerToken,
-          'server_name': name,
-        }),
+      await file.parent.create(recursive: true);
+      await writePrivateFile(
+        file.path,
+        utf8.encode(
+          const JsonEncoder.withIndent('  ').convert({
+            'server_id': serverId,
+            'identity_seed': seed,
+            'relay_room': relayRoom,
+            'relay_owner_token': relayOwnerToken,
+            'server_name': name,
+          }),
+        ),
       );
     }
 
@@ -142,6 +152,53 @@ final class ServerIdentityStore {
     );
   }
 
+  /// The stored identity, or a quarantine and [ServerIdentityUnreadable] when
+  /// it is not a JSON object carrying a non-empty `server_id` and
+  /// `identity_seed` (the two fields the fingerprint and every pin rest on).
+  static Map<String, dynamic> _parse(File file) {
+    Object? problem;
+    try {
+      final decoded = jsonDecode(file.readAsStringSync());
+      if (decoded is Map<String, dynamic> &&
+          _string(decoded, 'server_id').isNotEmpty &&
+          _string(decoded, 'identity_seed').isNotEmpty) {
+        return decoded;
+      }
+      problem = 'no server_id or identity_seed';
+    } on Object catch (e) {
+      problem = e.runtimeType;
+    }
+    final stamp = DateTime.now().toUtc().millisecondsSinceEpoch;
+    final quarantined = '${file.path}$quarantineSuffix$stamp';
+    file.renameSync(quarantined);
+    CcHostLog.error(
+      'identity: ${file.path} could not be read ($problem) — moved to '
+      '$quarantined. Refusing to start with a new identity.',
+    );
+    throw ServerIdentityUnreadable(path: file.path, quarantinedAt: quarantined);
+  }
+
+  /// Identity files an earlier boot quarantined, newest first.
+  static List<String> _quarantined(String dataDir) {
+    final dir = Directory(dataDir);
+    if (!dir.existsSync()) {
+      return const [];
+    }
+    const prefix = '$fileName$quarantineSuffix';
+    return [
+      for (final entry in dir.listSync(followLinks: false))
+        if (entry is File && p.basename(entry.path).startsWith(prefix))
+          entry.path,
+    ]..sort((a, b) => b.compareTo(a));
+  }
+
+  /// [key] of [map] when it is a string, else empty. A value of another type
+  /// is as unusable as a missing one.
+  static String _string(Map<String, dynamic>? map, String key) {
+    final value = map?[key];
+    return value is String ? value : '';
+  }
+
   static String _uuidV4() {
     final rnd = Random.secure();
     final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));
@@ -152,4 +209,29 @@ final class ServerIdentityStore {
     return '${h.substring(0, 8)}-${h.substring(8, 12)}-'
         '${h.substring(12, 16)}-${h.substring(16, 20)}-${h.substring(20)}';
   }
+}
+
+/// `server_identity.json` exists but cannot be used, and minting a new identity
+/// in its place would force every paired client to pair again.
+final class ServerIdentityUnreadable extends ServerBootRefusal {
+  /// Creates the refusal for the identity file at [path], whose bytes are kept
+  /// at [quarantinedAt].
+  const ServerIdentityUnreadable({
+    required this.path,
+    required this.quarantinedAt,
+  });
+
+  /// Where the identity file belongs.
+  final String path;
+
+  /// Where the unreadable bytes were moved.
+  final String quarantinedAt;
+
+  @override
+  String get message =>
+      'cc_server: cannot start — the server identity at $path could not be '
+      'read, and its bytes are kept at $quarantinedAt. Starting with a new '
+      'identity would make every paired client pair again. Restore the file '
+      'from a backup to $path, or delete $quarantinedAt to start as a new '
+      'server.';
 }

@@ -1,4 +1,3 @@
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
@@ -7,11 +6,6 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-
-/// The server's explanation when `oauth.begin` refuses, without the
-/// exception wrapper around it.
-String describeSignInStartError(Object error) =>
-    error is RemoteRpcException ? error.message : '$error';
 
 /// A spinner and one line of state.
 class SignInStatusLine extends StatelessWidget {

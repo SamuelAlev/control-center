@@ -1,6 +1,6 @@
 import 'package:cc_domain/features/pipelines/domain/entities/webhook_delivery.dart';
 
-/// Persists the inbound webhook delivery log and answers the dedup query.
+/// Persists the inbound webhook delivery log and claims dedupe keys.
 abstract class WebhookDeliveryRepository {
   /// Records a delivery.
   Future<void> record(WebhookDelivery delivery);
@@ -20,14 +20,14 @@ abstract class WebhookDeliveryRepository {
   /// Streams recent deliveries for a workspace, newest first.
   Stream<List<WebhookDelivery>> watchForWorkspace(String workspaceId);
 
-  /// Whether a delivery with [dedupeKey] already exists for [triggerId] in
-  /// [workspaceId] — the idempotency guard that drops re-delivered webhooks.
+  /// Records [delivery] (in flight, `queued`) as the one delivery holding its
+  /// dedupe key for its trigger; returns false, recording nothing, when a
+  /// delivery holding that key is already in flight or was dispatched.
   ///
-  /// The workspace is the one the inbound token resolved to, so re-delivery is
-  /// judged against that workspace's log and no other.
-  Future<bool> existsByDedupeKey(
-    String workspaceId,
-    String triggerId,
-    String dedupeKey,
-  );
+  /// The idempotency guard for re-delivered webhooks, judged against the
+  /// log of the workspace the inbound token resolved to and no other. A
+  /// delivery that failed holds no key, so a provider's retry of a failed
+  /// dispatch is claimed again. Atomic: two concurrent identical deliveries
+  /// cannot both be claimed.
+  Future<bool> claim(WebhookDelivery delivery);
 }

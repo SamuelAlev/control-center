@@ -1,5 +1,6 @@
 import 'package:cc_persistence/cc_persistence.dart' show CodeGraphDao;
-import 'package:cc_persistence/database/daos/code_graph_dao.dart' show CodeGraphDao;
+import 'package:cc_persistence/database/daos/code_graph_dao.dart'
+    show CodeGraphDao;
 import 'package:cc_persistence/database/daos/daos.dart' show CodeGraphDao;
 import 'package:cc_persistence/database/tables/repos.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
@@ -67,23 +68,33 @@ class RepoDao extends DatabaseAccessor<WorkspaceDatabase> with _$RepoDaoMixin {
     return row != null;
   }
 
-  /// Inserts or updates a repo row.
+  /// Inserts or updates a repo row and returns the row as stored.
+  ///
+  /// One statement keyed both ways: an existing [ReposTable.id] is updated in
+  /// place, and so is the row already linked at the same [ReposTable.path]
+  /// (the path is unique), which keeps its own id. Either way the stored row
+  /// comes back, so a caller that minted a fresh id for a checkout that was
+  /// already linked learns the id it actually has.
   ///
   /// A row being INSERTED with no explicit [ReposTable.position] is appended to
   /// the end of the manual order rather than landing on the default `0` (which
   /// would silently jump every new repo to the top of every repo list). An
   /// UPDATE never touches the stored position unless the caller passes one, so
   /// a rename can't reshuffle the list.
-  Future<void> upsertRepo(ReposTableCompanion entry) async {
-    var toWrite = entry;
-    if (!entry.position.present && entry.id.present) {
-      final present = await exists(entry.id.value);
-      if (!present) {
-        toWrite = entry.copyWith(position: Value(await _nextPosition()));
-      }
-    }
-    await into(reposTable).insertOnConflictUpdate(toWrite);
-  }
+  Future<ReposTableData> upsertRepo(ReposTableCompanion entry) =>
+      transaction(() async {
+        final toWrite = entry.position.present
+            ? entry
+            : entry.copyWith(position: Value(await _nextPosition()));
+        final onUpdate = entry.copyWith(id: const Value.absent());
+        return into(reposTable).insertReturning(
+          toWrite,
+          onConflict: UpsertMultiple([
+            DoUpdate((_) => onUpdate),
+            DoUpdate((_) => onUpdate, target: [reposTable.path]),
+          ]),
+        );
+      });
 
   /// The next free [ReposTable.position] (max + 1, or 0 when the workspace has
   /// no repos yet), so a newly added repo appends to the end of the manual
@@ -96,28 +107,14 @@ class RepoDao extends DatabaseAccessor<WorkspaceDatabase> with _$RepoDaoMixin {
     return (row?.read(maxPos) ?? -1) + 1;
   }
 
-  /// Removes [repoId] from this workspace and drops its code-index rows
-  /// (symbols/edges/files/checkpoints).
+  /// Removes [repoId] from this workspace.
   ///
-  /// The index rows carry an `ON DELETE CASCADE` FK to `repos`, so SQLite
-  /// removes them for us — but the index CHECKPOINT is deleted explicitly
-  /// anyway: a surviving checkpoint would make a re-add's first run
-  /// short-circuit as "unchanged" and serve an empty graph (see
-  /// [CodeGraphDao.deleteByRepo]). Both happen in one transaction so an
-  /// interrupted delete can't leave a stale index behind.
-  Future<int> deleteRepo(String repoId) async {
-    var deleted = 0;
-    await transaction(() async {
-      await attachedDatabase.codeGraphDao.deleteByRepo(
-        attachedDatabase.workspaceId,
-        repoId,
-      );
-      deleted = await (delete(
-        reposTable,
-      )..where((t) => t.id.equals(repoId))).go();
-    });
-    return deleted;
-  }
+  /// The repo's code index lives in another file (`code_index.db`), which no
+  /// foreign key reaches: the repository that calls this removes it first
+  /// with [CodeGraphDao.deleteByRepo], checkpoint included, so a re-add's
+  /// first run cannot short-circuit as "unchanged" over an empty graph.
+  Future<int> deleteRepo(String repoId) =>
+      (delete(reposTable)..where((t) => t.id.equals(repoId))).go();
 
   /// Re-sequences this workspace's repos so each named row's
   /// [ReposTable.position] is its index in [repoIds].

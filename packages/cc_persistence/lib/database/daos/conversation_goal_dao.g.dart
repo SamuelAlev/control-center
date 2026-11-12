@@ -4,6 +4,8 @@ part of 'conversation_goal_dao.dart';
 
 // ignore_for_file: type=lint
 mixin _$ConversationGoalDaoMixin on DatabaseAccessor<WorkspaceDatabase> {
+  $PipelineRunsTableTable get pipelineRunsTable =>
+      attachedDatabase.pipelineRunsTable;
   $SpacesTableTable get spacesTable => attachedDatabase.spacesTable;
   $ConversationsTableTable get conversationsTable =>
       attachedDatabase.conversationsTable;
@@ -15,6 +17,11 @@ mixin _$ConversationGoalDaoMixin on DatabaseAccessor<WorkspaceDatabase> {
 class ConversationGoalDaoManager {
   final _$ConversationGoalDaoMixin _db;
   ConversationGoalDaoManager(this._db);
+  $$PipelineRunsTableTableTableManager get pipelineRunsTable =>
+      $$PipelineRunsTableTableTableManager(
+        _db.attachedDatabase,
+        _db.pipelineRunsTable,
+      );
   $$SpacesTableTableTableManager get spacesTable =>
       $$SpacesTableTableTableManager(_db.attachedDatabase, _db.spacesTable);
   $$ConversationsTableTableTableManager get conversationsTable =>

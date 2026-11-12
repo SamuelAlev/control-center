@@ -37,17 +37,13 @@ void main() {
     repo = DaoMessagingRepository(dbs);
     final db = dbs.of('ws-1');
     await db.messagingDao.insertSpace(
-      SpacesTableCompanion.insert(
-        id: 's',
-        name: 'S',
-        workspaceId: const Value('ws-1'),
-      ),
+      SpacesTableCompanion.insert(id: 's', name: 'S', workspaceId: 'ws-1'),
     );
     await db.conversationDao.insertConversation(
       ConversationsTableCompanion.insert(
         id: 'c',
         spaceId: 's',
-        workspaceId: const Value('ws-1'),
+        workspaceId: 'ws-1',
       ),
     );
   });
@@ -66,25 +62,27 @@ void main() {
     String? metadata,
     String? senderId,
   }) {
-    return dbs.of('ws-1').messagingDao.insertMessage(
-      ConversationMessagesTableCompanion.insert(
-        id: id,
-        spaceId: 's',
-        conversationId: 'c',
-        senderId: senderId ?? id,
-        senderType: senderType,
-        content: content,
-        messageType: Value(messageType),
-        createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
-        metadata: Value(metadata),
-      ),
-    );
+    return dbs
+        .of('ws-1')
+        .messagingDao
+        .insertMessage(
+          ConversationMessagesTableCompanion.insert(
+            id: id,
+            spaceId: 's',
+            conversationId: 'c',
+            senderId: senderId ?? id,
+            senderType: senderType,
+            content: content,
+            messageType: Value(messageType),
+            createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
+            metadata: Value(metadata),
+          ),
+        );
   }
 
   test('queued steering skips transcript rows', () async {
     final chunk = 'x' * 4000;
-    final blob =
-        '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
+    final blob = '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
     await message(
       id: 'turn',
       senderType: 'agent',
@@ -129,24 +127,29 @@ void main() {
     expect(queued.map((m) => m.id).toList(), ['first', 'later']);
     expect(queued.every((m) => m.metadata?['segments'] == null), isTrue);
 
-    final dao = dbs.of('ws-1').messagingDao;
-    expect(dao.queuedSteeringSql.contains('list_metadata'), isTrue);
-    expect(dao.queuedSteeringSql.contains('INDEXED BY'), isTrue);
-    final plan = await dbs
-        .of('ws-1')
+    // The queue state lives in its column, not in the stored JSON, and the
+    // domain message still carries it.
+    expect(queued.map((m) => m.metadata?['steerState']), ['queued', 'queued']);
+    final stored = await dbs.of('ws-1').messagingDao.getMessageById('first');
+    expect(stored!.steerState, 'queued');
+    expect(stored.metadata, isNot(contains('steerState')));
+
+    final db = dbs.of('ws-1');
+    final dao = db.messagingDao;
+    expect(dao.queuedSteeringSql.contains('transcript_segments'), isFalse);
+    final plan = await db
         .customSelect(
           'EXPLAIN QUERY PLAN ${dao.queuedSteeringSql}',
           variables: [Variable.withString('c'), Variable.withString('s')],
         )
         .get();
     final text = plan.map((r) => r.data.values.join(' ')).join('\n');
-    expect(text, contains('idx_conversation_messages_messageType'));
+    expect(text, contains('idx_conversation_messages_queued_steering'));
   });
 
   test('title lookup reads the first human message only', () async {
     final chunk = 'y' * 4000;
-    final blob =
-        '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
+    final blob = '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
     await message(
       id: 'turn',
       senderType: 'agent',
@@ -197,8 +200,7 @@ void main() {
 
   test('harvest reads the newest message from that agent', () async {
     final chunk = 'z' * 4000;
-    final blob =
-        '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
+    final blob = '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
     await message(
       id: 'old',
       senderType: 'agent',
@@ -237,10 +239,7 @@ void main() {
         .of('ws-1')
         .customSelect(
           'EXPLAIN QUERY PLAN ${MessagingDao.latestAgentContentSql}',
-          variables: [
-            Variable.withString('c'),
-            Variable.withString('agent-1'),
-          ],
+          variables: [Variable.withString('c'), Variable.withString('agent-1')],
         )
         .get();
     final planText = plan.map((r) => r.data.values.join(' ')).join('\n');
@@ -252,8 +251,7 @@ void main() {
 
   test('side channel pages the rendered window', () async {
     final chunk = 'q' * 4000;
-    final blob =
-        '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
+    final blob = '{"segments":[{"type":"tool","toolName":"Old","t":"$chunk"}]}';
     await message(
       id: 'older',
       senderType: 'user',
@@ -324,11 +322,20 @@ void main() {
     }
     final tool = fast.firstWhere((m) => m.id == 'tool');
     expect(tool.transcript, isNotEmpty);
-    expect(fast.firstWhere((m) => m.id == 'keep').metadata?['segments'], isNull);
+    expect(
+      fast.firstWhere((m) => m.id == 'keep').metadata?['segments'],
+      isNull,
+    );
 
     final dao = dbs.of('ws-1').messagingDao;
-    expect(dao.sideChannelTailSql(hasCursor: false).contains('list_metadata'), isTrue);
-    expect(dao.sideChannelTailSql(hasCursor: false).contains('compacted = 0'), isFalse);
+    expect(
+      dao.sideChannelTailSql(hasCursor: false).contains('transcript_segments'),
+      isFalse,
+    );
+    expect(
+      dao.sideChannelTailSql(hasCursor: false).contains('compacted = 0'),
+      isFalse,
+    );
     final plan = await dbs
         .of('ws-1')
         .customSelect(
@@ -355,12 +362,14 @@ void main() {
           '{"agentName":"Scout","streamComplete":false,"transcriptChars":4,'
           '"segments":[{"type":"text","text":"hello"}]}',
     );
-    final seen = <int>[];
-    final sub = repo
-        .watchMessagesWindow('ws-1', 's', 'c', limit: 10)
-        .listen((window) {
-          seen.add(window.messages.single.metadata?['segment_count'] as int);
-        });
+    final seen = <Map<String, dynamic>?>[];
+    final contents = <String>[];
+    final sub = repo.watchMessagesWindow('ws-1', 's', 'c', limit: 10).listen((
+      window,
+    ) {
+      seen.add(window.messages.single.metadata);
+      contents.add(window.messages.single.content);
+    });
     final started = DateTime.now();
     while (seen.isEmpty) {
       if (DateTime.now().difference(started) > const Duration(seconds: 2)) {
@@ -368,56 +377,46 @@ void main() {
       }
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
-    expect(seen, [1]);
+    // A streaming turn says it has a transcript but not yet how long it is:
+    // the count changes on every tool call, and the feed must not.
+    expect(seen.single?['segments_elided'], isTrue);
+    expect(seen.single?.containsKey('segment_count'), isFalse);
 
-    await dbs.of('ws-1').messagingDao.updateMessage(
+    final dao = dbs.of('ws-1').messagingDao;
+    await dao.flushStreamingTurn(
       'turn',
-      metadata: {
-        'agentName': 'Scout',
-        'streamComplete': false,
-        'transcriptChars': 80,
-        'segments': [
-          {'type': 'text', 'text': 'hello'},
-          {
-            'type': 'tool',
-            'toolName': 'edit',
-            'inputs': {'path': 'a.dart'},
-          },
-        ],
+      metadata: const {'transcriptChars': 80},
+      writeMetadata: false,
+      changedSegments: {
+        1: '{"type":"tool","toolName":"edit","inputs":{"path":"a.dart"}}',
       },
-      writeListMetadata: false,
+      segmentCount: 2,
     );
     await Future<void>.delayed(const Duration(milliseconds: 800));
-    expect(seen, [1]);
+    expect(seen, hasLength(1));
 
     final stored = await dbs
         .of('ws-1')
         .customSelect(
-          'SELECT transcript_chars, list_metadata, metadata '
+          'SELECT transcript_chars, list_metadata '
           'FROM conversation_messages WHERE id = ?',
           variables: [Variable.withString('turn')],
         )
         .getSingle();
     expect(stored.read<int>('transcript_chars'), 80);
-    expect(stored.read<String>('list_metadata'), contains('"segment_count":1'));
-    expect(stored.read<String>('metadata'), contains('edit'));
+    expect(stored.read<String>('list_metadata'), isNot(contains('segment')));
 
-    await dbs.of('ws-1').messagingDao.updateMessage(
+    await dao.flushStreamingTurn(
       'turn',
       content: 'hello!',
-      metadata: {
+      metadata: const {
         'agentName': 'Scout',
-        'streamComplete': false,
+        'streamComplete': true,
         'transcriptChars': 90,
-        'segments': [
-          {'type': 'text', 'text': 'hello!'},
-          {
-            'type': 'tool',
-            'toolName': 'edit',
-            'inputs': {'path': 'a.dart'},
-          },
-        ],
       },
+      writeMetadata: true,
+      changedSegments: {0: '{"type":"text","text":"hello!"}'},
+      segmentCount: 2,
     );
     final grew = DateTime.now();
     while (seen.length < 2) {
@@ -426,7 +425,8 @@ void main() {
       }
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
-    expect(seen.last, 2);
+    expect(contents.last, 'hello!');
+    expect(seen.last?['segment_count'], 2);
     await sub.cancel();
   });
 }

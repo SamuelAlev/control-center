@@ -2,7 +2,7 @@
 title: 詞彙表
 description: Control Center 全站關鍵術語的定義。
 slug: zh-TW/手冊/參考/詞彙表
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm（封閉的 VM——唯一具有核心邊界的後端，套用於互動式終端機）、native（macOS 上的 Seatbelt、Linux 與 WSL2 上的 bubblewrap）或 none。開機時探測一次；native 可用時會包覆代理派送。Windows 沒有原生後端，Linux 需要 bwrap 加 socat；在這樣的主機上只有伺服器擁有者的執行會啟動（不被包覆），其他人的執行會被拒絕。--sandbox off 會讓每位成員的代理都不被包覆地執行。'],
 ['機台', '代理即時操控的可拋棄機器：封閉的瀏覽器或 Linux 桌面、由主機管理的 Android 模擬器或 iOS 模擬器，或封閉的終端機。透過專屬的全解析度通道即時觀看，接管則由伺服器端強制執行。以對話為作用域，因此人類分頁與代理工具面對的是同一台機器。'],
 ['隔離艙', 'VM 支撐的機台可享有的更強隔離性質：核心邊界、用完即丟的覆疊層磁碟、預設拒絕的網路閘門與憑證仲介。Android 與 iOS 機台可拋棄，但使用由主機管理的網路，因此不宣稱具備這道邊界。操控任何機台都會用到 enclosureControl 護欄類別。'],
-['RunCost', '單次代理執行的 token／成本統計（輸入 token、輸出 token、以分為單位的預估成本）。'],
+['RunCost', '單次代理執行的 token／成本統計（輸入 token、輸出 token、以微美元為單位的預估成本）。'],
 ['喚醒原因', '代理被派送的原因。共六個值：使用者訊息、工單指派、失敗後的復原重新派送、子工單完成、排定的後續心跳，以及管線步驟。'],
 ['SandboxPort', '管理沙箱生命週期（探測、啟動、事件、exec、銷毀）。'],
 ['CredentialBrokerPort', '為沙箱啟動鑄造受作用域限定的憑證（代理環境中為只適用於單一儲存庫的權杖，寫入權限僅用於伺服器端的推送路徑），並在拆除時釋放它們。'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **隔離艙**：VM 支撐的機台所能提供的更強邊界——核心邊界、用完即丟的覆疊層磁碟、預設拒絕的網路閘門與憑證仲介。Android 與 iOS 機台可拋棄，但使用由主機管理的網路，因此不宣稱具備這道邊界。操控任何機台都會用到 `enclosureControl` 護欄類別。
 
-**RunCost**：單次代理執行的 token／成本統計（輸入 token、輸出 token、以分為單位的預估成本）。
+**RunCost**：單次代理執行的 token／成本統計（輸入 token、輸出 token、以微美元為單位的預估成本）。
 
 **喚醒原因**：代理被派送的原因。共六個值：使用者訊息、工單指派、失敗後的復原重新派送、子工單完成、排定的後續心跳，以及管線步驟。
 

@@ -21,8 +21,11 @@ void main() {
     int bytes = 4096,
     bool complete = true,
     List<Map<String, dynamic>> workspaces = const [
-      {'workspace_id': 'ws-1', 'path': '/data/backups/x/ws-1/workspace.db',
-       'bytes': 2048},
+      {
+        'workspace_id': 'ws-1',
+        'path': '/data/backups/x/ws-1/workspace.db',
+        'bytes': 2048,
+      },
     ],
     List<String> skipped = const [],
   }) => {
@@ -157,33 +160,36 @@ void main() {
     expect(second.skippedWorkspaceIds, <String>['ws-2']);
   });
 
-  test('a snapshot refreshes the listing instead of leaving it stale', () async {
-    final calls = <String>[];
-    final host = FakeRpcHost();
-    host.onCall = (op, args) {
-      calls.add(op);
-      if (op == 'server.backupNow') {
-        return {'ok': true, 'path': '/data/backups/new'};
-      }
-      return {'backups': <Map<String, dynamic>>[]};
-    };
-    final container = containerFor(host);
-    // Keep the autoDispose provider alive across the invalidation, the way a
-    // mounted page does.
-    final sub = container.listen(backupSnapshotsProvider, (_, _) {});
-    addTearDown(sub.close);
-    await container.read(backupSnapshotsProvider.future);
+  test(
+    'a snapshot refreshes the listing instead of leaving it stale',
+    () async {
+      final calls = <String>[];
+      final host = FakeRpcHost();
+      host.onCall = (op, args) {
+        calls.add(op);
+        if (op == 'server.backupNow') {
+          return {'ok': true, 'path': '/data/backups/new'};
+        }
+        return {'backups': <Map<String, dynamic>>[]};
+      };
+      final container = containerFor(host);
+      // Keep the autoDispose provider alive across the invalidation, the way a
+      // mounted page does.
+      final sub = container.listen(backupSnapshotsProvider, (_, _) {});
+      addTearDown(sub.close);
+      await container.read(backupSnapshotsProvider.future);
 
-    final path = await container.read(backupActionsProvider).backupNow();
+      final path = await container.read(backupActionsProvider).backupNow();
 
-    expect(path, '/data/backups/new');
-    await container.read(backupSnapshotsProvider.future);
-    expect(calls, [
-      'server.listBackups',
-      'server.backupNow',
-      'server.listBackups',
-    ]);
-  });
+      expect(path, '/data/backups/new');
+      await container.read(backupSnapshotsProvider.future);
+      expect(calls, [
+        'server.listBackups',
+        'server.backupNow',
+        'server.listBackups',
+      ]);
+    },
+  );
 
   test('export names its workspace explicitly, not the active one', () async {
     Map<String, dynamic>? sent;
@@ -202,21 +208,80 @@ void main() {
     expect(sent?['workspace_id'], 'ws-7');
   });
 
-  test('import sends the target workspace and the server-side source', () async {
-    Map<String, dynamic>? sent;
+  test(
+    'import sends the target workspace and the server-side source',
+    () async {
+      Map<String, dynamic>? sent;
+      final host = FakeRpcHost();
+      host.onCall = (op, args) {
+        if (op == 'workspace.importHolds.list') {
+          return {'holds': <Map<String, dynamic>>[]};
+        }
+        expect(op, 'workspace.import');
+        sent = Map.of(args);
+        return {'ok': true, 'workspace_id': 'ws-7'};
+      };
+
+      final held = await containerFor(host)
+          .read(backupActionsProvider)
+          .importWorkspace(
+            workspaceId: 'ws-7',
+            sourcePath: '/data/backups/x/ws-7/workspace.db',
+          );
+
+      expect(sent?['workspace_id'], 'ws-7');
+      expect(sent?['source_path'], '/data/backups/x/ws-7/workspace.db');
+      expect(held, 0);
+    },
+  );
+
+  test('a completed import reports the grants it held back', () async {
+    final ops = <String>[];
+    Map<String, dynamic>? listed;
     final host = FakeRpcHost();
     host.onCall = (op, args) {
-      expect(op, 'workspace.import');
-      sent = Map.of(args);
+      ops.add(op);
+      if (op == 'workspace.importHolds.list') {
+        listed = Map.of(args);
+        return {
+          'holds': [
+            for (final id in ['h1', 'h2', 'h3'])
+              {
+                'id': id,
+                'kind': 'membership_role',
+                'payload': {'user_id': 'u-$id', 'role': 'admin'},
+                'imported_at': '2026-11-12T09:00:00.000Z',
+                'source_install_id': 'install-a',
+              },
+          ],
+        };
+      }
       return {'ok': true, 'workspace_id': 'ws-7'};
     };
 
-    await containerFor(host).read(backupActionsProvider).importWorkspace(
-      workspaceId: 'ws-7',
-      sourcePath: '/data/backups/x/ws-7/workspace.db',
-    );
+    final held = await containerFor(host)
+        .read(backupActionsProvider)
+        .importWorkspace(workspaceId: 'ws-7', sourcePath: '/x.db');
 
-    expect(sent?['workspace_id'], 'ws-7');
-    expect(sent?['source_path'], '/data/backups/x/ws-7/workspace.db');
+    expect(held, 3);
+    expect(ops, ['workspace.import', 'workspace.importHolds.list']);
+    expect(listed?['workspace_id'], 'ws-7');
+  });
+
+  test('a snapshot pinned as a last good copy says so', () {
+    final pinned = BackupSnapshotView.fromJson(const {
+      'path': '/b/1',
+      'name': '1',
+      'complete': true,
+      'pinned_reason': 'last_good_copy',
+    });
+    final plain = BackupSnapshotView.fromJson(const {
+      'path': '/b/2',
+      'name': '2',
+      'complete': false,
+    });
+    expect(pinned.isLastGoodCopy, isTrue);
+    expect(plain.isLastGoodCopy, isFalse);
+    expect(plain.pinnedReason, isNull);
   });
 }

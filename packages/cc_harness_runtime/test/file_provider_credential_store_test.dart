@@ -308,22 +308,36 @@ void main() {
       expect((await reopened.credentialsFor('gemini')).single.apiKey, 'sk-g');
     });
 
-    test('the credentials file is owner-only where chmod exists', () async {
-      await store.save(key('anthropic', 'sk-abc'));
-      if (Platform.isWindows) {
-        return;
-      }
-      final mode = Process.runSync('stat', [
-        '-f',
-        '%Lp',
-        '${dir.path}/harness_credentials.json',
-      ]);
-      // macOS `stat -f`; on Linux the flag differs, so only assert when it
-      // produced a mode at all.
-      final printed = '${mode.stdout}'.trim();
-      if (mode.exitCode == 0 && printed.isNotEmpty) {
-        expect(printed, '600');
-      }
-    });
+    test(
+      'the credentials file is created owner-only and leaves no temp file',
+      () async {
+        await store.save(key('anthropic', 'sk-abc'));
+        await store.save(key('openai', 'sk-o'));
+        final path = '${dir.path}/harness_credentials.json';
+        expect(File(path).statSync().mode & 0x1ff, 0x180, reason: '0600');
+        expect(dir.listSync().map((e) => e.path), [path]);
+      },
+      skip: Platform.isWindows ? 'POSIX modes only' : false,
+    );
+
+    test(
+      'a link planted at the old fixed temp name never receives a token',
+      () async {
+        // The store used to stage every write at `<file>.tmp` under the
+        // umask: whatever sat at that name received the tokens.
+        final elsewhere = File('${dir.path}/elsewhere')..writeAsStringSync('');
+        Link(
+          '${dir.path}/harness_credentials.json.tmp',
+        ).createSync(elsewhere.path);
+        await store.save(key('anthropic', 'sk-planted'));
+        expect(elsewhere.readAsStringSync(), isNot(contains('sk-planted')));
+        final reopened = FileProviderCredentialStore(dataDir: dir.path);
+        expect(
+          (await reopened.credentialsFor('anthropic')).single.apiKey,
+          'sk-planted',
+        );
+      },
+      skip: Platform.isWindows ? 'POSIX links only' : false,
+    );
   });
 }

@@ -183,7 +183,6 @@ class ObsRunFiltersNotifier extends Notifier<ObsRunFilters> {
   }
 }
 
-
 /// The inclusive start instant of [range] relative to [now], or `null` when
 /// the range is unbounded ([ObsTimeRange.all]).
 DateTime? obsRangeStart(ObsTimeRange range, DateTime now) {
@@ -227,7 +226,7 @@ List<TimeBucket> foldToWeekly(List<TimeBucket> daily) {
       runs: (prev?.runs ?? 0) + bucket.runs,
       errors: (prev?.errors ?? 0) + bucket.errors,
       tokens: (prev?.tokens ?? 0) + bucket.tokens,
-      costCents: (prev?.costCents ?? 0) + bucket.costCents,
+      costMicros: (prev?.costMicros ?? 0) + bucket.costMicros,
     );
   }
   return weekly.values.toList()
@@ -294,7 +293,7 @@ List<TimeBucket> padSeries(
   }
 
   final padded = <TimeBucket>[];
-  for (var cursor = first; !cursor.isAfter(last); ) {
+  for (var cursor = first; !cursor.isAfter(last);) {
     padded.add(
       byStart[cursor] ??
           TimeBucket(
@@ -302,7 +301,7 @@ List<TimeBucket> padSeries(
             runs: 0,
             errors: 0,
             tokens: 0,
-            costCents: 0,
+            costMicros: 0,
           ),
     );
     if (padded.length >= _maxPaddedBuckets) {
@@ -365,7 +364,6 @@ List<TimeBucket> padSeries(
       return (buckets: daily, kind: ObsBucketKind.day);
   }
 }
-
 
 /// Runs inside the active time range, ignoring facet selections. Feeds the
 /// filter-option counts so they stay stable while toggles change.
@@ -454,7 +452,7 @@ class AgentInsightRow {
     required this.displayName,
     required this.runs,
     required this.errors,
-    required this.costCents,
+    required this.costMicros,
     required this.avgDurationMs,
     required this.lastActive,
   });
@@ -471,8 +469,8 @@ class AgentInsightRow {
   /// Of those, how many ended in [RunStatus.error].
   final int errors;
 
-  /// Total estimated cost in US cents.
-  final int costCents;
+  /// Total estimated cost in micro-dollars.
+  final int costMicros;
 
   /// Mean `cost.durationMs` over runs that recorded one; null when none did.
   final double? avgDurationMs;
@@ -488,7 +486,7 @@ class AgentInsightRow {
           displayName == other.displayName &&
           runs == other.runs &&
           errors == other.errors &&
-          costCents == other.costCents &&
+          costMicros == other.costMicros &&
           avgDurationMs == other.avgDurationMs &&
           lastActive == other.lastActive;
 
@@ -498,7 +496,7 @@ class AgentInsightRow {
     displayName,
     runs,
     errors,
-    costCents,
+    costMicros,
     avgDurationMs,
     lastActive,
   );
@@ -526,7 +524,7 @@ final insightsPerAgentProvider = Provider.autoDispose<List<AgentInsightRow>>((
   final rows = <AgentInsightRow>[];
   for (final entry in grouped.entries) {
     var errors = 0;
-    var costCents = 0;
+    var costMicros = 0;
     var durationSum = 0;
     var durationCount = 0;
     var lastActive = entry.value.first.startedAt;
@@ -534,7 +532,7 @@ final insightsPerAgentProvider = Provider.autoDispose<List<AgentInsightRow>>((
       if (run.status == RunStatus.error) {
         errors++;
       }
-      costCents += run.cost.estimatedCostCents;
+      costMicros += run.cost.costMicros;
       final durationMs = run.cost.durationMs;
       if (durationMs != null) {
         durationSum += durationMs;
@@ -550,13 +548,13 @@ final insightsPerAgentProvider = Provider.autoDispose<List<AgentInsightRow>>((
         displayName: names[entry.key] ?? entry.key,
         runs: entry.value.length,
         errors: errors,
-        costCents: costCents,
+        costMicros: costMicros,
         avgDurationMs: durationCount == 0 ? null : durationSum / durationCount,
         lastActive: lastActive,
       ),
     );
   }
-  rows.sort((a, b) => b.costCents.compareTo(a.costCents));
+  rows.sort((a, b) => b.costMicros.compareTo(a.costMicros));
   return rows;
 });
 

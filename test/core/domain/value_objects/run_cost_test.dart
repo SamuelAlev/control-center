@@ -14,7 +14,7 @@ void main() {
       expect(RunCost.zero.thoughtTokens, 0);
       expect(RunCost.zero.cachedReadTokens, 0);
       expect(RunCost.zero.cachedWriteTokens, 0);
-      expect(RunCost.zero.estimatedCostCents, 0);
+      expect(RunCost.zero.costMicros, 0);
       expect(RunCost.zero.durationMs, isNull);
       expect(RunCost.zero.timeToFirstTokenMs, isNull);
     });
@@ -45,7 +45,6 @@ void main() {
           thoughtTokens: 5,
           cachedReadTokens: 3,
           cachedWriteTokens: 2,
-          estimatedCostCents: 7,
           costMicros: 70000,
         );
         const b = RunCost(
@@ -54,7 +53,6 @@ void main() {
           thoughtTokens: 5,
           cachedReadTokens: 7,
           cachedWriteTokens: 8,
-          estimatedCostCents: 3,
           costMicros: 30000,
         );
         final result = a + b;
@@ -63,7 +61,6 @@ void main() {
         expect(result.thoughtTokens, 10);
         expect(result.cachedReadTokens, 10);
         expect(result.cachedWriteTokens, 10);
-        expect(result.estimatedCostCents, 10);
         expect(result.costMicros, 100000);
       });
 
@@ -128,7 +125,7 @@ void main() {
           thoughtTokens: 3,
           cachedReadTokens: 4,
           cachedWriteTokens: 5,
-          estimatedCostCents: 6,
+          costMicros: 60000,
           durationMs: 100,
           timeToFirstTokenMs: 50,
         );
@@ -138,7 +135,7 @@ void main() {
           thoughtTokens: 3,
           cachedReadTokens: 4,
           cachedWriteTokens: 5,
-          estimatedCostCents: 6,
+          costMicros: 60000,
           durationMs: 100,
           timeToFirstTokenMs: 50,
         );
@@ -150,7 +147,7 @@ void main() {
         const base = RunCost(
           inputTokens: 1,
           outputTokens: 2,
-          estimatedCostCents: 3,
+          costMicros: 30000,
         );
         expect(
           base,
@@ -159,7 +156,7 @@ void main() {
               const RunCost(
                 inputTokens: 99,
                 outputTokens: 2,
-                estimatedCostCents: 3,
+                costMicros: 30000,
               ),
             ),
           ),
@@ -171,7 +168,7 @@ void main() {
               const RunCost(
                 inputTokens: 1,
                 outputTokens: 99,
-                estimatedCostCents: 3,
+                costMicros: 30000,
               ),
             ),
           ),
@@ -183,7 +180,7 @@ void main() {
               const RunCost(
                 inputTokens: 1,
                 outputTokens: 2,
-                estimatedCostCents: 99,
+                costMicros: 990000,
               ),
             ),
           ),
@@ -235,7 +232,7 @@ void main() {
             thoughtTokens: 5,
             cachedReadTokens: 3,
             cachedWriteTokens: 2,
-            estimatedCostCents: 7,
+            costMicros: 70000,
           );
           final cost = usage.toCost(durationMs: 100, timeToFirstTokenMs: 50);
           expect(cost.inputTokens, 10);
@@ -243,7 +240,7 @@ void main() {
           expect(cost.thoughtTokens, 5);
           expect(cost.cachedReadTokens, 3);
           expect(cost.cachedWriteTokens, 2);
-          expect(cost.estimatedCostCents, 7);
+          expect(cost.costMicros, 70000);
           expect(cost.durationMs, 100);
           expect(cost.timeToFirstTokenMs, 50);
         },
@@ -266,7 +263,7 @@ void main() {
           thoughtTokens: 3,
           cachedReadTokens: 4,
           cachedWriteTokens: 5,
-          estimatedCostCents: 6,
+          costMicros: 60000,
         );
         const b = RunUsage(
           inputTokens: 1,
@@ -274,7 +271,7 @@ void main() {
           thoughtTokens: 3,
           cachedReadTokens: 4,
           cachedWriteTokens: 5,
-          estimatedCostCents: 6,
+          costMicros: 60000,
         );
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
@@ -284,7 +281,7 @@ void main() {
         const base = RunUsage(
           inputTokens: 1,
           outputTokens: 2,
-          estimatedCostCents: 3,
+          costMicros: 30000,
         );
         expect(
           base,
@@ -293,7 +290,7 @@ void main() {
               const RunUsage(
                 inputTokens: 99,
                 outputTokens: 2,
-                estimatedCostCents: 3,
+                costMicros: 30000,
               ),
             ),
           ),
@@ -305,7 +302,7 @@ void main() {
               const RunUsage(
                 inputTokens: 1,
                 outputTokens: 99,
-                estimatedCostCents: 3,
+                costMicros: 30000,
               ),
             ),
           ),
@@ -317,7 +314,7 @@ void main() {
               const RunUsage(
                 inputTokens: 1,
                 outputTokens: 2,
-                estimatedCostCents: 99,
+                costMicros: 990000,
               ),
             ),
           ),

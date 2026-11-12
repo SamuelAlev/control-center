@@ -4,6 +4,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_output_port.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 
@@ -19,14 +20,22 @@ const int _maxContractRejections = 3;
 /// (ported from the old ticket `complete_ticket` path), stores `outputJson` on
 /// the run and lets the run end — the pipeline step resume listener then
 /// harvests the payload and advances the step.
+///
+/// Each write names one thing ([AgentRunOutputPort] for the output and the
+/// rejection count, `updateRuntime` for the failure summary): the run is live
+/// while this tool runs, and re-upserting the run it read would write back
+/// every other column as it stood at that read.
 class SubmitOutputTool extends McpTool {
   /// Creates a [SubmitOutputTool].
   SubmitOutputTool({
     required AgentRunLogRepository runLogRepository,
+    required AgentRunOutputPort runOutputs,
     this._schemaValidator,
-  }) : _runLogs = runLogRepository;
+  }) : _runLogs = runLogRepository,
+       _outputs = runOutputs;
 
   final AgentRunLogRepository _runLogs;
+  final AgentRunOutputPort _outputs;
   final SchemaValidatorPort? _schemaValidator;
 
   @override
@@ -122,10 +131,13 @@ class SubmitOutputTool extends McpTool {
     final validator = _schemaValidator;
     final schema = run.expectedOutputSchema;
     final mode = run.outputContractMode;
+    final workspaceId = run.workspaceId!;
 
     // No schema → accept anything (including null) as the output.
     if (schema == null) {
-      await _runLogs.upsert(run.copyWith(outputJson: output));
+      if (output != null) {
+        await _outputs.recordOutput(workspaceId, run.id, output);
+      }
       return _Outcome.ok();
     }
 
@@ -136,19 +148,20 @@ class SubmitOutputTool extends McpTool {
         : (validator?.validate(output, schema) ?? const <String>[]);
 
     if (violations.isEmpty) {
-      await _runLogs.upsert(run.copyWith(outputJson: output));
+      await _outputs.recordOutput(workspaceId, run.id, output!);
       return _Outcome.ok();
     }
 
-    final rejections = run.outputRejections + 1;
+    final rejections =
+        await _outputs.addOutputRejection(workspaceId, run.id) ??
+        run.outputRejections + 1;
     final detail = violations.map((v) => '- $v').join('\n');
-
-    // Persist the incremented rejection count.
-    await _runLogs.upsert(run.copyWith(outputRejections: rejections));
 
     if (mode == OutputContractMode.permissive) {
       // Permissive: persist the output even with violations.
-      await _runLogs.upsert(run.copyWith(outputJson: output));
+      if (output != null) {
+        await _outputs.recordOutput(workspaceId, run.id, output);
+      }
       return _Outcome(
         accepted: true,
         message: 'Output accepted with $rejections schema warning(s):\n$detail',
@@ -157,12 +170,11 @@ class SubmitOutputTool extends McpTool {
 
     // Strict: reject. Fail the run once the cap is hit.
     if (rejections >= _maxContractRejections) {
-      await _runLogs.upsert(
-        run.copyWith(
-          outputJson: null,
-          summary:
-              'Output failed the expected schema $rejections times:\n$detail',
-        ),
+      await _runLogs.updateRuntime(
+        workspaceId,
+        run.id,
+        summary:
+            'Output failed the expected schema $rejections times:\n$detail',
       );
       throw OutputContractViolationException(
         'Output does not match the expected output schema and the rejection '

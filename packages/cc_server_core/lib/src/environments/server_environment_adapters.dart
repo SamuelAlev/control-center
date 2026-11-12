@@ -711,9 +711,7 @@ EnvironmentService wireServerEnvironments({
       DateTime? latest;
       for (final row in rows) {
         final at = row.lastMessageAt;
-        if (row.spaceId == spaceId &&
-            at != null &&
-            (latest == null || at.isAfter(latest))) {
+        if (row.spaceId == spaceId && (latest == null || at.isAfter(latest))) {
           latest = at;
         }
       }

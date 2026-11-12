@@ -7,6 +7,7 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_origin_kind.
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_priority.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
@@ -34,7 +35,9 @@ class TicketMapper {
       projectId: Value(t.projectId),
       assignedAgentId: Value(t.assignedAgentId),
       assigneeType: Value(t.assigneeType.wireName),
-      createdByType: Value(t.createdByType?.wireName ?? 'system'),
+      createdByType: Value(
+        t.createdByType?.wireName ?? AgentsStoredValues.systemTicketCreator,
+      ),
       createdById: Value(t.createdById),
       assignedTeamId: Value(t.assignedTeamId),
       delegatedByAgentId: Value(t.delegatedByAgentId),

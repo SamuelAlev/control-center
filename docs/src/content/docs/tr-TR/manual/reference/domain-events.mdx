@@ -2,7 +2,7 @@
 title: Alan olayları
 description: 54 alan olayının, yüklerinin ve bunları tüketen sunucu tarafı abonelerin eksiksiz kataloğu.
 slug: tr-TR/kilavuz/referans/alan-olaylari
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Olay veri yolu
@@ -112,7 +112,7 @@ Yalnızca nihai geçişler yayımlanır. Ne bir `PipelineRunStarted` ne de adım
 | Olay                     | Yük                                                                                                      | Ne zaman tetiklenir        |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | -------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?`  | Denetim kaydı girdisi oluşturulur |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                         | Harcama eşiği aşar         |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                         | Harcama eşiği aşar         |
 
 ## Kimlik ve üyelik olayları
 

@@ -2,7 +2,7 @@
 title: Analytika používání
 description: Co Control Center zaznamenává, když je analytika používání zapnutá, kdo o tom rozhoduje a co se nikdy neodesílá.
 slug: cs-CZ/prirucka/referencni-prirucka/analytika-pouzivani
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center umí odesílat **pseudonymní události o používání** do instance [Umami](https://umami.is). Analytika používání je **vypnutá, dokud ji provozovatel serveru nezapne**. Nastavení patří serveru a platí pro každého klienta, který je k němu připojený: desktopovou aplikaci, webovou aplikaci, telefon i samotný server.
@@ -109,7 +109,7 @@ Zaznamenává je desktopová aplikace, webová aplikace a telefon u věcí, kter
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Změnily se skilly pracovního prostoru |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Na návrh orchestace přišla odpověď |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Plán se schválil nebo zamítl (telefon) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Spustil se dohlížený cíl nebo smyčka (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | Spustil se dohlížený cíl nebo smyčka (telefon) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Konverzace vznikla nebo se rozvětvila |
 | `conversation_rewound` | `conversation_id` | Konverzace pokračovala od dřívější zprávy |
 | `space_archived` | `workspace_id`, `space_id` | Prostor se archivoval |
@@ -128,7 +128,7 @@ Zaznamenává je `cc_server` u skutečností, které žádný jednotlivý klient
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Skončil běh agenta |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Agent se zastavil a čeká na člověka |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Politika akcí odmítla akci agenta |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Skončil běh pipeline. `trigger` je `manual`, typ události, která ho spustila, nebo u pojmenovaného spouštěče jen jeho druh (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | Skončil běh pipeline. `trigger` je `manual`, typ události, která ho spustila, nebo u pojmenovaného spouštěče jen jeho druh (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | Z prostoru se publikoval pull request |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Sloučil se pull request, který otevřel agent |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Uložil se záznam schůzky |
@@ -142,7 +142,7 @@ Zaznamenává je `cc_server` u skutečností, které žádný jednotlivý klient
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Skill pracovního prostoru se nainstaloval, aktualizoval nebo změnil na disku |
 | `calendar_auth_expired` | `workspace_id` | Připojení kalendáře vyžaduje nové přihlášení |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Událost v kalendáři brzy začne |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Útrata překročila práh rozpočtu |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | Útrata překročila práh rozpočtu |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | U sledovaného PR se vyžádalo review |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Změnilo se rozhodnutí o review sledovaného PR |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | V propojeném repozitáři se sloučil PR, který neotevřel agent |

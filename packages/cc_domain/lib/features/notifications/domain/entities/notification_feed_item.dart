@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
+
 /// One entry in a workspace's durable notification feed: the raw
 /// `notifications/*` frame ([method] + [params]) the server recorded when the
 /// originating domain event fired, stamped with the server-side [createdAt].
@@ -19,6 +21,7 @@ class NotificationFeedItem {
     required this.method,
     required this.params,
     required this.createdAt,
+    required this.seq,
   }) {
     if (id.isEmpty) {
       throw ArgumentError('id must not be empty');
@@ -28,6 +31,9 @@ class NotificationFeedItem {
     }
     if (!method.startsWith('notifications/')) {
       throw ArgumentError('method must be a notifications/* frame method');
+    }
+    if (seq < 0) {
+      throw ArgumentError('seq must not be negative');
     }
   }
 
@@ -55,6 +61,13 @@ class NotificationFeedItem {
   /// When the server recorded the item (server clock — clients never stamp).
   final DateTime createdAt;
 
+  /// The item's insertion sequence in its workspace feed. Orders items
+  /// recorded in the same second ([createdAt] has whole-second resolution).
+  final int seq;
+
+  /// Where the item sits in the feed, for comparing against read marks.
+  FeedPosition get position => FeedPosition(at: createdAt, seq: seq);
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -63,9 +76,10 @@ class NotificationFeedItem {
           workspaceId == other.workspaceId &&
           method == other.method &&
           jsonEncode(params) == jsonEncode(other.params) &&
-          createdAt == other.createdAt;
+          createdAt == other.createdAt &&
+          seq == other.seq;
 
   @override
   int get hashCode =>
-      Object.hash(id, workspaceId, method, jsonEncode(params), createdAt);
+      Object.hash(id, workspaceId, method, jsonEncode(params), createdAt, seq);
 }

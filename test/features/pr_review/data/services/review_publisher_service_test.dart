@@ -182,11 +182,6 @@ class _FakeMessaging implements MessagingRepository {
     String spaceId,
   ) async => [];
   @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
-  }) async => [];
-  @override
   Stream<List<Space>> watchSpacesByWorkspace(String workspaceId) =>
       const Stream.empty();
   @override

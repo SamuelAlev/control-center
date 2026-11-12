@@ -2,7 +2,7 @@
 title: Tillatelsesregler — én policy for hver muterende handling
 description: Hvorfor Control Center fører hver bivirkning fra en agent gjennom én enkelt allow/prompt/deny-motor, hvorfor ActionClass-taksonomien med vilje holdes liten, og hva autonomivriden egentlig endrer.
 slug: nb-NO/handbok/konsepter/tillatelsesregler
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Agenter i Control Center kan slette filer, pushe grener, publisere pull
@@ -108,7 +108,7 @@ En begrensning kan navngi:
 - **verter** — nettverksmål, med jokertegn for underdomener (`*.internal`)
 - **kommandoer** — kommandoprefikser, matchet på en ordgrense
 - **verktøy** — det nøyaktige verktøyet et kall oppgir, slik at en godkjenning kan gjelde ett verktøy i stedet for alle verktøy med samme virkning
-- **tak** — `maxCount` / `maxCents`, slik at «slett opptil 50 filer» lar seg
+- **tak** — `maxCount` / `maxMicros`, slik at «slett opptil 50 filer» lar seg
   uttrykke
 
 Tre egenskaper følger av å holde grammatikken lukket og uten løkker, og alle

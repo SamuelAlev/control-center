@@ -61,7 +61,7 @@ void main() {
         resolveEffectiveAutonomy:
             ({required workspaceId, required agentId, spaceId}) async =>
                 agentId == 'agent-a' ? askerAutonomy : recipientAutonomy,
-        resolveRemainingBudgetCents:
+        resolveRemainingBudgetMicros:
             ({required workspaceId, required agentId}) async => remainingBudget,
       ),
       pendingHops: PendingDelegationHops(),
@@ -171,7 +171,7 @@ void main() {
         resolveEffectiveAutonomy:
             ({required workspaceId, required agentId, spaceId}) async =>
                 AutonomyLevel.actWithApproval,
-        resolveRemainingBudgetCents:
+        resolveRemainingBudgetMicros:
             ({required workspaceId, required agentId}) async => 0,
       ),
       pendingHops: PendingDelegationHops(),
@@ -311,7 +311,7 @@ void main() {
         resolveEffectiveAutonomy:
             ({required workspaceId, required agentId, spaceId}) async =>
                 AutonomyLevel.actWithApproval,
-        resolveRemainingBudgetCents:
+        resolveRemainingBudgetMicros:
             ({required workspaceId, required agentId}) async => remainingBudget,
       );
     });

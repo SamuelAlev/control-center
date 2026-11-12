@@ -2,10 +2,6 @@ import 'package:cc_persistence/database/tables/meetings.dart';
 import 'package:drift/drift.dart';
 
 @TableIndex(name: 'idx_meeting_action_items_meetingId', columns: {#meetingId})
-@TableIndex(
-  name: 'idx_meeting_action_items_workspaceId',
-  columns: {#workspaceId},
-)
 /// Drift table for action items extracted from a meeting summary.
 ///
 /// Persisted as structured rows — NOT parsed out of the notes markdown. The
@@ -33,7 +29,8 @@ class MeetingActionItemsTable extends Table {
   /// Whether the user has checked the item off (persisted triage state).
   BoolColumn get done => boolean().withDefault(const Constant(false))();
 
-  /// The id / key of a ticket created from this item, when one exists.
+  /// The id / key of a ticket created from this item, when one exists. No
+  /// foreign key: it holds the ticket's external key when the ticket has one.
   TextColumn get ticketId => text().nullable()();
 
   /// Ordering within the meeting (the agent's original ordering).

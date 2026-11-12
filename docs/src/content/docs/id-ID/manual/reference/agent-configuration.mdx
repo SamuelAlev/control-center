@@ -2,7 +2,7 @@
 title: Konfigurasi agen
 description: Setiap bidang pada entitas agen dan enum yang digunakannya.
 slug: id-ID/panduan-pengguna/referensi/konfigurasi-agen
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Referensi ini mencantumkan setiap bidang pada entitas agen, beserta enum dan flag yang digunakannya. Untuk panduan langkah demi langkah dalam membuat atau mengedit agen di aplikasi, lihat [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/).
@@ -26,17 +26,17 @@ Referensi ini mencantumkan setiap bidang pada entitas agen, beserta enum dan fla
 | `effort`                | `String?`              | Tidak | ID tingkat penalaran (mis. `'low'`, `'xhigh'`), bersumber dari `thinkingLevels` model yang dipilih                                                                                                   |
 | `contextSize`           | `int?`                 | Tidak | Ukuran maksimum jendela konteks                                                                                                                                                                     |
 | `role`                  | `AgentRole?`           | Tidak | Peran agen                                                                                                                                                                                          |
-| `monthlyBudgetCents`    | `int`                  | Tidak | Batas pengeluaran bulanan dalam sen (default `0`, tak terbatas)                                                                                                                                     |
+| `monthlyBudgetMicros`    | `int`                  | Tidak | Batas pengeluaran bulanan dalam mikrodolar (default `0`, tak terbatas)                                                                                                                                     |
 | `silenceTimeoutMinutes` | `int?`                 | Tidak | Penimpaan batas waktu diam dalam menit; harus null atau dalam rentang 1–240 (ditegaskan oleh konstruktor)                                                                                           |
 | `maxConcurrentTasks`    | `int`                  | Tidak | Default `1`. Angka kapasitas yang dilaporkan model kehadiran (jumlah yang berjalan dan yang mengantre dibandingkan dengannya)                                                                        |
 | `visibility`            | `AgentVisibility`      | Tidak | Default `workspace`                                                                                                                                                                                 |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Tidak | Status tata kelola (default `active`). Ditulis oleh penghentian paksa anggaran dan ditampilkan pada bagan organisasi serta daftar kehadiran. Pengiriman tetap menerima pekerjaan dari agen `paused` |
-| `budgetPolicyId`        | `String?`              | Tidak | ID kebijakan anggaran bersama; saat null `monthlyBudgetCents` berlaku langsung                                                                                                                      |
+| `budgetPolicyId`        | `String?`              | Tidak | ID kebijakan anggaran bersama; saat null `monthlyBudgetMicros` berlaku langsung                                                                                                                      |
 | `runtimeProfileId`      | `String?`              | Tidak | ID profil runtime kustom                                                                                                                                                                            |
 | `createdAt`             | `DateTime`             | Ya    | Stempel waktu pembuatan                                                                                                                                                                             |
 
 `name` dan `title` keduanya harus tidak kosong (ditegaskan oleh konstruktor).
-Default `monthlyBudgetCents` bernilai `0` berarti tak terbatas. Tetapkan batas
+Default `monthlyBudgetMicros` bernilai `0` berarti tak terbatas. Tetapkan batas
 atas dengan `agents.upsert`.
 
 ## Enum AgentRole

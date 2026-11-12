@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
@@ -9,21 +11,15 @@ import 'helpers/test_database.dart';
 /// edges, embeddings, file index, deleteByRepo, getSymbolsWithoutEmbedding,
 /// getResolvedEdgesBySourceFiles, getCallees/getCallers with custom kinds + limit).
 void main() {
-  late WorkspaceDatabase db;
+  late CodeIndexDatabase db;
 
   setUp(() async {
-    db = createTestDatabase();
-    await db
-        .into(db.reposTable)
-        .insert(
-          ReposTableCompanion.insert(id: 'repo1', name: 'r', path: '/tmp/r'),
-        );
+    db = createTestCodeIndexDatabase();
 
     // Two files: a.dart holds foo (calls bar); b.dart holds bar.
     await db.codeGraphDao.upsertSymbols([
       CodeSymbolsTableCompanion.insert(
         id: 's_foo',
-        workspaceId: 'ws1',
         repoId: 'repo1',
         kind: 'method',
         name: 'foo',
@@ -35,7 +31,6 @@ void main() {
       ),
       CodeSymbolsTableCompanion.insert(
         id: 's_bar',
-        workspaceId: 'ws1',
         repoId: 'repo1',
         kind: 'method',
         name: 'bar',
@@ -49,7 +44,6 @@ void main() {
     await db.codeGraphDao.upsertFile(
       CodeFilesTableCompanion.insert(
         id: 'file-a',
-        workspaceId: 'ws1',
         repoId: 'repo1',
         path: 'a.dart',
         contentHash: 'hash-a',
@@ -59,7 +53,6 @@ void main() {
     await db.codeGraphDao.upsertEdges([
       CodeEdgesTableCompanion.insert(
         id: 'e1',
-        workspaceId: 'ws1',
         repoId: 'repo1',
         sourceSymbolId: 's_foo',
         kind: CodeEdgeKind.calls.name,
@@ -69,7 +62,6 @@ void main() {
       // An unresolved edge — targetSymbolId null, targetName set.
       CodeEdgesTableCompanion.insert(
         id: 'e2',
-        workspaceId: 'ws1',
         repoId: 'repo1',
         sourceSymbolId: 's_foo',
         kind: CodeEdgeKind.references.name,
@@ -84,56 +76,36 @@ void main() {
   });
 
   group('CodeGraphDao reads', () {
-    test('getSymbolsByName is workspace + repo scoped', () async {
-      final rows = await db.codeGraphDao.getSymbolsByName(
-        'ws1',
-        'repo1',
-        'foo',
-      );
+    test('getSymbolsByName is repo scoped', () async {
+      final rows = await db.codeGraphDao.getSymbolsByName('repo1', 'foo');
       expect(rows, hasLength(1));
       expect(rows.first.id, 's_foo');
 
-      // Other workspace / repo: empty.
-      expect(
-        await db.codeGraphDao.getSymbolsByName('ws2', 'repo1', 'foo'),
-        isEmpty,
-      );
-      expect(
-        await db.codeGraphDao.getSymbolsByName('ws1', 'other', 'foo'),
-        isEmpty,
-      );
+      // Other repo: empty.
+      expect(await db.codeGraphDao.getSymbolsByName('other', 'foo'), isEmpty);
     });
 
-    test('watchSymbolsByRepo is workspace-scoped, ordered by path', () async {
-      final rows = await db.codeGraphDao
-          .watchSymbolsByRepo('ws1', 'repo1')
-          .first;
+    test('watchSymbolsByRepo is repo-scoped, ordered by path', () async {
+      final rows = await db.codeGraphDao.watchSymbolsByRepo('repo1').first;
       expect(rows.map((r) => r.filePath).toList(), ['a.dart', 'b.dart']);
     });
 
     test('getSymbolsByRepo returns all symbols in scope', () async {
-      expect(
-        (await db.codeGraphDao.getSymbolsByRepo('ws1', 'repo1')).length,
-        2,
-      );
-      expect(await db.codeGraphDao.getSymbolsByRepo('ws2', 'repo1'), isEmpty);
+      expect((await db.codeGraphDao.getSymbolsByRepo('repo1')).length, 2);
     });
 
     test('getSymbolsByFiles returns symbols in the listed paths', () async {
-      final rows = await db.codeGraphDao.getSymbolsByFiles('ws1', 'repo1', [
-        'b.dart',
-      ]);
+      final rows = await db.codeGraphDao.getSymbolsByFiles('repo1', ['b.dart']);
       expect(rows.map((r) => r.id).toList(), ['s_bar']);
       // Empty file list short-circuits to an empty result.
       expect(
-        await db.codeGraphDao.getSymbolsByFiles('ws1', 'repo1', const []),
+        await db.codeGraphDao.getSymbolsByFiles('repo1', const []),
         isEmpty,
       );
     });
 
     test('getResolvedEdgesBySourceFiles returns only resolved edges', () async {
       final edges = await db.codeGraphDao.getResolvedEdgesBySourceFiles(
-        'ws1',
         'repo1',
         ['a.dart'],
       );
@@ -142,11 +114,7 @@ void main() {
       expect(edges.first.targetSymbolId, 's_bar');
       // Empty list short-circuits.
       expect(
-        await db.codeGraphDao.getResolvedEdgesBySourceFiles(
-          'ws1',
-          'repo1',
-          const [],
-        ),
+        await db.codeGraphDao.getResolvedEdgesBySourceFiles('repo1', const []),
         isEmpty,
       );
     });
@@ -154,7 +122,7 @@ void main() {
     test(
       'getUnresolvedEdges returns edges with a null target symbol',
       () async {
-        final edges = await db.codeGraphDao.getUnresolvedEdges('ws1', 'repo1');
+        final edges = await db.codeGraphDao.getUnresolvedEdges('repo1');
         expect(edges, hasLength(1));
         expect(edges.first.id, 'e2');
         expect(edges.first.targetSymbolId, isNull);
@@ -162,92 +130,72 @@ void main() {
       },
     );
 
-    test(
-      'setEdgeTarget binds a previously-unresolved edge in-workspace',
-      () async {
-        await db.codeGraphDao.setEdgeTarget('ws1', 'e2', 's_bar');
-        final stillUnresolved = await db.codeGraphDao.getUnresolvedEdges(
-          'ws1',
-          'repo1',
-        );
-        expect(stillUnresolved, isEmpty);
-      },
-    );
-
-    test('setEdgeTarget cannot rebind another workspace\'s edge', () async {
-      await db.codeGraphDao.setEdgeTarget('ws2', 'e1', 's_foo');
-      final callees = await db.codeGraphDao.getCallees('ws1', 's_foo');
-      expect(callees.map((s) => s.id).toList(), ['s_bar']);
+    test('setEdgeTarget binds a previously-unresolved edge', () async {
+      await db.codeGraphDao.setEdgeTarget('e2', 's_bar');
+      final stillUnresolved = await db.codeGraphDao.getUnresolvedEdges('repo1');
+      expect(stillUnresolved, isEmpty);
     });
 
     test(
-      'getSymbolsWithoutEmbedding returns symbols missing an embedding',
+      'getSymbolsWithoutEmbedding returns the symbols with no vector row',
       () async {
-        final rows = await db.codeGraphDao.getSymbolsWithoutEmbedding(
-          'ws1',
-          'repo1',
-        );
-        expect(rows.length, 2); // both symbols have a null embedding
+        // Neither symbol has a vector yet.
         expect(
-          await db.codeGraphDao.getSymbolsWithoutEmbedding('ws2', 'repo1'),
-          isEmpty,
+          await db.codeGraphDao.getSymbolsWithoutEmbedding(),
+          hasLength(2),
         );
+
+        await db.codeGraphDao.putEmbeddings({'s_foo': Uint8List(384 * 4)});
+        final rows = await db.codeGraphDao.getSymbolsWithoutEmbedding();
+        expect(rows.map((s) => s.id), ['s_bar']);
       },
     );
 
     test('getCallees/getCallers honour kind + limit filters', () async {
       // default kind = {calls}
-      final callees = await db.codeGraphDao.getCallees('ws1', 's_foo');
+      final callees = await db.codeGraphDao.getCallees('s_foo');
       expect(callees.map((s) => s.id).toList(), ['s_bar']);
 
       // references kind yields nothing for foo (the references edge is unresolved).
       final refCallees = await db.codeGraphDao.getCallees(
-        'ws1',
         's_foo',
         kinds: const {CodeEdgeKind.references},
       );
       expect(refCallees, isEmpty);
 
       // limit cap
-      final limited = await db.codeGraphDao.getCallees(
-        'ws1',
-        's_foo',
-        limit: 0,
-      );
+      final limited = await db.codeGraphDao.getCallees('s_foo', limit: 0);
       expect(limited, isEmpty);
 
-      final callers = await db.codeGraphDao.getCallers('ws1', 's_bar');
+      final callers = await db.codeGraphDao.getCallers('s_bar');
       expect(callers.map((s) => s.id).toList(), ['s_foo']);
     });
   });
 
   group('CodeGraphDao file index', () {
     test('getFile reads a single file entry', () async {
-      final f = await db.codeGraphDao.getFile('ws1', 'repo1', 'a.dart');
+      final f = await db.codeGraphDao.getFile('repo1', 'a.dart');
       expect(f?.id, 'file-a');
-      // foreign workspace / repo / path misses
-      expect(await db.codeGraphDao.getFile('ws2', 'repo1', 'a.dart'), isNull);
-      expect(await db.codeGraphDao.getFile('ws1', 'other', 'a.dart'), isNull);
-      expect(await db.codeGraphDao.getFile('ws1', 'repo1', 'missing'), isNull);
+      // foreign repo / path misses
+      expect(await db.codeGraphDao.getFile('other', 'a.dart'), isNull);
+      expect(await db.codeGraphDao.getFile('repo1', 'missing'), isNull);
     });
 
-    test('getFiles returns all entries for a repo in the workspace', () async {
-      expect((await db.codeGraphDao.getFiles('ws1', 'repo1')).length, 1);
-      expect(await db.codeGraphDao.getFiles('ws2', 'repo1'), isEmpty);
+    test('getFiles returns all entries for a repo', () async {
+      expect((await db.codeGraphDao.getFiles('repo1')).length, 1);
     });
 
     test('upsertFile updates an existing entry in place', () async {
       await db.codeGraphDao.upsertFile(
         CodeFilesTableCompanion.insert(
           id: 'file-a',
-          workspaceId: 'ws1',
           repoId: 'repo1',
           path: 'a.dart',
           contentHash: 'hash-a-2',
           symbolCount: const Value(5),
         ),
       );
-      final f = await db.codeGraphDao.getFile('ws1', 'repo1', 'a.dart');
+      final f = await db.codeGraphDao.getFile('repo1', 'a.dart');
       expect(f?.contentHash, 'hash-a-2');
       expect(f?.symbolCount, 5);
     });
@@ -255,29 +203,21 @@ void main() {
 
   group('CodeGraphDao incremental re-index', () {
     test('deleteByFile removes a single file\'s symbols + edges', () async {
-      await db.codeGraphDao.deleteByFile('ws1', 'repo1', 'a.dart');
+      await db.codeGraphDao.deleteByFile('repo1', 'a.dart');
       // foo is gone; bar (in b.dart) survives.
-      expect(await db.codeGraphDao.getSymbolById('ws1', 's_foo'), isNull);
-      expect(await db.codeGraphDao.getSymbolById('ws1', 's_bar'), isNotNull);
+      expect(await db.codeGraphDao.getSymbolById('s_foo'), isNull);
+      expect(await db.codeGraphDao.getSymbolById('s_bar'), isNotNull);
       // edges whose source lives in a.dart are gone.
-      expect(await db.codeGraphDao.getUnresolvedEdges('ws1', 'repo1'), isEmpty);
+      expect(await db.codeGraphDao.getUnresolvedEdges('repo1'), isEmpty);
       // the file index entry is gone too.
-      expect(await db.codeGraphDao.getFile('ws1', 'repo1', 'a.dart'), isNull);
+      expect(await db.codeGraphDao.getFile('repo1', 'a.dart'), isNull);
     });
 
-    test(
-      'deleteByFile is workspace-scoped — foreign workspace is a no-op',
-      () async {
-        await db.codeGraphDao.deleteByFile('ws2', 'repo1', 'a.dart');
-        expect(await db.codeGraphDao.getSymbolById('ws1', 's_foo'), isNotNull);
-      },
-    );
-
-    test('deleteByRepo clears the whole repo index in one workspace', () async {
-      await db.codeGraphDao.deleteByRepo('ws1', 'repo1');
-      expect(await db.codeGraphDao.getSymbolsByRepo('ws1', 'repo1'), isEmpty);
-      expect(await db.codeGraphDao.getFiles('ws1', 'repo1'), isEmpty);
-      expect(await db.codeGraphDao.getUnresolvedEdges('ws1', 'repo1'), isEmpty);
+    test('deleteByRepo clears the whole repo index', () async {
+      await db.codeGraphDao.deleteByRepo('repo1');
+      expect(await db.codeGraphDao.getSymbolsByRepo('repo1'), isEmpty);
+      expect(await db.codeGraphDao.getFiles('repo1'), isEmpty);
+      expect(await db.codeGraphDao.getUnresolvedEdges('repo1'), isEmpty);
     });
   });
 }

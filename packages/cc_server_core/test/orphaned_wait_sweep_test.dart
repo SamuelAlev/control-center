@@ -1,9 +1,12 @@
 import 'dart:convert';
 
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:cc_persistence/mappers/messaging_mapper.dart';
 import 'package:cc_server_core/src/orphaned_wait_sweep.dart';
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
+
+import 'helpers/seed_spaces.dart';
 
 /// A restart ends every in-memory wait; the boot sweep must close exactly the
 /// rows recorded before this process started and nothing newer.
@@ -18,9 +21,7 @@ void main() {
       NativeDatabase.memory(),
       workspaceId: 'ws',
     );
-    // Rows without their space/conversation parents: the sweep reads only
-    // message type, metadata and time.
-    await db.customStatement('PRAGMA foreign_keys = OFF');
+    await seedConversation(db, 'c', spaceId: 's');
   });
   tearDown(() => db.close());
 
@@ -28,21 +29,19 @@ void main() {
     String id,
     DateTime createdAt, {
     bool answered = false,
-  }) => db
-      .into(db.conversationMessagesTable)
-      .insert(
-        ConversationMessagesTableCompanion.insert(
-          id: id,
-          spaceId: 's',
-          conversationId: 'c',
-          senderId: 'agent-1',
-          senderType: 'agent',
-          content: 'Which branch?',
-          messageType: const Value('user_question'),
-          metadata: Value(jsonEncode({'answered': answered})),
-          createdAt: Value(createdAt),
-        ),
-      );
+  }) => db.messagingDao.insertMessage(
+    ConversationMessagesTableCompanion.insert(
+      id: id,
+      spaceId: 's',
+      conversationId: 'c',
+      senderId: 'agent-1',
+      senderType: 'agent',
+      content: 'Which branch?',
+      messageType: const Value('user_question'),
+      metadata: Value(jsonEncode({'answered': answered})),
+      createdAt: Value(createdAt),
+    ),
+  );
 
   Future<void> wait(String id, DateTime createdAt) =>
       db.notificationFeedDao.insertAndPrune(
@@ -59,7 +58,8 @@ void main() {
     final row = await (db.select(
       db.conversationMessagesTable,
     )..where((t) => t.id.equals(id))).getSingle();
-    return jsonDecode(row.metadata!) as Map<String, dynamic>;
+    // The mapper folds the promoted keys (`answered`) back into the map.
+    return const MessagingMapper().messageToDomain(row).metadata!;
   }
 
   Future<Map<String, dynamic>> paramsOf(String id) async {
@@ -84,7 +84,8 @@ void main() {
       expect(swept.waits, 1);
       expect(await metadataOf('q-old'), {'answered': true, 'expired': true});
       expect(await metadataOf('q-answered'), {'answered': true});
-      expect(await metadataOf('q-new'), {'answered': false});
+      // An open question carries no `answered` key and is not expired.
+      expect(await metadataOf('q-new'), isEmpty);
       expect((await paramsOf('w-old'))['resolved_at'], isA<String>());
       expect((await paramsOf('w-new')).containsKey('resolved_at'), isFalse);
     },

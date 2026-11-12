@@ -2,8 +2,16 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 
 /// Agent run log repository.
+///
+/// A run's large values ([AgentRunLog.contextSnapshotJson],
+/// [AgentRunLog.expectedOutputSchema], [AgentRunLog.outputJson] and the
+/// detail of [AgentRunLog.verification]) are its payload. Only the single-run reads
+/// ([getById], [activeRunForAgent], [latestForTicket]) and the pipeline
+/// harvest read ([forPipelineStep]) carry it; every list and watch returns runs
+/// without it (those fields null, the verification verdict without detail).
 abstract class AgentRunLogRepository {
-  /// Watches all run logs for the given agent within a workspace, newest first.
+  /// Watches the newest run logs (bounded) for the given agent within a
+  /// workspace, newest first.
   Stream<List<AgentRunLog>> watchByAgent(String workspaceId, String agentId);
 
   /// Returns the run logs belonging to a pipeline run within a workspace,
@@ -23,27 +31,30 @@ abstract class AgentRunLogRepository {
     String pipelineStepId,
   );
 
-  /// Watches all run logs across all agents.
+  /// Runs that have not finished (pending or running) in every workspace,
+  /// newest first, bounded per workspace.
   ///
-  /// CROSS-WORKSPACE BY DESIGN — for the completeness-critical system jobs (the
-  /// orphan-run reaper, cost rollups, process detection). A workspace-scoped
-  /// surface must use [watchByAgent] or [watchByConversation].
-  Stream<List<AgentRunLog>> watchAll();
+  /// CROSS-WORKSPACE BY DESIGN — for the liveness jobs (the orphan-run
+  /// reaper, process detection), which are defined over every workspace and
+  /// only ever inspect runs still in flight. The status filter runs in the
+  /// store; nothing reads finished history to find these.
+  Future<List<AgentRunLog>> nonTerminal();
+
+  /// Watches [workspaceId]'s unfinished runs (pending or running), newest
+  /// first and bounded — "which spaces have an agent working right now".
+  Stream<List<AgentRunLog>> watchNonTerminalForWorkspace(String workspaceId);
+
+  /// The most recently started run for [ticketId] in [workspaceId], or null
+  /// when the ticket has never been dispatched.
+  Future<AgentRunLog?> latestForTicket(String workspaceId, String ticketId);
 
   /// Watches the [limit] most recent run logs across all agents/workspaces,
   /// newest first.
   ///
-  /// The bounded companion to [watchAll] for live UI surfaces: a live
-  /// dashboard never needs the full unbounded history materialized on every
-  /// change (that scales RAM and wire traffic with the whole table). System
-  /// jobs that genuinely need completeness (e.g. the orphan-run reaper) keep
-  /// using [watchAll].
-  ///
-  /// The default implementation trims [watchAll] in memory; persistence-backed
-  /// implementations should override it with a real `LIMIT` query.
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  /// CROSS-WORKSPACE BY DESIGN — the bounded global view for live UI
+  /// surfaces: only [limit] rows per workspace are read and re-emitted per
+  /// change, so memory and wire traffic stay flat as history grows.
+  Stream<List<AgentRunLog>> watchRecent(int limit);
 
   /// Watches the active (not-yet-completed) run logs for a conversation within
   /// a workspace. Used to detect whether an agent is currently working in a
@@ -60,10 +71,7 @@ abstract class AgentRunLogRepository {
   Future<List<AgentRunLog>> activeByConversation(
     String workspaceId,
     String conversationId,
-  ) async => await watchActiveByConversation(
-    workspaceId,
-    conversationId,
-  ).first;
+  ) async => await watchActiveByConversation(workspaceId, conversationId).first;
 
   /// Watches the active run logs of a whole SPACE — every conversation in it,
   /// threads included. This is the "an agent is working here" signal for any
@@ -75,19 +83,19 @@ abstract class AgentRunLogRepository {
     String spaceId,
   );
 
-  /// Watches ALL run logs (active + completed) for a conversation within a
-  /// workspace, newest first. Used by the conversation run-tree UI to render
-  /// the parent dispatch plus the ephemeral subagent runs it spawned (linked
-  /// via [AgentRunLog.parentRunId]).
+  /// Watches the newest run logs (active + completed, bounded) for a
+  /// conversation within a workspace, oldest first. Used by the conversation
+  /// run-tree UI to render the parent dispatch plus the ephemeral subagent
+  /// runs it spawned (linked via [AgentRunLog.parentRunId]).
   Stream<List<AgentRunLog>> watchByConversation(
     String workspaceId,
     String conversationId,
   );
 
-  /// Watches ALL run logs (active + completed) of a whole SPACE — every
-  /// conversation in it, threads included — newest first. Backs the space-level
-  /// AGENTS panel, which lists who has worked here rather than who is in one
-  /// stream.
+  /// Watches the newest run logs (active + completed, bounded) of a whole
+  /// SPACE — every conversation in it, threads included — oldest first.
+  /// Backs the space-level AGENTS panel, which lists who has worked here
+  /// rather than who is in one stream.
   Stream<List<AgentRunLog>> watchBySpace(String workspaceId, String spaceId);
 
   /// Returns the run log [id] within [workspaceId], or null.
@@ -105,13 +113,16 @@ abstract class AgentRunLogRepository {
 
   /// Upserts [log]. The workspace comes from [AgentRunLog.workspaceId]; a run
   /// log with no workspace cannot be stored and is rejected.
+  ///
+  /// A payload field that is null on [log] keeps its stored value, so a run
+  /// read from a list can be written back without erasing its payload.
   Future<void> upsert(AgentRunLog log);
 
   /// Updates only this run's own usage and timing; never writes descendant cost
   /// or terminal/metadata fields. A missing run in this workspace is a no-op.
   Future<void> updateCost(String workspaceId, String runId, RunCost cost);
 
-  /// Adds exact descendant spend atomically, projecting the new total to cents.
+  /// Adds exact descendant spend in micro-dollars atomically.
   /// A missing run in this workspace is a no-op.
   Future<void> addChildCostMicros(
     String workspaceId,

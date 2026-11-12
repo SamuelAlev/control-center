@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -13,11 +14,7 @@ void main() {
       await db
           .into(db.spacesTable)
           .insert(
-            SpacesTableCompanion.insert(
-              id: id,
-              name: id,
-              workspaceId: Value(ws),
-            ),
+            SpacesTableCompanion.insert(id: id, name: id, workspaceId: ws),
           );
       // Seed the space's conversation (its own id — never the space id) for
       // the FK on messages.
@@ -27,7 +24,7 @@ void main() {
             ConversationsTableCompanion.insert(
               id: 'conv-$id',
               spaceId: id,
-              workspaceId: Value(ws),
+              workspaceId: ws,
             ),
           );
     }
@@ -149,6 +146,11 @@ void main() {
   });
 
   group('SpaceExtrasDao — per-space agent autonomy', () {
+    setUp(() async {
+      await seedAgent(db, 'agent:1');
+      await seedAgent(db, 'agent:2');
+    });
+
     test('set then get a single agent dial', () async {
       await db.spaceExtrasDao.setAutonomy(
         id: 'a-1',

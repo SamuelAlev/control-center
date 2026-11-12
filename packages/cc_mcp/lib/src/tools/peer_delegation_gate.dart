@@ -89,7 +89,7 @@ class PeerDelegationGate {
       }
     }
     final autonomyResolver = _service.resolveEffectiveAutonomy;
-    final budgetResolver = _service.resolveRemainingBudgetCents;
+    final budgetResolver = _service.resolveRemainingBudgetMicros;
     if (autonomyResolver == null || budgetResolver == null) {
       return 'Delegation guard policy is not configured.';
     }
@@ -125,7 +125,7 @@ class PeerDelegationGate {
       delegatorAutonomy: delegatorAutonomy,
       requestedAutonomy: requestedAutonomy,
       // Null is explicitly unlimited in the workflow port.
-      remainingBudgetCents: budget ?? 1,
+      remainingBudgetMicros: budget ?? 1,
     );
     if (!guard.allowed) {
       return guard.refusal;

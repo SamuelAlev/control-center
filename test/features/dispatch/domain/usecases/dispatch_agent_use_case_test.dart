@@ -255,7 +255,7 @@ void main() {
       expect(result.effectiveConversationId, 'conv-42');
     });
 
-    test('falls back to spaceId when conversationId is null', () async {
+    test('a space id never stands in for a missing conversation', () async {
       agentRepo.addAgent(_testAgent());
 
       final useCase = createUseCase();
@@ -266,7 +266,7 @@ void main() {
         spaceId: 'ch-99',
       );
 
-      expect(result.effectiveConversationId, 'ch-99');
+      expect(result.effectiveConversationId, isNull);
     });
 
     test(

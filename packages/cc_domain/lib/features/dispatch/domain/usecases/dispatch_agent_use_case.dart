@@ -131,7 +131,9 @@ class DispatchAgentUseCase {
     final resolvedAdapterId = resolvedAdapter.id;
     final cliName = resolvedAdapter.cliName;
 
-    final effectiveConversationId = conversationId ?? spaceId;
+    // A space id never names a conversation: a run with no conversation
+    // records none, and the run log's key to conversations refuses a space id.
+    final effectiveConversationId = conversationId;
 
     // The authorization boundary is the agent lookup above: `workspaceId`
     // scopes it, so an agent id from another workspace resolves to nothing and

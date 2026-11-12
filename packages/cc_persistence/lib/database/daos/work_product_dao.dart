@@ -93,6 +93,18 @@ class WorkProductDao extends DatabaseAccessor<WorkspaceDatabase>
           .getSingleOrNull();
 
   /// Inserts a new revision.
-  Future<void> insertRevision(WorkProductRevisionsTableCompanion entry) =>
-      into(workProductRevisionsTable).insert(entry);
+  ///
+  /// Returns false, writing nothing, when the work product already has a
+  /// revision with the same number (a concurrent writer took it first).
+  Future<bool> insertRevision(WorkProductRevisionsTableCompanion entry) async =>
+      await into(workProductRevisionsTable).insertReturningOrNull(
+        entry,
+        onConflict: DoNothing(
+          target: [
+            workProductRevisionsTable.workProductId,
+            workProductRevisionsTable.revisionNumber,
+          ],
+        ),
+      ) !=
+      null;
 }

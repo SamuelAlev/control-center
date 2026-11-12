@@ -9,6 +9,7 @@ import 'package:control_center/features/connect/providers/connect_providers.dart
 import 'package:control_center/features/settings/providers/provider_apps_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,7 +76,7 @@ class _OnboardingConnectStepState extends ConsumerState<OnboardingConnectStep> {
       }
     } on Object catch (e) {
       if (mounted) {
-        setState(() => _error = l10n.failedWithError('$e'));
+        setState(() => _error = failureMessage(l10n, e));
       }
     } finally {
       if (mounted) {
@@ -95,7 +96,7 @@ class _OnboardingConnectStepState extends ConsumerState<OnboardingConnectStep> {
       }
     } on Object catch (e) {
       if (mounted) {
-        setState(() => _error = l10n.failedWithError('$e'));
+        setState(() => _error = failureMessage(l10n, e));
       }
     } finally {
       if (mounted) {

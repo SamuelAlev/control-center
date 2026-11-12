@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/forge/providers/automation_token_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -108,9 +108,7 @@ class _AutomationTokenDialogState extends ConsumerState<AutomationTokenDialog> {
         setState(() {
           _saving = false;
           // The server's refusal is already phrased for a person.
-          _error = e is RemoteRpcException
-              ? e.message
-              : AppLocalizations.of(context).failedWithError('$e');
+          _error = failureMessage(AppLocalizations.of(context), e);
         });
       }
     }

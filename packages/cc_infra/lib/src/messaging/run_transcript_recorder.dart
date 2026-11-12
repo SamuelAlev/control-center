@@ -20,11 +20,7 @@ class RunTranscriptRecorder {
   ///
   /// [_repo] is optional: without it a run still streams live but nothing is
   /// persisted, so reopening it later shows "no activity recorded".
-  RunTranscriptRecorder({
-    required this._registry,
-    this._repo,
-    this._onWarn,
-  });
+  RunTranscriptRecorder({required this._registry, this._repo, this._onWarn});
 
   final ActiveStreamRegistry _registry;
   final RunTranscriptRepository? _repo;
@@ -185,10 +181,11 @@ class RunTranscriptRecording {
     _dirty = false;
     _dirtySince = null;
     try {
-      await repo.upsert(
+      await repo.write(
         runId: runId,
         workspaceId: workspaceId,
-        segmentsJson: _folder.encodeForFlush(),
+        changedSegments: _folder.takeChangedSegments(),
+        segmentCount: _folder.length,
         transcriptChars: _folder.transcriptChars,
         startedAt: startedAt,
         updatedAt: now,
@@ -196,6 +193,9 @@ class RunTranscriptRecording {
         complete: complete,
       );
     } catch (e) {
+      // The segments this flush took are not stored: the next one writes
+      // them all again (rows whose body did not change are not rewritten).
+      _folder.forgetFlushed();
       // Never fail the run over a transcript write — but never swallow it
       // either. A failed write means the run streams live and then reads as
       // "no activity recorded" once the tab is reopened, which is invisible

@@ -2,7 +2,7 @@
 title: Gebruiksstatistieken
 description: Wat Control Center vastlegt als gebruiksstatistieken aan staan, wie dat bepaalt en wat nooit wordt verzonden.
 slug: nl-NL/handleiding/referentie/gebruiksstatistieken
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center kan **gepseudonimiseerde gebruiksgebeurtenissen** naar een [Umami](https://umami.is)-instantie sturen. Gebruiksstatistieken staan **uit totdat de serverbeheerder ze aanzet**. De instelling hoort bij de server en geldt voor elke client die ermee verbonden is: de desktopapp, de webapp, de telefoon en de server zelf.
@@ -109,7 +109,7 @@ Vastgelegd door de desktopapp, de webapp en de telefoon voor dingen die iemand d
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | De skills van de werkruimte zijn gewijzigd |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Er is gereageerd op een orkestratievoorstel |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Een plan is goedgekeurd of afgewezen (telefoon) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Er is een begeleid doel of een begeleide lus gestart (telefoon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | Er is een begeleid doel of een begeleide lus gestart (telefoon) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Er is een gesprek aangemaakt of afgesplitst |
 | `conversation_rewound` | `conversation_id` | Een gesprek is voortgezet vanaf een eerder bericht |
 | `space_archived` | `workspace_id`, `space_id` | Er is een ruimte gearchiveerd |
@@ -128,7 +128,7 @@ Vastgelegd door `cc_server` voor feiten die geen enkele client precies één kee
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | De run van een agent is afgelopen |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Een agent is gestopt om op iemand te wachten |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Het actiebeleid heeft een actie van een agent geweigerd |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Een pipelinerun is beëindigd. `trigger` is `manual`, het type gebeurtenis dat de run startte, of alleen de soort van een benoemde trigger (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | Een pipelinerun is beëindigd. `trigger` is `manual`, het type gebeurtenis dat de run startte, of alleen de soort van een benoemde trigger (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | Er is een pull request vanuit een ruimte gepubliceerd |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Een pull request die een agent heeft geopend, is gemerged |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Een opname van een vergadering is opgeslagen |
@@ -142,7 +142,7 @@ Vastgelegd door `cc_server` voor feiten die geen enkele client precies één kee
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Een skill van de werkruimte is geïnstalleerd, bijgewerkt of op schijf gewijzigd |
 | `calendar_auth_expired` | `workspace_id` | Een agendakoppeling vereist opnieuw aanmelden |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Een agenda-afspraak begint binnenkort |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | De uitgaven hebben een budgetdrempel overschreden |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | De uitgaven hebben een budgetdrempel overschreden |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | Er is een review aangevraagd voor een gevolgde PR |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | De reviewbeslissing van een gevolgde PR is gewijzigd |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | Een PR die niet door een agent is geopend, is gemerged in een gekoppelde repository |

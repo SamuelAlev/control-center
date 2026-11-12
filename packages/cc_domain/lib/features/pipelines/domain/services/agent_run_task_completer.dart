@@ -5,6 +5,9 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_output_port.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 
@@ -27,13 +30,20 @@ class AgentRunTaskCompleter {
   AgentRunTaskCompleter({
     required this._eventBus,
     required AgentRunLogRepository runLogRepository,
+    required AgentRunOutputPort runOutputs,
     required MessagingRepository messagingRepository,
     this._latestAgentContent,
   }) : _runLogs = runLogRepository,
+       _outputs = runOutputs,
        _messaging = messagingRepository;
 
   final DomainEventBus _eventBus;
   final AgentRunLogRepository _runLogs;
+
+  /// Writes the harvested output alone. The terminal write races this
+  /// listener, so re-upserting the run read above would put its pre-terminal
+  /// status back.
+  final AgentRunOutputPort _outputs;
   final MessagingRepository _messaging;
 
   /// Newest agent message text, without loading the conversation. Null keeps
@@ -136,7 +146,9 @@ class AgentRunTaskCompleter {
         'AgentRunTaskCompleter: Harvesting last message for run ${run.id} — agent finished without '
         'calling submit_output. This is a fallback.',
       );
-      await _runLogs.upsert(run.copyWith(outputJson: {'result': lastMessage}));
+      await _outputs.recordOutput(workspaceId, run.id, {'result': lastMessage});
+    } on DeletedWorkspaceException {
+      // The run outlived its workspace: there is no step left to complete.
     } on Object catch (e, st) {
       CcDomainLog.error(
         'AgentRunTaskCompleter: Failed to harvest output for run ${event.runId}',

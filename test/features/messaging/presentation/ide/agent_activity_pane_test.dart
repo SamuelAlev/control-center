@@ -20,7 +20,7 @@ AgentRunLog _run({
   String id = 'run-1',
   RunStatus status = RunStatus.completed,
   String? summary = 'scout the repo',
-  int costCents = 42,
+  int costMicros = 420000,
 }) => AgentRunLog(
   id: id,
   agentId: 'agent-1',
@@ -32,7 +32,7 @@ AgentRunLog _run({
       : _t0.add(const Duration(seconds: 9)),
   status: status,
   summary: summary,
-  cost: RunCost(estimatedCostCents: costCents, durationMs: 9000),
+  cost: RunCost(costMicros: costMicros, durationMs: 9000),
 );
 
 class _StaticRunLogRepo implements AgentRunLogRepository {

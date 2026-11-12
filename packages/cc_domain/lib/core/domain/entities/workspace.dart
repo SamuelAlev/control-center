@@ -1,6 +1,8 @@
 import 'package:cc_domain/core/domain/value_objects/workspace_connect_mode.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart';
 
 export 'package:cc_domain/core/domain/value_objects/workspace_connect_mode.dart';
+export 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart';
 
 /// A workspace is a user-named container with an optional logo.
 ///
@@ -23,6 +25,7 @@ class Workspace {
     this.connectUrl = '',
     this.githubAppId = '',
     this.deletedAt,
+    this.storageState = WorkspaceStorageState.ok,
   }) {
     if (name.isEmpty) {
       throw ArgumentError('Workspace name must not be empty');
@@ -80,6 +83,14 @@ class Workspace {
   /// Soft-delete timestamp. Non-null when workspace has been deleted.
   final DateTime? deletedAt;
 
+  /// Whether its database takes writes, as the server reports it on the
+  /// workspace list. Server-authoritative: a client reads it and never sends
+  /// it back.
+  final WorkspaceStorageState storageState;
+
+  /// True when this workspace serves reads only until it is restored.
+  bool get isReadOnly => storageState == WorkspaceStorageState.readOnly;
+
   /// True when this workspace has been soft-deleted.
   bool get isDeleted => deletedAt != null;
 
@@ -103,7 +114,8 @@ class Workspace {
           connectMode == other.connectMode &&
           connectUrl == other.connectUrl &&
           githubAppId == other.githubAppId &&
-          deletedAt == other.deletedAt;
+          deletedAt == other.deletedAt &&
+          storageState == other.storageState;
 
   @override
   int get hashCode => Object.hash(
@@ -120,6 +132,7 @@ class Workspace {
     connectUrl,
     githubAppId,
     deletedAt,
+    storageState,
   );
 
   /// Copy with.
@@ -138,6 +151,7 @@ class Workspace {
     String? connectUrl,
     String? githubAppId,
     DateTime? deletedAt,
+    WorkspaceStorageState? storageState,
   }) {
     return Workspace(
       id: id ?? this.id,
@@ -153,6 +167,7 @@ class Workspace {
       connectUrl: connectUrl ?? this.connectUrl,
       githubAppId: githubAppId ?? this.githubAppId,
       deletedAt: deletedAt ?? this.deletedAt,
+      storageState: storageState ?? this.storageState,
     );
   }
 }

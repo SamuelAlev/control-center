@@ -107,36 +107,50 @@ class DaoFleetRepository implements FleetRepository {
   ) => _dao.tryLeaseJob(jobId, workerId, leaseExpiresAt, now);
 
   @override
-  Future<void> renewLease(
+  Future<bool> renewLease(
     String jobId,
+    String workerId,
     DateTime leaseExpiresAt, {
     int? lastAckedSeq,
-  }) => _dao.renewLease(jobId, leaseExpiresAt, lastAckedSeq: lastAckedSeq);
+  }) => _dao.renewLease(
+    jobId,
+    workerId,
+    leaseExpiresAt,
+    lastAckedSeq: lastAckedSeq,
+  );
 
   @override
-  Future<void> markJobRunning(String jobId, DateTime now) =>
-      _dao.markJobRunning(jobId, now);
+  Future<bool> markJobRunning(String jobId, String workerId, DateTime now) =>
+      _dao.markJobRunning(jobId, workerId, now);
 
   @override
-  Future<void> markJobTerminal(
+  Future<bool> markJobTerminal(
     String jobId,
     JobStatus status,
     DateTime now, {
+    required Set<JobStatus> from,
+    String? leasedTo,
     String? resultJson,
     String? error,
-    int? costCents,
+    int? costMicros,
   }) => _dao.markJobTerminal(
     jobId,
     status.wire,
     now,
+    from: [for (final s in from) s.wire],
+    leasedTo: leasedTo,
     resultJson: resultJson,
     error: error,
-    costCents: costCents,
+    costMicros: costMicros,
   );
 
   @override
-  Future<void> requeueJob(String jobId, int attempts) =>
-      _dao.requeueJob(jobId, attempts);
+  Future<bool> requeueJob(
+    String jobId,
+    int attempts, {
+    required JobStatus from,
+    required String? leasedTo,
+  }) => _dao.requeueJob(jobId, attempts, from: from.wire, leasedTo: leasedTo);
 
   // ── Placement log (workspace-scoped) ──
 

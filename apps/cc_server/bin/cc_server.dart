@@ -90,6 +90,11 @@ Future<void> _runServer(List<String> args) async {
   } on ConnectEnvironmentInvalid catch (e) {
     stderr.writeln(e.message);
     exit(78);
+  } on ServerBootRefusal catch (e) {
+    // A data dir others can read, an identity file that cannot be read: the
+    // operator has to resolve it, and the message says how.
+    stderr.writeln(e.message);
+    exit(78);
   } on SocketException catch (e) {
     // A failed bind must END the process. The guarded zone only RECORDS an
     // uncaught error, so without this the server stayed alive with no listener

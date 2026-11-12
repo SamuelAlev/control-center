@@ -16,7 +16,11 @@ void main() {
     db = createTestDatabase();
     repo = DaoMessagingRepository(_SingleWorkspace(db));
     await db.messagingDao.insertSpace(
-      SpacesTableCompanion.insert(id: 'sp', name: 'general'),
+      SpacesTableCompanion.insert(
+        workspaceId: 'test-workspace',
+        id: 'sp',
+        name: 'general',
+      ),
     );
   });
   tearDown(() async => db.close());
@@ -214,6 +218,116 @@ void main() {
         conversationId: forkId,
       );
       expect(forked.nodes.map((n) => n.preview), ['one']);
+    });
+  });
+
+  group('branch walk', () {
+    Future<void> raw(
+      String id, {
+      String? parent,
+      String? conversation,
+      String content = 'x',
+      String type = 'text',
+      String? metadata,
+      int second = 0,
+    }) async => db.messagingDao.insertMessage(
+      ConversationMessagesTableCompanion.insert(
+        id: id,
+        spaceId: 'sp',
+        conversationId: conversation ?? await conversationId(),
+        senderId: 'u1',
+        senderType: 'user',
+        content: content,
+        messageType: Value(type),
+        metadata: Value(metadata),
+        parentMessageId: Value(parent),
+        createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
+      ),
+    );
+
+    test('walks parent links oldest-first and stops at a loop', () async {
+      final conv = await conversationId();
+      await raw('m1');
+      await raw('m2', parent: 'm1');
+      await raw('m3', parent: 'm2');
+      await raw('m4', parent: 'm3');
+      // Close the loop once its target exists: the parent link is a key.
+      await db.customStatement(
+        "UPDATE conversation_messages SET parent_message_id = 'm3' "
+        "WHERE id = 'm1'",
+      );
+
+      expect(await db.messagingDao.branchIds(conv, 'm4'), [
+        'm1',
+        'm2',
+        'm3',
+        'm4',
+      ]);
+      expect(await db.messagingDao.branchIds(conv, 'm4', maxDepth: 2), [
+        'm3',
+        'm4',
+      ]);
+    });
+
+    test('a parent in another conversation ends the branch', () async {
+      final conv = await conversationId();
+      await db.conversationDao.insertConversation(
+        ConversationsTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'other',
+          spaceId: 'sp',
+        ),
+      );
+      await raw('elsewhere', conversation: 'other');
+      await raw('m1', parent: 'elsewhere');
+      await raw('m2', parent: 'm1');
+
+      expect(await db.messagingDao.branchIds(conv, 'm2'), ['m1', 'm2']);
+      final rows = await db.messagingDao.branchFrom(conv, 'm2');
+      expect(rows.map((r) => r.id), ['m1', 'm2']);
+    });
+
+    test('tree nodes carry a bounded content head', () async {
+      final conv = await conversationId();
+      await raw('long', content: 'y' * 5000, second: 1);
+      await raw('short', parent: 'long', content: 'hi', second: 1);
+
+      final nodes = await db.messagingDao.treeNodes(conv);
+      expect(nodes.map((n) => n.id), ['long', 'short']);
+      expect(
+        nodes.first.contentHead.length,
+        MessagingDao.treePreviewSourceChars,
+      );
+      expect(nodes.last.contentHead, 'hi');
+      expect(nodes.last.parentMessageId, 'long');
+    });
+
+    test('a fork keeps question and plan state', () async {
+      final conv = await conversationId();
+      await raw(
+        'q',
+        type: 'user_question',
+        metadata: '{"question":"Which?","answered":true}',
+      );
+      await raw(
+        'plan',
+        parent: 'q',
+        type: 'plan',
+        metadata: '{"planStatus":"approved"}',
+        second: 1,
+      );
+
+      final forkId = await repo.forkConversation(
+        workspaceId: 'ws',
+        spaceId: 'sp',
+        conversationId: conv,
+        messageId: 'plan',
+      );
+      final copied = await db.messagingDao.getMessages(forkId);
+      expect(copied.map((m) => m.messageType), ['user_question', 'plan']);
+      expect(copied.first.answered, isTrue);
+      expect(copied.first.metadata, '{"question":"Which?"}');
+      expect(copied.last.planStatus, 'approved');
     });
   });
 

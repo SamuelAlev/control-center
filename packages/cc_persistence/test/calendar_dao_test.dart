@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_spaces.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -8,11 +9,10 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
-    // The calendar tables use real foreign keys; disable enforcement so tests
-    // can insert events/links without seeding the full workspace→account→meeting
-    // graph. These tests exercise workspace *filtering* and unique indexes,
-    // both of which are independent of FK enforcement.
-    await db.customStatement('PRAGMA foreign_keys = OFF');
+    // The accounts the events below belong to.
+    for (final account in ['acc-A', 'acc-B', 'acc-C']) {
+      await seedCalendarAccount(db, account);
+    }
   });
 
   tearDown(() async {
@@ -329,6 +329,7 @@ void main() {
           start: t,
         ),
       ]);
+      await seedMeeting(db, 'm-A');
       await db.calendarDao.linkMeetingToEvent(
         MeetingCalendarLinksTableCompanion.insert(
           id: 'link-1',
@@ -478,6 +479,9 @@ void main() {
     test(
       'linkMeetingToEvent relinking the same meeting updates in place',
       () async {
+        await seedMeeting(db, 'm-1');
+        await seedCalendarEvent(db, 'e-1', accountId: 'acc-A');
+        await seedCalendarEvent(db, 'e-2', accountId: 'acc-A');
         await db.calendarDao.linkMeetingToEvent(
           MeetingCalendarLinksTableCompanion.insert(
             id: 'l-1',
@@ -640,31 +644,31 @@ void main() {
     test(
       'returns true on the null→set transition, false when already set',
       () async {
-        await seedAccount('ws-A', 'acc-A');
+        await seedAccount('ws-A', 'acc-R');
 
         expect(
-          await db.calendarDao.markNeedsReauth('ws-A', 'acc-A', at),
+          await db.calendarDao.markNeedsReauth('ws-A', 'acc-R', at),
           isTrue,
         );
         // drift returns the stored instant as a local DateTime, so compare the
         // moment rather than the (utc-vs-local) object.
-        expect((await flagOf('ws-A', 'acc-A'))!.isAtSameMomentAs(at), isTrue);
+        expect((await flagOf('ws-A', 'acc-R'))!.isAtSameMomentAs(at), isTrue);
         // Second call is the dedup boundary: already flagged → no transition.
         expect(
-          await db.calendarDao.markNeedsReauth('ws-A', 'acc-A', at),
+          await db.calendarDao.markNeedsReauth('ws-A', 'acc-R', at),
           isFalse,
         );
       },
     );
 
     test('is a no-op for a foreign workspace (isolation)', () async {
-      await seedAccount('ws-A', 'acc-A');
+      await seedAccount('ws-A', 'acc-R');
       // Same account id, wrong workspace → not found → false, flag untouched.
       expect(
-        await db.calendarDao.markNeedsReauth('ws-B', 'acc-A', at),
+        await db.calendarDao.markNeedsReauth('ws-B', 'acc-R', at),
         isFalse,
       );
-      expect(await flagOf('ws-A', 'acc-A'), isNull);
+      expect(await flagOf('ws-A', 'acc-R'), isNull);
     });
 
     test('returns false for an absent account', () async {
@@ -674,15 +678,15 @@ void main() {
     test(
       'setLastSyncedAt clears the flag (successful sync = healthy)',
       () async {
-        await seedAccount('ws-A', 'acc-A');
-        await db.calendarDao.markNeedsReauth('ws-A', 'acc-A', at);
-        expect(await flagOf('ws-A', 'acc-A'), isNotNull);
+        await seedAccount('ws-A', 'acc-R');
+        await db.calendarDao.markNeedsReauth('ws-A', 'acc-R', at);
+        expect(await flagOf('ws-A', 'acc-R'), isNotNull);
 
-        await db.calendarDao.setLastSyncedAt('ws-A', 'acc-A', at);
-        expect(await flagOf('ws-A', 'acc-A'), isNull);
+        await db.calendarDao.setLastSyncedAt('ws-A', 'acc-R', at);
+        expect(await flagOf('ws-A', 'acc-R'), isNull);
         // And the flag can be re-set afterwards (true transition again).
         expect(
-          await db.calendarDao.markNeedsReauth('ws-A', 'acc-A', at),
+          await db.calendarDao.markNeedsReauth('ws-A', 'acc-R', at),
           isTrue,
         );
       },
@@ -820,6 +824,7 @@ void main() {
           start: DateTime.utc(2026, 6, 11, 10),
         ),
       ]);
+      await seedMeeting(db, 'm1');
       await db.calendarDao.linkMeetingToEvent(
         MeetingCalendarLinksTableCompanion.insert(
           id: 'l1',

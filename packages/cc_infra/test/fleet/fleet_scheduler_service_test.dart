@@ -125,54 +125,82 @@ class _FakeFleetRepo implements FleetRepository {
   }
 
   @override
-  Future<void> renewLease(
+  Future<bool> renewLease(
     String jobId,
+    String workerId,
     DateTime leaseExpiresAt, {
     int? lastAckedSeq,
-  }) async {}
-
-  @override
-  Future<void> markJobRunning(String jobId, DateTime now) async {
+  }) async {
     final job = jobs[jobId];
-    if (job != null) {
-      jobs[jobId] = _copy(job, status: JobStatus.running, startedAt: now);
-    }
+    return job != null && job.workerId == workerId && job.status.isActive;
   }
 
   @override
-  Future<void> markJobTerminal(
+  Future<bool> markJobRunning(
+    String jobId,
+    String workerId,
+    DateTime now,
+  ) async {
+    final job = jobs[jobId];
+    if (job == null ||
+        job.workerId != workerId ||
+        job.status != JobStatus.leased) {
+      return false;
+    }
+    jobs[jobId] = _copy(job, status: JobStatus.running, startedAt: now);
+    return true;
+  }
+
+  @override
+  Future<bool> markJobTerminal(
     String jobId,
     JobStatus status,
     DateTime now, {
+    required Set<JobStatus> from,
+    String? leasedTo,
     String? resultJson,
     String? error,
-    int? costCents,
+    int? costMicros,
   }) async {
     final job = jobs[jobId];
-    if (job != null) {
-      jobs[jobId] = _copy(
-        job,
-        status: status,
-        finishedAt: now,
-        resultJson: resultJson,
-        error: error,
-        costCents: costCents,
-      );
+    if (job == null ||
+        !from.contains(job.status) ||
+        (leasedTo != null && job.workerId != leasedTo)) {
+      return false;
     }
+    jobs[jobId] = _copy(
+      job,
+      status: status,
+      finishedAt: now,
+      resultJson: resultJson,
+      error: error,
+      costMicros: costMicros,
+    );
+    return true;
   }
 
+  int requeues = 0;
+
   @override
-  Future<void> requeueJob(String jobId, int attempts) async {
+  Future<bool> requeueJob(
+    String jobId,
+    int attempts, {
+    required JobStatus from,
+    required String? leasedTo,
+  }) async {
     final job = jobs[jobId];
-    if (job != null) {
-      jobs[jobId] = _copy(
-        job,
-        status: JobStatus.queued,
-        attempts: attempts,
-        clearWorkerId: true,
-        clearLease: true,
-      );
+    if (job == null || job.status != from || job.workerId != leasedTo) {
+      return false;
     }
+    requeues++;
+    jobs[jobId] = _copy(
+      job,
+      status: JobStatus.queued,
+      attempts: attempts,
+      clearWorkerId: true,
+      clearLease: true,
+    );
+    return true;
   }
 
   @override
@@ -221,7 +249,7 @@ Job _copy(
   int? attempts,
   String? resultJson,
   String? error,
-  int? costCents,
+  int? costMicros,
   bool clearWorkerId = false,
   bool clearLease = false,
 }) => Job(
@@ -237,7 +265,7 @@ Job _copy(
   workerId: clearWorkerId ? null : (workerId ?? job.workerId),
   leaseExpiresAt: clearLease ? null : (leaseExpiresAt ?? job.leaseExpiresAt),
   submittedBy: job.submittedBy,
-  costCents: costCents ?? job.costCents,
+  costMicros: costMicros ?? job.costMicros,
   attempts: attempts ?? job.attempts,
   maxAttempts: job.maxAttempts,
   agentId: job.agentId,
@@ -607,12 +635,12 @@ void main() {
       await _pump();
       expect(repo.jobs['j']!.status, JobStatus.running);
       execution.complete(
-        const JobResult.ok(resultJson: '{"x":1}', costCents: 9),
+        const JobResult.ok(resultJson: '{"x":1}', costMicros: 9),
       );
       await _pump();
       expect(repo.jobs['j']!.status, JobStatus.done);
       expect(repo.jobs['j']!.resultJson, '{"x":1}');
-      expect(repo.jobs['j']!.costCents, 9);
+      expect(repo.jobs['j']!.costMicros, 9);
     });
 
     test('no executor for worker fails the job loudly', () async {
@@ -687,12 +715,12 @@ void main() {
       await _pump();
       await _pump();
       final execution = executor.lastFor('j4')!;
-      execution.complete(const JobResult.failure('fatal', costCents: 5));
+      execution.complete(const JobResult.failure('fatal', costMicros: 5));
       await _pump();
       await _pump();
       expect(repo.jobs['j4']!.status, JobStatus.failed);
       expect(repo.jobs['j4']!.error, 'fatal');
-      expect(repo.jobs['j4']!.costCents, 5);
+      expect(repo.jobs['j4']!.costMicros, 5);
     });
 
     test('execution error caught and requeued', () async {
@@ -725,6 +753,64 @@ void main() {
       await _pump();
       await _pump();
       expect(repo.jobs['j5']!.status, JobStatus.done);
+    });
+
+    test('a result arriving after the job was cancelled is dropped', () async {
+      final repo = _FakeFleetRepo();
+      final executor = _ScriptedExecutor();
+      final svc = FleetSchedulerService(
+        repository: repo,
+        executorResolver: (w) => w.id == kLocalWorkerId ? executor : null,
+        newId: () => 'j-late',
+        now: () => _t(0),
+      );
+      await svc.ensureLocalWorker(_caps());
+      await svc.submit(
+        workspaceId: 'ws',
+        spec: const AgentRunJobSpec(agentId: 'a'),
+      );
+      await _pump();
+      // Another path finalized the job while the execution was still running.
+      repo.jobs['j-late'] = _copy(
+        repo.jobs['j-late']!,
+        status: JobStatus.cancelled,
+      );
+      executor.lastFor('j-late')!.complete(const JobResult.ok());
+      await _pump();
+      await _pump();
+      expect(repo.jobs['j-late']!.status, JobStatus.cancelled);
+    });
+
+    test('a failure reported after the job moved on is not retried', () async {
+      final repo = _FakeFleetRepo();
+      final executor = _ScriptedExecutor();
+      final svc = FleetSchedulerService(
+        repository: repo,
+        executorResolver: (w) => w.id == kLocalWorkerId ? executor : null,
+        newId: () => 'j-moved',
+        now: () => _t(0),
+      );
+      await svc.ensureLocalWorker(_caps());
+      await svc.submit(
+        workspaceId: 'ws',
+        spec: const AgentRunJobSpec(agentId: 'a'),
+        maxAttempts: 3,
+      );
+      await _pump();
+      // The reaper already requeued it; this execution's late failure must not
+      // count a second attempt.
+      repo.jobs['j-moved'] = _copy(
+        repo.jobs['j-moved']!,
+        status: JobStatus.queued,
+        attempts: 1,
+        clearWorkerId: true,
+        clearLease: true,
+      );
+      final requeuesBefore = repo.requeues;
+      executor.lastFor('j-moved')!.complete(const JobResult.failure('late'));
+      await _pump();
+      expect(repo.requeues, requeuesBefore);
+      expect(repo.jobs['j-moved']!.attempts, 1);
     });
 
     test('onJobEvent receives events for a started job', () async {

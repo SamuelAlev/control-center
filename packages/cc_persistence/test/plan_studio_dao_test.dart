@@ -7,6 +7,7 @@ import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.d
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Plan Studio persistence (PRD 17): the append-only orchestration revision
@@ -47,6 +48,8 @@ void main() {
 
     for (final (id, ws) in [('orch1', 'ws1'), ('orch2', 'ws2')]) {
       final db = dbs.of(ws);
+      await seedConversation(db, 'conv1');
+      await seedAgent(db, 'agent1');
       await db
           .into(db.orchestrationsTable)
           .insert(

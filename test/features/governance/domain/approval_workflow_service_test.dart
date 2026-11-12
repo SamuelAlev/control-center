@@ -25,6 +25,21 @@ class _FakeApprovalRepo implements ApprovalRepository {
   }
 
   @override
+  Future<bool> recordDecision(
+    Approval decided, {
+    required ApprovalStatus expected,
+  }) async {
+    final stored = approvals[decided.id];
+    if (stored == null ||
+        stored.workspaceId != decided.workspaceId ||
+        stored.status != expected) {
+      return false;
+    }
+    approvals[decided.id] = decided;
+    return true;
+  }
+
+  @override
   Future<void> addComment(ApprovalComment comment) async {
     comments.add(comment);
   }
@@ -110,6 +125,34 @@ void main() {
       ),
       throwsA(isA<InvalidApprovalTransitionException>()),
     );
+  });
+
+  test('two deciders racing on one approval produce one decision', () async {
+    final a = await svc.createApproval(workspaceId: 'ws1', title: 'Merge');
+    // Both reads see `pending` before either write lands.
+    final outcomes = await Future.wait([
+      for (final (decision, who) in [
+        (ApprovalDecision.approve, 'alice'),
+        (ApprovalDecision.reject, 'bob'),
+      ])
+        svc
+            .decide(
+              a.id,
+              workspaceId: 'ws1',
+              decision: decision,
+              decidedById: who,
+            )
+            .then<Object>((v) => v, onError: (Object e) => e),
+    ]);
+    final decided = outcomes.whereType<Approval>().toList();
+    expect(decided, hasLength(1));
+    expect(
+      outcomes.whereType<InvalidApprovalTransitionException>(),
+      hasLength(1),
+    );
+    final stored = repo.approvals[a.id]!;
+    expect(stored.status, decided.single.status);
+    expect(stored.decidedById, decided.single.decidedById);
   });
 
   test('request_revision then resubmit returns to pending', () async {

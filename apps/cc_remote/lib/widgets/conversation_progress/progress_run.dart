@@ -54,11 +54,7 @@ class ProgressRun extends StatelessWidget {
             ).format(durationMs / 1000),
           );
     // DTO zero is indistinguishable from an unpriced run. Never call it free.
-    final cost = run.costMicros > 0
-        ? run.costMicros
-        : run.estimatedCostCents > 0
-        ? run.estimatedCostCents * 10000
-        : null;
+    final cost = run.costMicros > 0 ? run.costMicros : null;
     final price = cost == null
         ? l.progressUnknown
         : NumberFormat.currency(

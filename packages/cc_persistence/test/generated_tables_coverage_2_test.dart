@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Second batch of generated-table coverage: drives the companion/data/mapper
@@ -118,21 +119,13 @@ void main() {
 
   group('Code-graph generated tables', () {
     test('code symbols + edges + files round-trip', () async {
-      await db
-          .into(db.reposTable)
-          .insert(
-            ReposTableCompanion.insert(
-              id: 'repo-1',
-              name: 'repo-1',
-              path: '/repo-1',
-            ),
-          );
+      final db = createTestCodeIndexDatabase();
+      addTearDown(db.close);
       await db
           .into(db.codeSymbolsTable)
           .insert(
             CodeSymbolsTableCompanion.insert(
               id: 'sym-1',
-              workspaceId: 'ws',
               repoId: 'repo-1',
               kind: 'function',
               name: 'bar',
@@ -148,7 +141,6 @@ void main() {
           .insert(
             CodeEdgesTableCompanion.insert(
               id: 'edge-1',
-              workspaceId: 'ws',
               repoId: 'repo-1',
               sourceSymbolId: 'sym-1',
               kind: 'calls',
@@ -159,7 +151,6 @@ void main() {
           .insert(
             CodeFilesTableCompanion.insert(
               id: 'cf-1',
-              workspaceId: 'ws',
               repoId: 'repo-1',
               path: 'lib/foo.dart',
               contentHash: 'abc123',
@@ -180,11 +171,21 @@ void main() {
     test('space messages + reactions + notes round-trip', () async {
       await db
           .into(db.spacesTable)
-          .insert(SpacesTableCompanion.insert(id: 'c-1', name: 'c-1'));
+          .insert(
+            SpacesTableCompanion.insert(
+              id: 'c-1',
+              name: 'c-1',
+              workspaceId: db.workspaceId,
+            ),
+          );
       await db
           .into(db.conversationsTable)
           .insert(
-            ConversationsTableCompanion.insert(id: 'c-1', spaceId: 'c-1'),
+            ConversationsTableCompanion.insert(
+              id: 'c-1',
+              spaceId: 'c-1',
+              workspaceId: db.workspaceId,
+            ),
           );
       await db
           .into(db.conversationMessagesTable)
@@ -236,9 +237,16 @@ void main() {
     });
 
     test('space autonomy round-trip', () async {
+      await seedAgent(db, 'a-1');
       await db
           .into(db.spacesTable)
-          .insert(SpacesTableCompanion.insert(id: 'c-2', name: 'c-2'));
+          .insert(
+            SpacesTableCompanion.insert(
+              id: 'c-2',
+              name: 'c-2',
+              workspaceId: db.workspaceId,
+            ),
+          );
       await db
           .into(db.spaceAutonomyTable)
           .insert(
@@ -247,13 +255,13 @@ void main() {
               workspaceId: 'ws',
               spaceId: 'c-2',
               agentId: 'a-1',
-              autonomyLevel: 'full',
+              autonomyLevel: 'actFreely',
             ),
           );
       final row = await (db.select(
         db.spaceAutonomyTable,
       )..where((t) => t.id.equals('ca-1'))).getSingle();
-      expect(row.autonomyLevel, 'full');
+      expect(row.autonomyLevel, 'actFreely');
     });
   });
 
@@ -278,6 +286,8 @@ void main() {
 
   group('Plan / playbook generated tables', () {
     test('plan documents + playbooks round-trip', () async {
+      await seedConversation(db, 'c-1');
+      await seedAgent(db, 'a-1');
       await db
           .into(db.planDocumentsTable)
           .insert(
@@ -309,5 +319,4 @@ void main() {
       expect(playbook.name, 'deploy');
     });
   });
-
 }

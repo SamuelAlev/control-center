@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/eval_outcome.dart';
 
 /// The kind of grader, in the precedence the harness Verifier port uses:
@@ -86,28 +87,30 @@ class OutcomeSuccessGrader implements EvalGrader {
   );
 }
 
-/// Passes when metered cost is within a cent budget.
+/// Passes when metered cost is within a budget in micro-dollars.
 class CostBudgetGrader implements EvalGrader {
   /// Creates a [CostBudgetGrader].
-  const CostBudgetGrader(this.maxCents, {this.id = 'cost_budget'});
+  const CostBudgetGrader(this.maxMicros, {this.id = 'cost_budget'});
 
   @override
   final String id;
 
-  /// The inclusive cost ceiling in cents.
-  final int maxCents;
+  /// The inclusive cost ceiling in micro-dollars.
+  final int maxMicros;
 
   @override
   GraderKind get kind => GraderKind.deterministic;
 
   @override
   GradeResult grade(EvalOutcome outcome) {
-    final passed = outcome.costCents <= maxCents;
+    final passed = outcome.costMicros <= maxMicros;
     return GradeResult(
       graderId: id,
       passed: passed,
       score: passed ? 1 : 0,
-      detail: 'Cost ${outcome.costCents}¢ ${passed ? "≤" : ">"} $maxCents¢.',
+      detail:
+          'Cost ${formatUsdMicros(outcome.costMicros)} '
+          '${passed ? "≤" : ">"} ${formatUsdMicros(maxMicros)}.',
     );
   }
 }
@@ -228,7 +231,7 @@ class GraderSpec {
   /// Unique grader id within the suite.
   final String id;
 
-  /// Type-specific params (e.g. `maxCents`, `maxTurns`, `signalKey`).
+  /// Type-specific params (e.g. `maxMicros`, `maxTurns`, `signalKey`).
   final Map<String, dynamic> params;
 
   /// Grader kind.
@@ -255,7 +258,7 @@ class GraderSpec {
     switch (type) {
       case 'cost_budget':
         return CostBudgetGrader(
-          (params['maxCents'] as num?)?.toInt() ?? 100,
+          (params['maxMicros'] as num?)?.toInt() ?? microsPerDollar,
           id: id,
         );
       case 'no_sandbox_violations':

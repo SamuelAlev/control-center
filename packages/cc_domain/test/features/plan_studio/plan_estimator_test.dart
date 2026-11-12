@@ -5,8 +5,8 @@ import 'package:test/test.dart';
 
 const _estimator = PlanEstimator();
 
-RunCost _cost({required int costCents, int? durationMs}) =>
-    RunCost(estimatedCostCents: costCents, durationMs: durationMs);
+RunCost _cost({required int costMicros, int? durationMs}) =>
+    RunCost(costMicros: costMicros, durationMs: durationMs);
 
 void main() {
   group('PlanEstimator — honesty invariants', () {
@@ -28,12 +28,12 @@ void main() {
       final n1 = estimate.byNodeKey['n1']!;
       expect(n1.sampleSize, 0);
       expect(n1.hasHistory, isFalse);
-      expect(n1.costCentsLow, isNull);
-      expect(n1.costCentsHigh, isNull);
+      expect(n1.costMicrosLow, isNull);
+      expect(n1.costMicrosHigh, isNull);
       expect(n1.durationMsLow, isNull);
       expect(n1.durationMsHigh, isNull);
-      expect(estimate.totalCostCentsLow, isNull);
-      expect(estimate.totalCostCentsHigh, isNull);
+      expect(estimate.totalCostMicrosLow, isNull);
+      expect(estimate.totalCostMicrosHigh, isNull);
       expect(estimate.totalDurationMsLow, isNull);
       expect(estimate.totalDurationMsHigh, isNull);
       expect(estimate.isPartial, isFalse);
@@ -53,14 +53,14 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'r1': [_cost(costCents: 750, durationMs: 4200)],
+          'r1': [_cost(costMicros: 750, durationMs: 4200)],
         },
       );
       final n1 = estimate.byNodeKey['n1']!;
       expect(n1.sampleSize, 1);
       expect(n1.hasHistory, isTrue);
-      expect(n1.costCentsLow, 750);
-      expect(n1.costCentsHigh, 750);
+      expect(n1.costMicrosLow, 750);
+      expect(n1.costMicrosHigh, 750);
       expect(n1.durationMsLow, 4200);
       expect(n1.durationMsHigh, 4200);
     });
@@ -83,18 +83,18 @@ void main() {
         graph: graph,
         historyByRoleKey: {
           'r1': [
-            _cost(costCents: 500),
-            _cost(costCents: 100),
-            _cost(costCents: 400),
-            _cost(costCents: 300),
-            _cost(costCents: 200),
+            _cost(costMicros: 500),
+            _cost(costMicros: 100),
+            _cost(costMicros: 400),
+            _cost(costMicros: 300),
+            _cost(costMicros: 200),
           ],
         },
       );
       final n1 = estimate.byNodeKey['n1']!;
       expect(n1.sampleSize, 5);
-      expect(n1.costCentsLow, 200);
-      expect(n1.costCentsHigh, 400);
+      expect(n1.costMicrosLow, 200);
+      expect(n1.costMicrosHigh, 400);
     });
 
     test('p25/p75 nearest-rank over a known 2-sample list (clamped)', () {
@@ -114,12 +114,12 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'r1': [_cost(costCents: 200), _cost(costCents: 100)],
+          'r1': [_cost(costMicros: 200), _cost(costMicros: 100)],
         },
       );
       final n1 = estimate.byNodeKey['n1']!;
-      expect(n1.costCentsLow, 100);
-      expect(n1.costCentsHigh, 200);
+      expect(n1.costMicrosLow, 100);
+      expect(n1.costMicrosHigh, 200);
     });
 
     test('a node without provenance impact has null blast-radius fields', () {
@@ -185,7 +185,7 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'r1': [_cost(costCents: 100), _cost(costCents: 200)],
+          'r1': [_cost(costMicros: 100), _cost(costMicros: 200)],
           // r2 has no history at all.
         },
       );
@@ -193,12 +193,12 @@ void main() {
       expect(estimate.byNodeKey['n2']!.hasHistory, isFalse);
       // Only n1 contributes to the totals.
       expect(
-        estimate.totalCostCentsLow,
-        estimate.byNodeKey['n1']!.costCentsLow,
+        estimate.totalCostMicrosLow,
+        estimate.byNodeKey['n1']!.costMicrosLow,
       );
       expect(
-        estimate.totalCostCentsHigh,
-        estimate.byNodeKey['n1']!.costCentsHigh,
+        estimate.totalCostMicrosHigh,
+        estimate.byNodeKey['n1']!.costMicrosHigh,
       );
       expect(estimate.isPartial, isTrue);
     });
@@ -223,13 +223,13 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'r1': [_cost(costCents: 100)],
-          'r2': [_cost(costCents: 300)],
+          'r1': [_cost(costMicros: 100)],
+          'r2': [_cost(costMicros: 300)],
         },
       );
       expect(estimate.isPartial, isFalse);
-      expect(estimate.totalCostCentsLow, 400);
-      expect(estimate.totalCostCentsHigh, 400);
+      expect(estimate.totalCostMicrosLow, 400);
+      expect(estimate.totalCostMicrosHigh, 400);
     });
 
     test('no nodes with history: isPartial is false and totals are null', () {
@@ -254,8 +254,8 @@ void main() {
         historyByRoleKey: const {},
       );
       expect(estimate.isPartial, isFalse);
-      expect(estimate.totalCostCentsLow, isNull);
-      expect(estimate.totalCostCentsHigh, isNull);
+      expect(estimate.totalCostMicrosLow, isNull);
+      expect(estimate.totalCostMicrosHigh, isNull);
     });
   });
 
@@ -299,20 +299,20 @@ void main() {
         historyByRoleKey: {
           // low=rank0, high=rank1 for a 2-sample list.
           'ra': [
-            _cost(costCents: 0, durationMs: 100),
-            _cost(costCents: 0, durationMs: 120),
+            _cost(costMicros: 0, durationMs: 100),
+            _cost(costMicros: 0, durationMs: 120),
           ],
           'rb': [
-            _cost(costCents: 0, durationMs: 200),
-            _cost(costCents: 0, durationMs: 240),
+            _cost(costMicros: 0, durationMs: 200),
+            _cost(costMicros: 0, durationMs: 240),
           ],
           'rc': [
-            _cost(costCents: 0, durationMs: 150),
-            _cost(costCents: 0, durationMs: 170),
+            _cost(costMicros: 0, durationMs: 150),
+            _cost(costMicros: 0, durationMs: 170),
           ],
           'rd': [
-            _cost(costCents: 0, durationMs: 50),
-            _cost(costCents: 0, durationMs: 90),
+            _cost(costMicros: 0, durationMs: 50),
+            _cost(costMicros: 0, durationMs: 90),
           ],
         },
       );
@@ -339,7 +339,7 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'ra': [_cost(costCents: 500)], // no durationMs
+          'ra': [_cost(costMicros: 500)], // no durationMs
         },
       );
       expect(estimate.totalDurationMsLow, isNull);
@@ -362,11 +362,11 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'r1': [_cost(costCents: 1000)],
+          'r1': [_cost(costMicros: 1000)],
         },
-        budgetCeilingCents: 500,
+        budgetCeilingMicros: 500,
       );
-      expect(estimate.totalCostCentsHigh, 1000);
+      expect(estimate.totalCostMicrosHigh, 1000);
       expect(estimate.exceedsBudget, isTrue);
     });
 
@@ -384,9 +384,9 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'r1': [_cost(costCents: 500)],
+          'r1': [_cost(costMicros: 500)],
         },
-        budgetCeilingCents: 500,
+        budgetCeilingMicros: 500,
       );
       expect(estimate.exceedsBudget, isFalse);
     });
@@ -405,10 +405,10 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: {
-          'r1': [_cost(costCents: 1000000)],
+          'r1': [_cost(costMicros: 1000000)],
         },
       );
-      expect(estimate.budgetCeilingCents, isNull);
+      expect(estimate.budgetCeilingMicros, isNull);
       expect(estimate.exceedsBudget, isFalse);
     });
 
@@ -426,9 +426,9 @@ void main() {
       final estimate = _estimator.estimate(
         graph: graph,
         historyByRoleKey: const {},
-        budgetCeilingCents: 1,
+        budgetCeilingMicros: 1,
       );
-      expect(estimate.totalCostCentsHigh, isNull);
+      expect(estimate.totalCostMicrosHigh, isNull);
       expect(estimate.exceedsBudget, isFalse);
     });
   });

@@ -2,7 +2,7 @@
 title: CLI do cc_server
 description: Todas as flags, variáveis de ambiente, subcomandos e caminhos do diretório de dados do servidor headless.
 slug: pt-BR/manual/referencia/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Toda flag de processo aceita uma flag de CLI ou uma variável de ambiente; a flag
@@ -237,12 +237,16 @@ macOS, `%APPDATA%\control-center` no Windows e `$XDG_DATA_HOME/control-center`
 (ou então `~/.local/share/control-center`) nos demais. Um `.cc_server` relativo ao
 cwd só é usado quando nenhum diretório home ou de dados de aplicativo é resolvido.
 
+O servidor mantém o diretório de dados privado à sua própria conta (`0700`). Ele se recusa a iniciar (código de saída `78`) quando não consegue isso, quando `global.db` está danificado ou foi gravado por uma versão mais nova, ou quando o arquivo de identidade dele não pode ser lido.
+
 | Caminho                           | Conteúdo                                                                         |
 | --------------------------------- | -------------------------------------------------------------------------------- |
 | `global.db`                       | O registro de espaços de trabalho, usuários, dispositivos emparelhados, o feed de notícias e a fila da frota |
-| `<workspaceId>/workspace.db`      | Um banco de dados por espaço de trabalho — agentes, espaços, tickets, memória, o grafo de código |
+| `<workspaceId>/workspace.db`      | Um banco de dados por espaço de trabalho — agentes, espaços, tickets, memória |
+| `<workspaceId>/code_index.db`     | O grafo de código desse espaço de trabalho. Reconstruído quando está ausente, nunca copiado em backup        |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | As duas cópias mais recentes de um banco de dados de antes de uma atualização mudar o formato dele |
 | `<workspaceId>/chat_credentials/` | Tokens de bots de chat, em JSON simples, para que acompanhem o espaço de trabalho |
-| `secrets.json`                    | Chaves de emparelhamento, a chave de instalação do Connect, os apps de provedor, os logins das pessoas (selados quando feitos pelo Connect), SSO (`0600`) |
+| `secrets.json`                    | Chaves de emparelhamento, a chave de instalação do Connect, os apps de provedor, os logins das pessoas (selados quando feitos pelo Connect), segredos de webhook, SSO (`0600`) |
 | `backups/<timestamp>/`            | Um snapshot da instalação — `manifest.json`, `global.db` e uma cópia de cada espaço de trabalho |
 | `backups/exports/`                | Exportações de um único espaço de trabalho, `<workspaceId>-<timestamp>.db`       |
 | `backups/transfer/`               | Área de preparação para downloads e uploads de backup; varrida pela rota que grava nela |

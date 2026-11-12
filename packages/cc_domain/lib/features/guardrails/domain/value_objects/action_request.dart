@@ -24,7 +24,7 @@ class ActionRequest {
     this.refs = const [],
     this.hosts = const [],
     this.magnitude,
-    this.cents,
+    this.micros,
     this.tool,
   });
 
@@ -51,8 +51,8 @@ class ActionRequest {
   /// A countable magnitude (files touched, rows deleted) for ceiling rules.
   final int? magnitude;
 
-  /// A monetary magnitude in cents, for budget ceilings.
-  final int? cents;
+  /// A monetary magnitude in micro-dollars, for budget ceilings.
+  final int? micros;
 
   /// The tool the agent called (an MCP or harness tool name), when the action
   /// is a tool call. It lets a standing approval name the one tool a person
@@ -66,7 +66,7 @@ class ActionRequest {
       refs.isEmpty &&
       hosts.isEmpty &&
       magnitude == null &&
-      cents == null &&
+      micros == null &&
       tool == null;
 
   /// A copy with [classes] replaced (chokepoints extract arguments once and
@@ -78,7 +78,7 @@ class ActionRequest {
     refs: refs,
     hosts: hosts,
     magnitude: magnitude,
-    cents: cents,
+    micros: micros,
     tool: tool,
   );
 
@@ -95,7 +95,7 @@ class ActionRequest {
           refs: refs,
           hosts: hosts,
           magnitude: magnitude,
-          cents: cents,
+          micros: micros,
           tool: tool,
         );
 
@@ -106,7 +106,7 @@ class ActionRequest {
           other.command == command &&
           other.tool == tool &&
           other.magnitude == magnitude &&
-          other.cents == cents &&
+          other.micros == micros &&
           _sameList(other.paths, paths) &&
           _sameList(other.refs, refs) &&
           _sameList(other.hosts, hosts) &&
@@ -130,7 +130,7 @@ class ActionRequest {
     command,
     tool,
     magnitude,
-    cents,
+    micros,
     Object.hashAll(paths),
     Object.hashAll(refs),
     Object.hashAll(hosts),

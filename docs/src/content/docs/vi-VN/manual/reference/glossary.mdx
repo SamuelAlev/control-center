@@ -2,7 +2,7 @@
 title: Thuật ngữ
 description: Định nghĩa các thuật ngữ then chốt được dùng xuyên suốt Control Center.
 slug: vi-VN/so-tay/tham-chieu/thuat-ngu
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (một VM khép kín — backend duy nhất có ranh giới kernel, được áp dụng cho terminal tương tác), native (Seatbelt gốc của hệ điều hành trên macOS, bubblewrap trên Linux và WSL2) hoặc none. Được dò một lần lúc khởi động; native bọc lấy việc điều phối agent khi có sẵn. Windows không có backend native và Linux cần bwrap cùng socat; trên một máy như vậy chỉ các lượt chạy của chủ sở hữu máy chủ mới bắt đầu, không được bọc, còn của những người khác bị từ chối. --sandbox off chạy mọi agent của thành viên không được bọc.'],
 ['Rig', 'Một cỗ máy dùng một lần do agent điều khiển trong thời gian thực: một trình duyệt hoặc desktop Linux khép kín, một trình giả lập Android hoặc Simulator iOS do máy chủ quản lý, hoặc một terminal khép kín. Được xem trực tiếp qua làn riêng ở độ phân giải đầy đủ, với việc giành quyền điều khiển được thực thi phía máy chủ. Có phạm vi theo một cuộc hội thoại để tab của người và công cụ của agent cùng nhắm tới một cỗ máy.'],
 ['Môi trường cách ly', 'Thuộc tính cô lập mạnh hơn dành cho các rig chạy trên VM: một ranh giới kernel, đĩa overlay dùng một lần, cổng mạng từ chối theo mặc định và bộ môi giới thông tin xác thực. Rig Android và iOS là dùng một lần nhưng dùng mạng do máy chủ quản lý, nên chúng không tuyên bố ranh giới này. Việc điều khiển bất kỳ rig nào đều dùng lớp rào chắn enclosureControl.'],
-['RunCost', 'Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo cent) cho một lượt chạy agent.'],
+['RunCost', 'Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo micro-đô la) cho một lượt chạy agent.'],
 ['WakeReason', 'Lý do một agent được điều phối. Sáu giá trị: tin nhắn người dùng, giao phiếu, điều phối lại để phục hồi sau lỗi, phiếu con hoàn tất, nhịp theo dõi đã lên lịch và bước quy trình.'],
 ['SandboxPort', 'Quản lý vòng đời sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Cấp thông tin xác thực có phạm vi giới hạn cho việc khởi chạy sandbox (một token cho đúng một kho mã cho môi trường của agent, quyền ghi chỉ dành cho đường push phía máy chủ), rồi giải phóng chúng khi dỡ bỏ.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Môi trường cách ly**: Ranh giới rig mạnh hơn, dựa trên VM — một ranh giới kernel, đĩa overlay dùng một lần, cổng mạng từ chối theo mặc định và bộ môi giới thông tin xác thực. Rig Android và iOS là dùng một lần nhưng dùng mạng do máy chủ quản lý và không tuyên bố ranh giới này. Việc điều khiển bất kỳ rig nào đều dùng lớp rào chắn `enclosureControl`.
 
-**RunCost**: Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo cent) cho một lượt chạy agent.
+**RunCost**: Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo micro-đô la) cho một lượt chạy agent.
 
 **WakeReason**: Lý do một agent được điều phối. Sáu giá trị: tin nhắn người dùng, giao phiếu, điều phối lại để phục hồi sau lỗi, phiếu con hoàn tất, nhịp theo dõi đã lên lịch và bước quy trình.
 

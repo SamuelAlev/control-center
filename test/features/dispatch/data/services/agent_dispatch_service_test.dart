@@ -133,7 +133,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
       required String credentialId,
     })?
     onHarnessCredentialExhausted,
-    int? costCapCents,
+    int? costCapMicros,
   }) {
     startCallCount++;
     lastClaudeConfigDir = claudeConfigDir;
@@ -329,12 +329,7 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
       Stream.value([]);
 
   @override
-  Stream<List<AgentRunLog>> watchAll() => Stream.value([]);
-
-  @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  Stream<List<AgentRunLog>> watchRecent(int limit) => Stream.value([]);
 
   @override
   Stream<List<AgentRunLog>> watchByConversation(
@@ -1665,13 +1660,13 @@ void main() {
         await service.completeRun(
           childLog,
           null,
-          cost: const RunCost(estimatedCostCents: 42, costMicros: 420000),
+          cost: const RunCost(costMicros: 420000),
         );
 
         // The parent's run row gained the child cost.
         final parent = runLogRepo._logs['parent-run'];
         expect(parent, isNotNull);
-        expect(parent!.childCostCents, 42);
+        expect(parent!.childCostMicros, 420000);
       },
     );
 
@@ -1703,8 +1698,8 @@ void main() {
         await runLogRepo.upsert(childLog);
         await service.completeRun(childLog, null);
 
-        // No cost to roll up — the parent's childCostCents stays at 0.
-        expect(runLogRepo._logs['parent-run']!.childCostCents, 0);
+        // No cost to roll up — the parent's childCostMicros stays at 0.
+        expect(runLogRepo._logs['parent-run']!.childCostMicros, 0);
       },
     );
   });

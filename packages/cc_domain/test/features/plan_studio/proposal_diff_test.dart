@@ -419,26 +419,26 @@ void main() {
   group('ProposalDiffService.diff — budget', () {
     test('null -> value is a budget change', () {
       final from = _proposal(budget: const BudgetSpec());
-      final to = _proposal(budget: const BudgetSpec(maxCostCents: 500));
+      final to = _proposal(budget: const BudgetSpec(maxCostMicros: 500));
       final diff = ProposalDiffService.diff(from, to);
-      expect(diff.maxCostCentsFrom, isNull);
-      expect(diff.maxCostCentsTo, 500);
+      expect(diff.maxCostMicrosFrom, isNull);
+      expect(diff.maxCostMicrosTo, 500);
       expect(diff.budgetChanged, isTrue);
       expect(diff.isEmpty, isFalse);
     });
 
     test('value -> null is a budget change', () {
-      final from = _proposal(budget: const BudgetSpec(maxCostCents: 500));
+      final from = _proposal(budget: const BudgetSpec(maxCostMicros: 500));
       final to = _proposal(budget: const BudgetSpec());
       final diff = ProposalDiffService.diff(from, to);
-      expect(diff.maxCostCentsFrom, 500);
-      expect(diff.maxCostCentsTo, isNull);
+      expect(diff.maxCostMicrosFrom, 500);
+      expect(diff.maxCostMicrosTo, isNull);
       expect(diff.budgetChanged, isTrue);
     });
 
     test('value -> same value is NOT a budget change', () {
-      final from = _proposal(budget: const BudgetSpec(maxCostCents: 500));
-      final to = _proposal(budget: const BudgetSpec(maxCostCents: 500));
+      final from = _proposal(budget: const BudgetSpec(maxCostMicros: 500));
+      final to = _proposal(budget: const BudgetSpec(maxCostMicros: 500));
       final diff = ProposalDiffService.diff(from, to);
       expect(diff.budgetChanged, isFalse);
       expect(diff.isEmpty, isTrue);

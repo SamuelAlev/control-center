@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/actor_kind.dart';
 import 'package:cc_domain/features/governance/domain/entities/work_product.dart';
 import 'package:cc_domain/features/governance/domain/value_objects/work_product_type.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
@@ -70,7 +71,7 @@ class WorkProductMapper {
     revisionNumber: Value(r.revisionNumber),
     content: Value(r.content),
     baseRevisionId: Value(r.baseRevisionId),
-    authorType: Value(r.authorType),
+    authorType: Value(ActorKind.parse(r.authorType).wire),
     authorId: Value(r.authorId),
     summary: Value(r.summary),
     createdAt: Value(r.createdAt),

@@ -1,0 +1,66 @@
+diff --git a/hook/build.dart b/hook/build.dart
+index bd66820..5ce2af2 100644
+--- a/hook/build.dart
++++ b/hook/build.dart
+@@ -52,9 +52,14 @@ Future<void> main(List<String> args) async {
+         if (sanitizer != null) 'WEBCRYPTO_SANITIZER': sanitizer.name,
+       },
+       targets: ['install'],
++      // BoringSSL is ~260 objects, and CMake builds serially by default.
++      parallelUseAllProcessors: true,
+     );
+ 
+-    await builder.run(input: input, output: output);
++    // The hook reruns whenever PATH changes, and ios.toolchain.cmake appends to
++    // CMAKE_C_FLAGS on every configure, so a reconfigure recompiles everything.
++    // CMake still regenerates on its own when a CMakeLists.txt changes.
++    await builder.run(input: input, output: output, skipGenerateIfCached: true);
+ 
+     final assets = await output.findAndAddCodeAssets(
+       input,
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 320b633..714533f 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -112,6 +112,13 @@ else()
+   set(PLATFORM "linux")
+ endif()
+ 
++# BoringSSL's Windows aarch64 sources are GNU-syntax assembly that MSVC cannot
++# assemble (clang-cl can), so MSVC builds Windows on Arm without assembly.
++if(PLATFORM STREQUAL "win" AND ARCH STREQUAL "aarch64" AND
++   NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
++  unset(crypto_sources_win_aarch64)
++endif()
++
+ # If there is no assembly files disable ASM and set empty sources list
+ if(NOT DEFINED crypto_sources_${PLATFORM}_${ARCH})
+   add_definitions(-DOPENSSL_NO_ASM)
+@@ -128,6 +135,9 @@ if(MSVC)
+               # possible loss of data
+       "C4267" # conversion from 'size_t' to 'int', possible loss of data
+       "C4706" # assignment within conditional expression
++      "C4702" # unreachable code; BoringSSL disables it as too aggressive. An
++              # assembly-free build (Windows on Arm) trips it on constant-false
++              # hardware capability checks.
+       "C4141"
+       "C4201" # nonstandard extension used: nameless struct/union
+       )
+@@ -142,10 +152,13 @@ if(MSVC)
+ endif()
+ if(WIN32)
+   # Windows/MSVC option from CMakeLists.txt in BoringSSL
+-  # Use NASM on Windows.
+-  enable_language(ASM_NASM)
+-  set(OPENSSL_NASM TRUE)
+-  set(CMAKE_ASM_NASM_FLAGS "${CMAKE_ASM_NASM_FLAGS} -gcv8")
++  # Use NASM on Windows. Only the x86 sources are NASM; requiring it on ARM64
++  # fails where no NASM is installed.
++  if(ARCH STREQUAL "x86_64" OR ARCH STREQUAL "x86")
++    enable_language(ASM_NASM)
++    set(OPENSSL_NASM TRUE)
++    set(CMAKE_ASM_NASM_FLAGS "${CMAKE_ASM_NASM_FLAGS} -gcv8")
++  endif()
+   # On Windows, prefer cl over gcc if both are available. By default most of
+   # the CMake generators prefer gcc, even on Windows.
+   set(CMAKE_GENERATOR_CC cl)

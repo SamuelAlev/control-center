@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/actor_kind.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/guard_decision_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/guard_decision_kind.dart';
 import 'package:cc_persistence/database/daos/guard_decision_dao.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
@@ -48,9 +50,9 @@ class DaoGuardDecisionRepository implements GuardDecisionRepository {
   Stream<List<GuardDecision>> watchRecent(
     String workspaceId, {
     int limit = 100,
-  }) => _dao(
-    workspaceId,
-  ).watchRecent(workspaceId, limit: limit).map((rows) => rows.map(_fromRow).toList(growable: false));
+  }) => _dao(workspaceId)
+      .watchRecent(workspaceId, limit: limit)
+      .map((rows) => rows.map(_fromRow).toList(growable: false));
 
   @override
   Future<List<GuardDecision>> pageFrom(
@@ -96,7 +98,7 @@ class DaoGuardDecisionRepository implements GuardDecisionRepository {
         // A checkpoint deliberately restarts the chain from the terminal hash
         // of the segment it replaced, so its own prevHash is not the previous
         // row's entryHash.
-        final isCheckpoint = row.kind == 'checkpoint';
+        final isCheckpoint = row.kind == GuardDecisionKind.checkpoint.wire;
         if (expectedPrev != null &&
             !isCheckpoint &&
             row.prevHash != expectedPrev) {
@@ -148,11 +150,9 @@ class DaoGuardDecisionRepository implements GuardDecisionRepository {
     required int uptoSeq,
     required DateTime at,
   }) async {
-    final tail = await _dao(workspaceId).recent(
+    final tail = await _dao(
       workspaceId,
-      limit: 1,
-      beforeSeq: uptoSeq + 1,
-    );
+    ).recent(workspaceId, limit: 1, beforeSeq: uptoSeq + 1);
     if (tail.isEmpty) {
       return;
     }
@@ -163,13 +163,13 @@ class DaoGuardDecisionRepository implements GuardDecisionRepository {
       workspaceId: workspaceId,
       seq: uptoSeq,
       occurredAt: at,
-      actorType: 'system',
+      actorType: ActorKind.system.wire,
       actorId: 'retention',
       surface: GuardSurface.audit,
       actionName: 'audit.truncate',
       decision: ActionDecision.allow,
       prevHash: terminalHash,
-      kind: 'checkpoint',
+      kind: GuardDecisionKind.checkpoint.wire,
     );
     await _dao(workspaceId).truncateWithCheckpoint(
       workspaceId,
@@ -187,7 +187,7 @@ class DaoGuardDecisionRepository implements GuardDecisionRepository {
         workspaceId: d.workspaceId,
         seq: d.seq,
         occurredAt: d.occurredAt,
-        actorType: d.actorType,
+        actorType: ActorKind.parse(d.actorType).wire,
         actorId: d.actorId,
         onBehalfOfUserId: Value(d.onBehalfOfUserId),
         delegationChainId: Value(d.delegationChainId),
@@ -212,7 +212,7 @@ class DaoGuardDecisionRepository implements GuardDecisionRepository {
         correlationId: Value(d.correlationId),
         prevHash: d.prevHash,
         entryHash: d.entryHash,
-        kind: Value(d.kind),
+        kind: Value(GuardDecisionKind.parse(d.kind).wire),
       );
 
   GuardDecision _fromRow(GuardDecisionsTableData r) => GuardDecision(

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -55,14 +56,14 @@ class _FakeSpaceReadRepository implements SpaceReadRepository {
   }) async {}
 
   @override
-  Stream<DateTime?> watchUserLastReadAt(
+  Stream<FeedPosition?> watchUserLastReadAt(
     String workspaceId,
     String spaceId,
     String userId,
   ) => Stream.value(null);
 
   @override
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
     String workspaceId,
     String userId,
   ) => Stream.value(const {});
@@ -334,9 +335,9 @@ void main() {
           // client, so the fold is a no-op here.
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(readCursor)),
+          spaceUserLastReadAtProvider('ch-1').overrideWith(
+            (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
+          ),
           agentDetailProvider('agent-1').overrideWith((ref) async => null),
         ],
         child: MaterialApp(
@@ -398,9 +399,9 @@ void main() {
             )).overrideWith((ref) => window.stream),
             spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
             codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-            spaceUserLastReadAtProvider(
-              'ch-1',
-            ).overrideWith((ref) => Stream.value(readCursor)),
+            spaceUserLastReadAtProvider('ch-1').overrideWith(
+              (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
+            ),
             agentDetailProvider('agent-1').overrideWith((ref) async => null),
             // The feed stamps the server read cursor when it treats an arrival
             // as witnessed; the real provider is RPC-flipped and would open a
@@ -549,9 +550,9 @@ void main() {
             )).overrideWith((ref) => window.stream),
             spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
             codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-            spaceUserLastReadAtProvider(
-              'ch-1',
-            ).overrideWith((ref) => Stream.value(readCursor)),
+            spaceUserLastReadAtProvider('ch-1').overrideWith(
+              (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
+            ),
             spaceReadRepositoryProvider.overrideWithValue(
               _FakeSpaceReadRepository(),
             ),
@@ -604,9 +605,9 @@ void main() {
           ),
           spaceTurnRelayProvider('ch-1').overrideWith((ref) {}),
           codeFontFamilyProvider.overrideWith((ref) => 'monospace'),
-          spaceUserLastReadAtProvider(
-            'ch-1',
-          ).overrideWith((ref) => Stream.value(readCursor)),
+          spaceUserLastReadAtProvider('ch-1').overrideWith(
+            (ref) => Stream.value(FeedPosition(at: readCursor, seq: 0)),
+          ),
           spaceReadRepositoryProvider.overrideWithValue(
             _FakeSpaceReadRepository(),
           ),

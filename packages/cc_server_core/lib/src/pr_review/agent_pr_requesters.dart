@@ -1,15 +1,13 @@
 import 'package:cc_domain/cc_domain.dart'
     show NetworkException, ValidationException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_pull_request_cache_kinds.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/agent_pull_request_requester_repository.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_infra/cc_infra.dart' show kNeedsSignInCode, mapHttpException;
-import 'package:cc_persistence/database/cross_workspace_queries.dart';
-import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:rhttp/rhttp.dart' show RhttpException;
 
 /// The caller's own login on a forge in a workspace ('' when unknown).
@@ -39,12 +37,13 @@ typedef ForgeViewerAccount =
 /// its author in every sense that matters for review. A run nobody asked for
 /// records everyone who armed the trigger that started it.
 ///
-/// Recorded in the workspace's own database as durable `caches` rows
-/// ([AgentPullRequestCacheKinds]: retention spares them, clients cannot reach
-/// them) keyed by the forge's durable repository id, so a rename or a
-/// transfer does not lose them, and read across every workspace: the same
-/// forge repository linked in another workspace is the same pull request,
-/// and must not be a way around the refusal.
+/// Recorded server-wide ([AgentPullRequestRequesterRepository]: a table of
+/// its own in the global database, never pruned, unreachable by clients)
+/// keyed by the forge's durable repository id, so a rename or a transfer does
+/// not lose them. A record names no workspace: the same forge repository
+/// linked in another workspace is the same pull request, and must not be a
+/// way around the refusal, nor may deleting or restoring the workspace it was
+/// written through.
 ///
 /// Recording is not best effort: a pending row is written before the forge is
 /// asked to open the pull request ([recordPending]; a failure aborts the
@@ -54,17 +53,10 @@ typedef ForgeViewerAccount =
 /// the approval check itself: promoted to a numbered record once an open pull
 /// request carries its head branch, dropped after [pendingMaxAge] without one.
 class AgentPrRequesters {
-  /// Creates the store over `cacheFor`, which resolves the workspace's own
-  /// cache DAO per call (never cached here), and `crossWorkspace`, which reads
-  /// every workspace's rows when an approval is checked.
-  AgentPrRequesters({
-    required this._cacheFor,
-    required this._crossWorkspace,
-    required this._viewer,
-  });
+  /// Creates the store over [_records], the server-wide records.
+  AgentPrRequesters({required this._records, required this._viewer});
 
-  final CacheDao Function(String workspaceId) _cacheFor;
-  final CrossWorkspaceQueries _crossWorkspace;
+  final AgentPullRequestRequesterRepository _records;
   final ForgeViewerAccount _viewer;
 
   /// How long a pending row waits for an open pull request to carry its head
@@ -83,39 +75,16 @@ class AgentPrRequesters {
   static String _pendingKey(Repo repo, String head) =>
       '${_pendingPrefix(repo)}$head';
 
-  static Set<String> _decode(String? payload) => {
-    for (final id in (payload ?? '').split(','))
-      if (id.trim().isNotEmpty) id.trim(),
-  };
-
-  static String _encode(Set<String> ids) => (ids.toList()..sort()).join(',');
-
   static Set<String> _owners(Iterable<String> ids) => {
     for (final id in ids)
       if (id.trim().isNotEmpty) id.trim(),
   };
-
-  /// Adds [owners] to the row at [key], keeping whoever it already names.
-  static Future<void> _merge(
-    CacheDao cache,
-    String workspaceId,
-    String kind,
-    String key,
-    Set<String> owners,
-  ) async {
-    final merged = {
-      ..._decode(await cache.read(workspaceId, kind, key)),
-      ...owners,
-    };
-    await cache.put(workspaceId, kind, key, _encode(merged));
-  }
 
   /// Records, before the forge is asked, that an agent is opening a pull
   /// request from [head] on [repo] that [requesterUserIds] may not approve.
   /// Throws when it cannot be written: the pull request must then not be
   /// opened.
   Future<void> recordPending(
-    String workspaceId,
     Repo repo, {
     required String head,
     required Set<String> requesterUserIds,
@@ -127,10 +96,8 @@ class AgentPrRequesters {
         'a head branch.',
       );
     }
-    await _merge(
-      _cacheFor(workspaceId),
-      workspaceId,
-      AgentPullRequestCacheKinds.pending,
+    await _records.add(
+      AgentPullRequestRecordState.pending,
       _pendingKey(repo, head),
       owners,
     );
@@ -141,7 +108,6 @@ class AgentPrRequesters {
   /// leaving the pending row, when [pr] names no repository id or the row
   /// cannot be written: the refusal then still finds it by head branch.
   Future<void> recordOpened(
-    String workspaceId,
     Repo repo, {
     required String head,
     required PullRequest pr,
@@ -153,17 +119,13 @@ class AgentPrRequesters {
         '${repo.fullName}#${pr.number} is in.',
       );
     }
-    final cache = _cacheFor(workspaceId);
-    await _merge(
-      cache,
-      workspaceId,
-      AgentPullRequestCacheKinds.opened,
+    await _records.add(
+      AgentPullRequestRecordState.opened,
       _openedKey(repo, pr.baseRepoId, pr.number),
       _owners(requesterUserIds),
     );
-    await cache.deleteEntry(
-      workspaceId,
-      AgentPullRequestCacheKinds.pending,
+    await _records.remove(
+      AgentPullRequestRecordState.pending,
       _pendingKey(repo, head),
     );
   }
@@ -176,7 +138,6 @@ class AgentPrRequesters {
   /// may still have opened (a timeout, a 5xx) keeps it, matched by head
   /// branch.
   Future<PullRequest> open({
-    required String workspaceId,
     required Repo repo,
     required String head,
     required Set<String> approvalOwnerUserIds,
@@ -186,19 +147,14 @@ class AgentPrRequesters {
     if (owners.isEmpty) {
       return create();
     }
-    await recordPending(
-      workspaceId,
-      repo,
-      head: head,
-      requesterUserIds: owners,
-    );
+    await recordPending(repo, head: head, requesterUserIds: owners);
     final PullRequest pr;
     try {
       pr = await create();
     } on Object catch (e) {
       if (_definitelyRefused(e)) {
         try {
-          await abandonPending(workspaceId, repo, head: head);
+          await abandonPending(repo, head: head);
         } on Object catch (_) {
           // A stale pending row only refuses its owners' own approval.
         }
@@ -206,13 +162,7 @@ class AgentPrRequesters {
       rethrow;
     }
     try {
-      await recordOpened(
-        workspaceId,
-        repo,
-        head: head,
-        pr: pr,
-        requesterUserIds: owners,
-      );
+      await recordOpened(repo, head: head, pr: pr, requesterUserIds: owners);
     } on Object catch (e) {
       CcHostLog.warning(
         'agent pr: could not record ${repo.fullName}#${pr.number} by number '
@@ -243,18 +193,11 @@ class AgentPrRequesters {
   }
 
   /// Drops the pending row of a pull request the forge refused to open.
-  Future<void> abandonPending(
-    String workspaceId,
-    Repo repo, {
-    required String head,
-  }) => _cacheFor(workspaceId).deleteEntry(
-    workspaceId,
-    AgentPullRequestCacheKinds.pending,
-    _pendingKey(repo, head),
-  );
+  Future<void> abandonPending(Repo repo, {required String head}) => _records
+      .remove(AgentPullRequestRecordState.pending, _pendingKey(repo, head));
 
-  /// Settles [workspaceId]'s pending rows on [repo] against [openPrs], the
-  /// open pull requests the forge just listed for it.
+  /// Settles the pending rows on [repo] against [openPrs], the open pull
+  /// requests the forge just listed for it.
   ///
   /// A pending row whose head branch an open pull request carries becomes
   /// that pull request's numbered record (every one, should two open pull
@@ -264,19 +207,14 @@ class AgentPrRequesters {
   /// the forge never opened it or it has closed since. A partial list (more
   /// pages than were read) drops nothing.
   Future<void> reconcile(
-    String workspaceId,
     Repo repo,
     List<PullRequest> openPrs, {
     required bool complete,
     DateTime? now,
   }) async {
-    final cache = _cacheFor(workspaceId);
     final prefix = _pendingPrefix(repo);
     final pending = [
-      for (final row in await cache.entriesOfKind(
-        workspaceId,
-        AgentPullRequestCacheKinds.pending,
-      ))
+      for (final row in await _records.pendingWithPrefix(prefix))
         if (row.key.startsWith(prefix)) row,
     ];
     if (pending.isEmpty) {
@@ -290,8 +228,8 @@ class AgentPrRequesters {
           if (pr.state == PrState.open && pr.headRef == head) pr,
       ];
       if (matching.isEmpty) {
-        if (complete && row.updatedAt.isBefore(cutoff)) {
-          await abandonPending(workspaceId, repo, head: head);
+        if (complete && row.recordedAt.isBefore(cutoff)) {
+          await abandonPending(repo, head: head);
         }
         continue;
       }
@@ -299,101 +237,55 @@ class AgentPrRequesters {
         continue;
       }
       for (final pr in matching) {
-        await _merge(
-          cache,
-          workspaceId,
-          AgentPullRequestCacheKinds.opened,
+        await _records.add(
+          AgentPullRequestRecordState.opened,
           _openedKey(repo, pr.baseRepoId, pr.number),
-          _decode(row.payload),
+          row.userIds,
         );
       }
-      await abandonPending(workspaceId, repo, head: head);
+      await abandonPending(repo, head: head);
     }
   }
 
-  /// Promotes, in every workspace, the pending row an open [pr] on [repo]
-  /// carries the head branch of to its numbered record.
+  /// Promotes the pending row an open [pr] on [repo] carries the head branch
+  /// of to its numbered record.
   Future<void> _promoteFor(Repo repo, PullRequest pr) async {
     if (pr.state != PrState.open ||
         pr.headRef.isEmpty ||
         pr.baseRepoId.isEmpty) {
       return;
     }
-    final key = _pendingKey(repo, pr.headRef);
-    // CROSS-WORKSPACE BY DESIGN: the pending row was written by whichever
-    // workspace opened the pull request, and the approval may be asked for
-    // through another workspace that links the same forge repository.
-    await _crossWorkspace.fanOut((db) async {
-      final owners = _decode(
-        await db.cacheDao.read(
-          db.workspaceId,
-          AgentPullRequestCacheKinds.pending,
-          key,
-        ),
-      );
-      if (owners.isEmpty) {
-        return;
-      }
-      await _merge(
-        db.cacheDao,
-        db.workspaceId,
-        AgentPullRequestCacheKinds.opened,
-        _openedKey(repo, pr.baseRepoId, pr.number),
-        owners,
-      );
-      await db.cacheDao.deleteEntry(
-        db.workspaceId,
-        AgentPullRequestCacheKinds.pending,
-        key,
-      );
-    });
+    await _records.promote(
+      _pendingKey(repo, pr.headRef),
+      _openedKey(repo, pr.baseRepoId, pr.number),
+    );
   }
 
   /// Everyone who may not approve pull request [number] of the forge
   /// repository [repoId] (the forge's durable id, '' when unknown) that
-  /// [repo] links, or a pull request still pending from [headBranch], in any
-  /// workspace. Throws when any workspace could not be read: an unknown
-  /// answer must not read as "nobody".
+  /// [repo] links, or a pull request still pending from [headBranch],
+  /// whichever workspace recorded it. Throws when the records could not be
+  /// read: an unknown answer must not read as "nobody".
   Future<Set<String>> requestersOf(
     Repo repo,
     int number, {
     required String repoId,
     String? headBranch,
   }) async {
-    final failed = <String>[];
-    // CROSS-WORKSPACE BY DESIGN: a pull request belongs to the forge, not to
-    // a workspace. The same repository linked in two workspaces is one pull
-    // request, so the requester recorded in one must refuse the approval
-    // asked for through the other. Deleted workspaces are read too: their
-    // agents' pull requests stay open on the forge.
-    final rows = await _crossWorkspace.fanOut(
-      (db) async => [
-        if (repoId.isNotEmpty)
-          await db.cacheDao.read(
-            db.workspaceId,
-            AgentPullRequestCacheKinds.opened,
-            _openedKey(repo, repoId, number),
-          ),
-        if (headBranch != null && headBranch.isNotEmpty)
-          await db.cacheDao.read(
-            db.workspaceId,
-            AgentPullRequestCacheKinds.pending,
-            _pendingKey(repo, headBranch),
-          ),
-      ],
-      onError: (workspaceId, _) => failed.add(workspaceId),
-      includeDeleted: true,
-    );
-    if (failed.isNotEmpty) {
+    try {
+      return await _records.requesters(
+        openedKey: repoId.isEmpty ? null : _openedKey(repo, repoId, number),
+        pendingKey: headBranch == null || headBranch.isEmpty
+            ? null
+            : _pendingKey(repo, headBranch),
+      );
+    } on Object catch (e) {
+      CcHostLog.warning('agent pr: could not read who asked for it: $e');
       throw const ValidationException(
         'Control Center could not check who asked for this pull request, so '
         'it cannot be approved from here right now. Try again shortly.',
       );
     }
-    return {
-      for (final values in rows)
-        for (final value in values) ..._decode(value),
-    };
   }
 
   /// The approval check for clients acting as [actingUserId] on [repo] in
@@ -401,11 +293,11 @@ class AgentPrRequesters {
   /// asked for it (a submitted review, a published review, any forge).
   ///
   /// Refused: an approval with no person behind it; anyone recorded as not
-  /// allowed to approve this pull request (in any workspace); the pull
-  /// request's own author ([isAuthor]). Fails closed: a pull request that
-  /// cannot be read, names no repository id or no author, or a caller whose
-  /// own forge account cannot be confirmed, is refused with a message to try
-  /// again.
+  /// allowed to approve this pull request (whichever workspace recorded it);
+  /// the pull request's own author ([isAuthor]). Fails closed: a pull request
+  /// that cannot be read, names no repository id or no author, or a caller
+  /// whose own forge account cannot be confirmed, is refused with a message to
+  /// try again.
   ForgeApprovalGuard guardFor(
     Repo repo, {
     required String workspaceId,

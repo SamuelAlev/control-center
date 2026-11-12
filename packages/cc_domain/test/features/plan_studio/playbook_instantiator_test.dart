@@ -56,7 +56,7 @@ void main() {
             'required': ['summary'],
           },
         ),
-        budget: BudgetSpec(maxCostCents: 5000),
+        budget: BudgetSpec(maxCostMicros: 5000),
       ),
     );
 
@@ -103,7 +103,7 @@ void main() {
         'task': 'the migration',
       });
       expect(result.errors, isEmpty);
-      expect(result.proposal!.budget.maxCostCents, 5000);
+      expect(result.proposal!.budget.maxCostMicros, 5000);
     });
 
     test('the result re-parses as a valid OrchestrationProposal', () {

@@ -1,3 +1,5 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
 /// Custom (workspace-defined) roles — SUBTRACTIVE restrictions of a built-in
@@ -14,7 +16,6 @@ import 'package:drift/drift.dart';
 /// `workspace_members.role`. `WorkspaceRole.fromWire` returns null for the
 /// unknown wire value on old clients and every caller fails safe to guest —
 /// that fail-safe is load-bearing for rollout.
-@TableIndex(name: 'idx_workspace_roles_workspace', columns: {#workspaceId})
 class WorkspaceRolesTable extends Table {
   @override
   String get tableName => 'workspace_roles';
@@ -30,13 +31,19 @@ class WorkspaceRolesTable extends Table {
 
   /// The built-in preset this role restricts: `admin` / `member` / `viewer` /
   /// `guest`.
-  TextColumn get basePreset => text()();
+  TextColumn get basePreset => text().check(
+    // ignore: recursive_getters
+    basePreset.isIn(PlatformStoredValues.grantableWorkspaceRole),
+  )();
 
   /// JSON array of denied permission wire names (`domain:tier`).
-  TextColumn get deniedPermissions =>
-      text().withDefault(const Constant('[]'))();
+  TextColumn get deniedPermissions => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(deniedPermissions))
+      .withDefault(const Constant('[]'))();
 
-  /// The user who created the role.
+  /// The user who created the role. No foreign key: users live in the global
+  /// database.
   TextColumn get createdBy => text().nullable()();
 
   /// Creation time.
@@ -50,6 +57,6 @@ class WorkspaceRolesTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, name},
+    {name},
   ];
 }

@@ -14560,13 +14560,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get backupSnapshotComplete => 'Повний';
 
   @override
-  String get backupSnapshotIncomplete => 'Неповний';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Маніфест відсутній або вказує на файли, яких немає, тож цей знімок не може відновити всю інсталяцію. Файли робочих просторів, які в ньому є, можна все одно прийняти по одному.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Видалити знімок';
 
   @override
@@ -18752,4 +18745,242 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Ви можете дивитися на цю машину. Вона використовує входи в сервіси того, для кого її відкрили, тож лише він може керувати нею, пересилати її порти, вставляти в неї дані або перетягувати на неї файли.';
+
+  @override
+  String get refusalStorageBusy =>
+      'База даних сервера зараз зайнята. Спробуйте ще раз за мить.';
+
+  @override
+  String get refusalStorageFull =>
+      'На диску сервера закінчилося місце, тому нічого не можна зберегти. Власник сервера має звільнити місце.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Дані цього робочого простору пошкоджено. Власник сервера має відновити їх із резервної копії.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Цей робочий простір доступний лише для читання, доки власник сервера не відновить його з резервної копії, тому зміни не можна зберегти.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Ці дані записала новіша версія сервера. Оновіть сервер і спробуйте ще раз.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Сервер знайшов файл бази даних, який не записував. Власник сервера має перевірити папку даних сервера.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Цей робочий простір видалено.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Цей запит ще обробляється. Дочекайтеся завершення, а потім перевірте результат.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'На сервері за цим шляхом немає файлу. Нічого не було замінено.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Цей файл пошкоджено, тож його не можна відновити. Нічого не було замінено.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Цей файл не збігається з контрольною сумою, яку записала його резервна копія, тож його могли змінити або пошкодити. Нічого не було замінено.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Цей файл записала новіша версія сервера. Щоб його відновити, оновіть сервер. Нічого не було замінено.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Цей файл не є базою даних робочого простору. Нічого не було замінено.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Цей файл не вдалося привести до формату бази даних цього сервера. Нічого не було замінено.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Цей файл містить посилання, які належать іншому робочому простору на цьому сервері, і його відновлення відібрало б їх. Нічого не було замінено.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Цей робочий простір доступний лише для читання';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Його дані не пройшли перевірку цілісності, тож зміни не можна зберегти. Усе ще можна читати. Власник сервера може відновити його з резервної копії.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Його дані не пройшли перевірку цілісності, тож зміни не можна зберегти. Усе ще можна читати. Відновіть його з резервної копії, щоб знову можна було вносити зміни.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Відкрити резервні копії';
+
+  @override
+  String get serverNoticesLabel => 'Потребує вашої уваги';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Лише читання';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Від $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Його база даних не пройшла перевірку цілісності, тож вона працює лише для читання і відхиляє будь-які зміни. Відновіть її з резервної копії зі списків нижче; її остання робоча копія зберігається, доки ви цього не зробите.';
+
+  @override
+  String get serverNoticeDetails => 'Подробиці';
+
+  @override
+  String get backupSnapshotUnverified => 'Не перевірено';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Цей знімок не можна перевірити. Його не було завершено, або він створений раніше, ніж знімки почали записувати контрольні суми, тож ним не можна відновити всю інсталяцію. Файли робочого простору, що в ньому є, можна відновити по одному.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Остання робоча копія';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Зберігається, бо містить останню робочу копію пошкодженого робочого простору. Очищення не чіпатиме її, доки цей робочий простір не буде відновлено.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Це остання робоча копія пошкодженого робочого простору. Якщо її видалити, більше не буде нічого, з чого можна відновити цей робочий простір.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count дозволів утримано для перегляду. Їх видно вгорі цієї сторінки.',
+      many:
+          '$count дозволів утримано для перегляду. Їх видно вгорі цієї сторінки.',
+      few:
+          '$count дозволи утримано для перегляду. Їх видно вгорі цієї сторінки.',
+      one: '1 дозвіл утримано для перегляду. Його видно вгорі цієї сторінки.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Утримано з відновлених копій';
+
+  @override
+  String get importHoldsExplainer =>
+      'Відновлена копія сама по собі нічого не може надати на цьому сервері. Ці дозволи в ній були: прийміть один, щоб надати його знову, або відхиліть, щоб відкинути.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Агенти можуть це робити без схвалення: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Агенти можуть це робити, щойно особа схвалить: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Запуск команд, що починаються з $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Скрізь у цьому робочому просторі';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'У просторі $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Для агента $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Пісочниці можуть запускати $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person може змінювати $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person може переглядати pull requests у $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person отримує доступ рівня $level до $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person отримує роль $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Відкрите запрошення приєднатися з роллю $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Відкрите запрошення приєднатися з роллю $role і доступом на перегляд або запис до $count репозиторіїв',
+      many:
+          'Відкрите запрошення приєднатися з роллю $role і доступом на перегляд або запис до $count репозиторіїв',
+      few:
+          'Відкрите запрошення приєднатися з роллю $role і доступом на перегляд або запис до $count репозиторіїв',
+      one:
+          'Відкрите запрошення приєднатися з роллю $role і доступом на перегляд або запис до 1 репозиторію',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Дозвіл, який ця версія застосунку не може описати';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Відновлено $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Прийняти';
+
+  @override
+  String get importHoldDismiss => 'Відхилити';
+
+  @override
+  String get importHoldAcceptTitle => 'Надати цей дозвіл?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nПрийняття одразу надає його на сервері.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Дозвіл надано.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Нічого не надано: особи або об\'єкта, для якого він був, більше немає в цьому робочому просторі.';
 }

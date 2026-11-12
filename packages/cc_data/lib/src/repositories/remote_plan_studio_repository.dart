@@ -160,14 +160,14 @@ class RemotePlanStudioRepository {
     String planId, {
     String? workspaceId,
     Set<String>? approvedNodeKeys,
-    int? maxCostCents,
+    int? maxCostMicros,
   }) async {
     final data = await _client.call('plan.approve', {
       'workspace_id': ?workspaceId,
       'plan_id': planId,
       if (approvedNodeKeys != null)
         'approved_node_keys': approvedNodeKeys.toList(),
-      'max_cost_cents': ?maxCostCents,
+      'max_cost_micros': ?maxCostMicros,
     });
     return data['orchestration_id'] as String? ?? '';
   }

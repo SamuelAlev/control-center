@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/type_to_confirm_labels.dart';
@@ -9,13 +10,16 @@ import 'package:flutter/widgets.dart';
 /// This IS `workspace.import` — a backup's per-workspace path is exactly what
 /// that op takes as its source — so restoring and importing cannot drift into
 /// two mechanisms that treat the same file differently. [onBusy] brackets the
-/// import, not the confirmation.
+/// import, not the confirmation. A refused file is not a toast: [onRefused]
+/// gets the worded refusal to show under the entry that was restored (and
+/// null when a new attempt starts, to clear it).
 Future<void> restoreWorkspaceFromBackup(
   BuildContext context, {
   required BackupActions actions,
   required BackupSnapshotWorkspaceView entry,
   required String workspaceName,
   required ValueChanged<bool> onBusy,
+  required ValueChanged<String?> onRefused,
 }) async {
   final l10n = AppLocalizations.of(context);
   final confirmed = await showCcConfirmDialog(
@@ -31,24 +35,22 @@ Future<void> restoreWorkspaceFromBackup(
   if (!confirmed || !context.mounted) {
     return;
   }
+  onRefused(null);
   onBusy(true);
   try {
-    await actions.importWorkspace(
+    final held = await actions.importWorkspace(
       workspaceId: entry.workspaceId,
       sourcePath: entry.path,
     );
     if (context.mounted) {
-      CcToastScope.maybeOf(context)?.show(
-        l10n.backupRestoreDone(workspaceName),
-        variant: CcToastVariant.success,
+      reportRestoreDone(
+        context,
+        done: l10n.backupRestoreDone(workspaceName),
+        held: held,
       );
     }
   } on Object catch (e) {
-    if (context.mounted) {
-      CcToastScope.maybeOf(
-        context,
-      )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
-    }
+    onRefused(describeBackupTransferError(l10n, e));
   } finally {
     onBusy(false);
   }

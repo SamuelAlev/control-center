@@ -11,7 +11,6 @@ CodeSymbolsTableCompanion _symbol(
   required int lines,
 }) => CodeSymbolsTableCompanion.insert(
   id: id,
-  workspaceId: 'ws1',
   repoId: 'repo1',
   kind: 'method',
   name: id,
@@ -25,7 +24,6 @@ CodeSymbolsTableCompanion _symbol(
 CodeEdgesTableCompanion _calls(String source, String target) =>
     CodeEdgesTableCompanion.insert(
       id: '$source-$target',
-      workspaceId: 'ws1',
       repoId: 'repo1',
       sourceSymbolId: source,
       kind: CodeEdgeKind.calls.name,
@@ -34,18 +32,16 @@ CodeEdgesTableCompanion _calls(String source, String target) =>
     );
 
 void main() {
-  late WorkspaceDatabase db;
+  late CodeIndexDatabase db;
 
   setUp(() async {
     final global = createTestGlobalDatabase();
     final dbs = createTestWorkspaceDatabases(global: global);
-    await seedTestWorkspace(global, dbs, 'ws1', name: 'Test');
-    db = dbs.of('ws1');
-    await db
-        .into(db.reposTable)
-        .insert(
-          ReposTableCompanion.insert(id: 'repo1', name: 'r', path: '/tmp/r'),
-        );
+    addTearDown(() async {
+      await dbs.closeAll();
+      await global.close();
+    });
+    db = dbs.codeIndexOf('ws1');
     // a.dart's largest symbol is `big`. Impact walks reverse dependencies, so
     // both files reach `shared` through its calls: it calls b.dart's `solo`
     // directly and a.dart's `big` through `middle`.
@@ -66,7 +62,6 @@ void main() {
   group('fileBlastRadiusPayload', () {
     Future<Map<String, dynamic>> blast(String file) => fileBlastRadiusPayload(
       dao: db.codeGraphDao,
-      workspaceId: 'ws1',
       repoId: 'repo1',
       filePath: file,
       depth: 2,
@@ -96,7 +91,6 @@ void main() {
     Future<Map<String, dynamic>> cohort(List<String> files) =>
         cohortImpactPayload(
           dao: db.codeGraphDao,
-          workspaceId: 'ws1',
           repoId: 'repo1',
           filePaths: files,
           cohortKey: 'k',
@@ -122,8 +116,8 @@ void main() {
       final nodes = (payload['nodes'] as List<Object?>)
           .cast<Map<String, dynamic>>();
       final shared = nodes.where((n) => n['id'] == 'shared').toList();
-      final solo = await db.codeGraphDao.getImpactRadius('ws1', 'solo');
-      final big = await db.codeGraphDao.getImpactRadius('ws1', 'big');
+      final solo = await db.codeGraphDao.getImpactRadius('solo');
+      final big = await db.codeGraphDao.getImpactRadius('big');
       expect(big.depthById['shared'], 2);
       expect(solo.depthById['shared'], 1);
       expect(shared, hasLength(1));

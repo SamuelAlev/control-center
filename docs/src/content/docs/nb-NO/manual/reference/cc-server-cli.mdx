@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Alle flagg, miljøvariabler, underkommandoer og stier i datamappen til headless-serveren.
 slug: nb-NO/handbok/referanse/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Hvert prosessflagg tar et CLI-flagg eller en miljøvariabel; flagget vinner,
@@ -228,12 +228,16 @@ Standard datamappe er `~/Library/Application Support/control-center` på macOS,
 `~/.local/share/control-center`) ellers. En `.cc_server` relativ til cwd brukes
 bare når verken hjemmemappen eller appdatamappen lar seg oppslå.
 
+Serveren holder datamappen privat for sin egen konto (`0700`). Den nekter å starte (avslutningskode `78`) når den ikke kan det, når `global.db` er skadet eller ble skrevet av en nyere versjon, eller når identitetsfilen ikke kan leses.
+
 | Sti                               | Innhold                                                                          |
 | --------------------------------- | -------------------------------------------------------------------------------- |
 | `global.db`                       | Arbeidsområderegisteret, brukere, parede enheter, nyhetsstrømmen og flåtekøen    |
-| `<workspaceId>/workspace.db`      | Én database per arbeidsområde — agenter, områder, saker, minne, kodegrafen       |
+| `<workspaceId>/workspace.db`      | Én database per arbeidsområde — agenter, områder, saker, minne       |
+| `<workspaceId>/code_index.db`     | Kodegrafen for det arbeidsområdet. Bygges på nytt når den mangler, og sikkerhetskopieres aldri |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | De to nyeste kopiene av en database fra før en oppdatering endret formatet |
 | `<workspaceId>/chat_credentials/` | Chatbot-tokener, som ren JSON, slik at de følger med arbeidsområdet              |
-| `secrets.json`                    | Paringsnøkler, installasjonsnøkkelen til Connect, leverandørapper, folks pålogginger (forseglet når de er gjort via Connect), SSO (`0600`) |
+| `secrets.json`                    | Paringsnøkler, installasjonsnøkkelen til Connect, leverandørapper, folks pålogginger (forseglet når de er gjort via Connect), webhook-hemmeligheter, SSO (`0600`) |
 | `backups/<timestamp>/`            | Ett øyeblikksbilde av installasjonen — `manifest.json`, `global.db` og en kopi av hvert arbeidsområde |
 | `backups/exports/`                | Eksporter av enkeltarbeidsområder, `<workspaceId>-<timestamp>.db`                |
 | `backups/transfer/`               | Mellomlagring for ned- og opplasting av sikkerhetskopier; ryddes av ruten som skriver den |

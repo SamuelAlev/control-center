@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: 無介面伺服器的每一個旗標、環境變數、子指令與資料目錄路徑。
 slug: zh-HK/手冊/參考/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 每一個行程旗標都可以用 CLI 旗標或環境變數提供；旗標勝過環境變數，再勝過預設值。供應商憑證是例外——見[供應商應用程式與 Connect](#供應商應用程式與-connect)。
@@ -169,12 +169,16 @@ sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 在 Windows 上是 `%APPDATA%\control-center`，其他地方則是 `$XDG_DATA_HOME/control-center`（否則為
 `~/.local/share/control-center`）。只有在無法解析出家目錄或應用程式資料目錄時，才會使用相對於 cwd 的 `.cc_server`。
 
+伺服器會將資料目錄設為只限其自身帳戶存取（`0700`）。當它做不到這點、`global.db` 已損壞或由較新版本寫入，或其身分檔無法讀取時，伺服器會拒絕啟動（結束代碼 `78`）。
+
 | 路徑                              | 內容                                                                             |
 | --------------------------------- | -------------------------------------------------------------------------------- |
 | `global.db`                       | 工作區註冊表、使用者、已配對裝置、資訊動態與機群佇列                             |
-| `<workspaceId>/workspace.db`      | 每個工作區一個資料庫——代理、空間、工單、記憶、程式碼圖                           |
+| `<workspaceId>/workspace.db`      | 每個工作區一個資料庫——代理、空間、工單、記憶                           |
+| `<workspaceId>/code_index.db`     | 該工作區的程式碼圖。缺少時會被重建，從不備份 |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | 更新改變格式之前的資料庫副本，最新的兩份 |
 | `<workspaceId>/chat_credentials/` | 聊天機械人權杖，以純 JSON 儲存，因此它們會跟着工作區走                           |
-| `secrets.json`                    | 配對金鑰、Connect 安裝金鑰、供應商應用程式、人們的登入（經由 Connect 建立者為密封形式）、SSO（`0600`） |
+| `secrets.json`                    | 配對金鑰、Connect 安裝金鑰、供應商應用程式、人們的登入（經由 Connect 建立者為密封形式）、webhook 機密、SSO（`0600`） |
 | `backups/<timestamp>/`            | 一份安裝快照——`manifest.json`、`global.db` 以及每個工作區的複本                  |
 | `backups/exports/`                | 單一工作區匯出檔，`<workspaceId>-<timestamp>.db`                                 |
 | `backups/transfer/`               | 備份下載與上傳的暫存區；由寫入它的路由清掃                                       |

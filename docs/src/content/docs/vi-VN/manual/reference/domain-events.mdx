@@ -2,7 +2,7 @@
 title: Sự kiện miền
 description: Danh mục đầy đủ của 54 sự kiện miền, dữ liệu tải của chúng và những bên đăng ký phía máy chủ tiêu thụ chúng.
 slug: vi-VN/so-tay/tham-chieu/su-kien-mien
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Bus sự kiện
@@ -112,7 +112,7 @@ Chỉ những chuyển đổi kết cục cuối mới được phát. Không c�
 | Sự kiện                  | Dữ liệu tải                                                                                              | Kích hoạt khi             |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Mục nhật ký kiểm toán được tạo |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Chi tiêu vượt ngưỡng      |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Chi tiêu vượt ngưỡng      |
 
 ## Sự kiện danh tính và tư cách thành viên
 

@@ -107,7 +107,7 @@ Recorded by the desktop app, the web app and the phone for things a person does.
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Workspace skills were changed |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | An orchestration proposal was answered |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | A plan was approved or rejected (phone) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | A supervised goal or loop was started (phone) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | A supervised goal or loop was started (phone) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | A conversation was created or forked |
 | `conversation_rewound` | `conversation_id` | A conversation was continued from an earlier message |
 | `space_archived` | `workspace_id`, `space_id` | A space was archived |
@@ -126,7 +126,7 @@ Recorded by `cc_server` for facts that no single client sees exactly once. An ag
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | An agent run finished |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | An agent stopped to wait for a person |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Action policy refused an agent's action |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | A pipeline run ended. `trigger` is `manual`, the event type that started it, or only the kind of a named trigger (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | A pipeline run ended. `trigger` is `manual`, the event type that started it, or only the kind of a named trigger (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | A pull request was published from a space |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | A pull request an agent opened was merged |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | A meeting recording was saved |
@@ -140,7 +140,7 @@ Recorded by `cc_server` for facts that no single client sees exactly once. An ag
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | A workspace skill was installed, updated or changed on disk |
 | `calendar_auth_expired` | `workspace_id` | A calendar connection needs signing in again |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | A calendar event is about to start |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Spending crossed a budget threshold |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | Spending crossed a budget threshold |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | A review was requested on a tracked PR |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | A tracked PR's review decision changed |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | A PR not opened by an agent merged in a linked repository |

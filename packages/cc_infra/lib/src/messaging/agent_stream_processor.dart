@@ -6,6 +6,8 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/ports/git_snapshot_port.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
@@ -163,16 +165,21 @@ class AgentStreamProcessor {
   final ConversationCompactionService? _compactionService;
   final GitSnapshotPort? _snapshotPort;
 
-  /// Mid-turn flush. Null keeps [MessagingRepository.updateMessage], which
-  /// rewrites the list projection on every flush. Production passes a write
-  /// that leaves that projection alone when `projectList` is false, so a
-  /// tool-only flush does not rebuild the open chat.
+  /// Writes one flush of the turn: only the transcript segments that changed
+  /// since the previous flush (`changedSegments`, by position), the
+  /// transcript's length, and the message row (its metadata only when
+  /// `writeMetadata`, so a tool-only flush does not rebuild the open chat).
+  ///
+  /// Null keeps [MessagingRepository.updateMessage] with the whole transcript
+  /// as `metadata['segments']` on every flush.
   final Future<void> Function(
     String workspaceId,
     String messageId, {
     String? content,
     required Map<String, dynamic> metadata,
-    required bool projectList,
+    required Map<int, Map<String, dynamic>> changedSegments,
+    required int segmentCount,
+    required bool writeMetadata,
   })?
   _flushMessage;
 
@@ -239,9 +246,26 @@ class AgentStreamProcessor {
 
     stream.listen(
       (event) => _onEvent(ctx, event),
-      onDone: () => _onDone(ctx),
-      onError: (error) => _onError(ctx, error),
+      onDone: () => unawaited(_finish(ctx, () => _onDone(ctx))),
+      onError: (Object error) =>
+          unawaited(_finish(ctx, () => _onError(ctx, error))),
     );
+  }
+
+  /// Runs a turn's last step, [finalize].
+  ///
+  /// A workspace deleted while its run was still streaming has no transcript
+  /// left to write and no run log to close. The turn then ends in memory only:
+  /// its live stream is released and nothing else is attempted.
+  Future<void> _finish(
+    _StreamContext ctx,
+    Future<void> Function() finalize,
+  ) async {
+    try {
+      await finalize();
+    } on DeletedWorkspaceException {
+      await ctx.streamRegistry.unregister(ctx.messageId);
+    }
   }
 
   // Event handling
@@ -377,8 +401,6 @@ class AgentStreamProcessor {
       thoughtTokens: base.thoughtTokens,
       cachedReadTokens: base.cachedReadTokens,
       cachedWriteTokens: base.cachedWriteTokens,
-      // Cents are the display projection of the exact figure.
-      estimatedCostCents: (base.costMicros / 10000).round(),
       costMicros: base.costMicros,
       costBasis: base.costBasis,
       durationMs: base.durationMs,
@@ -441,9 +463,8 @@ class AgentStreamProcessor {
     final runLog = ctx.dispatchResult.runLog;
 
     await _resolveSnapshot(ctx);
-    await ctx.repo.updateMessage(
-      ctx.workspaceId,
-      ctx.messageId,
+    await _writeFinal(
+      ctx,
       // A failed turn SAYS why. `currentText()` collects text segments only, so
       // a run that died before answering anything (`claude exited with code 1`,
       // a refusal, a spawn failure) persisted an empty string: the reader got a
@@ -572,9 +593,8 @@ class AgentStreamProcessor {
         : text;
     final runLog = ctx.dispatchResult.runLog;
 
-    await ctx.repo.updateMessage(
-      ctx.workspaceId,
-      ctx.messageId,
+    await _writeFinal(
+      ctx,
       content: content,
       metadata: {
         ..._finalMetadata(ctx, outcome: TurnOutcome.failed, now: now),
@@ -617,7 +637,6 @@ class AgentStreamProcessor {
       'agentName': ctx.agentName,
       'streamComplete': true,
       'outcome': turnOutcomeToString(outcome),
-      'segments': encodeTranscript(ctx.folder.snapshot()),
       // Thin clients receive list rows without segments; this keeps their
       // context-window estimates accurate (TokenEstimator.estimateMessage).
       'transcriptChars': ctx.folder.transcriptChars,
@@ -625,7 +644,7 @@ class AgentStreamProcessor {
       'turn': {
         'durationMs': durationMs,
         'totalTokens': cost.totalTokens,
-        'costCents': cost.estimatedCostCents,
+        'costMicros': cost.costMicros,
         // Exact precision + provenance: without these the turn's cost is only
         // available rounded to a cent and with no way to tell an estimate from
         // a billed, provider-reported figure.
@@ -673,7 +692,6 @@ class AgentStreamProcessor {
     final metadata = <String, dynamic>{
       'agentName': ctx.agentName,
       'streamComplete': false,
-      'segments': ctx.folder.encodeForFlush(),
       'transcriptChars': ctx.folder.transcriptChars,
       'context': ?_contextMetadata(ctx),
     };
@@ -683,18 +701,61 @@ class AgentStreamProcessor {
         ctx.workspaceId,
         ctx.messageId,
         content: textChanged ? text : null,
-        metadata: metadata,
+        metadata: {
+          ...metadata,
+          'segments': encodeTranscript(ctx.folder.snapshot()),
+        },
       );
       return;
     }
-    // The open chat watches the list projection, not this blob. Refreshing
-    // that projection when only the transcript grew rebuilds every bubble.
-    flush(
+    // The open chat watches the message's metadata, not the transcript.
+    // Rewriting it when only the transcript grew rebuilds every bubble.
+    unawaited(
+      flush(
+        ctx.workspaceId,
+        ctx.messageId,
+        content: textChanged ? text : null,
+        metadata: metadata,
+        changedSegments: ctx.folder.takeChangedSegments(),
+        segmentCount: ctx.folder.length,
+        writeMetadata: textChanged,
+      ).catchError((Object _) {
+        // The segments this flush took were not stored: the next flush, or
+        // the final write, stores them all again (rows whose body did not
+        // change are not rewritten). A flush is crash insurance, never a
+        // reason to fail the turn.
+        ctx.folder.forgetFlushed();
+      }),
+    );
+  }
+
+  /// The turn's last write: [content], the final [metadata] and the
+  /// transcript as it ended.
+  Future<void> _writeFinal(
+    _StreamContext ctx, {
+    required String content,
+    required Map<String, dynamic> metadata,
+  }) {
+    final flush = _flushMessage;
+    if (flush == null) {
+      return ctx.repo.updateMessage(
+        ctx.workspaceId,
+        ctx.messageId,
+        content: content,
+        metadata: {
+          ...metadata,
+          'segments': encodeTranscript(ctx.folder.snapshot()),
+        },
+      );
+    }
+    return flush(
       ctx.workspaceId,
       ctx.messageId,
-      content: textChanged ? text : null,
+      content: content,
       metadata: metadata,
-      projectList: textChanged,
+      changedSegments: ctx.folder.takeChangedSegments(),
+      segmentCount: ctx.folder.length,
+      writeMetadata: true,
     );
   }
 

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart' show PairedDevicesTableData;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
@@ -156,9 +157,14 @@ void main() {
         archived = true;
         return null;
       },
-      restore: ({required workspaceId, required sourcePath}) async {
-        restored = true;
-      },
+      restore:
+          ({
+            required workspaceId,
+            required sourcePath,
+            required importedBy,
+          }) async {
+            restored = true;
+          },
     );
     for (final path in [
       '/backup/workspace?w=$workspaceId&d=$deviceId&s=${sign('backup-workspace:$workspaceId')}',
@@ -499,16 +505,23 @@ void main() {
 
   group('POST /backup/restore', () {
     test('stages the upload, adopts it, and leaves nothing behind', () async {
-      final adopted = <({String workspaceId, List<int> bytes})>[];
+      final adopted =
+          <({String workspaceId, List<int> bytes, String importedBy})>[];
       String? stagedPath;
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {
-          stagedPath = sourcePath;
-          adopted.add((
-            workspaceId: workspaceId,
-            bytes: File(sourcePath).readAsBytesSync(),
-          ));
-        },
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {
+              stagedPath = sourcePath;
+              adopted.add((
+                workspaceId: workspaceId,
+                bytes: File(sourcePath).readAsBytesSync(),
+                importedBy: importedBy,
+              ));
+            },
         role: WorkspaceRole.owner,
       );
 
@@ -526,6 +539,9 @@ void main() {
       // which is what `workspace.import` needs and a remote client cannot make.
       expect(adopted.single.workspaceId, workspaceId);
       expect(adopted.single.bytes, const [42, 43, 44]);
+      // The import runs on behalf of the device's person, who keeps the owner
+      // role in the file it adopts.
+      expect(adopted.single.importedBy, userId);
       // And the staged copy is gone: it is somebody's whole workspace, and
       // nothing else sweeps that directory.
       await expectDeleted(File(stagedPath!));
@@ -535,10 +551,15 @@ void main() {
       String? stagedPath;
       List<int>? adopted;
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {
-          stagedPath = sourcePath;
-          adopted = await File(sourcePath).readAsBytes();
-        },
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {
+              stagedPath = sourcePath;
+              adopted = await File(sourcePath).readAsBytes();
+            },
       );
       final first = List<int>.filled(48 * 1024, 17);
       const second = [42, 43, 44];
@@ -559,9 +580,14 @@ void main() {
     test('refuses restore for a different device or workspace', () async {
       var adopted = false;
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {
-          adopted = true;
-        },
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {
+              adopted = true;
+            },
       );
       final wrongDevice = await post(
         server,
@@ -585,9 +611,14 @@ void main() {
     test('requires owner, not merely admin', () async {
       var adopted = false;
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {
-          adopted = true;
-        },
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {
+              adopted = true;
+            },
         role: WorkspaceRole.admin,
       );
 
@@ -608,9 +639,14 @@ void main() {
       var adopted = false;
       final uploadDir = '${tmp.path}/transfer';
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {
-          adopted = true;
-        },
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {
+              adopted = true;
+            },
         role: WorkspaceRole.owner,
         owner: 'someone-else',
         uploadDir: uploadDir,
@@ -649,9 +685,14 @@ void main() {
           archived = true;
           return null;
         },
-        backupRestore: ({required workspaceId, required sourcePath}) async {
-          adopted = true;
-        },
+        backupRestore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {
+              adopted = true;
+            },
         backupUploadDir: '${tmp.path}/transfer',
         identity: await ServerIdentityStore.load(tmp.path),
         address: InternetAddress.loopbackIPv4,
@@ -679,17 +720,58 @@ void main() {
       expect(archived, isFalse);
     });
 
-    test('reports what the adopter refused, and stages nothing', () async {
+    test(
+      'reports what the adopter refused by kind, and stages nothing',
+      () async {
+        String? stagedPath;
+        final server = await serve(
+          restore:
+              ({
+                required workspaceId,
+                required sourcePath,
+                required importedBy,
+              }) async {
+                stagedPath = sourcePath;
+                throw const WorkspaceImportRefusedException(
+                  WorkspaceImportRefusal.foreignFile,
+                  'The file is not a Control Center workspace database.',
+                );
+              },
+          role: WorkspaceRole.owner,
+        );
+
+        final resp = await post(
+          server,
+          '/backup/restore?w=$workspaceId&d=$deviceId'
+          '&s=${sign('backup-restore:$workspaceId')}',
+          const [0, 0, 0],
+        );
+        final body = await utf8.decoder.bind(resp.body).join();
+
+        // The refusal's own sentence and the kind clients localize by.
+        expect(resp.statusCode, 400);
+        final decoded = jsonDecode(body) as Map<String, dynamic>;
+        expect(decoded['kind'], 'import.foreign_file');
+        expect(
+          decoded['error'],
+          'The file is not a Control Center workspace database.',
+        );
+        await expectDeleted(File(stagedPath!));
+      },
+    );
+
+    test('a failure that is not a refusal names no server path', () async {
       String? stagedPath;
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {
-          stagedPath = sourcePath;
-          throw ArgumentError.value(
-            sourcePath,
-            'sourcePath',
-            'not a Control Center workspace database',
-          );
-        },
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {
+              stagedPath = sourcePath;
+              throw FileSystemException('could not rename', sourcePath);
+            },
         role: WorkspaceRole.owner,
       );
 
@@ -701,20 +783,21 @@ void main() {
       );
       final body = await utf8.decoder.bind(resp.body).join();
 
-      // The adopter's own sentence reaches the operator — "the file you picked
-      // is not a workspace database" is the only useful thing to say here.
-      expect(resp.statusCode, 400);
-      final decoded = jsonDecode(body) as Map<String, dynamic>;
-      expect(
-        decoded['error'],
-        contains('not a Control Center workspace database'),
-      );
+      expect(resp.statusCode, 500);
+      expect(body, isNot(contains(stagedPath!)));
+      expect(body, isNot(contains(tmp.path)));
+      expect((jsonDecode(body) as Map)['kind'], isNull);
       await expectDeleted(File(stagedPath!));
     });
 
     test('refuses an empty body', () async {
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {},
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {},
         role: WorkspaceRole.owner,
       );
 
@@ -731,7 +814,12 @@ void main() {
 
     test('refuses a GET', () async {
       final server = await serve(
-        restore: ({required workspaceId, required sourcePath}) async {},
+        restore:
+            ({
+              required workspaceId,
+              required sourcePath,
+              required importedBy,
+            }) async {},
         role: WorkspaceRole.owner,
       );
 

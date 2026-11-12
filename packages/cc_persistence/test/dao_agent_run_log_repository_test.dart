@@ -8,6 +8,7 @@ import 'package:cc_persistence/database/tables/agent_run_logs.dart'
     show AgentRunLogsTable;
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Helper: insert an agent row so FK constraints on [AgentRunLogsTable] are
@@ -46,7 +47,6 @@ AgentRunLog _makeLog({
   RunLiveness? liveness,
   RunErrorFamily? errorFamily,
   DateTime? lastOutputAt,
-  String? continuationSummary,
   String? contextSnapshotJson,
   RetryMeta? retry,
   int childCostMicros = 0,
@@ -76,7 +76,6 @@ AgentRunLog _makeLog({
     liveness: liveness,
     errorFamily: errorFamily,
     lastOutputAt: lastOutputAt,
-    continuationSummary: continuationSummary,
     contextSnapshotJson: contextSnapshotJson,
     retry: retry ?? const RetryMeta(),
     childCostMicros: childCostMicros,
@@ -106,6 +105,16 @@ void main() {
     repo = DaoAgentRunLogRepository(dbs);
     // FK prerequisite for run logs: the agent row, in ws-1's own database.
     await _seedAgent(dbs.of('ws-1'), 'agent-1', 'ws-1');
+    // The conversations, spaces and tickets the logs below point at.
+    for (final ws in ['ws-1', 'ws-2']) {
+      final db = dbs.of(ws);
+      await seedParents(
+        db,
+        spaces: ['ch-1', 'ws-1', 'ws-2'],
+        conversations: ['conv-1', 'conv-2'],
+        tickets: ['t-1', 't-2', 'ticket-1'],
+      );
+    }
   });
 
   tearDown(() async {
@@ -149,15 +158,15 @@ void main() {
         cost: const RunCost(
           inputTokens: 100,
           outputTokens: 50,
-          estimatedCostCents: 15,
+          costMicros: 15,
         ),
         liveness: RunLiveness.failed,
         errorFamily: RunErrorFamily.transientUpstream,
         lastOutputAt: DateTime(2025, 1, 2, 12),
-        continuationSummary: 'continued...',
         contextSnapshotJson: '{"key": "val"}',
         retry: const RetryMeta(parentRunId: 'parent-1', attempt: 3),
       );
+      await seedRunLog(dbs.of('ws-1'), 'parent-1', agentId: 'agent-1');
       await repo.upsert(log);
 
       final fetched = await repo.getById('ws-1', 'full-1');
@@ -301,58 +310,84 @@ void main() {
     });
   });
 
-  // ── watchAll ────────────────────────────────────────────────────────────
+  // ── unfinished runs, tickets and history pages ─────────────────────────
 
-  group('watchAll', () {
-    test('emits empty list when no logs exist', () async {
-      final logs = await repo.watchAll().first;
-      expect(logs, isEmpty);
-    });
-
-    test('emits logs from all agents', () async {
-      await _seedAgent(dbs.of('ws-1'), 'agent-2', 'ws-1');
-      await repo.upsert(_makeLog());
-      await repo.upsert(_makeLog(id: 'log-2', agentId: 'agent-2'));
-
-      final logs = await repo.watchAll().first;
-      expect(logs.length, 2);
-    });
-
-    test('emits updated list after insert', () async {
-      final stream = repo.watchAll();
-
-      await repo.upsert(_makeLog());
-
-      final logs = await stream.first;
-      expect(logs.length, 1);
-    });
-
-    test('logs are ordered by startedAt descending', () async {
+  group('nonTerminal', () {
+    test('reads unfinished runs from every registered workspace', () async {
+      await _seedAgent(dbs.of('ws-2'), 'agent-2', 'ws-2');
+      await repo.upsert(_makeLog(id: 'ws1-running', status: RunStatus.running));
+      await repo.upsert(_makeLog(id: 'ws1-done'));
+      await repo.upsert(_makeLog(id: 'ws1-error', status: RunStatus.error));
       await repo.upsert(
         _makeLog(
-          id: 'oldest',
-          agentId: 'agent-1',
-          startedAt: DateTime(2025, 1),
-        ),
-      );
-      await repo.upsert(
-        _makeLog(
-          id: 'newest',
-          agentId: 'agent-1',
+          id: 'ws2-pending',
+          agentId: 'agent-2',
+          workspaceId: 'ws-2',
+          status: RunStatus.pending,
           startedAt: DateTime(2025, 12),
         ),
       );
 
-      final logs = await repo.watchAll().first;
-      expect(logs[0].id, 'newest');
-      expect(logs[1].id, 'oldest');
+      final runs = await repo.nonTerminal();
+      expect(runs.map((r) => r.id), ['ws2-pending', 'ws1-running']);
     });
 
-    /// CROSS-WORKSPACE BY DESIGN: `watchAll` is one of the two reads that spans
-    /// files. It merges a stream per REGISTERED workspace and re-sorts the
-    /// result newest-first, because concatenating per-workspace lists would
-    /// otherwise leave them interleaved by workspace.
-    test('merges logs from every registered workspace, newest first', () async {
+    test('the workspace watch sees only its own unfinished runs', () async {
+      await _seedAgent(dbs.of('ws-2'), 'agent-2', 'ws-2');
+      await repo.upsert(_makeLog(id: 'ws1-running', status: RunStatus.running));
+      await repo.upsert(_makeLog(id: 'ws1-done'));
+      await repo.upsert(
+        _makeLog(
+          id: 'ws2-running',
+          agentId: 'agent-2',
+          workspaceId: 'ws-2',
+          status: RunStatus.running,
+        ),
+      );
+
+      final active = await repo.watchNonTerminalForWorkspace('ws-1').first;
+      expect(active.map((r) => r.id), ['ws1-running']);
+    });
+  });
+
+  group('latestForTicket', () {
+    test('returns the newest run of the ticket in that workspace', () async {
+      await repo.upsert(
+        _makeLog(id: 'older', ticketId: 't-1', startedAt: DateTime(2025, 1)),
+      );
+      await repo.upsert(
+        _makeLog(id: 'newer', ticketId: 't-1', startedAt: DateTime(2025, 6)),
+      );
+      await repo.upsert(
+        _makeLog(id: 'other', ticketId: 't-2', startedAt: DateTime(2025, 9)),
+      );
+
+      expect((await repo.latestForTicket('ws-1', 't-1'))?.id, 'newer');
+      expect(await repo.latestForTicket('ws-1', 'missing'), isNull);
+    });
+  });
+
+  group('page', () {
+    test('pages history newest-first, ties broken by id', () async {
+      final second = DateTime(2025, 6);
+      for (final id in ['run-a', 'run-c', 'run-b']) {
+        await repo.upsert(_makeLog(id: id, startedAt: second));
+      }
+      await repo.upsert(_makeLog(id: 'run-old', startedAt: DateTime(2025)));
+
+      final first = await repo.page('ws-1', limit: 2);
+      expect(first.map((r) => r.id), ['run-c', 'run-b']);
+      final next = await repo.page('ws-1', limit: 2, before: first.last);
+      expect(next.map((r) => r.id), ['run-a', 'run-old']);
+      expect(await repo.page('ws-1', limit: 2, before: next.last), isEmpty);
+    });
+  });
+
+  group('watchRecent', () {
+    /// CROSS-WORKSPACE BY DESIGN: the bounded recent-runs read merges a
+    /// stream per REGISTERED workspace and re-sorts newest-first, because
+    /// concatenating per-workspace lists would leave them interleaved.
+    test('merges every registered workspace, newest first', () async {
       await _seedAgent(dbs.of('ws-2'), 'agent-2', 'ws-2');
       await repo.upsert(
         _makeLog(id: 'ws1-middle', startedAt: DateTime(2025, 6)),
@@ -374,10 +409,6 @@ void main() {
         ),
       );
 
-      final logs = await repo.watchAll().first;
-      expect(logs.map((l) => l.id), ['ws2-newest', 'ws1-middle', 'ws2-oldest']);
-
-      // The bounded companion trims the same merged order.
       final recent = await repo.watchRecent(2).first;
       expect(recent.map((l) => l.id), ['ws2-newest', 'ws1-middle']);
 
@@ -658,7 +689,6 @@ void main() {
             liveness: RunLiveness.stalled,
             errorFamily: RunErrorFamily.budgetExceeded,
             lastOutputAt: DateTime(2025, 6, 2),
-            continuationSummary: 'cont',
             contextSnapshotJson: '{}',
           ),
         );
@@ -671,7 +701,6 @@ void main() {
         expect(fetched.liveness, RunLiveness.stalled);
         expect(fetched.errorFamily, RunErrorFamily.budgetExceeded);
         expect(fetched.lastOutputAt, DateTime(2025, 6, 2));
-        expect(fetched.continuationSummary, 'cont');
         expect(fetched.contextSnapshotJson, '{}');
       },
     );
@@ -690,6 +719,7 @@ void main() {
         id: 'retry-test',
         retry: const RetryMeta(parentRunId: 'parent-run', attempt: 5),
       );
+      await seedRunLog(dbs.of('ws-1'), 'parent-run', agentId: 'agent-1');
       await repo.upsert(log);
 
       final fetched = await repo.getById('ws-1', 'retry-test');
@@ -704,7 +734,7 @@ void main() {
       final fetched = await repo.getById('ws-1', 'zero-cost');
       expect(fetched!.cost.inputTokens, 0);
       expect(fetched.cost.outputTokens, 0);
-      expect(fetched.cost.estimatedCostCents, 0);
+      expect(fetched.cost.costMicros, 0);
     });
 
     test('cost with non-zero values round-trips', () async {
@@ -713,7 +743,7 @@ void main() {
         cost: const RunCost(
           inputTokens: 1000,
           outputTokens: 500,
-          estimatedCostCents: 75,
+          costMicros: 75,
         ),
       );
       await repo.upsert(log);
@@ -721,7 +751,7 @@ void main() {
       final fetched = await repo.getById('ws-1', 'nonzero-cost');
       expect(fetched!.cost.inputTokens, 1000);
       expect(fetched.cost.outputTokens, 500);
-      expect(fetched.cost.estimatedCostCents, 75);
+      expect(fetched.cost.costMicros, 75);
     });
   });
 
@@ -733,7 +763,6 @@ void main() {
         id: 'exact-cost',
         cost: const RunCost(
           inputTokens: 10,
-          estimatedCostCents: 0,
           costMicros: 4321,
           costBasis: CostBasis.subscription,
         ),
@@ -741,9 +770,8 @@ void main() {
       await repo.upsert(log);
 
       final fetched = await repo.getById('ws-1', 'exact-cost');
-      // A sub-cent cost must NOT come back as the rounded cents (0).
+      // A sub-cent cost comes back exactly.
       expect(fetched!.cost.costMicros, 4321);
-      expect(fetched.cost.estimatedCostCents, 0);
       expect(fetched.cost.costBasis, CostBasis.subscription);
     });
 
@@ -752,7 +780,6 @@ void main() {
         id: 'unknown-basis',
         cost: const RunCost(
           inputTokens: 5,
-          estimatedCostCents: 12,
           costMicros: 120000,
         ),
       );
@@ -772,6 +799,7 @@ void main() {
         taskFamily: 'refactor',
         parentRunId: 'parent-1',
       );
+      await seedRunLog(dbs.of('ws-1'), 'parent-1', agentId: 'agent-1');
       await repo.upsert(log);
 
       final fetched = await repo.getById('ws-1', 'hierarchy');
@@ -914,7 +942,6 @@ void main() {
       ]);
       final row = (await repo.getById('ws-1', 'log-1'))!;
       expect(row.childCostMicros, 15000);
-      expect(row.childCostCents, 2);
       expect(row.status, RunStatus.running);
     });
 
@@ -936,7 +963,6 @@ void main() {
           const RunCost(
             inputTokens: 45,
             outputTokens: 9,
-            estimatedCostCents: 3,
             costMicros: 25125,
             durationMs: 321,
           ),
@@ -973,7 +999,6 @@ void main() {
       ]);
       final row = (await repo.getById('ws-1', 'log-1'))!;
       expect(row.childCostMicros, 24864);
-      expect(row.childCostCents, 2);
       expect(row.status, RunStatus.completed);
       expect(row.summary, 'done');
       expect(row.cost.inputTokens, 4);
@@ -1023,7 +1048,6 @@ void main() {
         expect(row.cost.inputTokens, 34);
         expect(row.cost.costMicros, 1350);
         expect(row.childCostMicros, 9000);
-        expect(row.childCostCents, 1);
       },
     );
 

@@ -5,15 +5,14 @@ import 'package:test/test.dart';
 import 'helpers/test_database.dart';
 
 /// Checkout-partition isolation: the code graph is partitioned per checkout
-/// within a `(workspaceId, repoId)` pair — NULL `checkout_id` for the linked
-/// checkout, an `isolated_repos` row id for each conversation/PR worktree.
-/// A worktree's tree (a PR head, a feature branch) differs from the linked
-/// checkout, so partitions must never mix: reads scoped to one partition must
-/// not see the other's rows, deletes must not cross partitions and deleting
-/// the worktree's registry row must FK-cascade its whole partition away while
-/// leaving the linked partition intact.
+/// within a repo — NULL `checkout_id` for the linked checkout, an
+/// `isolated_repos` row id for each conversation/PR worktree. A worktree's
+/// tree (a PR head, a feature branch) differs from the linked checkout, so
+/// partitions must never mix: reads scoped to one partition must not see the
+/// other's rows, deletes must not cross partitions and deleting a worktree's
+/// partition leaves the linked partition intact.
 void main() {
-  late WorkspaceDatabase db;
+  late CodeIndexDatabase db;
 
   CodeSymbolsTableCompanion symbol(
     String id,
@@ -22,7 +21,6 @@ void main() {
     String? checkoutId,
   }) => CodeSymbolsTableCompanion.insert(
     id: id,
-    workspaceId: 'ws1',
     repoId: 'repo1',
     checkoutId: Value(checkoutId),
     kind: 'method',
@@ -40,7 +38,6 @@ void main() {
     String? checkoutId,
   }) => CodeEdgesTableCompanion.insert(
     id: id,
-    workspaceId: 'ws1',
     repoId: 'repo1',
     checkoutId: Value(checkoutId),
     sourceSymbolId: sourceSymbolId,
@@ -52,7 +49,6 @@ void main() {
   CodeFilesTableCompanion file(String id, String path, {String? checkoutId}) =>
       CodeFilesTableCompanion.insert(
         id: id,
-        workspaceId: 'ws1',
         repoId: 'repo1',
         checkoutId: Value(checkoutId),
         path: path,
@@ -60,26 +56,7 @@ void main() {
       );
 
   setUp(() async {
-    db = createTestDatabase();
-    await db
-        .into(db.reposTable)
-        .insert(
-          ReposTableCompanion.insert(id: 'repo1', name: 'r', path: '/tmp/r'),
-        );
-    // The worktree registry row the checkout partition hangs off (FK target).
-    await db
-        .into(db.isolatedReposTable)
-        .insert(
-          IsolatedReposTableCompanion.insert(
-            id: 'wt1',
-            workspaceId: 'ws1',
-            spaceId: 'ch1',
-            repoId: 'repo1',
-            path: '/wt/repo1',
-            branch: 'pr-42',
-            sourcePath: '/tmp/r',
-          ),
-        );
+    db = createTestCodeIndexDatabase();
 
     // Linked checkout partition (checkoutId NULL): a.dart with foo.
     await db.codeGraphDao.upsertSymbols([symbol('s_foo', 'a.dart', 'A.foo')]);
@@ -109,11 +86,10 @@ void main() {
 
   group('checkout partition isolation', () {
     test('getFiles returns only the requested partition', () async {
-      final linked = await db.codeGraphDao.getFiles('ws1', 'repo1');
+      final linked = await db.codeGraphDao.getFiles('repo1');
       expect(linked.map((f) => f.path), ['a.dart']);
 
       final worktree = await db.codeGraphDao.getFiles(
-        'ws1',
         'repo1',
         checkoutId: 'wt1',
       );
@@ -122,12 +98,11 @@ void main() {
 
     test('getFile scopes the single-file lookup to the partition', () async {
       expect(
-        (await db.codeGraphDao.getFile('ws1', 'repo1', 'a.dart'))!.id,
+        (await db.codeGraphDao.getFile('repo1', 'a.dart'))!.id,
         'f_linked_a',
       );
       expect(
         (await db.codeGraphDao.getFile(
-          'ws1',
           'repo1',
           'a.dart',
           checkoutId: 'wt1',
@@ -135,22 +110,18 @@ void main() {
         'f_wt_a',
       );
       // pr.dart exists only in the worktree partition.
-      expect(await db.codeGraphDao.getFile('ws1', 'repo1', 'pr.dart'), isNull);
+      expect(await db.codeGraphDao.getFile('repo1', 'pr.dart'), isNull);
     });
 
     test(
       'getSymbolsByRepo and getSymbolsByName are partition-scoped',
       () async {
         expect(
-          (await db.codeGraphDao.getSymbolsByRepo(
-            'ws1',
-            'repo1',
-          )).map((s) => s.id),
+          (await db.codeGraphDao.getSymbolsByRepo('repo1')).map((s) => s.id),
           ['s_foo'],
         );
         expect(
           (await db.codeGraphDao.getSymbolsByRepo(
-            'ws1',
             'repo1',
             checkoutId: 'wt1',
           )).map((s) => s.id),
@@ -158,12 +129,11 @@ void main() {
         );
         // The PR-only symbol is invisible from the linked partition.
         expect(
-          await db.codeGraphDao.getSymbolsByName('ws1', 'repo1', 'newThing'),
+          await db.codeGraphDao.getSymbolsByName('repo1', 'newThing'),
           isEmpty,
         );
         expect(
           (await db.codeGraphDao.getSymbolsByName(
-            'ws1',
             'repo1',
             'newThing',
             checkoutId: 'wt1',
@@ -175,14 +145,14 @@ void main() {
 
     test('watchSymbolsByRepo streams only the requested partition', () async {
       expect(
-        (await db.codeGraphDao.watchSymbolsByRepo('ws1', 'repo1').first).map(
+        (await db.codeGraphDao.watchSymbolsByRepo('repo1').first).map(
           (s) => s.id,
         ),
         ['s_foo'],
       );
       expect(
         (await db.codeGraphDao
-                .watchSymbolsByRepo('ws1', 'repo1', checkoutId: 'wt1')
+                .watchSymbolsByRepo('repo1', checkoutId: 'wt1')
                 .first)
             .length,
         2,
@@ -191,15 +161,11 @@ void main() {
 
     test('getUnresolvedEdges is partition-scoped', () async {
       expect(
-        (await db.codeGraphDao.getUnresolvedEdges(
-          'ws1',
-          'repo1',
-        )).map((e) => e.id),
+        (await db.codeGraphDao.getUnresolvedEdges('repo1')).map((e) => e.id),
         ['e_linked'],
       );
       expect(
         (await db.codeGraphDao.getUnresolvedEdges(
-          'ws1',
           'repo1',
           checkoutId: 'wt1',
         )).map((e) => e.id),
@@ -208,13 +174,9 @@ void main() {
     });
 
     test('searchFts is partition-scoped', () async {
-      expect(
-        await db.codeGraphDao.searchFts('ws1', 'repo1', 'newThing'),
-        isEmpty,
-      );
+      expect(await db.codeGraphDao.searchFts('repo1', 'newThing'), isEmpty);
       expect(
         (await db.codeGraphDao.searchFts(
-          'ws1',
           'repo1',
           'newThing',
           checkoutId: 'wt1',
@@ -223,30 +185,24 @@ void main() {
       );
       // The linked partition answers its own row for the shared file.
       expect(
-        (await db.codeGraphDao.searchFts('ws1', 'repo1', 'foo')).single.id,
+        (await db.codeGraphDao.searchFts('repo1', 'foo')).single.id,
         's_foo',
       );
     });
 
     test('deleteByFile touches only the requested partition', () async {
-      await db.codeGraphDao.deleteByFile('ws1', 'repo1', 'a.dart');
+      await db.codeGraphDao.deleteByFile('repo1', 'a.dart');
 
       // Linked a.dart is gone (symbols, edges, file row)...
-      expect(await db.codeGraphDao.getFile('ws1', 'repo1', 'a.dart'), isNull);
-      expect(await db.codeGraphDao.getUnresolvedEdges('ws1', 'repo1'), isEmpty);
+      expect(await db.codeGraphDao.getFile('repo1', 'a.dart'), isNull);
+      expect(await db.codeGraphDao.getUnresolvedEdges('repo1'), isEmpty);
       // ...but the worktree partition's a.dart and everything else survives.
       expect(
-        await db.codeGraphDao.getFile(
-          'ws1',
-          'repo1',
-          'a.dart',
-          checkoutId: 'wt1',
-        ),
+        await db.codeGraphDao.getFile('repo1', 'a.dart', checkoutId: 'wt1'),
         isNotNull,
       );
       expect(
         (await db.codeGraphDao.getUnresolvedEdges(
-          'ws1',
           'repo1',
           checkoutId: 'wt1',
         )).single.id,
@@ -254,12 +210,12 @@ void main() {
       );
     });
 
-    test('deleting the isolated_repos row cascades the partition away', () async {
-      await db.isolatedRepoDao.deleteById('wt1');
+    test('deleteByCheckout removes the partition, FTS entries included', () async {
+      await db.codeGraphDao.deleteByCheckout('repo1', 'wt1');
 
       // The whole worktree partition is gone...
       expect(
-        await db.codeGraphDao.getFiles('ws1', 'repo1', checkoutId: 'wt1'),
+        await db.codeGraphDao.getFiles('repo1', checkoutId: 'wt1'),
         isEmpty,
       );
       // Reads are MERGED, so a reader of the (now deleted) partition falls back
@@ -267,18 +223,13 @@ void main() {
       // rows survive, not that the view is empty.
       expect(
         (await db.codeGraphDao.getSymbolsByRepo(
-          'ws1',
           'repo1',
           checkoutId: 'wt1',
         )).map((s) => s.checkoutId),
         everyElement(isNull),
       );
       expect(
-        await db.codeGraphDao.getUnresolvedEdges(
-          'ws1',
-          'repo1',
-          checkoutId: 'wt1',
-        ),
+        await db.codeGraphDao.getUnresolvedEdges('repo1', checkoutId: 'wt1'),
         isEmpty,
       );
       // ...and the FTS copy of its rows went with it. Asserted against the FTS
@@ -286,8 +237,7 @@ void main() {
       // so it returns empty whether or not the index still holds the orphaned
       // entry. An orphan would be live corruption — SQLite reuses rowids, so a
       // later symbol inheriting this rowid would match the deleted symbol's
-      // terms. (The FK cascade fires code_symbols_ad even with
-      // recursive_triggers off, which is what keeps this clean.)
+      // terms. The delete trigger is what keeps this clean.
       final orphans = await db
           .customSelect(
             'SELECT rowid AS r FROM code_symbols_fts '
@@ -296,17 +246,12 @@ void main() {
           .get();
       expect(orphans, isEmpty);
       expect(
-        await db.codeGraphDao.searchFts(
-          'ws1',
-          'repo1',
-          'newThing',
-          checkoutId: 'wt1',
-        ),
+        await db.codeGraphDao.searchFts('repo1', 'newThing', checkoutId: 'wt1'),
         isEmpty,
       );
       // The linked partition is untouched.
       expect(
-        (await db.codeGraphDao.getSymbolsByRepo('ws1', 'repo1')).single.id,
+        (await db.codeGraphDao.getSymbolsByRepo('repo1')).single.id,
         's_foo',
       );
     });
@@ -321,7 +266,6 @@ void main() {
         await db.codeGraphDao.upsertFile(file('f_linked_b', 'b.dart'));
 
         final seen = await db.codeGraphDao.getSymbolsByRepo(
-          'ws1',
           'repo1',
           checkoutId: 'wt1',
         );
@@ -338,7 +282,6 @@ void main() {
 
     test('a name lookup prefers the worktree row over the base row', () async {
       final rows = await db.codeGraphDao.getSymbolsByName(
-        'ws1',
         'repo1',
         'foo',
         checkoutId: 'wt1',
@@ -347,7 +290,6 @@ void main() {
       // The linked reader still gets the base row.
       expect(
         (await db.codeGraphDao.getSymbolsByName(
-          'ws1',
           'repo1',
           'foo',
         )).map((s) => s.id),
@@ -363,7 +305,6 @@ void main() {
         ]);
         expect(
           (await db.codeGraphDao.searchFts(
-            'ws1',
             'repo1',
             'uniqueBaseThing',
             checkoutId: 'wt1',
@@ -377,19 +318,6 @@ void main() {
       // Delta partitions resolve their edges to BASE symbol ids, so a base
       // symbol is a shared traversal target. Two worktrees calling it must not
       // see each other — that would be one conversation reading another's code.
-      await db
-          .into(db.isolatedReposTable)
-          .insert(
-            IsolatedReposTableCompanion.insert(
-              id: 'wt2',
-              workspaceId: 'ws1',
-              spaceId: 'ch2',
-              repoId: 'repo1',
-              path: '/wt2/repo1',
-              branch: 'pr-43',
-              sourcePath: '/tmp/r',
-            ),
-          );
       await db.codeGraphDao.upsertSymbols([
         symbol('s_caller_wt1', 'x.dart', 'X.callerOne', checkoutId: 'wt1'),
         symbol('s_caller_wt2', 'y.dart', 'Y.callerTwo', checkoutId: 'wt2'),
@@ -398,7 +326,6 @@ void main() {
       await db.codeGraphDao.upsertEdges([
         CodeEdgesTableCompanion.insert(
           id: 'e_wt1_to_base',
-          workspaceId: 'ws1',
           repoId: 'repo1',
           checkoutId: const Value('wt1'),
           sourceSymbolId: 's_caller_wt1',
@@ -408,7 +335,6 @@ void main() {
         ),
         CodeEdgesTableCompanion.insert(
           id: 'e_wt2_to_base',
-          workspaceId: 'ws1',
           repoId: 'repo1',
           checkoutId: const Value('wt2'),
           sourceSymbolId: 's_caller_wt2',
@@ -420,7 +346,6 @@ void main() {
 
       expect(
         (await db.codeGraphDao.getCallers(
-          'ws1',
           's_foo',
           checkoutId: 'wt1',
         )).map((s) => s.id),
@@ -428,59 +353,40 @@ void main() {
       );
       expect(
         (await db.codeGraphDao.getCallers(
-          'ws1',
           's_foo',
           checkoutId: 'wt2',
         )).map((s) => s.id),
         ['s_caller_wt2'],
       );
       // The linked reader sees neither worktree's caller.
-      expect(await db.codeGraphDao.getCallers('ws1', 's_foo'), isEmpty);
+      expect(await db.codeGraphDao.getCallers('s_foo'), isEmpty);
     });
 
     test('hasFiles answers per partition', () async {
-      expect(await db.codeGraphDao.hasFiles('ws1', 'repo1'), isTrue);
+      expect(await db.codeGraphDao.hasFiles('repo1'), isTrue);
       expect(
-        await db.codeGraphDao.hasFiles('ws1', 'repo1', checkoutId: 'wt1'),
+        await db.codeGraphDao.hasFiles('repo1', checkoutId: 'wt1'),
         isTrue,
       );
       // An unbuilt partition (worktree row exists, nothing indexed yet) is the
       // case the read path probes for before it trusts a worktree partition.
-      await db
-          .into(db.isolatedReposTable)
-          .insert(
-            IsolatedReposTableCompanion.insert(
-              id: 'wt2',
-              workspaceId: 'ws1',
-              spaceId: 'ch2',
-              repoId: 'repo1',
-              path: '/wt2/repo1',
-              branch: 'pr-43',
-              sourcePath: '/tmp/r',
-            ),
-          );
       expect(
-        await db.codeGraphDao.hasFiles('ws1', 'repo1', checkoutId: 'wt2'),
+        await db.codeGraphDao.hasFiles('repo1', checkoutId: 'wt2'),
         isFalse,
       );
-      expect(await db.codeGraphDao.hasFiles('ws1', 'nope'), isFalse);
-      expect(await db.codeGraphDao.hasFiles('ws2', 'repo1'), isFalse);
+      expect(await db.codeGraphDao.hasFiles('nope'), isFalse);
     });
 
     test('deleteByRepo wipes every partition of the repo', () async {
-      await db.codeGraphDao.deleteByRepo('ws1', 'repo1');
-      expect(await db.codeGraphDao.getFiles('ws1', 'repo1'), isEmpty);
+      await db.codeGraphDao.deleteByRepo('repo1');
+      expect(await db.codeGraphDao.getFiles('repo1'), isEmpty);
       expect(
-        await db.codeGraphDao.getFiles('ws1', 'repo1', checkoutId: 'wt1'),
+        await db.codeGraphDao.getFiles('repo1', checkoutId: 'wt1'),
         isEmpty,
       );
-      expect(await db.codeGraphDao.getSymbolsByRepo('ws1', 'repo1'), isEmpty);
+      expect(await db.codeGraphDao.getSymbolsByRepo('repo1'), isEmpty);
       expect(
-        await db.codeGraphDao.getSymbolsByRepo(
-          'ws1',
-          'repo1',
-          checkoutId: 'wt1',
-        ),
+        await db.codeGraphDao.getSymbolsByRepo('repo1', checkoutId: 'wt1'),
         isEmpty,
       );
     });

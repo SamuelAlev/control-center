@@ -196,7 +196,8 @@ void main() {
       // Agent/run/goal activity (content guests may read via read ops too).
       'agentGoalRuns.watchForConversation',
       'agent_run_log.watchActiveByConversation',
-      'agent_run_log.watchActiveBySpace', 'agent_run_log.watchByAgent',
+      'agent_run_log.watchActiveBySpace',
+      'agent_run_log.watchActiveByWorkspace', 'agent_run_log.watchByAgent',
       'agent_run_log.watchByConversation', 'agent_run_log.watchBySpace',
       'agent_run_log.watchRunTranscript',
       'agent_working_memory.watchByAgent',
@@ -276,7 +277,6 @@ void main() {
     // calling user, or filtered per-subscriber via visibleRows) — reasons at
     // the declaration sites.
     const unscopedSelfScoped = <String>{
-      'agent_run_log.watchAll',
       // Each frame reads only the caller's own scopes: the workspaces they
       // administer, and the server trail when they are the server owner.
       'audit.watchLog',

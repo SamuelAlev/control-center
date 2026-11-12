@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: 헤드리스 서버의 모든 플래그, 환경 변수, 하위 명령, 데이터 디렉터리 경로를 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 모든 프로세스 플래그는 CLI 플래그나 환경 변수로 지정할 수 있습니다. 우선순위는
@@ -222,12 +222,16 @@ Windows에서 `%APPDATA%\control-center`, 그 밖의 환경에서는
 작업 디렉터리 기준 `.cc_server`는 홈이나 앱 데이터 디렉터리를 확인할 수 없을 때만
 사용됩니다.
 
+서버는 데이터 디렉터리를 자기 계정에만 비공개로 유지합니다(`0700`). 그럴 수 없거나, `global.db`가 손상되었거나 더 새로운 버전이 기록했거나, 아이덴티티 파일을 읽을 수 없으면 시작을 거부합니다(종료 코드 `78`).
+
 | 경로                              | 내용                                                                       |
 | --------------------------------- | -------------------------------------------------------------------------- |
 | `global.db`                       | 워크스페이스 레지스트리, 사용자, 페어링된 기기, 뉴스피드, 플릿 큐           |
-| `<workspaceId>/workspace.db`      | 워크스페이스마다 하나씩 있는 데이터베이스 — 에이전트, 스페이스, 티켓, 메모리, 코드 그래프 |
+| `<workspaceId>/workspace.db`      | 워크스페이스마다 하나씩 있는 데이터베이스 — 에이전트, 스페이스, 티켓, 메모리 |
+| `<workspaceId>/code_index.db`     | 해당 워크스페이스의 코드 그래프. 없으면 다시 만들어지며, 백업되지 않습니다        |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | 업데이트로 형식이 바뀌기 전 데이터베이스의 가장 최근 사본 2개 |
 | `<workspaceId>/chat_credentials/` | 채팅 봇 토큰이며 평문 JSON으로 저장되어 워크스페이스와 함께 이동합니다     |
-| `secrets.json`                    | 페어링 키, Connect 설치 키, 프로바이더 앱, 사람들의 로그인(Connect를 통한 것은 봉인됨), SSO(`0600`) |
+| `secrets.json`                    | 페어링 키, Connect 설치 키, 프로바이더 앱, 사람들의 로그인(Connect를 통한 것은 봉인됨), 웹훅 시크릿, SSO(`0600`) |
 | `backups/<timestamp>/`            | 설치 스냅샷 하나 — `manifest.json`, `global.db`, 각 워크스페이스의 사본     |
 | `backups/exports/`                | 단일 워크스페이스 내보내기, `<workspaceId>-<timestamp>.db`                 |
 | `backups/transfer/`               | 백업 다운로드와 업로드를 위한 스테이징 영역이며, 이를 기록하는 라우트가 정리합니다 |

@@ -3,7 +3,7 @@ title: "Kiến trúc"
 description: "Cách Control Center được tổ chức: mô hình máy khách mỏng trên máy chủ, Clean Architecture hướng tính năng, cổng và adapter."
 dateModified: 2026-09-19
 slug: vi-VN/so-tay/khai-niem/kien-truc
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Tổng quan
@@ -100,9 +100,9 @@ Gốc tổ hợp của ứng dụng (`di/providers.dart`) gắn các cổng phí
 **Drift** (SQLite), được chia thành hai cơ sở dữ liệu, cả hai đều nằm trong `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — một danh sách ngắn những bảng thực sự thuộc phạm vi toàn máy chủ: sổ đăng ký không gian làm việc, người dùng/tùy chọn/thiết bị đã ghép nối, kết nối SSO, cài đặt máy chủ toàn bản cài, chính sách hành động được quản lý (một giới hạn toàn bản cài chỉ có thể siết chặt thêm rào chắn của không gian làm việc), bảng tin của từng người dùng, hàng đợi đội máy (worker/job/nhật ký xếp chỗ), chỉ mục `workspace_routes` dùng trước khi xác thực và siêu dữ liệu bản cài. Lúc khởi động chỉ tệp này được mở, nên chi phí khởi động giữ nguyên không đổi dù các không gian làm việc tích lũy bao nhiêu lịch sử. Thêm một bảng vào đây là một quyết định về cô lập mà một bài kiểm thử kiểu bánh cóc buộc bạn phải biện luận cho nó.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — một _thư mục_ cho mỗi không gian làm việc, chứa một tệp SQLite cộng mọi thứ khác chỉ thuộc về không gian làm việc đó, nên worktree và tệp agent của một cuộc hội thoại nằm cạnh cơ sở dữ liệu và bị xóa cùng với nó. Gần như mọi thứ đều sống ở đây: agent, space, phiếu, bộ nhớ, quy trình, cuộc họp, đồ thị mã, đánh giá, kho mã. Các tệp được mở theo nhu cầu ngay lần chạm đầu tiên thông qua `WorkspaceDatabaseManager.of(workspaceId)` và khi đó tự trả chi phí `quick_check`, cài đặt FTS/trigger và `vector_init` của riêng mình.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — một _thư mục_ cho mỗi không gian làm việc, chứa một tệp SQLite cộng mọi thứ khác chỉ thuộc về không gian làm việc đó, nên worktree và tệp agent của một cuộc hội thoại nằm cạnh cơ sở dữ liệu và bị xóa cùng với nó. Gần như mọi thứ đều sống ở đây: agent, space, phiếu, bộ nhớ, quy trình, cuộc họp, đánh giá, kho mã. Đồ thị mã là một tệp thứ hai trong cùng thư mục, `code_index.db`, được dựng lại thay vì sao lưu. Các tệp được mở theo nhu cầu ngay lần chạm đầu tiên thông qua `WorkspaceDatabaseManager.of(workspaceId)` và khi đó tự trả chi phí `quick_check`, cài đặt FTS/trigger và `vector_init` của riêng mình.
 
-Cả hai nửa đều bắt đầu từ một đường cơ sở v1 đã được gộp gọn — `onCreate` dựng nên lược đồ hiện tại — với các bước migration chỉ được nối thêm khi một cơ sở dữ liệu đã triển khai cần được mang tiếp.
+Không bên nào trong hai bên có các bước migration. Một tệp mới được dựng từ các định nghĩa bảng. Một tệp từ phiên bản cũ trước hết được sao chép sang một bên (`pre_upgrade/`), rồi được đưa về cùng các định nghĩa đó khi mở, nên một bản cài đặt mới và một bản đã cập nhật đều có chung lược đồ. Một tệp do phiên bản mới hơn ghi thì bị từ chối.
 
 Vì một không gian làm việc là một tệp, việc xuất một không gian làm việc chỉ là một câu lệnh `VACUUM INTO` duy nhất (`workspace.export`), chứ không phải kết xuất từng bảng; `workspace.import` nhận một tệp như vậy và dùng `workspace_meta` nhúng sẵn để phân biệt tệp của chính nó được nhận lại với một tệp đến từ bản cài khác.
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_persistence/cc_persistence.dart';
@@ -72,6 +73,7 @@ void main() {
     String type = 'text',
     String content = 'hello',
     String? metadata,
+    bool answered = false,
     bool reverted = false,
     required int atSecond,
   }) async {
@@ -84,6 +86,7 @@ void main() {
             ConversationsTableCompanion(
               id: Value(conversationId),
               spaceId: Value(space),
+              workspaceId: Value(workspace),
             ),
             mode: InsertMode.insertOrIgnore,
           );
@@ -100,6 +103,7 @@ void main() {
             content: Value(content),
             messageType: Value(type),
             metadata: Value(metadata),
+            answered: Value(answered),
             reverted: Value(reverted),
             createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, atSecond)),
           ),
@@ -117,7 +121,7 @@ void main() {
 
       final alice = await reads.watchUserSpaceReads('ws-1', 'alice').first;
       expect(alice.keys, ['a']);
-      expect(alice['a'], isA<DateTime>());
+      expect(alice['a'], isA<FeedPosition>());
       expect((await reads.watchUserSpaceReads('ws-2', 'alice').first).keys, [
         'foreign',
       ]);
@@ -152,7 +156,6 @@ void main() {
         sender: 'agent-1',
         senderType: 'agent',
         type: 'user_question',
-        metadata: '{"answered": false}',
         atSecond: 2,
       );
       await msg(
@@ -160,7 +163,7 @@ void main() {
         sender: 'agent-1',
         senderType: 'agent',
         type: 'user_question',
-        metadata: '{"answered": true}',
+        answered: true,
         atSecond: 3,
       );
       // Space b: a single user message, nothing needing input.
@@ -186,12 +189,12 @@ void main() {
       // second 3. This used to be narrowed with `conversation_id = space_id`,
       // a predicate that can no longer be true — so the signal was dead.
       expect(
-        a.lastAgentMessageAt!.millisecondsSinceEpoch,
+        a.lastAgentMessage!.at.millisecondsSinceEpoch,
         DateTime.utc(2026, 1, 1, 0, 0, 5).millisecondsSinceEpoch,
       );
       expect(
-        a.lastAgentMessageAtByConversation.map(
-          (id, at) => MapEntry(id, at.millisecondsSinceEpoch),
+        a.lastAgentMessageByConversation.map(
+          (id, position) => MapEntry(id, position.at.millisecondsSinceEpoch),
         ),
         {
           'a': DateTime.utc(2026, 1, 1, 0, 0, 3).millisecondsSinceEpoch,
@@ -202,7 +205,7 @@ void main() {
       final b = activity.singleWhere((x) => x.spaceId == 'b');
       expect(b.openQuestionCount, 0);
       expect(b.needsInput, isFalse);
-      expect(b.lastAgentMessageAt, isNull);
+      expect(b.lastAgentMessage, isNull);
     });
 
     test('an archived space emits no activity until restored', () async {
@@ -215,7 +218,6 @@ void main() {
         sender: 'agent-1',
         senderType: 'agent',
         type: 'user_question',
-        metadata: '{"answered": false}',
         atSecond: 1,
       );
       await msg('bu', space: 'b', atSecond: 2);
@@ -244,7 +246,6 @@ void main() {
         sender: 'agent-1',
         senderType: 'agent',
         type: 'user_question',
-        metadata: '{"answered": false}',
         atSecond: 1,
       );
 
@@ -297,12 +298,12 @@ void main() {
       final activity = await repo.watchSpaceActivity('ws-1').first;
       final topic = activity.singleWhere((x) => x.spaceId == 'a');
       final peer = activity.singleWhere((x) => x.spaceId == 'b');
-      expect(topic.lastAgentMessageAt, isNotNull);
-      expect(peer.lastAgentMessageAt, isNull);
+      expect(topic.lastAgentMessage, isNotNull);
+      expect(peer.lastAgentMessage, isNull);
       expect(peer.lastMessageAt, isNotNull);
     });
 
-    test('the activity plan reads indexes, not every transcript', () async {
+    test('the activity read never touches a message row', () async {
       await msg('u1', atSecond: 0);
       final rows = await dbs
           .of('ws-1')
@@ -312,9 +313,11 @@ void main() {
           )
           .get();
       final plan = rows.map((r) => r.data.values.join(' ')).join('\n');
-      expect(plan, contains('idx_conversation_messages_live_activity'));
-      expect(plan, contains('USING COVERING INDEX'));
-      expect(plan, contains('idx_conversation_messages_messageType'));
+      // `a` is conversation_activity. The file holds one workspace, so
+      // the workspace filter selects every space and the read walks the
+      // activity rows, joining each space and conversation by key.
+      expect(plan, matches(RegExp(r'\b(SCAN|SEARCH) a\b')));
+      expect(plan, isNot(contains('conversation_messages')));
     });
   });
 
@@ -452,8 +455,8 @@ void main() {
       );
       await expectReading(120000, 1000000);
 
-      // A streaming flush moves the reading without touching the list
-      // projection, the way the stream processor writes mid-turn.
+      // A streaming flush moves the reading without rewriting the stored
+      // metadata, the way the stream processor writes mid-turn.
       await repo.flushStreamingMessage(
         'ws-1',
         'turn-1',
@@ -461,7 +464,9 @@ void main() {
           'transcriptChars': 400000,
           'context': {'tokens': 131000, 'window': 1000000},
         },
-        projectList: false,
+        changedSegments: const {},
+        segmentCount: 0,
+        writeMetadata: false,
       );
       await expectReading(131000, 1000000);
 

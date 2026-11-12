@@ -1,5 +1,7 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/observability/domain/quota.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/quota_providers.dart';
@@ -49,7 +51,7 @@ ObsTone _toneFor(QuotaStatus status) => switch (status) {
 String _unitLabel(AppLocalizations l10n, QuotaUnit unit) => switch (unit) {
   QuotaUnit.tokens => l10n.obsQuotaUnitTokens,
   QuotaUnit.requests => l10n.obsQuotaUnitRequests,
-  QuotaUnit.costCents => l10n.obsQuotaUnitCost,
+  QuotaUnit.costMicros => l10n.obsQuotaUnitCost,
 };
 
 /// A localized word for a [QuotaStatus] used in detail labels.
@@ -65,7 +67,7 @@ String _statusLabel(AppLocalizations l10n, QuotaStatus status) =>
 String _fmtAmount(QuotaUnit unit, int amount) => switch (unit) {
   QuotaUnit.tokens => fmtTokens(amount),
   QuotaUnit.requests => fmtCount(amount),
-  QuotaUnit.costCents => fmtCents(amount),
+  QuotaUnit.costMicros => fmtMicros(amount),
 };
 
 /// The trailing value label for a report, e.g. `12.3k / 50k` or `$4.20`.
@@ -251,7 +253,7 @@ class _UsageWindowGroup extends StatelessWidget {
 
     final tokens = forUnit(QuotaUnit.tokens);
     final requests = forUnit(QuotaUnit.requests);
-    final cost = forUnit(QuotaUnit.costCents);
+    final cost = forUnit(QuotaUnit.costMicros);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +282,7 @@ class _UsageWindowGroup extends StatelessWidget {
           label: l10n.obsColCost,
           value: cost == null
               ? '—'
-              : _fmtAmount(QuotaUnit.costCents, cost.used),
+              : _fmtAmount(QuotaUnit.costMicros, cost.used),
         ),
       ],
     );
@@ -337,7 +339,8 @@ class _AddLimitDialogState extends State<_AddLimitDialog> {
         provider: provider,
         window: _window,
         unit: _unit,
-        limit: value,
+        // The cost field asks for cents (obsQuotaCentsHint).
+        limit: _unit == QuotaUnit.costMicros ? centsToMicros(value) : value,
       ),
     );
     Navigator.of(context).pop();
@@ -396,12 +399,14 @@ class _AddLimitDialogState extends State<_AddLimitDialog> {
           const SizedBox(height: AppSpacing.xs),
           CcTextField(
             controller: _limit,
-            hintText: _unit == QuotaUnit.costCents ? 'e.g. 500' : 'e.g. 100000',
+            hintText: _unit == QuotaUnit.costMicros
+                ? 'e.g. 500'
+                : 'e.g. 100000',
             keyboardType: TextInputType.number,
             onChanged: (_) => setState(() {}),
             onSubmitted: (_) => _submit(),
           ),
-          if (_unit == QuotaUnit.costCents) ...[
+          if (_unit == QuotaUnit.costMicros) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
               l10n.obsQuotaCentsHint,

@@ -183,8 +183,7 @@ final activityEntriesProvider = Provider<List<ActivityEntry>>((ref) {
     }
     final state = states[item.id];
     if (state?.isDismissed == true ||
-        (mark.value?.clearedBefore != null &&
-            !item.createdAt.isAfter(mark.value!.clearedBefore!))) {
+        (mark.value?.hides(item) ?? false)) {
       continue;
     }
     entries.add(
@@ -193,8 +192,7 @@ final activityEntriesProvider = Provider<List<ActivityEntry>>((ref) {
         state?.isRead ??
             (item.isResolved ||
                 !mark.hasValue ||
-                (mark.value?.lastSeenAt != null &&
-                    !item.createdAt.isAfter(mark.value!.lastSeenAt!))),
+                (mark.value?.hasSeen(item) ?? false)),
       ),
     );
   }

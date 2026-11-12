@@ -2,7 +2,7 @@
 title: Glosarium
 description: Definisi istilah-istilah penting yang digunakan di seluruh Control Center.
 slug: id-ID/panduan-pengguna/referensi/glosarium
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (VM tertutup — satu-satunya backend dengan batas kernel, diterapkan pada terminal interaktif), native (Seatbelt bawaan OS di macOS, bubblewrap di Linux dan WSL2), atau none. Diprobe sekali saat boot; native membungkus pengiriman agen bila tersedia. Windows tidak memiliki backend native dan Linux membutuhkan bwrap plus socat; di host seperti itu hanya run milik pemilik server yang dimulai, tanpa terbungkus, dan run orang lain ditolak. --sandbox off menjalankan agen setiap anggota tanpa terbungkus.'],
 ['Rig', 'Mesin sekali pakai yang dikendalikan agen secara real time: browser atau desktop Linux tertutup, emulator Android atau Simulator iOS yang dikelola host, atau terminal tertutup. Dipantau langsung melalui jalur resolusi penuhnya sendiri, dengan pengambilalihan yang ditegakkan di sisi server. Bercakupan satu percakapan sehingga tab manusia dan alat agen menuju satu mesin yang sama.'],
 ['Lingkungan terisolasi', 'Properti isolasi yang lebih kuat yang tersedia bagi rig berbasis VM: batas kernel, disk overlay sekali pakai, gerbang jaringan yang menolak secara default, dan broker kredensial. Rig Android dan iOS bersifat sekali pakai tetapi memakai jaringan yang dikelola host, sehingga tidak mengklaim batas ini. Mengendalikan rig apa pun memakai kelas pagar pengaman enclosureControl.'],
-['RunCost', 'Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam sen) untuk satu run agen.'],
+['RunCost', 'Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam mikrodolar) untuk satu run agen.'],
 ['WakeReason', 'Alasan agen dikirim. Enam nilai: pesan pengguna, penugasan tiket, pengiriman ulang pemulihan setelah kegagalan, tiket anak selesai, detak lanjutan terjadwal, dan langkah pipeline.'],
 ['SandboxPort', 'Mengelola siklus hidup sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Menerbitkan kredensial bercakupan untuk peluncuran sandbox (token satu-repositori untuk lingkungan agen, tulis hanya untuk jalur push di sisi server), lalu melepaskannya saat pembongkaran.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Lingkungan terisolasi**: Batas rig berbasis VM yang lebih kuat — batas kernel, disk overlay sekali pakai, gerbang jaringan yang menolak secara default, dan broker kredensial. Rig Android dan iOS bersifat sekali pakai tetapi memakai jaringan yang dikelola host dan tidak mengklaim batas ini. Mengendalikan rig apa pun memakai kelas pagar pengaman `enclosureControl`.
 
-**RunCost**: Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam sen) untuk satu run agen.
+**RunCost**: Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam mikrodolar) untuk satu run agen.
 
 **WakeReason**: Alasan agen dikirim. Enam nilai: pesan pengguna, penugasan tiket, pengiriman ulang pemulihan setelah kegagalan, tiket anak selesai, detak lanjutan terjadwal, dan langkah pipeline.
 

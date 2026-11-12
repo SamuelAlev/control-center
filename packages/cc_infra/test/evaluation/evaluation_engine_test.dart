@@ -545,7 +545,7 @@ void main() {
     expect(result.report.attempts.first.cost.isEmpty, isTrue);
     expect(result.benchmark.totalCostMicros, isNull);
     expect(
-      const BenchmarkScorer().successAdjustedCostCents(result.benchmark),
+      const BenchmarkScorer().successAdjustedCostMicros(result.benchmark),
       isNull,
     );
   });
@@ -576,7 +576,7 @@ void main() {
     // Harness errors do not become product failures or zero-cost trials.
     expect(result.benchmark.errorCount, 2);
     expect(
-      const BenchmarkScorer().successAdjustedCostCents(result.benchmark),
+      const BenchmarkScorer().successAdjustedCostMicros(result.benchmark),
       isNull,
     );
   });

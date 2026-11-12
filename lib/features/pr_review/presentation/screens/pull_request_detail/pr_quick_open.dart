@@ -8,6 +8,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -70,7 +71,7 @@ class PrQuickOpenPanel extends ConsumerWidget {
     } else if (spaceId == null && spaceAsync.hasError) {
       status = _StatusLine(
         icon: AppIcons.triangleAlert,
-        label: l10n.failedWithError('${spaceAsync.error}'),
+        label: failureMessage(l10n, spaceAsync.error!),
       );
     } else if (spaceId == null || space == null) {
       status = _StatusLine(label: l10n.preparingWorkspace);

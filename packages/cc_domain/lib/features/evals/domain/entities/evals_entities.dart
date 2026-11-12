@@ -281,7 +281,7 @@ class EvalRun {
     this.scorecardJson,
     this.passRate = 0,
     this.status = 'queued',
-    this.costCents = 0,
+    this.costMicros = 0,
     this.triggeredBy = 'manual',
     this.jobId,
     this.startedAt,
@@ -312,8 +312,8 @@ class EvalRun {
   /// Status.
   final String status;
 
-  /// Metered cost in cents.
-  final int costCents;
+  /// Metered cost in micro-dollars.
+  final int costMicros;
 
   /// What triggered it.
   final String triggeredBy;
@@ -343,7 +343,7 @@ class EvalRun {
           scorecardJson == other.scorecardJson &&
           passRate == other.passRate &&
           status == other.status &&
-          costCents == other.costCents &&
+          costMicros == other.costMicros &&
           triggeredBy == other.triggeredBy &&
           jobId == other.jobId &&
           createdAt == other.createdAt &&
@@ -360,7 +360,7 @@ class EvalRun {
     scorecardJson,
     passRate,
     status,
-    costCents,
+    costMicros,
     triggeredBy,
     jobId,
     createdAt,

@@ -93,7 +93,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
       required String credentialId,
     })?
     onHarnessCredentialExhausted,
-    int? costCapCents,
+    int? costCapMicros,
   }) => DispatchHandle(dispatchId: 'dispatch-1', events: events);
 
   @override
@@ -216,8 +216,6 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
     String s,
   ) async => const [];
   @override
-  Stream<List<AgentRunLog>> watchAll() => Stream.value([]);
-  @override
   Stream<List<AgentRunLog>> watchByAgent(String w, String a) =>
       Stream.value([]);
   @override
@@ -233,9 +231,7 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
   ) => const Stream.empty();
 
   @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  Stream<List<AgentRunLog>> watchRecent(int limit) => Stream.value([]);
 
   @override
   Stream<List<AgentRunLog>> watchActiveByConversation(String w, String c) =>

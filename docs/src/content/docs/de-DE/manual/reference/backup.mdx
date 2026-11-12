@@ -2,7 +2,7 @@
 title: Backup, Export und Import
 description: Das Layout der Momentaufnahme, das Manifest, jede Sicherungsoperation und jede Transfer-Route, und genau, welche Dateien eine Sicherung enthält und welche nicht.
 slug: de-DE/handbuch/referenz/backup
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Alles, was Control Center kopieren, übergeben oder übernehmen kann, und die genaue Form jedes
@@ -45,14 +45,7 @@ Installation ein Zurückkopieren und keine Umwandlung. Der Verzeichnisname ist d
 in dem `:` und `.` durch `-` ersetzt sind. So ist er auf Windows dateisystemsicher und sortiert
 als bloße Zeichenkette chronologisch.
 
-Geplante Arbeitsbereichssicherungen liegen getrennt unter
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Sie enthalten kein Manifest und kein `global.db` und sind keine Momentaufnahmen der Installation.
-Der Aufbewahrungsschritt der wöchentlichen Pipeline entfernt nur Sicherungen des eigenen Arbeitsbereichs,
-die älter sind als das konfigurierte Alter (standardmäßig 30 Tage). Manuell erstellte Momentaufnahmen
-der Installation fasst dieser Schritt nie an. `server.listBackups` listet nur Momentaufnahmen der
-Installation, auch unvollständige; `workspace.listBackups` listet die geplanten Sicherungen
-eines Arbeitsbereichs.
+Geplante Arbeitsbereichssicherungen liegen getrennt unter `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Jede hat ein `manifest.json` für genau diese eine Datei und kein `global.db`; sie sind keine Momentaufnahmen der Installation. Eine Wiederherstellung behält die Datenbank, die sie ersetzt, am selben Ort, als `<timestamp>-pre-restore`. Der Aufbewahrungsschritt der wöchentlichen Pipeline entfernt nur Sicherungen des eigenen Arbeitsbereichs, die älter sind als das konfigurierte Alter (standardmäßig 30 Tage). Manuell erstellte Momentaufnahmen der Installation fasst dieser Schritt nie an. `server.listBackups` listet nur Momentaufnahmen der Installation, auch nicht überprüfbare; `workspace.listBackups` listet die geplanten Sicherungen eines Arbeitsbereichs.
 
 Wird ein Arbeitsbereich gelöscht, bleibt dieses Verzeichnis bestehen. Der Zeitplan des
 Arbeitsbereichs endet damit, also rotiert nichts diese Sicherungen mehr, und sie bleiben, bis
@@ -63,33 +56,39 @@ der Eigentümer der Installation sie entfernt. `server.listOrphanedBackups` meld
 
 | Feld                         | Typ                      | Bedeutung                                                              |
 | ---------------------------- | ------------------------ | ---------------------------------------------------------------------- |
-| `version`                    | Ganzzahl                 | Version des Manifest-Formats. Derzeit `1`                              |
+| `format`                    | Ganzzahl                 | Manifest-Format. Derzeit `2`                              |
 | `created_at`                 | ISO-8601 UTC             | Wann die Momentaufnahme erstellt wurde                                 |
-| `global.file`                | Zeichenkette             | Immer `global.db`                                                      |
-| `global.schema_version`      | Ganzzahl                 | Schemaversion von `GlobalDatabase` zum Zeitpunkt der Erfassung         |
-| `global.bytes`               | Ganzzahl                 | Größe der geschriebenen `global.db`                                    |
-| `workspace_schema_version`   | Ganzzahl                 | Schemaversion von `WorkspaceDatabase`, die jede Arbeitsbereichsdatei teilt |
-| `workspaces[]`               | Array                    | Ein Eintrag je erfasstem Arbeitsbereich                                |
+| `global`                   | Objekt          | Der Eintrag zu `global.db`. Fehlt in einer geplanten Arbeitsbereichssicherung |
+| `workspaces[]`               | Array                    | Ein Datensatz je erfasstem Arbeitsbereich                                |
 | `workspaces[].workspace_id`  | Zeichenkette             | Der Arbeitsbereich, den diese Datei enthält                            |
-| `workspaces[].file`          | Zeichenkette             | Pfad relativ zur Wurzel der Momentaufnahme, `<workspaceId>/workspace.db` |
-| `workspaces[].bytes`         | Ganzzahl                 | Größe dieser Datei                                                     |
-| `skipped_workspaces[]`       | Array aus Zeichenketten  | Arbeitsbereiche, die die Sicherung **nicht** erfassen konnte           |
+| `skipped_workspaces[]`     | Array           | Arbeitsbereiche, die die Sicherung **nicht** erfassen konnte                         |
+| `skipped_workspaces[].workspace_id` | Zeichenkette | Der Arbeitsbereich, der ausgelassen wurde                                     |
+| `skipped_workspaces[].reason` | Zeichenkette | `no_file`, `damaged` oder `failed`                                    |
 
-Ein Arbeitsbereich wird übersprungen, wenn er registriert, aber noch nie beschrieben wurde (es gibt
-also noch keine Datei), oder wenn sein `VACUUM INTO` fehlgeschlagen ist. In beiden Fällen wird die
-Momentaufnahme trotzdem fertig, und das Manifest nennt, was fehlt.
+`global` und jeder Eintrag von `workspaces[]` beschreibt je eine kopierte Datei, gemessen an der Kopie, nachdem sie geschrieben wurde:
+
+| Feld | Typ | Bedeutung |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`          | Zeichenkette             | Pfad relativ zur Wurzel der Momentaufnahme: `global.db` oder `<workspaceId>/workspace.db` |
+| `bytes`         | Ganzzahl                 | Größe der Kopie                                                     |
+| `sha256`         | Zeichenkette | SHA-256 der Kopie, in Kleinbuchstaben-Hex                                          |
+| `quick_check`    | Zeichenkette | Was SQLites `quick_check` über die Kopie sagte: `ok` oder sein Befund               |
+| `user_version`   | Ganzzahl     | Schemaversion der Kopie                                                     |
+| `application_id` | Ganzzahl     | SQLite-`application_id` der Kopie                                            |
+
+Ein Arbeitsbereich wird übersprungen, wenn er registriert, aber noch nie beschrieben wurde (`no_file`), wenn seine Datenbank die Integritätsprüfung nicht besteht (`damaged`; eine beschädigte Kopie wird nie angelegt), oder wenn seine Kopie oder deren Prüfung fehlgeschlagen ist (`failed`). In jedem Fall wird die Momentaufnahme trotzdem fertig, und das Manifest nennt, was fehlt. Das Manifest wird zuletzt geschrieben.
 
 ### Vollständigkeit
 
-`server.listBackups` meldet je Momentaufnahme ein Flag `complete`. Es ist falsch, wenn das
-Manifest fehlt oder sich nicht parsen lässt, wenn `global.db` fehlt, oder wenn das Manifest
-eine Arbeitsbereichsdatei nennt, die nicht auf der Platte liegt.
+`server.listBackups` meldet je Momentaufnahme ein Flag `complete`. Es ist falsch, wenn das Manifest fehlt, sich nicht parsen lässt oder ein anderes Format hat, wenn eine Datei, die es nennt, fehlt oder eine andere Größe hat, oder wenn eine Kopie ihre Prüfung nicht bestanden hat. Die App zeigt eine solche Momentaufnahme als **Nicht überprüfbar** an. Momentaufnahmen, die vor Format `2` erstellt wurden, sind in diesem Zustand.
 
-Eine unvollständige Momentaufnahme steht trotzdem in der Liste. Eine Momentaufnahme, die du nicht
+Eine nicht überprüfbare Momentaufnahme steht trotzdem in der Liste. Eine Momentaufnahme, die du nicht
 siehst, ist eine, von der du glaubst, sie zu haben. Lässt sich das Manifest nicht lesen, fällt die
 Auflistung auf das Layout selbst zurück und meldet die `<workspaceId>/workspace.db`-Dateien, die sie
 findet. Die lassen sich weiterhin einzeln über `workspace.import` übernehmen, auch wenn die
 Momentaufnahme als Ganzes eine Installation nicht wiederherstellen kann.
+
+Eine aufgelistete Momentaufnahme oder geplante Sicherung trägt `pinned_reason: "last_good_copy"`, solange sie die neueste geprüfte Kopie eines Arbeitsbereichs enthält, dessen aktive Datenbank beschädigt ist. Der Aufbewahrungsschritt überspringt sie, bis dieser Arbeitsbereich wiederhergestellt ist.
 
 ## Was eine Sicherung nicht enthält
 
@@ -100,6 +99,7 @@ Datenbank, und nichts vom Rest geht mit:
 | ----------------------------------- | ------------------------ | -------------------------------- |
 | `global.db`                         | Ja                       | Nein                             |
 | `<workspaceId>/workspace.db`        | Ja                       | Ja (sie *ist* die Datei)         |
+| `<workspaceId>/code_index.db`        | Nein                     | Nein                   |
 | `<workspaceId>/blobs/`              | Nein                     | Nein                             |
 | `<workspaceId>/skills/`             | Nein                     | Nein                             |
 | `<workspaceId>/agents/`             | Nein                     | Nein                             |
@@ -112,14 +112,9 @@ Datenbank, und nichts vom Rest geht mit:
 | `rigs/`                             | Nein                     | Nein                             |
 | `_agent_hooks/`                     | Nein                     | Nein                             |
 
-Einiges davon ist entbehrlich. `spaces/` hält Copy-on-Write-Worktrees, die aus den Repos neu
-bereitgestellt werden, `pr_clones/` ist ein Cache, `models/` wird neu heruntergeladen, `rigs/`
-ist Maschinenzustand. Anderes nicht: `blobs/` hält eingefügte Bilder, auf die Zeilen in der
-Datenbank zeigen, `skills/` und `agents/` halten die Dateien, mit denen ein Agent läuft, und
-`secrets.json` hält jeden Kopplungsschlüssel, alle Anbieter-Zugangsdaten und alle SSO-Einstellungen der
-Installation. Den Rest deckt [Sichern und wiederherstellen](/de-DE/handbuch/anleitungen/sichern-und-wiederherstellen/#sicherungen-vom-rechner-kopieren) ab.
-:::caution[Eine Arbeitsbereichs-Datenbank enthält Webhook-Geheimnisse]
-`workspace.db` ist der ganze Arbeitsbereich: Unterhaltungen, Laufprotokolle, der Code-Index, Repo-Verknüpfungen, Umgebungsdefinitionen und Mitglieder. Sie enthält außerdem die Pipeline-Webhook-Tokens und die Ticket-Sync-Webhook-Geheimnisse des Arbeitsbereichs in lesbarer Form. Behandle deshalb einen heruntergeladenen Export oder eine Sicherung wie ein Geheimnis. Sie enthält keine Anbieter-Anmeldungen, keine Geräteschlüssel und keine Benutzergeheimnisse; die liegen in `global.db` und `secrets.json`.
+Einiges davon ist entbehrlich. `spaces/` hält Copy-on-Write-Worktrees, die aus den Repos neu bereitgestellt werden, `pr_clones/` ist ein Cache, `code_index.db` wird neu aufgebaut, `models/` wird neu heruntergeladen, `rigs/` ist Maschinenzustand. Anderes nicht: `blobs/` hält eingefügte Bilder, auf die Zeilen in der Datenbank zeigen, `skills/` und `agents/` halten die Dateien, mit denen ein Agent läuft, und `secrets.json` hält jeden Kopplungsschlüssel, alle Anbieter-Zugangsdaten und alle SSO-Einstellungen der Installation. Den Rest deckt [Sichern und wiederherstellen](/de-DE/handbuch/anleitungen/sichern-und-wiederherstellen/#sicherungen-vom-rechner-kopieren) ab.
+:::note[Geheimnisse bleiben aus den Datenbanken heraus]
+`workspace.db` ist der ganze Arbeitsbereich: Unterhaltungen, Laufprotokolle, Repo-Verknüpfungen, Umgebungsdefinitionen und Mitglieder. Webhook-Tokens der Pipelines und Webhook-Geheimnisse der Ticket-Synchronisierung stehen in `secrets.json`: Die Datenbank enthält je einen Verweis darauf, und der Routen-Index enthält einen mit Schlüssel gebildeten Hash jedes Tokens. Ein Arbeitsbereich, der auf einer anderen Installation wiederhergestellt wird, empfängt daher keine Webhooks, bis seine Trigger dort erneut gespeichert werden. Anbieter-Anmeldungen, Gerätschlüssel und Benutzergeheimnisse stehen in `global.db` und `secrets.json`.
 :::
 
 :::note[Chat-Tokens bleiben absichtlich zurück]
@@ -145,6 +140,8 @@ fehlen sie ganz. Sie werden nicht abgelehnt, sie sind strukturell nicht da.
 | `workspace.deleteBackup` | Schreiben | Arbeitsbereich | `owner` | `name` | `{ok}` |
 | `workspace.export`    | Lesen     | Arbeitsbereich  | `admin`                         | keine         | `{ok, path}`                          |
 | `workspace.import`    | Schreiben | Arbeitsbereich  | `owner` und Serverinhaber       | `source_path` | `{ok, workspace_id}`                  |
+| `workspace.importHolds.list` | Lesen | Arbeitsbereich | `owner` und Serverinhaber | keine | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | Schreiben | Arbeitsbereich | `owner` und Serverinhaber | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`    | Schreiben | Installation*   | `owner`                         | `id`          | Registry-Zeile als gelöscht markiert  |
 
 * `workspace.delete` hat keinen Geltungsbereich, weil die Zeile, die es markiert, in der globalen
@@ -161,18 +158,20 @@ Arbeitsbereich ab, dessen Sicherungen hinter `workspace.deleteBackup` und den Ro
 Arbeitsbereichs bleiben. Beide Löschoperationen akzeptieren nur einen aufgelisteten
 Zeitstempel-Verzeichnisnamen, keinen Pfad.
 
+`workspace.importHolds.list` liefert, was ein Import zurückgehalten hat. Jede zurückgehaltene Berechtigung hat eine `id`, einen `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` oder `invite`), die `payload`, die sie wieder einsetzen würde, sowie `imported_at` und `source_install_id`. `workspace.importHolds.resolve` mit `accept: true` gewährt sie erneut, mit `false` verwirft es sie. `applied` ist false, wenn die Person oder das Objekt, für die die Freigabe galt, nicht mehr im Arbeitsbereich ist.
+
 :::note[Eine Momentaufnahme der ganzen Installation ist auf beiden Bahnen dem Eigentümer vorbehalten]
 `server.backupNow`, `server.listBackups` und `server.deleteBackup` verlangen den
 **Eigentümer** der Installation (`ServerAuthority.serverOwner`), dieselbe Schranke wie
 `GET /backup/snapshot`. Eine Momentaufnahme erfasst die Datenbank jedes Arbeitsbereichs. Admin
 eines einzelnen Arbeitsbereichs zu sein reicht also nicht, um die anderen zu verwalten. Das Löschen
 nimmt nur den gelisteten Verzeichnisnamen mit Zeitstempel an, keinen beliebigen Pfad auf dem
-Server, und entfernt die ganze Momentaufnahme, auch unvollständige.
+Server, und entfernt die ganze Momentaufnahme, auch nicht überprüfbare.
 Export und geplante Sicherungs-Downloads je Arbeitsbereich bleiben beim Admin des Arbeitsbereichs.
 :::
 
 :::note[Die Wiederherstellung ist Sache des Serverinhabers]
-`workspace.import` und `POST /backup/restore` lassen den Server eine Datenbankdatei übernehmen, deren Zeilen er danach als eigene behandelt: Repo-Verknüpfungen und wer sie angelegt hat, Umgebungsdefinitionen, die auf dem Host laufen, Worktree- und Log-Pfade. Deshalb brauchen beide den Serverinhaber (`ServerAuthority.serverOwner`), der außerdem Eigentümer des Arbeitsbereichs sein muss. Alle anderen und jeder Aufrufer auf einem Host ohne eingetragenen Eigentümer werden mit `server_owner_required` abgewiesen. Kein Trigger und keine Ansicht, die die Datei mitbringt, wird übernommen.
+`workspace.import` und `POST /backup/restore` lassen den Server eine Datenbankdatei übernehmen, deren Zeilen er danach als eigene behandelt: Repo-Verknüpfungen und wer sie angelegt hat, Umgebungsdefinitionen, die auf dem Host laufen, Worktree- und Log-Pfade. Deshalb brauchen beide den Serverinhaber (`ServerAuthority.serverOwner`), der außerdem Eigentümer des Arbeitsbereichs sein muss. Alle anderen und jeder Aufrufer auf einem Host ohne eingetragenen Eigentümer werden mit `server_owner_required` abgewiesen. Kein Trigger, keine Ansicht, keine Spalte und keine Einschränkung, die die Datei mitbringt, wird übernommen.
 :::
 
 ### Antwort von `server.listBackups`
@@ -212,21 +211,21 @@ können also nicht auseinanderlaufen in der Behandlung derselben Datei.
 
 ### Prüfung von `workspace.import`
 
-Bevor irgendetwas ersetzt wird, wird die Kandidatendatei schreibgeschützt mit einer kurzlebigen
-rohen SQLite-Verbindung geöffnet und ihre Zeile `workspace_meta` gelesen.
+Bevor etwas ersetzt wird, wird die Kandidatendatei in eine Zwischendatei neben dem Ziel kopiert und dort geprüft. Eine Ablehnung fasst nichts an und trägt ihre Art als `data.kind`.
 
 | Bedingung                                              | Ergebnis                                                                                          |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Keine lesbare SQLite-Datenbank, oder kein `workspace_meta` | Abgelehnt. Nichts wird angefasst                                                              |
-| Aufgezeichnete Arbeitsbereichs-ID ≠ das Ziel           | **Erlaubt**, protokolliert. So wird ein Arbeitsbereich dupliziert oder unter einer neuen ID wiederhergestellt |
-| Aufgezeichnete Installations-ID ≠ diese Installation   | **Erlaubt**, protokolliert. Die gekoppelten Geräte und Benutzer-IDs gehören zu jener Installation und lösen sich hier nicht auf |
-| Ungültige Arbeitsbereichs-ID, oder die Datei existiert nicht | Abgelehnt                                                                                   |
+| Die Datei existiert nicht | Abgelehnt, `import.missing_source` |
+| Keine lesbare SQLite-Datenbank, oder sie besteht `quick_check` nicht | Abgelehnt, `import.damaged` |
+| Sie stammt aus einer Momentaufnahme, und ihre SHA-256 weicht von der des Manifests ab | Abgelehnt, `import.checksum_mismatch` |
+| Eine neuere Serverversion hat sie geschrieben | Abgelehnt, `import.newer_schema` |
+| Eine andere `application_id`, oder kein `workspace_meta` | Abgelehnt, `import.foreign_file` |
+| Sie lässt sich nicht auf das Schema dieses Servers bringen | Abgelehnt, `import.schema_mismatch` |
+| Ihre Webhooks oder Einladungen leiten bereits zu einem anderen Arbeitsbereich | Abgelehnt, `import.route_conflict` |
+| Aufgezeichnete Arbeitsbereichs-ID ≠ das Ziel           | **Erlaubt**. Seine Zeilen erhalten die ID des Ziels. So wird ein Arbeitsbereich dupliziert oder unter einer neuen ID wiederhergestellt |
+| Aufgezeichnete Installations-ID ≠ diese Installation   | **Erlaubt**. Die Benutzer-IDs gehören zu jener Installation und lösen sich hier nicht auf |
 
-Nach der Annahme wird die Datenbank des Ziel-Arbeitsbereichs geschlossen und aus dem Manager genommen,
-bevor die Datei darüber kopiert wird (eine offene Drift-Verbindung hält die Datei und ihre
-`-wal`). Danach wird sie neu geöffnet, damit `beforeOpen` die FTS- und Sync-Trigger neu anlegt, und die FTS-
-Indizes werden neu aufgebaut. Die Inhaltstabellen einer importierten Datei sind gefüllt, ihr Index kann
-aber veraltet sein.
+Nach der Annahme wird die Zwischendatei auf das Schema dieses Servers gebracht und muss ihm danach genau entsprechen. Berechtigungen, die eine Datei sich nicht selbst geben darf, werden ihr entnommen: Freigaben, eine Umgebungsdefinition auf dem Host auszuführen, werden gelöscht, und Aktionsregeln, die erlauben oder nachfragen, Sandbox-Ausführungsberechtigungen, Repo-Berechtigungen über Lesen hinaus, Rollen über Mitglied sowie Einladungen zu diesen Rollen werden zu Zurückhaltungen, die der Serverinhaber prüfen soll. Wer importiert, behält oder erhält die Eigentümerrolle. Die Datenbank, die ersetzt wird, bleibt als geplante Sicherung mit dem Namen `<timestamp>-pre-restore` erhalten; die Zwischendatei wird bei geschlossenen Verbindungen des Arbeitsbereichs an ihren Platz umbenannt, `code_index.db` wird gelöscht, damit sie neu aufgebaut wird, und die FTS-Indizes werden neu aufgebaut.
 
 ## Transfer-Routen
 
@@ -256,7 +255,7 @@ muss es ein Zeitstempelname sein, und die Datei muss eine echte Datei im eigenen
 
 | Status | Ursache                                                                              |
 | ------ | ------------------------------------------------------------------------------------ |
-| `400`  | Ein erforderlicher Query-Parameter fehlt, ein Sicherungsname ist ungültig, oder der Upload-Body ist leer |
+| `400`  | Ein erforderlicher Query-Parameter fehlt, ein Sicherungsname ist ungültig, der Upload-Body ist leer, oder die hochgeladene Datei wurde abgelehnt (der Body ist `{error, kind}` mit einer `import.*`-Art) |
 | `403`  | Unbekanntes oder widerrufenes Gerät, ungültige Signatur, oder dem Aufrufer fehlt die Rolle |
 | `404`  | Kein Backup-Port auf diesem Host, oder die genannte Momentaufnahme, Sicherung oder Arbeitsbereichsdatei existiert nicht |
 | `405`  | `/backup/restore` mit etwas anderem als `POST` aufgerufen                            |
@@ -296,6 +295,8 @@ Transportwege verschlüsselt die entstehenden Sicherungsdateien im Ruhezustand.
 | Momentaufnahmen                    | `<dataDir>/backups/<timestamp>/`                             |
 | Geplante Arbeitsbereichssicherungen | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Arbeitsbereichs-Exporte            | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Datenbank, die eine Wiederherstellung ersetzt hat | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Datenbanken vor einem Update, das ihr Format änderte | `<dataDir>/pre_upgrade/` und `<dataDir>/<workspaceId>/pre_upgrade/`, jeweils die neuesten zwei |
 | Transfer-Bereitstellung            | `<dataDir>/backups/transfer/` — eine Werkbank, die die Route wegräumt, die hineinschreibt |
 | Archivname der Momentaufnahme      | `<snapshot directory name>.zip`                              |
 | Upload-Obergrenze                  | 8 GiB je verschlüsseltem `/backup/restore`-Upload            |

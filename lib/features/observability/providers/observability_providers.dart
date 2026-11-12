@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 //
 // Every analytic here is computed CLIENT-SIDE from the existing
-// `agent_run_log.watchAll` RPC stream — no new persisted surface. Reads are
+// `agent_run_log.watchRecent` RPC stream — no new persisted surface. Reads are
 // scoped to the active workspace; an absent workspace yields empty results
 // rather than leaking another workspace's runs.
 

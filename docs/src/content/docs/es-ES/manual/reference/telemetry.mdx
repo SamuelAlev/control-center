@@ -2,7 +2,7 @@
 title: Analíticas de uso
 description: Qué registra Control Center cuando las analíticas de uso están activadas, quién lo decide y qué no se envía nunca.
 slug: es-ES/manual/referencia/analiticas-de-uso
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center puede enviar **eventos de uso seudónimos** a una instancia de [Umami](https://umami.is). Las analíticas de uso están **desactivadas hasta que el operador del servidor las activa**. El ajuste pertenece al servidor y se aplica a todos los clientes conectados a él: la aplicación de escritorio, la aplicación web, el teléfono y el propio servidor.
@@ -109,7 +109,7 @@ Los registran la aplicación de escritorio, la aplicación web y el teléfono pa
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Cambiaron las skills del espacio de trabajo |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Se respondió a una propuesta de orquestación |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Se aprobó o rechazó un plan (teléfono) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Se inició un objetivo o bucle supervisado (teléfono) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | Se inició un objetivo o bucle supervisado (teléfono) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Se creó o bifurcó una conversación |
 | `conversation_rewound` | `conversation_id` | Se continuó una conversación desde un mensaje anterior |
 | `space_archived` | `workspace_id`, `space_id` | Se archivó un espacio |
@@ -128,7 +128,7 @@ Los registra `cc_server` para hechos que ningún cliente ve exactamente una vez.
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Terminó la ejecución de un agente |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Un agente se detuvo a esperar a una persona |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | La política de acciones rechazó una acción de un agente |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Terminó la ejecución de un pipeline. `trigger` es `manual`, el tipo de evento que la inició o, en un disparador con nombre, solo su tipo (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | Terminó la ejecución de un pipeline. `trigger` es `manual`, el tipo de evento que la inició o, en un disparador con nombre, solo su tipo (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | Se publicó una pull request desde un espacio |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Se fusionó una pull request abierta por un agente |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Se guardó la grabación de una reunión |
@@ -142,7 +142,7 @@ Los registra `cc_server` para hechos que ningún cliente ve exactamente una vez.
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Se instaló, actualizó o cambió en disco una skill del espacio de trabajo |
 | `calendar_auth_expired` | `workspace_id` | Una conexión de calendario necesita volver a iniciar sesión |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Un evento del calendario está a punto de empezar |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | El gasto superó un umbral del presupuesto |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | El gasto superó un umbral del presupuesto |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | Se solicitó una revisión en un PR seguido |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Cambió la decisión de revisión de un PR seguido |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | Se fusionó en un repositorio vinculado un PR que no abrió ningún agente |

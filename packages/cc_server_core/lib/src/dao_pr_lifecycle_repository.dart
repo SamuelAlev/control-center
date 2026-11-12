@@ -1,3 +1,4 @@
+import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_generation.dart';
@@ -84,7 +85,9 @@ class DaoPrLifecycleRepository implements PrLifecycleRepository {
       id: drift.Value(prId),
       title: title != null ? drift.Value(title) : const drift.Value.absent(),
       body: body != null ? drift.Value(body) : const drift.Value.absent(),
-      status: status != null ? drift.Value(status) : const drift.Value.absent(),
+      status: status != null
+          ? drift.Value(_storedStatus(status))
+          : const drift.Value.absent(),
       prNumber: prNumber != null
           ? drift.Value(prNumber)
           : const drift.Value.absent(),
@@ -158,7 +161,7 @@ class DaoPrLifecycleRepository implements PrLifecycleRepository {
       await updateDraft(
         workspaceId,
         prId,
-        status: 'created',
+        status: const Created().name,
         prNumber: number,
         prUrl: url,
       );
@@ -183,4 +186,14 @@ class DaoPrLifecycleRepository implements PrLifecycleRepository {
   @override
   Future<void> delete(String workspaceId, String id) =>
       _dao(workspaceId).deleteById(id).then((_) {});
+
+  /// [status] as `pull_requests.status` stores it. An unknown status is
+  /// refused here, with a message, rather than by the column's check.
+  static String _storedStatus(String status) {
+    final known = PrGenerationStatus.tryFromName(status);
+    if (known == null) {
+      throw ValidationException('Unknown pull request status "$status"');
+    }
+    return known.name;
+  }
 }

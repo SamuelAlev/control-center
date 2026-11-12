@@ -49,9 +49,20 @@ class BudgetDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .getSingleOrNull();
 
-  /// Inserts or updates a budget policy.
+  /// Inserts or updates a budget policy in one statement: the row with the
+  /// same id, else the scope's existing policy (one per scope,
+  /// `uq_budget_policy_scope`), which keeps its id.
   Future<void> upsertPolicy(BudgetPolicyTableCompanion entry) =>
-      into(budgetPolicyTable).insertOnConflictUpdate(entry);
+      into(budgetPolicyTable).insert(
+        entry,
+        onConflict: UpsertMultiple([
+          DoUpdate((_) => entry, target: [budgetPolicyTable.id]),
+          DoUpdate(
+            (_) => entry.copyWith(id: const Value.absent()),
+            target: [budgetPolicyTable.scopeType, budgetPolicyTable.scopeId],
+          ),
+        ]),
+      );
 
   /// Deletes a policy by [id] within [workspaceId]. Returns rows deleted.
   Future<int> deletePolicy(String workspaceId, String id) => (delete(

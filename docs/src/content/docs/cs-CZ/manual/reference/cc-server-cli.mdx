@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Všechny příznaky, proměnné prostředí, podpříkazy a cesty v datovém adresáři headless serveru.
 slug: cs-CZ/prirucka/referencni-prirucka/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Každý příznak procesu se zadává příznakem CLI nebo proměnnou prostředí. Vyhraje
@@ -231,12 +231,16 @@ macOS, `%APPDATA%\control-center` na Windows a `$XDG_DATA_HOME/control-center`
 (jinak `~/.local/share/control-center`) jinde. `.cc_server` relativní k cwd se
 použije jen tehdy, když se nevyřeší domovský adresář ani adresář dat aplikace.
 
+Server drží datový adresář soukromý pro svůj vlastní účet (`0700`). Odmítne se spustit (exit kód `78`), když to nedokáže, když je `global.db` poškozená nebo ji zapsala novější verze, nebo když nejde přečíst jeho soubor identity.
+
 | Cesta                             | Obsah                                                                           |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Registr pracovních prostorů, uživatelé, spárovaná zařízení, kanál novinek a fronta flotily |
-| `<workspaceId>/workspace.db`      | Jedna databáze na pracovní prostor: agenti, prostory, tickety, paměť, graf kódu |
+| `<workspaceId>/workspace.db`      | Jedna databáze na pracovní prostor: agenti, prostory, tickety, paměť |
+| `<workspaceId>/code_index.db`     | Graf kódu daného pracovního prostoru. Když chybí, znovu se sestaví, nikdy se nezálohuje |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Dvě nejnovější kopie databáze z doby před aktualizací, která změnila její formát |
 | `<workspaceId>/chat_credentials/` | Tokeny chatbotů jako prosté JSON, aby šly s pracovním prostorem                |
-| `secrets.json`                    | Párovací klíče, instalační klíč Connect, aplikace poskytovatelů, přihlášení lidí (zapečetěná, když vznikla přes Connect), SSO (`0600`) |
+| `secrets.json`                    | Párovací klíče, instalační klíč Connect, aplikace poskytovatelů, přihlášení lidí (zapečetěná, když vznikla přes Connect), tajemství webhooků, SSO (`0600`) |
 | `backups/<timestamp>/`            | Jeden snímek instalace: `manifest.json`, `global.db` a kopie každého pracovního prostoru |
 | `backups/exports/`                | Exporty jednoho pracovního prostoru, `<workspaceId>-<timestamp>.db`             |
 | `backups/transfer/`               | Odkladiště stahování a nahrávání záloh. Uklidí ho trasa, která ho zapisuje     |

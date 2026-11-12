@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -8,6 +9,7 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
+    await seedParents(db, tickets: ['tk-1', 'tk-2']);
   });
 
   tearDown(() async {

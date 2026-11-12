@@ -2,7 +2,7 @@
 title: Cadangan, ekspor, dan impor
 description: Tata letak snapshot, manifest, setiap operasi cadangan dan rute transfer, serta persisnya file yang dimuat dan tidak dimuat oleh cadangan.
 slug: id-ID/panduan-pengguna/referensi/cadangan
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Semua yang bisa disalin, diserahkan, atau diadopsi Control Center, beserta bentuk persis
@@ -47,11 +47,11 @@ sistem berkas di Windows dan terurut secara kronologis sebagai string biasa.
 
 Cadangan ruang kerja terjadwal berada terpisah di
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Cadangan itu tidak menyertakan manifest atau `global.db` dan bukan snapshot instalasi.
+Setiap cadangan memiliki `manifest.json` untuk berkas itu saja dan tanpa `global.db`; cadangan itu bukan snapshot instalasi. Pemulihan menyimpan basis data yang digantikannya di tempat yang sama, sebagai `<timestamp>-pre-restore`.
 Langkah retensi pipeline mingguan hanya menghapus cadangan ruang kerjanya sendiri
 yang lebih tua dari usia yang dikonfigurasi (bawaannya 30 hari); snapshot instalasi
 yang dibuat secara manual tidak pernah dipangkas oleh langkah itu. `server.listBackups`
-hanya mendaftarkan snapshot instalasi, termasuk yang tidak lengkap;
+hanya mendaftarkan snapshot instalasi, termasuk yang belum diverifikasi;
 `workspace.listBackups` mendaftarkan cadangan terjadwal satu ruang kerja.
 
 Menghapus ruang kerja membiarkan direktori ini tetap ada. Jadwal ruang kerja itu ikut
@@ -63,34 +63,40 @@ ada sampai pemilik instalasi menghapusnya. `server.listOrphanedBackups` melapork
 
 | Kolom                      | Tipe            | Arti                                                                |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Versi format manifest. Saat ini `1`                                 |
+| `format`                  | int             | Format manifest. Saat ini `2`                                 |
 | `created_at`               | ISO-8601 UTC    | Kapan snapshot diambil                                              |
-| `global.file`              | string          | Selalu `global.db`                                                  |
-| `global.schema_version`    | int             | Versi skema `GlobalDatabase` pada saat perekaman                    |
-| `global.bytes`             | int             | Ukuran `global.db` yang ditulis                                     |
-| `workspace_schema_version` | int             | Versi skema `WorkspaceDatabase` yang sama untuk setiap file ruang kerja |
-| `workspaces[]`             | array           | Satu entri per ruang kerja yang terekam                             |
+| `global` | object | Catatan `global.db`. Tidak ada di cadangan ruang kerja terjadwal |
+| `workspaces[]`             | array           | Satu catatan per ruang kerja yang terekam                             |
 | `workspaces[].workspace_id`| string          | Ruang kerja yang dimuat file ini                                    |
-| `workspaces[].file`        | string          | Path relatif terhadap akar snapshot, `<workspaceId>/workspace.db`  |
-| `workspaces[].bytes`       | int             | Ukuran file itu                                                     |
-| `skipped_workspaces[]`     | array of string | Ruang kerja yang **tidak** bisa direkam oleh cadangan               |
+| `skipped_workspaces[]` | array | Ruang kerja yang **tidak** bisa direkam oleh cadangan |
+| `skipped_workspaces[].workspace_id` | string | Ruang kerja yang dilewati |
+| `skipped_workspaces[].reason` | string | `no_file`, `damaged` atau `failed` |
 
-Sebuah ruang kerja dilewati ketika ruang kerja itu terdaftar tetapi belum pernah
-ditulisi (jadi filenya belum ada), atau ketika `VACUUM INTO`-nya gagal. Dengan cara apa
-pun, snapshot tetap selesai dan manifest menyebutkan apa yang hilang.
+`global` dan setiap catatan `workspaces[]` mencatat satu berkas yang disalin, diukur pada salinan setelah ditulis:
+
+| Kolom | Tipe | Arti |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | Path relatif terhadap akar snapshot: `global.db` atau `<workspaceId>/workspace.db`  |
+| `bytes`       | int             | Ukuran salinan                                                     |
+| `sha256` | string | SHA-256 salinan, dalam hex huruf kecil |
+| `quick_check` | string | Hasil `quick_check` SQLite untuk salinan itu: `ok`, atau temuannya |
+| `user_version` | int | Versi skema salinan |
+| `application_id` | int | `application_id` SQLite salinan |
+
+Ruang kerja dilewati ketika ruang kerja itu terdaftar tetapi belum pernah ditulisi (`no_file`), ketika basis datanya gagal pemeriksaan integritas (`damaged`; salinan yang rusak tidak pernah dibuat), atau ketika salinannya atau pemeriksaan atas salinan itu gagal (`failed`). Dengan cara apa pun, snapshot tetap selesai dan manifest menyebutkan apa yang hilang. Manifest ditulis paling akhir.
 
 ### Kelengkapan
 
-`server.listBackups` melaporkan flag `complete` per snapshot. Flag itu bernilai false
-ketika manifest tidak ada atau tidak bisa diurai, ketika `global.db` hilang, atau ketika
-manifest menyebut file ruang kerja yang tidak ada di disk.
+`server.listBackups` melaporkan flag `complete` per snapshot. Flag itu bernilai false ketika manifest tidak ada, tidak bisa diurai, atau berformat lain, ketika sebuah file yang disebutnya tidak ada atau ukurannya berbeda, atau ketika sebuah salinan tidak lolos pemeriksaannya. Aplikasi menampilkan snapshot seperti itu sebagai **Belum diverifikasi**. Snapshot yang dibuat sebelum format `2` berada dalam kondisi itu.
 
-Snapshot yang tidak lengkap tetap didaftarkan, karena snapshot yang tidak bisa dilihat
+Snapshot yang belum diverifikasi tetap didaftarkan, karena snapshot yang tidak bisa dilihat
 operator adalah snapshot yang mereka yakini mereka miliki. Ketika manifest tidak bisa
 dibaca, daftar itu beralih ke tata letak itu sendiri dan melaporkan file
 `<workspaceId>/workspace.db` apa pun yang ditemukannya — file-file itu tetap bisa
 diadopsi satu per satu melalui `workspace.import` meskipun snapshot secara keseluruhan
 tidak bisa memulihkan instalasi.
+
+Snapshot atau cadangan terjadwal yang tercantum membawa `pinned_reason: "last_good_copy"` selama menyimpan salinan terverifikasi terbaru dari ruang kerja yang basis data aktifnya rusak. Langkah retensi melewatinya sampai ruang kerja itu dipulihkan.
 
 ## Apa yang tidak dimuat cadangan
 
@@ -101,6 +107,7 @@ basis datanya, dan tidak ada bagian lain yang ikut berpindah:
 | ----------------------------------- | ---------------- | -------------------------- |
 | `global.db`                         | Ya               | Tidak                      |
 | `<workspaceId>/workspace.db`        | Ya               | Ya (*itulah* filenya)      |
+| `<workspaceId>/code_index.db`       | Tidak           | Tidak                  |
 | `<workspaceId>/blobs/`              | Tidak            | Tidak                      |
 | `<workspaceId>/skills/`             | Tidak            | Tidak                      |
 | `<workspaceId>/agents/`             | Tidak            | Tidak                      |
@@ -114,15 +121,15 @@ basis datanya, dan tidak ada bagian lain yang ikut berpindah:
 | `_agent_hooks/`                     | Tidak            | Tidak                      |
 
 Sebagian dari itu bisa dibuang — `spaces/` menyimpan worktree copy-on-write yang
-disediakan ulang dari repo, `pr_clones/` adalah cache, `models/` diunduh ulang, `rigs/`
+disediakan ulang dari repo, `pr_clones/` adalah cache, `code_index.db` dibangun ulang, `models/` diunduh ulang, `rigs/`
 adalah status mesin. Sebagiannya lagi tidak: `blobs/` menyimpan gambar yang ditempelkan
 dan dirujuk baris-baris di basis data, `skills/` dan `agents/` menyimpan file yang dipakai
 agen untuk berjalan, dan `secrets.json` menyimpan setiap kunci pemasangan, kredensial
 penyedia, dan pengaturan SSO di instalasi. Lihat
 [Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/#menyalin-cadangan-ke-luar-mesin)
 untuk menutupi sisanya.
-:::caution[Basis data ruang kerja menyimpan rahasia webhook]
-`workspace.db` adalah seluruh ruang kerja: percakapan, log run, indeks kode, tautan repositori, definisi lingkungan, dan anggotanya. Ia juga menyimpan token webhook pipeline dan rahasia webhook sinkronisasi tiket dalam bentuk yang dapat dibaca, jadi perlakukan ekspor atau cadangan yang diunduh sebagai rahasia. Ia tidak menyimpan proses masuk penyedia, kunci perangkat, atau rahasia pengguna apa pun; semua itu ada di `global.db` dan `secrets.json`.
+:::note[Rahasia tetap berada di luar basis data]
+`workspace.db` adalah seluruh ruang kerja: percakapan, log run, tautan repositori, definisi lingkungan, dan anggotanya. Token webhook pipeline dan rahasia webhook sinkronisasi tiket berada di `secrets.json`: basis data hanya menyimpan referensi untuk masing-masing, dan indeks rute menyimpan hash berkunci dari setiap token. Ruang kerja yang dipulihkan di instalasi lain karena itu tidak menerima webhook sampai pemicunya disimpan ulang di sana. Proses masuk penyedia, kunci perangkat, dan rahasia pengguna berada di `global.db` dan `secrets.json`.
 :::
 
 :::note[Token chat sengaja ditinggalkan]
@@ -149,6 +156,8 @@ seperti server demo.
 | `workspace.deleteBackup` | mutasi | Ruang kerja | `owner` | `name` | `{ok}` |
 | `workspace.export`   | baca   | Ruang kerja | `admin`          | tidak ada     | `{ok, path}`                  |
 | `workspace.import`   | mutasi | Ruang kerja | `owner`, dan pemilik server | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | baca | Ruang kerja | `owner`, dan pemilik server | tidak ada | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutasi | Ruang kerja | `owner`, dan pemilik server | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | mutasi | Instalasi* | `owner`          | `id`          | baris pendaftaran ditandai terhapus |
 
 * `workspace.delete` tidak bercakupan karena baris yang ditandainya berada di pendaftaran
@@ -165,18 +174,19 @@ kerja yang masih aktif, yang cadangannya tetap berada di balik `workspace.delete
 dan peran ruang kerja itu sendiri. Kedua operasi penghapusan hanya menerima nama direktori
 stempel waktu yang terdaftar, bukan path.
 
+`workspace.importHolds.list` mengembalikan apa yang ditahan oleh sebuah impor. Setiap penahanan memiliki `id`, `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` atau `invite`), `payload` yang akan dikembalikannya, `imported_at`, dan `source_install_id`. `workspace.importHolds.resolve` dengan `accept: true` memberikannya kembali dan dengan `false` membuangnya. `applied` bernilai false ketika tujuan pemberian izin itu sudah tidak ada lagi di ruang kerja.
+
 :::note[Snapshot seluruh instalasi dibatasi pemilik di kedua jalur]
 `server.backupNow`, `server.listBackups`, dan `server.deleteBackup` mewajibkan
 **pemilik** instalasi (`ServerAuthority.serverOwner`), gerbang yang sama dengan
 `GET /backup/snapshot`. Snapshot merekam basis data setiap ruang kerja, jadi
 menjadi admin di satu ruang kerja tidak cukup untuk mengelola ruang kerja lainnya.
 Penghapusan hanya menerima nama direktori stempel waktu yang terdaftar, bukan path
-server sembarang, dan menghapus seluruh snapshot (termasuk snapshot yang tidak
-lengkap). Ekspor per ruang kerja dan unduhan cadangan terjadwal tetap berada di tangan admin ruang kerja.
+server sembarang, dan menghapus seluruh snapshot (termasuk snapshot yang belum diverifikasi). Ekspor per ruang kerja dan unduhan cadangan terjadwal tetap berada di tangan admin ruang kerja.
 :::
 
 :::note[Pemulihan adalah milik pemilik server]
-`workspace.import` dan `POST /backup/restore` membuat server mengadopsi berkas basis data yang barisnya kemudian diperlakukannya sebagai miliknya sendiri: tautan repositori dan siapa yang membuatnya, definisi lingkungan yang berjalan di host, serta path worktree dan log. Karena itu keduanya memerlukan pemilik server (`ServerAuthority.serverOwner`), yang juga harus menjadi pemilik ruang kerja tersebut. Pemanggil lain, dan setiap pemanggil di host tanpa pemilik yang tercatat, ditolak dengan `server_owner_required`. Tidak ada pemicu atau tampilan yang dibawa berkas itu yang diadopsi.
+`workspace.import` dan `POST /backup/restore` membuat server mengadopsi berkas basis data yang barisnya kemudian diperlakukannya sebagai miliknya sendiri: tautan repositori dan siapa yang membuatnya, definisi lingkungan yang berjalan di host, serta path worktree dan log. Karena itu keduanya memerlukan pemilik server (`ServerAuthority.serverOwner`), yang juga harus menjadi pemilik ruang kerja tersebut. Pemanggil lain, dan setiap pemanggil di host tanpa pemilik yang tercatat, ditolak dengan `server_owner_required`. Tidak ada pemicu, tampilan, kolom, atau batasan yang dibawa berkas itu yang diadopsi.
 :::
 
 ### Respons `server.listBackups`
@@ -218,21 +228,21 @@ berbeda terhadap file yang sama.
 
 ### Validasi `workspace.import`
 
-Sebelum apa pun diganti, file kandidat dibuka dalam mode hanya baca dengan koneksi SQLite
-mentah yang berumur pendek dan baris `workspace_meta`-nya dibaca.
+Sebelum apa pun diganti, file kandidat disalin ke berkas staging di samping target dan diperiksa di sana. Penolakan tidak menyentuh apa pun dan membawa jenisnya sebagai `data.kind`.
 
 | Kondisi                                          | Hasil                                                           |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Bukan basis data SQLite yang bisa dibaca, atau tidak ada `workspace_meta` | Ditolak. Tidak ada yang disentuh                 |
-| Id ruang kerja yang tercatat ≠ target            | **Diizinkan**, dicatat di log. Beginilah ruang kerja diduplikasi atau dipulihkan dengan id baru |
-| Id instalasi yang tercatat ≠ instalasi ini       | **Diizinkan**, dicatat di log. Perangkat yang dipasangkan dan id pengguna milik instalasi itu tidak akan dikenali di sini |
-| Id ruang kerja tidak valid, atau file tidak ada  | Ditolak                                                         |
+| Berkas tidak ada | Ditolak, `import.missing_source` |
+| Bukan basis data SQLite yang bisa dibaca, atau gagal `quick_check` | Ditolak, `import.damaged` |
+| Berasal dari snapshot dan SHA-256-nya berbeda dari yang tercatat di manifest | Ditolak, `import.checksum_mismatch` |
+| Ditulis oleh versi server yang lebih baru | Ditolak, `import.newer_schema` |
+| `application_id` lain, atau tidak ada `workspace_meta` | Ditolak, `import.foreign_file` |
+| Tidak bisa disesuaikan dengan skema server ini | Ditolak, `import.schema_mismatch` |
+| Webhook atau undangannya sudah diarahkan ke ruang kerja lain | Ditolak, `import.route_conflict` |
+| Id ruang kerja yang tercatat ≠ target            | **Diizinkan**. Barisnya dipetakan ulang ke target. Beginilah ruang kerja diduplikasi atau dipulihkan dengan id baru |
+| Id instalasi yang tercatat ≠ instalasi ini       | **Diizinkan**. Id pengguna milik instalasi itu tidak akan dikenali di sini |
 
-Saat diterima, basis data ruang kerja tujuan ditutup dan dilepas dari pengelola sebelum
-file disalin menimpanya (koneksi drift yang terbuka memegang file itu beserta `-wal`-nya),
-lalu dibuka kembali sehingga `beforeOpen` memasang ulang pemicu FTS dan sinkronisasi, dan
-indeks FTS dibangun ulang — tabel konten file yang diimpor terisi, tetapi indeksnya
-mungkin sudah usang.
+Saat diterima, berkas staging dibawa ke skema server ini dan kemudian harus sama persis dengannya. Izin yang tidak boleh diberikan berkas kepada dirinya sendiri dicabut darinya: persetujuan untuk menjalankan definisi lingkungan di host dihapus, dan aturan tindakan yang mengizinkan atau meminta persetujuan, izin exec sandbox, izin repositori di atas baca, peran di atas anggota, serta undangan ke peran-peran tersebut menjadi penahanan yang ditinjau pemilik server. Pengimpor mempertahankan atau memperoleh peran pemilik. Basis data yang digantikan disimpan sebagai cadangan terjadwal bernama `<timestamp>-pre-restore`, berkas staging dipindahkan ke tempatnya dengan koneksi ruang kerja ditutup, `code_index.db` dihapus untuk dibangun ulang, dan indeks FTS dibangun ulang.
 
 ## Rute transfer
 
@@ -263,7 +273,7 @@ direktori cadangan milik ruang kerja itu sendiri.
 
 | Status | Penyebab                                                                            |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Parameter kueri yang diwajibkan hilang, nama cadangan tidak valid, atau isi unggahan kosong |
+| `400`  | Parameter kueri yang diwajibkan hilang, nama cadangan tidak valid, isi unggahan kosong, atau berkas yang diunggah ditolak (isinya `{error, kind}` dengan jenis `import.*`) |
 | `403`  | Perangkat tidak dikenal atau dicabut, tanda tangan buruk, atau pemanggil tidak memiliki peran itu |
 | `404`  | Tidak ada port cadangan di host ini, atau file snapshot, cadangan, atau ruang kerja yang disebut tidak ada |
 | `405`  | `/backup/restore` dipanggil dengan apa pun selain `POST`                            |
@@ -305,6 +315,8 @@ dihasilkan saat tersimpan.
 | Snapshot                       | `<dataDir>/backups/<timestamp>/`                             |
 | Cadangan ruang kerja terjadwal | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Ekspor ruang kerja             | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Basis data yang digantikan oleh pemulihan | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Basis data sebelum pembaruan mengubah formatnya | `<dataDir>/pre_upgrade/` dan `<dataDir>/<workspaceId>/pre_upgrade/`, dua yang terbaru dari masing-masing |
 | Staging transfer               | `<dataDir>/backups/transfer/` — sebuah meja kerja, dibersihkan oleh rute yang menulisinya |
 | Nama arsip snapshot            | `<snapshot directory name>.zip`                              |
 | Batas unggahan                 | 8 GiB per unggahan terenkripsi ke `/backup/restore`          |

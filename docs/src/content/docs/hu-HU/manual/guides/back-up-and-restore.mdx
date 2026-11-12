@@ -2,7 +2,7 @@
 title: Mentés és visszaállítás
 description: Készítsen pillanatképet a telepítésről, mozgasson munkaterületet gépek között, állítson vissza egy vagy az összes munkaterületet, és tartson másolatokat máshol.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Ez az útmutató az öt dolgot járja körül, amit az emberek valójában csinálni szoktak a
@@ -46,10 +46,10 @@ Mindkét artefaktum **kizárólag adatbázis**:
 - A **telepítési pillanatkép** egy időbélyeges könyvtár: `manifest.json`, `global.db` és munkaterületenként egy `<workspaceId>/workspace.db`.
 - A **munkaterület-export** maga az az egyetlen `workspace.db` fájl.
 
-A munkaterület adatbázisa maga a teljes munkaterület: a beszélgetései, a futási naplói, a kódindexe, a repókapcsolatai, a környezeti definíciói és a tagjai. Olvasható formában tartalmazza a munkaterület pipeline webhook-tokenjeit és a jegy-szinkronizálás webhook-titkait is. A letöltött munkaterület-mentést vagy -exportot úgy tárolja, mint egy titkot. Nem tartalmaz szolgáltatói bejelentkezéseket, eszközkulcsokat vagy felhasználói titkokat; ezek a globális adatbázisban és a szerver titkostárolójában élnek.
+A munkaterület adatbázisa maga a teljes munkaterület: a beszélgetései, a futási naplói, a tárolókapcsolatai, a környezeti definíciói és a tagjai. Nem tartalmaz titkokat: a pipeline webhook-tokenek, a jegy-szinkronizálás webhook-titkai, a szolgáltatói bejelentkezések, az eszközkulcsok és a felhasználói titkok a globális adatbázisban és a szerver titkostárolójában élnek. Ettől még ez az összes, amit a munkaterület mondott és tett, ezért a letöltött munkaterület-mentést vagy -exportot ugyanúgy tartsa privátnak, mint magát a munkaterületet. A kódindex külön fájl az adatbázis mellett, a `code_index.db`. Egyik mentés sem viszi magával; a szerver építi újra.
 
 Egyik sem viszi magával az adatkönyvtár többi részét: a `secrets.json`-t (párosítási
-kulcsok, szolgáltatói hitelesítő adatok, SSO), egy munkaterület `blobs/` mappáját (az
+kulcsok, szolgáltatói hitelesítő adatok, webhook-titkok, SSO), egy munkaterület `blobs/` mappáját (az
 üzenetekbe beillesztett képek), a `skills/`, `agents/`, `chat_credentials/` mappákat,
 a rögzített megbeszélés-hanganyagot vagy az állomásképeket. Ezek egy része eldobható,
 más része nem — a
@@ -66,17 +66,13 @@ A szerver végig futva marad. Minden fájl `VACUUM INTO` utasítással íródik,
 futó adatbázissal szemben is konzisztens, így nincs karbantartási ablak, és nem kell
 leállítani az ügynököket.
 
-A lista minden sora mutatja az időbélyeget, a lemezen elfoglalt méretet, a rögzített
-munkaterületek számát, valamint azt, hogy a pillanatkép állapota **Teljes** vagy
-**Hiányos**. A hiányos azt jelenti, hogy a manifest hiányzik, vagy olyan fájlokat nevez
-meg, amelyek nincsenek ott — egy összeomlás vagy egy megtelt lemez miatt megszakadt
-mentés. Ezek szándékosan szerepelnek a listán: egy pillanatkép, amit nem lát, olyan,
-amiről azt hiszi, hogy megvan. Egy hiányos pillanatkép nem tud visszaállítani egy teljes
-telepítést, de a benne lévő munkaterület-fájlok egyenként még átvehetők.
+A lista minden sora mutatja az időbélyeget, a lemezen elfoglalt méretet, a rögzített munkaterületek számát, valamint azt, hogy a pillanatkép állapota **Teljes** vagy **Nem ellenőrzött**. Minden másolatot az írása után ellenőriz a rendszer, a manifest pedig rögzíti annak méretét és ellenőrzőösszegét. A nem ellenőrzött azt jelenti, hogy a szerver nem tudja jóváhagyni a pillanatképet: a manifestje hiányzik vagy olvashatatlan, vagy egy általa megnevezett fájl hiányzik, illetve megváltozott a mérete. Ez egy összeomlás vagy egy megtelt lemez miatt megszakadt mentés, vagy olyan mentés, amelyet azelőtt készítettek, hogy a pillanatképek rögzítették volna az ellenőrzőösszegeket. Ezek szándékosan szerepelnek a listán: egy pillanatkép, amit nem lát, olyan, amiről azt hiszi, hogy megvan. Egy nem ellenőrzött pillanatkép nem tud visszaállítani egy teljes telepítést, de a benne lévő munkaterület-fájlok egyenként még visszaállíthatók.
 
 Egy sor azt is mondhatja, hogy **_n_ munkaterület nem került rögzítésre**. Az egy
-regisztrált, de soha nem írt munkaterület (még nincs fájlja), vagy egy olyan, amelynek
+regisztrált, de soha nem írt munkaterület (még nincs fájlja), egy, amelynek az adatbázisa sérült (sérült másolat soha nem készül), vagy egy olyan, amelynek
 a másolása meghiúsult — nézze meg a szervernaplót.
+
+A **Legutolsó jó másolat** jelöléssel ellátott pillanatkép vagy ütemezett mentés olyan munkaterület legfrissebb jó másolatát őrzi, amelynek adatbázisa azóta megsérült. A rendszeres takarítás nem nyúl hozzá, és a törlése megerősítést kér, amíg a munkaterület vissza nem áll.
 
 ## Munkaterület-mentések és megőrzés ütemezése
 
@@ -105,7 +101,7 @@ munkaterületnek, a sora ezt jelzi, és nem listázza a mentéseit.
 
 Nyisson le egy sort az egyes mentések megtekintéséhez, a legújabbal kezdve:
 
-- A **Visszaállítás** ezzel a mentéssel cseréli le a munkaterület jelenlegi adatbázisát. Előbb exportálja a munkaterületet, ha szükség lehet a művelet visszavonására. Ehhez a szerver tulajdonosa szükséges, akinek a munkaterületnek is tulajdonosnak kell lennie.
+- A **Visszaállítás** ezzel a mentéssel cseréli le a munkaterület jelenlegi adatbázisát. A lecserélt adatbázis ebben a listában marad, `-pre-restore` végű névvel, így vissza lehet térni hozzá. Ehhez a szerver tulajdonosa szükséges, akinek a munkaterületnek is tulajdonosnak kell lennie.
 - A **Letöltés** arra a gépre menti a fájlt, amelyet éppen használ. A mentés a szerveren marad.
 - Az **Útvonal másolása** a mentés szerveren lévő helyét másolja ki.
 - A **Törlés** véglegesen eltávolítja ezt a mentést, miután beírta a munkaterület nevét. Ehhez a munkaterület **tulajdonosa** szükséges.
@@ -126,7 +122,7 @@ szakaszban leírtak szerint.
 
 ## Telepítési pillanatkép törlése
 
-A **Telepítési pillanatképek** alatt nyissa le a pillanatképet, a hiányosat is, és
+A **Telepítési pillanatképek** alatt nyissa le a pillanatképet, a nem ellenőrzöttet is, és
 használja a **Pillanatkép törlése** lehetőséget a veszélyzóna szakaszban. Erősítse meg
 a nevét. A teljes pillanatkép-könyvtár véglegesen eltávolítódik a szerverről; előbb
 töltse le, ha szüksége van másolatra. A munkaterület-mentési pipeline soha nem törli
@@ -167,20 +163,14 @@ A 3. lépés visszaállítás, ezért a cél-szerver tulajdonosa szükséges hoz
 Ha mindkét szerver az a gép, amely előtt ül, a forrásszerveren a **Mentés a szerverre** gombbal, majd a célszerveren a **Munkaterület-adatbázisfájl** mezőbe írt fájlútvonallal és az **Importálás** gombbal ugyanezt teszi meg a körút nélkül; ez az útvonal a szervergépen oldódik fel.
 
 :::caution[Az importálás mindent lecserél]
-Az importálás felülír mindent, amit a cél-munkaterület jelenleg tartalmaz, és nem
-vonható vissza. Előbb exportálja a célt, ha bármi olyat tartalmaz, amit esetleg vissza
-szeretne kapni.
+Az importálás lecseréli mindazt, amit a cél-munkaterület jelenleg tartalmaz. A lecserélt adatbázis az **Ütemezett mentések** alatt marad meg, `-pre-restore` végű névvel; ezt állítsa vissza, ha vissza szeretne térni.
 :::
 
-Két dolgot inkább engedélyezünk és naplózunk, mintsem megtagadnánk: egy olyan fájl
-importálását, amelynek rögzített munkaterület-azonosítója eltér a célétól (így lehet
-duplikálni egy munkaterületet, vagy új azonosító alatt visszaállítani), és egy **másik
-telepítésből** származó fájl importálását. Ez utóbbi esetben a fájl párosított eszközei
-és felhasználói azonosítói ahhoz a telepítéshez tartoznak, ahonnan származik, és ezen
-nem fognak feloldódni — a munkaterület saját adatai sértetlenek, de az átvétel után
-ellenőrizze újra a tagságot.
+Más munkaterületből vagy **másik telepítésből** származó fájl is elfogadott: így lehet egy munkaterületet duplikálni, új azonosító alatt visszaállítani, vagy valaki máshoz átadni. Egy másik telepítés felhasználói azonosítói itt nem oldódnak fel — a munkaterület saját adatai sértetlenek, de az átvétel után ellenőrizze újra a tagságot.
 
-A csevegőbot-tokenek és a szolgáltatói bejelentkezések az adatbázison kívül élnek, így a fogadó telepítés a sajátjait csatlakoztatja újra. A fájl viszont magában hordozza a munkaterület pipeline webhook-tokenjeit és a jegy-szinkronizálás webhook-titkait, így az a munkaterület, amelyet másnak ad át, ezeket is átadja. Ha a címzettnek nem szabad ezeket birtokolnia, utólag cserélje ki őket.
+A visszaállított fájl önmagában semmit nem adhat meg ezen a szerveren. A rendes tagságon túli jogosultságait eltávolítják, és az oldal tetején a **Visszatartva a visszaállított másolatokból** alatt listázzák: olyan művelet-szabályok, amelyek jóváhagyás nélkül vagy jóváhagyás után engedik az ügynököket cselekedni, olyan útvonalak, amelyeken a sandbox futhat, olyan tárolóhozzáférés, amely az olvasásnál többet ad, olyan szerepkörök, amelyek a tagnál magasabbak, és ezekre a szerepkörökre szóló nyitott meghívók. Az **Elfogadás** újra megadja, az **Elutasítás** eldobja. A gépen futó környezetdefiníciók jóváhagyásai törlődnek, ezért ezeket újra jóvá kell hagyni. A visszaállító megtartja a tulajdonosi szerepkört, vagy megkapja azt.
+
+A csevegőbot-tokenek, a szolgáltatói bejelentkezések és a webhook-titkok az adatbázison kívül élnek, így a fogadó telepítés a sajátjait csatlakoztatja újra. A webhook-triggerek és a jegy-szinkronizálás webhookjai titkok nélkül érkeznek meg, és egy másik szerveren semmit nem fogadnak, amíg ott újra el nem mentik őket, ami minden triggernek új URL-t ad.
 
 ## Egy munkaterület visszaállítása pillanatképből
 
@@ -192,7 +182,7 @@ A csevegőbot-tokenek és a szolgáltatói bejelentkezések az adatbázison kív
 
 Ez ugyanaz a művelet, mint az importálás, csak a pillanatképben lévő másolatára
 irányítva annak a munkaterületnek a fájljának — szándékosan, hogy ne legyen egy második
-mechanizmus, amely ugyanazt a fájlt másképp kezelné.
+mechanizmus, amely ugyanazt a fájlt másképp kezelné. A másolatot először a pillanatkép által rögzített ellenőrzőösszeggel vetik össze.
 
 Egy sor azt mondhatja, hogy **Már nincs ezen a szerveren**, és a **Visszaállítás**
 letiltva van: a pillanatkép olyan munkaterületet tartalmaz, amellyel ez a telepítés már
@@ -201,6 +191,10 @@ nem rendelkezik. Hozza vissza kézzel — hozzon létre egy munkaterületet (csa
 `<snapshot path>/<old workspace id>/workspace.db` útvonalat a munkaterület **Munkaterület-adatbázisfájl** mezőjébe, és nyomja meg az **Importálás** gombot. A lenyitott pillanatkép
 egy másolható mezőben mutatja a saját **Útvonal a szerveren** értékét, a sor címe pedig a
 régi munkaterület-azonosító, így az útvonal mindkét fele Ön előtt van.
+
+## Sérült munkaterület visszaállítása
+
+Az a munkaterület, amelynek adatbázisa nem megy át az integritásellenőrzésen, csak olvashatóvá válik: minden benne lévő adat olvasható marad, minden módosítást elutasít a rendszer. A tagok a munkaterület tetején a **Ez a munkaterület csak olvasható** feliratot látják, a szerver tulajdonosa pedig ezen az oldalon a **Figyelmet igényel** részben látja. A legfrissebb, jó másolatot tartalmazó mentés a **Legutolsó jó másolat** néven marad meg. Állítsa vissza a munkaterületet abból a másolatból, ahogy fentebb leírtuk, hogy ismét írható legyen. A sérült adatbázis `-pre-restore` mentésként marad meg.
 
 ## Teljes telepítés visszaállítása
 
@@ -329,7 +323,7 @@ systemd időzítőből, majd utána szinkronizálja a `DEST`-et a gazdagépről.
 SQLite 3.27-es vagy újabb verziót igényel.
 
 A `<dataDir>/backups/` könyvtáron **kívülre** írja. Egy kézzel készített könyvtárnak ott
-nincs `manifest.json`-ja, így az alkalmazás hiányos pillanatképként listázná, és a lista
+nincs `manifest.json`-ja, így az alkalmazás nem ellenőrzött pillanatképként listázná, és a lista
 megszűnne annak őszinte nyilvántartása lenni, amit maga a szerver készített.
 
 ### A régi teljes telepítési pillanatképek ritkítása
@@ -377,9 +371,11 @@ hogy hol tárolódnak.
 | „Csak a szerver tulajdonosa állíthat vissza biztonsági mentést. A mentéseket továbbra is letöltheti.” | A visszaállítás a szerver gépén lévő munkaterület-adatbázist cseréli le, ezért csak a szerver tulajdonosa állíthat vissza. Töltse le a mentést, és kérje meg a tulajdonost, hogy állítsa vissza |
 | „Ennek a szervernek nincs biztonsági mentési felülete.” | A gazdagépen nincs bekötve mentési port — ez egy demószerver. A műveletek hiányoznak, nem pedig megtagadottak |
 | „A fájl nagyobb, mint amit a szerver elfogad.” | A feltöltéseket 8 GiB-re korlátozzuk. Tegye a fájlt a szervergépre, és adja meg az útvonalát a **Munkaterület-adatbázisfájl** mezőben |
-| Az importálás elutasítva: nem Control Center munkaterület-adatbázis | A fájlban nincs `workspace_meta` sor — ez nem munkaterület-export, vagy csonka. Semmi nem lett lecserélve |
-| Egy pillanatkép **Hiányos** állapotban szerepel a listán | A manifestje hiányzik, vagy nem létező fájlokat nevez meg. Készítsen egy újat; addig egyenként vegye át belőle a munkaterület-fájlokat |
-| Egy pillanatkép szerint munkaterületek nem kerültek rögzítésre | Azokat a munkaterületeket soha nem írták, vagy a másolásuk meghiúsult. Nézze meg a szervernaplót |
+| A visszaállítást elutasítják, és semmi nem cserélődik le | A fájl nem felelt meg egy ellenőrzésnek, és az üzenet megmondja, melyiknek: nem munkaterület-adatbázis, sérült, eltér a pillanatkép által rögzített ellenőrzőösszegtől, a szerver egy újabb verziója írta, vagy a webhookjai vagy meghívói már egy másik munkaterülethez tartoznak ezen a szerveren. Használjon másik másolatot, vagy előbb frissítse a szervert |
+| Egy pillanatkép **Nem ellenőrzött** állapotban szerepel a listán | Nem fejeződött be, vagy azelőtt készült, hogy a pillanatképek rögzítették volna az ellenőrzőösszegeket. Készítsen egy újat; addig egyenként állítsa vissza belőle a munkaterület-fájlokat |
+| Egy pillanatkép szerint munkaterületek nem kerültek rögzítésre | Azokat a munkaterületeket soha nem írták, sérültek, vagy a másolásuk meghiúsult. Nézze meg a szervernaplót |
+| A munkaterületen megjelenik: **Ez a munkaterület csak olvasható** | Az adatbázisa nem ment át egy integritásellenőrzésen. Addig nem módosítható semmi benne, amíg a szerver tulajdonosa vissza nem állítja egy mentésből |
+| A webhookok leállnak, miután a munkaterület másik szerverre került | A webhook-titkok nem utaznak az adatbázissal. Mentse újra minden webhook-triggerét és jegy-szinkronizálási kapcsolatát az új szerveren, majd adja meg a küldőnek az új URL-t |
 | Egy visszaállított telepítésből hiányoznak a forge- és SSO-hitelesítő adatok | A `secrets.json` nincs benne egy pillanatképben sem. Állítsa vissza onnan, ahol tartotta, vagy csatlakoztassa újra a szolgáltatókat |
 | Egy visszaállított munkaterületből hiányoznak a beillesztett képek | A blobok az adatbázis mellett élnek, nem benne. Másolja át a `<workspaceId>/blobs/` mappát is |
 

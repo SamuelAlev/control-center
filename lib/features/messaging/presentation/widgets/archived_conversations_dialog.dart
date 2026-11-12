@@ -10,6 +10,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -102,7 +103,7 @@ class _ArchivedConversationsDialogState
               ),
               error: (error, _) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(l10n.failedWithError('$error')),
+                child: Text(failureMessage(l10n, error)),
               ),
               data: (all) {
                 final archived = all
@@ -151,7 +152,7 @@ class _ArchivedConversationsDialogState
             if (_restoreError case final error?)
               Padding(
                 padding: const EdgeInsetsDirectional.only(top: 12),
-                child: Text(l10n.failedWithError('$error')),
+                child: Text(failureMessage(l10n, error)),
               ),
           ],
         ),

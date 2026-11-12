@@ -44,11 +44,13 @@ chronologically as a plain string.
 
 Scheduled workspace backups live separately at
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-They do not include a manifest or `global.db` and are not install snapshots.
+Each has a `manifest.json` for that one file and no `global.db`; they are not install
+snapshots. A restore keeps the database it replaces in the same place, as
+`<timestamp>-pre-restore`.
 The weekly pipeline's retention step removes only backups of its own workspace
 older than its configured age (30 days by default); manually created install
 snapshots are never rotated by that step. `server.listBackups` lists only install
-snapshots, including incomplete ones; `workspace.listBackups` lists one workspace's
+snapshots, including unverified ones; `workspace.listBackups` lists one workspace's
 scheduled backups.
 
 Deleting a workspace leaves this directory in place. The workspace's schedule stops with
@@ -60,33 +62,48 @@ removes them. `server.listOrphanedBackups` reports them.
 
 | Field                      | Type            | Meaning                                                             |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest format version. Currently `1`                              |
+| `format`                   | int             | Manifest format. Currently `2`                                      |
 | `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
-| `global.file`              | string          | Always `global.db`                                                  |
-| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
-| `global.bytes`             | int             | Size of the written `global.db`                                     |
-| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
-| `workspaces[]`             | array           | One entry per captured workspace                                    |
+| `global`                   | object          | The record of `global.db`. Absent from a scheduled workspace backup |
+| `workspaces[]`             | array           | One record per captured workspace                                   |
 | `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
-| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
-| `workspaces[].bytes`       | int             | Size of that file                                                   |
-| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+| `skipped_workspaces[]`     | array           | Workspaces the backup could **not** capture                         |
+| `skipped_workspaces[].workspace_id` | string | The workspace that was left out                                     |
+| `skipped_workspaces[].reason` | string       | `no_file`, `damaged` or `failed`                                    |
 
-A workspace is skipped when it is registered but has never been written to (so no file
-exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
-and the manifest names what is missing.
+`global` and each entry of `workspaces[]` record one copied file, measured on the copy
+after it was written:
+
+| Field            | Type   | Meaning                                                                        |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`           | string | Path relative to the snapshot root: `global.db` or `<workspaceId>/workspace.db` |
+| `bytes`          | int    | Size of the copy                                                               |
+| `sha256`         | string | SHA-256 of the copy, in lowercase hex                                          |
+| `quick_check`    | string | What SQLite's `quick_check` said about the copy: `ok`, or its finding          |
+| `user_version`   | int    | Schema version of the copy                                                     |
+| `application_id` | int    | SQLite `application_id` of the copy                                            |
+
+A workspace is skipped when it is registered but has never been written to (`no_file`),
+when its database fails the integrity check (`damaged`; a damaged copy is never taken),
+or when its copy or the check of that copy failed (`failed`). Either way the snapshot
+still completes and the manifest names what is missing. The manifest is written last.
 
 ### Completeness
 
 `server.listBackups` reports a `complete` flag per snapshot. It is false when the
-manifest is absent or unparseable, when `global.db` is missing, or when the manifest
-names a workspace file that is not on disk.
+manifest is absent, unparseable or of another format, when a file it names is missing
+or has another size, or when a copy did not pass its check. The app shows such a
+snapshot as **Unverified**. Snapshots taken before format `2` are in that state.
 
-An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
+An unverified snapshot is still listed, because a snapshot an operator cannot see is a
 snapshot they believe they have. When the manifest is unreadable the listing falls back
 to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
 those remain individually adoptable through `workspace.import` even though the snapshot
 as a whole cannot restore an install.
+
+A listed snapshot or scheduled backup carries `pinned_reason: "last_good_copy"` while
+it holds the newest verified copy of a workspace whose live database is damaged. The
+retention step skips it until that workspace is restored.
 
 ## What a backup does not contain
 
@@ -97,6 +114,7 @@ database, and none of the rest travels:
 | ----------------------------------- | -------------- | ---------------------- |
 | `global.db`                         | Yes            | No                     |
 | `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
+| `<workspaceId>/code_index.db`       | No             | No                     |
 | `<workspaceId>/blobs/`              | No             | No                     |
 | `<workspaceId>/skills/`             | No             | No                     |
 | `<workspaceId>/agents/`             | No             | No                     |
@@ -110,18 +128,19 @@ database, and none of the rest travels:
 | `_agent_hooks/`                     | No             | No                     |
 
 Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
-re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
-is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
+re-provisioned from the repos, `pr_clones/` is a cache, `code_index.db` is rebuilt,
+`models/` re-downloads, `rigs/` is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
 database point at, `skills/` and `agents/` hold the files an agent runs with, and
 `secrets.json` holds every pairing key, provider credential and SSO setting on the
 install. See [Back up and restore](/manual/guides/back-up-and-restore/#copy-backups-off-the-machine)
 for covering the rest.
-:::caution[A workspace database holds webhook secrets]
-`workspace.db` is the whole workspace: conversations, run logs, the code index,
-repository links, environment definitions and members. It also holds the workspace's
-pipeline webhook tokens and ticket-sync webhook secrets in readable form, so treat a
-downloaded export or backup as a secret. It holds no provider sign-in, device key or
-user secret; those are in `global.db` and `secrets.json`.
+:::note[Secrets stay out of the databases]
+`workspace.db` is the whole workspace: conversations, run logs, repository links,
+environment definitions and members. Pipeline webhook tokens and ticket-sync webhook
+secrets are in `secrets.json`: the database holds a reference to each, and the route
+index holds a keyed hash of each token. A workspace restored on another install
+therefore receives no webhooks until its triggers are saved again there. Provider
+sign-ins, device keys and user secrets are in `global.db` and `secrets.json`.
 :::
 
 :::note[Chat tokens deliberately stay behind]
@@ -147,6 +166,8 @@ missing — on a server with no backup port wired, such as the demo server.
 | `workspace.deleteBackup` | mutate | Workspace | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Workspace | `owner`, and the server owner | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | read | Workspace | `owner`, and the server owner | none | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutate | Workspace | `owner`, and the server owner | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
 
 * `workspace.delete` is unscoped because the row it marks lives in the global
@@ -162,13 +183,20 @@ the install owner. `server.deleteOrphanedBackup` refuses a live workspace, whose
 backups stay behind `workspace.deleteBackup` and that workspace's own roles. Both delete
 ops accept only a listed timestamp directory name, not a path.
 
+`workspace.importHolds.list` returns what an import held back. Each hold has an `id`,
+a `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` or
+`invite`), the `payload` it would put back, `imported_at` and `source_install_id`.
+`workspace.importHolds.resolve` with `accept: true` grants it again and with `false`
+drops it. `applied` is false when whoever or whatever the grant was for is no longer in
+the workspace.
+
 :::note[A whole-install snapshot is owner-gated on both lanes]
 `server.backupNow`, `server.listBackups`, and `server.deleteBackup` require the
 install **owner** (`ServerAuthority.serverOwner`), the same gate as
 `GET /backup/snapshot`. A snapshot captures every workspace's database, so
 being an admin of one workspace is not enough to manage the others. Deletion
 accepts only the listed timestamp directory name, not an arbitrary server
-path, and removes the whole snapshot (including incomplete snapshots).
+path, and removes the whole snapshot (including unverified snapshots).
 Per-workspace export and scheduled-backup downloads stay on workspace admin.
 :::
 
@@ -178,8 +206,8 @@ file whose rows it then treats as its own: repository links and who made them,
 environment definitions that run on the host, worktree and log paths. So both
 need the server owner (`ServerAuthority.serverOwner`), who must also be the
 workspace's owner. Anyone else, and every caller on a host with no recorded owner,
-is refused with `server_owner_required`. No trigger or view the file brings is
-adopted.
+is refused with `server_owner_required`. No trigger, view, column or constraint the
+file brings is adopted.
 :::
 
 ### `server.listBackups` response
@@ -220,21 +248,30 @@ cannot drift into different treatments of the same file.
 
 ### `workspace.import` validation
 
-Before anything is replaced, the candidate file is opened read-only with a short-lived
-raw SQLite connection and its `workspace_meta` row is read.
+Before anything is replaced, the candidate file is copied to a staging file beside the
+target and checked there. A refusal touches nothing and carries its kind as `data.kind`.
 
 | Condition                                        | Result                                                          |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
-| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
-| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
-| Invalid workspace id, or file does not exist      | Refused                                                         |
+| The file does not exist                           | Refused, `import.missing_source`                                |
+| Not a readable SQLite database, or it fails `quick_check` | Refused, `import.damaged`                               |
+| It comes from a snapshot and its SHA-256 differs from the manifest's | Refused, `import.checksum_mismatch`          |
+| A newer version of the server wrote it            | Refused, `import.newer_schema`                                  |
+| Another `application_id`, or no `workspace_meta`  | Refused, `import.foreign_file`                                  |
+| It cannot be brought to this server's schema      | Refused, `import.schema_mismatch`                               |
+| Its webhooks or invites already route to another workspace | Refused, `import.route_conflict`                       |
+| Recorded workspace id ≠ the target                | **Allowed**. Its rows are re-keyed to the target. This is how a workspace is duplicated or restored under a new id |
+| Recorded install id ≠ this install                | **Allowed**. Its user ids belong to that install and will not resolve here |
 
-On acceptance the target workspace's database is closed and dropped from the manager
-before the file is copied over it (an open drift connection holds the file and its
-`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
-indexes are rebuilt — an imported file's content tables are populated but its index may
-be stale.
+On acceptance the staged file is brought to this server's schema and must then match it
+exactly. Grants a file may not give itself are taken out of it: approvals to run an
+environment definition on the host are cleared, and action rules that allow or prompt,
+sandbox exec grants, repository grants above read, roles above member and invites to
+those roles become holds for the server owner to review. The importer keeps or gets the
+owner role. The database being replaced is kept as a scheduled backup named
+`<timestamp>-pre-restore`, the staged file is renamed into place with the workspace's
+connections closed, `code_index.db` is deleted to be rebuilt, and the FTS indexes are
+rebuilt.
 
 ## Transfer routes
 
@@ -263,7 +300,7 @@ name, and the file must be a real file inside that workspace's own backup direct
 
 | Status | Cause                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | A required query parameter is missing, a backup name is invalid, or an upload body is empty |
+| `400`  | A required query parameter is missing, a backup name is invalid, an upload body is empty, or the uploaded file was refused (the body is `{error, kind}` with an `import.*` kind) |
 | `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
 | `404`  | No backup port on this host, or the named snapshot, backup or workspace file does not exist |
 | `405`  | `/backup/restore` called with anything but `POST`                                   |
@@ -303,6 +340,8 @@ transport encrypts the resulting backup files at rest.
 | Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
 | Scheduled workspace backups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Database replaced by a restore | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Databases as they were before an update changed their format | `<dataDir>/pre_upgrade/` and `<dataDir>/<workspaceId>/pre_upgrade/`, the newest two of each |
 | Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
 | Snapshot archive name          | `<snapshot directory name>.zip`                              |
 | Upload ceiling                 | 8 GiB per encrypted `/backup/restore` upload                |

@@ -103,7 +103,7 @@ class AgentActivityHeader extends ConsumerWidget {
           RunActivityStatBar(
             cost: run?.cost,
             toolCount: toolCount,
-            childCostCents: run?.childCostCents ?? 0,
+            childCostMicros: run?.childCostMicros ?? 0,
           ),
         ],
       ),

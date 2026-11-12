@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/governance/domain/entities/approval.dart';
 import 'package:cc_domain/features/governance/domain/entities/approval_comment.dart';
+import 'package:cc_domain/features/governance/domain/value_objects/approval_status.dart';
 
 /// Repository for board approvals and their comment history. Every method is
 /// workspace-scoped — `workspaceId` is required and never optional.
@@ -15,6 +16,16 @@ abstract interface class ApprovalRepository {
 
   /// Inserts or updates an approval.
   Future<void> upsert(Approval approval);
+
+  /// Writes the decision fields of [decided] (status, decider, reason,
+  /// decided/updated times) only while the stored row (same workspace and id)
+  /// is still in [expected]. Returns false when the row moved on or is
+  /// missing: two deciders racing on one approval produce exactly one
+  /// decision, and the loser reloads instead of overwriting the winner.
+  Future<bool> recordDecision(
+    Approval decided, {
+    required ApprovalStatus expected,
+  });
 
   /// Deletes an approval by [id] within [workspaceId].
   Future<void> delete(String workspaceId, String id);

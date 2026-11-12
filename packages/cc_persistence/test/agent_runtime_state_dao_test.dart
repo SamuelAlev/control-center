@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -68,6 +69,7 @@ void main() {
     });
 
     test('getForAgent is workspace-scoped', () async {
+      await seedRunLog(db, 'run-1', agentId: 'a-1');
       await db.agentRuntimeStateDao.upsert(
         AgentRuntimeStateTableCompanion.insert(
           agentId: 'a-1',

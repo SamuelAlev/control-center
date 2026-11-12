@@ -1,12 +1,18 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
     show GitRepoInspectionException;
+import 'package:cc_domain/core/domain/ports/database_backup_port.dart'
+    show WorkspaceImportRefusal, WorkspaceImportRefusedException;
 import 'package:cc_domain/core/domain/ports/directory_browser_port.dart'
     show DirectoryAccessException;
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/domain/value_objects/server_owner_required.dart'
     show serverOwnerRequiredKind;
 import 'package:cc_domain/core/domain/value_objects/username.dart'
     show UsernameRefusedException;
+import 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart'
+    show workspaceReadOnlyKind;
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart'
     show ForgeUnsupportedError;
 import 'package:cc_host/cc_host.dart';
@@ -18,6 +24,12 @@ import 'package:cc_infra/cc_infra.dart'
         mapHttpException,
         needsSignInLaneOf,
         repoReplacedForgeOf;
+import 'package:cc_persistence/database/schema/converged_database.dart'
+    show
+        DatabaseDamagedException,
+        DatabaseNewerThanBinaryException,
+        ForeignDatabaseFileException;
+import 'package:cc_persistence/database/utils/storage_errors.dart';
 import 'package:rhttp/rhttp.dart';
 
 /// Maps the app's domain exceptions to stable [RpcErrorCodes] for the cc_host
@@ -29,6 +41,16 @@ import 'package:rhttp/rhttp.dart';
 /// The mapped `message` comes from [AppException.message], which is authored to
 /// be client-safe.
 RpcErrorMapping? mapAppExceptionToRpc(Object error) {
+  // A storage failure is classified before anything else: drift wraps the
+  // SQLite error, and its own text carries the statement's bound values.
+  final storage = storageFailureOf(error);
+  if (storage != null) {
+    return _mapStorageFailure(storage, error);
+  }
+  final database = _mapDatabaseRefusal(error);
+  if (database != null) {
+    return database;
+  }
   if (error is WorkspaceMismatchException) {
     return RpcErrorMapping(RpcErrorCodes.workspaceMismatch, error.message);
   }
@@ -100,6 +122,18 @@ RpcErrorMapping? mapAppExceptionToRpc(Object error) {
   if (error is UsernameRefusedException) {
     return RpcErrorMapping(RpcErrorCodes.validation, error.message, {
       'kind': error.reason.errorKind,
+    });
+  }
+  // A workspace file the import refused: nothing was replaced. The kind is
+  // the refusal's (`import.damaged`, `import.newer_schema`, ...), and a newer
+  // file names both schema versions, as `storage.newer_schema` does.
+  if (error is WorkspaceImportRefusedException) {
+    return RpcErrorMapping(RpcErrorCodes.validation, error.message, {
+      'kind': error.refusal.kind,
+      if (error.refusal == WorkspaceImportRefusal.newerSchema) ...{
+        'file_version': ?error.fileVersion,
+        'server_version': ?error.serverVersion,
+      },
     });
   }
   if (error is ValidationException) {
@@ -212,8 +246,97 @@ Map<String, Object?>? _kindOf(AppException error) {
 }
 
 /// A person action with no usable sign-in of their own for [lane].
-RpcErrorMapping _needsSignIn(String message, String lane) =>
-    RpcErrorMapping(RpcErrorCodes.unauthorized, message, {
-      'kind': 'needs_sign_in',
-      'lane': lane,
-    });
+RpcErrorMapping _needsSignIn(String message, String lane) => RpcErrorMapping(
+  RpcErrorCodes.unauthorized,
+  message,
+  {'kind': 'needs_sign_in', 'lane': lane},
+);
+
+/// The `data.kind` of a write refused because the database stayed locked by
+/// another writer past the busy timeout. Retrying later can succeed.
+const storageBusyKind = 'storage.busy';
+
+/// The `data.kind` of a write refused because the disk (or the database's size
+/// limit) is full.
+const storageFullKind = 'storage.full';
+
+/// The `data.kind` of a request that hit damage in a workspace's database
+/// file. Only restoring a snapshot ends it.
+const storageDamagedKind = 'storage.damaged';
+
+/// The `data.kind` of a request for a database a newer server version wrote.
+/// `data.file_version` and `data.server_version` carry the two schema
+/// versions.
+const storageNewerSchemaKind = 'storage.newer_schema';
+
+/// The `data.kind` of a request for a database file this server did not
+/// write for that purpose.
+const storageForeignFileKind = 'storage.foreign_file';
+
+/// The `data.kind` of a request that names a workspace which was deleted.
+const workspaceDeletedKind = 'workspace.deleted';
+
+/// A log-safe one-line description of [error], for the dispatcher's failure
+/// log lines. A storage error is rendered as its result code, message and
+/// statement, never the bound parameter values its own `toString` appends
+/// (message bodies, tokens). Anything else is its usual text.
+String describeErrorForLog(Object error) =>
+    describeStorageError(error) ?? error.toString();
+
+/// A database the server will not open, or a workspace that is gone.
+///
+/// The messages are written here and not taken from the exceptions, whose
+/// text names files and ids for the operator's log.
+RpcErrorMapping? _mapDatabaseRefusal(Object error) => switch (error) {
+  DatabaseNewerThanBinaryException() => RpcErrorMapping(
+    RpcErrorCodes.internalError,
+    'This data was written by a newer server version; update the server',
+    {
+      'kind': storageNewerSchemaKind,
+      'file_version': error.fileVersion,
+      'server_version': error.binaryVersion,
+    },
+  ),
+  ForeignDatabaseFileException() => const RpcErrorMapping(
+    RpcErrorCodes.internalError,
+    'The database file on the server is not one this server wrote',
+    {'kind': storageForeignFileKind},
+  ),
+  DatabaseDamagedException() => const RpcErrorMapping(
+    RpcErrorCodes.internalError,
+    "This workspace's database is damaged and must be restored",
+    {'kind': storageDamagedKind},
+  ),
+  DeletedWorkspaceException() => const RpcErrorMapping(
+    RpcErrorCodes.notFound,
+    'This workspace was deleted',
+    {'kind': workspaceDeletedKind},
+  ),
+  _ => null,
+};
+
+/// Busy/locked, full, damaged and read-only get their own kind, so a client
+/// can say "try again", "the server's disk is full" or "this workspace needs
+/// restoring" instead of a bare internal error. Every other storage failure
+/// stays unmapped: the dispatcher logs it (through [describeErrorForLog])
+/// under a diagnostic id.
+RpcErrorMapping? _mapStorageFailure(StorageFailure failure, Object error) {
+  final (kind, message) = switch (failure) {
+    StorageFailure.busy => (storageBusyKind, 'The database is busy; try again'),
+    StorageFailure.full => (storageFullKind, 'The server is out of disk space'),
+    StorageFailure.damaged => (
+      storageDamagedKind,
+      "This workspace's database is damaged and must be restored",
+    ),
+    StorageFailure.readOnly => (
+      workspaceReadOnlyKind,
+      'This workspace is read-only: its database failed an integrity check',
+    ),
+    StorageFailure.other => (null, null),
+  };
+  if (kind == null || message == null) {
+    return null;
+  }
+  CcHostLog.warning('repo/call storage refusal: ${describeErrorForLog(error)}');
+  return RpcErrorMapping(RpcErrorCodes.internalError, message, {'kind': kind});
+}

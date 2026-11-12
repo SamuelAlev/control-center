@@ -7,6 +7,7 @@ import 'package:control_center/features/settings/providers/backup_providers.dart
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,7 +49,7 @@ class _WorkspaceBackupsSectionState
           const SizedBox(height: AppSpacing.md),
           switch (workspaces) {
             AsyncError(:final error) => Text(
-              l10n.failedWithError('$error'),
+              failureMessage(l10n, error),
               style: CcTypography.bodySm.copyWith(
                 color: tokens.textErrorPrimary,
               ),

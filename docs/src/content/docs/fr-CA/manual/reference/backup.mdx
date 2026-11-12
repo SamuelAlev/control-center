@@ -2,7 +2,7 @@
 title: Sauvegarde, export et import
 description: La disposition des instantanés, le manifeste, chaque opération de sauvegarde et chaque route de transfert, et exactement les fichiers qu’une sauvegarde contient et ne contient pas.
 slug: fr-CA/manuel/reference/sauvegarde
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Tout ce que Control Center peut copier, céder ou adopter, et la forme exacte de chaque
@@ -47,15 +47,7 @@ est l’horodatage UTC, `:` et `.` remplacés par `-`, de sorte qu’il est séc
 système de fichiers sous Windows et qu’il se trie chronologiquement comme une simple
 chaîne.
 
-Les sauvegardes d’espace de travail planifiées vivent séparément à
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Elles n’incluent ni manifeste ni `global.db` et ne sont pas des instantanés de
-l’installation. L’étape de rétention du pipeline hebdomadaire ne supprime que les
-sauvegardes de son propre espace de travail plus anciennes que la durée configurée
-(30 jours par défaut) ; les instantanés de l’installation créés manuellement ne sont
-jamais supprimés par cette étape. `server.listBackups` ne liste que les instantanés de
-l’installation, y compris les incomplets ; `workspace.listBackups` liste les sauvegardes
-planifiées d’un espace de travail.
+Les sauvegardes d’espace de travail planifiées vivent séparément à `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Chacune comporte un `manifest.json` pour ce seul fichier et aucun `global.db` ; ce ne sont pas des instantanés de l’installation. Une restauration conserve la base de données qu’elle remplace au même endroit, sous le nom `<timestamp>-pre-restore`. L’étape de rétention du pipeline hebdomadaire ne supprime que les sauvegardes de son propre espace de travail plus anciennes que la durée configurée (30 jours par défaut) ; les instantanés de l’installation créés manuellement ne sont jamais supprimés par cette étape. `server.listBackups` ne liste que les instantanés de l’installation, y compris les non vérifiés ; `workspace.listBackups` liste les sauvegardes planifiées d’un espace de travail.
 
 Supprimer un espace de travail laisse ce répertoire en place. L’horaire de l’espace de
 travail s’arrête avec lui, donc plus rien n’effectue la rotation de ces sauvegardes, et
@@ -67,34 +59,40 @@ elles restent jusqu’à ce que le propriétaire de l’installation les retire.
 
 | Champ                      | Type            | Signification                                                       |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Version du format du manifeste. Actuellement `1`                    |
+| `format`                  | int             | Format du manifeste. Actuellement `2`                    |
 | `created_at`               | ISO-8601 UTC    | Moment où l’instantané a été pris                                   |
-| `global.file`              | string          | Toujours `global.db`                                                |
-| `global.schema_version`    | int             | Version du schéma de `GlobalDatabase` au moment de la capture       |
-| `global.bytes`             | int             | Taille du `global.db` écrit                                         |
-| `workspace_schema_version` | int             | Version du schéma de `WorkspaceDatabase` partagée par chaque fichier d’espace de travail |
-| `workspaces[]`             | array           | Une entrée par espace de travail capturé                           |
+| `global`                   | object          | L’enregistrement de `global.db`. Absent d’une sauvegarde planifiée d’espace de travail |
+| `workspaces[]`             | array           | Un enregistrement par espace de travail capturé                           |
 | `workspaces[].workspace_id`| string          | L’espace de travail que ce fichier contient                        |
-| `workspaces[].file`        | string          | Chemin relatif à la racine de l’instantané, `<workspaceId>/workspace.db` |
-| `workspaces[].bytes`       | int             | Taille de ce fichier                                                |
-| `skipped_workspaces[]`     | array of string | Espaces de travail que la sauvegarde n’a **pas** pu capturer        |
+| `skipped_workspaces[]`     | array           | Espaces de travail que la sauvegarde n’a **pas** pu capturer        |
+| `skipped_workspaces[].workspace_id` | string | L’espace de travail laissé de côté |
+| `skipped_workspaces[].reason` | string | `no_file`, `damaged` ou `failed` |
 
-Un espace de travail est ignoré lorsqu’il est enregistré mais n’a jamais été écrit (aucun
-fichier n’existe encore), ou lorsque son `VACUUM INTO` a échoué. Dans un cas comme dans
-l’autre, l’instantané se termine quand même et le manifeste nomme ce qui manque.
+`global` et chaque enregistrement de `workspaces[]` consignent un fichier copié, mesuré sur la copie une fois celle-ci écrite :
+
+| Champ | Type | Signification |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | Chemin relatif à la racine de l’instantané : `global.db` ou `<workspaceId>/workspace.db` |
+| `bytes`       | int             | Taille de la copie                                                |
+| `sha256`         | string | SHA-256 de la copie, en hexadécimal minuscule                                  |
+| `quick_check`    | string | Ce que dit le `quick_check` de SQLite au sujet de la copie : `ok`, ou sa constatation |
+| `user_version`   | int    | Version du schéma de la copie                                                  |
+| `application_id` | int    | `application_id` SQLite de la copie                                            |
+
+Un espace de travail est ignoré lorsqu’il est enregistré mais n’a jamais été écrit (`no_file`), lorsque sa base de données échoue au contrôle d’intégrité (`damaged` ; une copie endommagée n’est jamais prise), ou lorsque sa copie, ou le contrôle de cette copie, a échoué (`failed`). Dans tous les cas, l’instantané se termine quand même et le manifeste nomme ce qui manque. Le manifeste est écrit en dernier.
 
 ### Complétude
 
-`server.listBackups` signale un indicateur `complete` par instantané. Il est faux lorsque
-le manifeste est absent ou impossible à analyser, lorsque `global.db` manque, ou lorsque
-le manifeste nomme un fichier d’espace de travail qui n’est pas sur le disque.
+`server.listBackups` signale un indicateur `complete` par instantané. Il est faux lorsque le manifeste est absent, illisible ou d’un autre format, lorsqu’un fichier qu’il nomme est absent ou n’a pas la taille attendue, ou lorsqu’une copie n’a pas réussi son contrôle. L’application affiche un tel instantané comme **Non vérifié**. Les instantanés pris avant le format `2` se trouvent dans cet état.
 
-Un instantané incomplet est tout de même listé, parce qu’un instantané qu’un opérateur ne
+Un instantané non vérifié est tout de même listé, parce qu’un instantané qu’un opérateur ne
 voit pas est un instantané qu’il croit posséder. Lorsque le manifeste est illisible, la
 liste se rabat sur la disposition elle-même et signale tous les fichiers
 `<workspaceId>/workspace.db` qu’elle trouve — ceux-ci demeurent adoptables un par un au
 moyen de `workspace.import`, même si l’instantané dans son ensemble ne peut pas restaurer
 une installation.
+
+Tout instantané ou sauvegarde planifiée répertorié porte `pinned_reason: "last_good_copy"` tant qu’il contient la copie vérifiée la plus récente d’un espace de travail dont la base de données active est endommagée. L’étape de rétention l’ignore jusqu’à ce que cet espace de travail soit restauré.
 
 ## Ce qu’une sauvegarde ne contient pas
 
@@ -105,6 +103,7 @@ travail contient plus que sa base de données, et rien du reste ne voyage :
 | ----------------------------------- | -------------------- | ------------------------------------ |
 | `global.db`                         | Oui                  | Non                                  |
 | `<workspaceId>/workspace.db`        | Oui                  | Oui (c’est *le* fichier)             |
+| `<workspaceId>/code_index.db`       | Non                  | Non                     |
 | `<workspaceId>/blobs/`              | Non                  | Non                                  |
 | `<workspaceId>/skills/`             | Non                  | Non                                  |
 | `<workspaceId>/agents/`             | Non                  | Non                                  |
@@ -117,17 +116,11 @@ travail contient plus que sa base de données, et rien du reste ne voyage :
 | `rigs/`                             | Non                  | Non                                  |
 | `_agent_hooks/`                     | Non                  | Non                                  |
 
-Une partie de cela est jetable — `spaces/` contient des arbres de travail copie sur
-écriture qui sont reprovisionnés à partir des dépôts, `pr_clones/` est un cache, `models/`
-se retélécharge, `rigs/` est un état de machine. Une autre partie ne l’est pas : `blobs/`
-contient des images collées vers lesquelles pointent des lignes de la base de données,
-`skills/` et `agents/` contiennent les fichiers avec lesquels un agent s’exécute, et
-`secrets.json` contient chaque clé d’appairage, chaque identifiant de fournisseur et
-chaque paramètre SSO de l’installation. Voir
+Une partie de cela est jetable — `spaces/` contient des arbres de travail copie sur écriture qui sont reprovisionnés à partir des dépôts, `pr_clones/` est un cache, `code_index.db` est reconstruit, `models/` se retélécharge, `rigs/` est un état de machine. Une autre partie ne l’est pas : `blobs/` contient des images collées vers lesquelles pointent des lignes de la base de données, `skills/` et `agents/` contiennent les fichiers avec lesquels un agent s’exécute, et `secrets.json` contient chaque clé d’appairage, chaque identifiant de fournisseur et chaque paramètre SSO de l’installation. Voir
 [Sauvegarder et restaurer](/fr-CA/manuel/guides/sauvegarder-et-restaurer/#copier-les-sauvegardes-hors-de-la-machine)
 pour couvrir le reste.
-:::caution[Une base de données d’espace de travail contient des secrets de webhook]
-`workspace.db` est tout l’espace de travail : conversations, journaux d’exécution, index de code, liens vers les dépôts, définitions d’environnement et membres. Elle contient aussi, en clair, les jetons de webhook de pipeline et les secrets de webhook de synchronisation des tickets de l’espace de travail ; traitez donc un export ou une sauvegarde téléchargée comme un secret. Elle ne contient aucun identifiant de fournisseur, aucune clé d’appareil ni aucun secret d’utilisateur : ceux-ci se trouvent dans `global.db` et `secrets.json`.
+:::note[Les secrets restent hors des bases de données]
+`workspace.db` est tout l’espace de travail : conversations, journaux d’exécution, liens vers les dépôts, définitions d’environnement et membres. Les jetons de webhook de pipeline et les secrets de webhook de synchronisation des tickets se trouvent dans `secrets.json` : la base de données contient une référence à chacun, et l’index des routes contient un hachage à clé de chaque jeton. Un espace de travail restauré sur une autre installation ne reçoit donc aucun webhook tant que ses déclencheurs n’y ont pas été enregistrés de nouveau. Les connexions aux fournisseurs, les clés d’appareil et les secrets d’utilisateur se trouvent dans `global.db` et `secrets.json`.
 :::
 
 :::note[Les jetons de clavardage restent délibérément à l’écart]
@@ -155,6 +148,8 @@ serveur sans port de sauvegarde câblé, comme le serveur de démonstration.
 | `workspace.deleteBackup` | mutation | Espace de travail | `owner` | `name` | `{ok}` |
 | `workspace.export`   | lecture  | Espace de travail | `admin`                   | aucun         | `{ok, path}`                  |
 | `workspace.import`   | mutation | Espace de travail | `owner`, et le propriétaire du serveur | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | lecture | Espace de travail | `owner`, et le propriétaire du serveur | aucun | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutation | Espace de travail | `owner`, et le propriétaire du serveur | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | mutation | Installation*     | `owner`                   | `id`          | ligne du registre marquée supprimée |
 
 * `workspace.delete` n’a pas de portée parce que la ligne qu’il marque vit dans le
@@ -171,6 +166,8 @@ travail, ses sauvegardes reviennent donc au propriétaire de l’installation.
 derrière `workspace.deleteBackup` et les rôles propres à cet espace de travail. Les deux
 opérations de suppression n’acceptent qu’un nom de répertoire horodaté listé, pas un chemin.
 
+`workspace.importHolds.list` renvoie ce qu’une importation a mis en attente. Chaque mise en attente possède un `id`, un `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` ou `invite`), le `payload` qu’elle remettrait en place, `imported_at` et `source_install_id`. `workspace.importHolds.resolve` avec `accept: true` l’accorde à nouveau, et avec `false` la supprime. `applied` vaut faux lorsque le bénéficiaire de l’autorisation, personne ou chose, ne fait plus partie de l’espace de travail.
+
 :::note[Un instantané de toute l’installation est réservé au propriétaire sur les deux voies]
 `server.backupNow`, `server.listBackups` et `server.deleteBackup` exigent le
 **propriétaire** de l’installation (`ServerAuthority.serverOwner`), le même verrou que
@@ -178,11 +175,11 @@ opérations de suppression n’acceptent qu’un nom de répertoire horodaté li
 travail, donc être administrateur d’un seul espace de travail ne suffit pas pour gérer les
 autres. La suppression n’accepte que le nom du répertoire horodaté listé, et non un chemin
 de serveur arbitraire, et supprime tout l’instantané (y compris les instantanés
-incomplets). Les exports par espace de travail et les téléchargements de sauvegardes planifiées restent réservés à l’administrateur de l’espace de travail.
+non vérifiés). Les exports par espace de travail et les téléchargements de sauvegardes planifiées restent réservés à l’administrateur de l’espace de travail.
 :::
 
 :::note[La restauration appartient au propriétaire du serveur]
-`workspace.import` et `POST /backup/restore` font adopter au serveur un fichier de base de données dont il traite ensuite les lignes comme siennes : liens vers les dépôts et qui les a créés, définitions d’environnement qui s’exécutent sur l’hôte, chemins des arbres de travail et des journaux. Les deux exigent donc le propriétaire du serveur (`ServerAuthority.serverOwner`), qui doit aussi être le propriétaire de l’espace de travail. Tout autre appelant, et tout appelant sur un hôte sans propriétaire enregistré, est refusé avec `server_owner_required`. Aucun déclencheur ni aucune vue apportés par le fichier ne sont adoptés.
+`workspace.import` et `POST /backup/restore` font adopter au serveur un fichier de base de données dont il traite ensuite les lignes comme siennes : liens vers les dépôts et qui les a créés, définitions d’environnement qui s’exécutent sur l’hôte, chemins des arbres de travail et des journaux. Les deux exigent donc le propriétaire du serveur (`ServerAuthority.serverOwner`), qui doit aussi être le propriétaire de l’espace de travail. Tout autre appelant, et tout appelant sur un hôte sans propriétaire enregistré, est refusé avec `server_owner_required`. Aucun déclencheur, aucune vue, aucune colonne ni aucune contrainte apportés par le fichier ne sont adoptés.
 :::
 
 ### Réponse de `server.listBackups`
@@ -224,21 +221,21 @@ vers des traitements différents du même fichier.
 
 ### Validation de `workspace.import`
 
-Avant que quoi que ce soit soit remplacé, le fichier candidat est ouvert en lecture seule
-au moyen d’une connexion SQLite brute éphémère et sa ligne `workspace_meta` est lue.
+Avant que quoi que ce soit soit remplacé, le fichier candidat est copié dans un fichier de préparation à côté de la cible, et il y est vérifié. Un refus ne touche à rien et porte sa catégorie dans `data.kind`.
 
 | Condition                                                | Résultat                                                        |
 | -------------------------------------------------------- | ---------------------------------------------------------------- |
-| Base de données SQLite illisible, ou aucune `workspace_meta` | Refusé. Rien n’est touché                                   |
-| Identifiant d’espace de travail enregistré ≠ la cible     | **Permis**, journalisé. C’est ainsi qu’un espace de travail est dupliqué ou restauré sous un nouvel identifiant |
-| Identifiant d’installation enregistré ≠ cette installation | **Permis**, journalisé. Ses appareils appairés et ses identifiants d’utilisateur appartiennent à cette installation et ne se résoudront pas ici |
-| Identifiant d’espace de travail invalide, ou fichier inexistant | Refusé                                                   |
+| Le fichier n’existe pas | Refusé, `import.missing_source` |
+| Base de données SQLite illisible, ou qui échoue à `quick_check` | Refusé, `import.damaged` |
+| Il provient d’un instantané et son SHA-256 diffère de celui du manifeste | Refusé, `import.checksum_mismatch` |
+| Une version plus récente du serveur l’a écrit | Refusé, `import.newer_schema` |
+| Un autre `application_id`, ou aucun `workspace_meta` | Refusé, `import.foreign_file` |
+| Il ne peut pas être amené au schéma de ce serveur | Refusé, `import.schema_mismatch` |
+| Ses webhooks ou invitations sont déjà rattachés à un autre espace de travail | Refusé, `import.route_conflict` |
+| Identifiant d’espace de travail enregistré ≠ la cible     | **Permis**. Ses lignes sont réattribuées à la cible. C’est ainsi qu’un espace de travail est dupliqué ou restauré sous un nouvel identifiant |
+| Identifiant d’installation enregistré ≠ cette installation | **Permis**. Ses identifiants d’utilisateur appartiennent à cette installation et ne se résoudront pas ici |
 
-À l’acceptation, la base de données de l’espace de travail cible est fermée et retirée du
-gestionnaire avant que le fichier soit copié par-dessus (une connexion drift ouverte
-retient le fichier et son `-wal`), puis rouverte afin que `beforeOpen` réinstalle les
-déclencheurs FTS et de synchronisation, et les index FTS sont reconstruits — les tables de
-contenu d’un fichier importé sont peuplées, mais son index peut être périmé.
+À l’acceptation, le fichier préparé est amené au schéma de ce serveur et doit ensuite lui correspondre exactement. Les autorisations qu’un fichier ne peut pas s’accorder à lui-même lui sont retirées : les approbations d’exécution d’une définition d’environnement sur l’hôte sont effacées, et les règles d’action qui permettent ou demandent une confirmation, les autorisations d’exécution dans le bac à sable, les accès aux dépôts au-delà de la lecture, les rôles au-delà de membre et les invitations à ces rôles deviennent des mises en attente que le propriétaire du serveur doit examiner. Celui qui importe conserve ou obtient le rôle de propriétaire. La base de données remplacée est conservée comme sauvegarde planifiée nommée `<timestamp>-pre-restore` ; le fichier préparé est renommé à sa place, les connexions de l’espace de travail étant fermées ; `code_index.db` est supprimé pour être reconstruit, et les index FTS sont reconstruits.
 
 ## Routes de transfert
 
@@ -271,7 +268,7 @@ sauvegarde propre à cet espace de travail.
 
 | Statut | Cause                                                                                |
 | ------ | ------------------------------------------------------------------------------------ |
-| `400`  | Un paramètre de requête obligatoire manque, un nom de sauvegarde est invalide, ou le corps d’un téléversement est vide |
+| `400`  | Un paramètre de requête obligatoire manque, un nom de sauvegarde est invalide, le corps d’un téléversement est vide, ou le fichier téléversé a été refusé (le corps est `{error, kind}` avec une catégorie `import.*`) |
 | `403`  | Appareil inconnu ou révoqué, signature invalide, ou l’appelant n’a pas le rôle       |
 | `404`  | Aucun port de sauvegarde sur cet hôte, ou l’instantané, la sauvegarde ou le fichier d’espace de travail nommé n’existe pas |
 | `405`  | `/backup/restore` appelé avec autre chose que `POST`                                 |
@@ -313,6 +310,8 @@ sauvegarde produits.
 | Instantanés                    | `<dataDir>/backups/<timestamp>/`                             |
 | Sauvegardes d’espace de travail planifiées | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Exports d’espace de travail    | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Base de données remplacée par une restauration | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Bases de données telles qu’elles étaient avant qu’une mise à jour ne change leur format | `<dataDir>/pre_upgrade/` et `<dataDir>/<workspaceId>/pre_upgrade/`, les deux plus récentes de chaque |
 | Préparation des transferts     | `<dataDir>/backups/transfer/` — un établi, balayé par la route qui l’écrit |
 | Nom de l’archive d’instantané  | `<snapshot directory name>.zip`                              |
 | Plafond de téléversement       | 8 GiB par téléversement chiffré vers `/backup/restore`       |

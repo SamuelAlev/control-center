@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/orchestration/domain/value_objects/plan_annotations.dart';
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -560,8 +561,8 @@ class _EstimateBadge extends StatelessWidget {
     } else if (!e.hasHistory) {
       text = 'no history yet';
     } else {
-      final lo = ((e.costCentsLow ?? 0) / 100).toStringAsFixed(2);
-      final hi = ((e.costCentsHigh ?? 0) / 100).toStringAsFixed(2);
+      final lo = ((e.costMicrosLow ?? 0) / microsPerDollar).toStringAsFixed(2);
+      final hi = ((e.costMicrosHigh ?? 0) / microsPerDollar).toStringAsFixed(2);
       final blast = e.blastRadiusFiles != null
           ? ' · ${e.blastRadiusFiles} files'
           : '';

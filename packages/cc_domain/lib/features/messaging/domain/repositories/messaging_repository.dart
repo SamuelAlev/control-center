@@ -192,10 +192,7 @@ abstract class MessagingRepository {
   /// Hard-deletes a steering message. Only safe for steering rows (they never
   /// become the leaf, so no parent chain crosses them); the caller is
   /// responsible for having checked the row's type and state first.
-  Future<void> deleteSteeringMessage(
-    String workspaceId,
-    String messageId,
-  );
+  Future<void> deleteSteeringMessage(String workspaceId, String messageId);
 
   /// Gets all (non-reverted) messages for a conversation. [conversationId]
   /// defaults to the space's STANDING conversation (its oldest active one) —
@@ -346,12 +343,4 @@ abstract class MessagingRepository {
     String workspaceId,
     String spaceId,
   );
-
-  /// Gets messages without embeddings for backfill (text/system only), within
-  /// [workspaceId]. The backfill runs one workspace at a time so each embedding
-  /// is written back to the file its message came from.
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
-  });
 }

@@ -17,7 +17,13 @@ void main() {
     repo = DaoMessagingRepository(dbs);
     await db
         .into(db.spacesTable)
-        .insert(const SpacesTableCompanion(id: Value('c'), name: Value('t')));
+        .insert(
+          const SpacesTableCompanion(
+            id: Value('c'),
+            name: Value('t'),
+            workspaceId: Value('w-1'),
+          ),
+        );
     await db
         .into(db.conversationsTable)
         .insert(
@@ -95,5 +101,38 @@ void main() {
     expect(reverted, isEmpty);
     final live = await repo.getMessages('w-1', 'c');
     expect(live.length, 6);
+  });
+
+  test('a revert whose tip move fails hides nothing', () async {
+    // Fail the last step, moving the branch tip. The read, the hide and the
+    // tip move are one unit: none of it may stay behind.
+    await db.customStatement(
+      'CREATE TRIGGER fail_leaf BEFORE UPDATE OF leaf_message_id '
+      "ON conversations BEGIN SELECT RAISE(ABORT, 'leaf write refused'); END",
+    );
+
+    await expectLater(
+      repo.revertConversationTo('w-1', 'c', 'm2'),
+      throwsA(anything),
+    );
+
+    final live = await repo.getMessages('w-1', 'c');
+    expect(live, hasLength(6));
+  });
+
+  test('the activity row follows a revert and its undo', () async {
+    await (db.update(db.spacesTable)..where((t) => t.id.equals('c'))).write(
+      const SpacesTableCompanion(workspaceId: Value('w-1')),
+    );
+    final before = await db.messagingDao.watchSpaceActivity('w-1').first;
+    await repo.revertConversationTo('w-1', 'c', 'm2');
+    final reverted = await db.messagingDao.watchSpaceActivity('w-1').first;
+    expect(
+      reverted.single.lastMessageAt.toUtc(),
+      DateTime.utc(2026, 1, 1, 0, 0, 2),
+    );
+
+    await repo.unrevertConversation('w-1', 'c');
+    expect(await db.messagingDao.watchSpaceActivity('w-1').first, before);
   });
 }

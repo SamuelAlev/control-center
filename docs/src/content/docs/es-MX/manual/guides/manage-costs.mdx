@@ -2,14 +2,14 @@
 title: Administrar costos
 description: Consulta cuánto gastan tus agentes, pon un tope a una ejecución autónoma y reduce el uso de tokens.
 slug: es-MX/manual/guias/administrar-costos
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Esta guía muestra cómo ver cuánto cuestan las ejecuciones de un agente y cómo poner un tope a una ejecución autónoma.
 
 ## Cómo se registran los costos
 
-Cada ejecución de un agente escribe un registro de ejecución que incluye sus tokens de entrada, tokens de salida, tokens de razonamiento, tokens de lectura en caché y de escritura en caché, un costo estimado en centavos y el costo de los subagentes que haya lanzado.
+Cada ejecución de un agente escribe un registro de ejecución que incluye sus tokens de entrada, tokens de salida, tokens de razonamiento, tokens de lectura en caché y de escritura en caché, un costo estimado en microdólares (millonésimas de dólar estadounidense) y el costo de los subagentes que haya lanzado.
 
 Los precios provienen del catálogo de models.dev, que se usa solo para enriquecer la lista de modelos con el precio y la ventana de contexto, nunca como fuente de identificadores de modelos. Un modelo al que el catálogo no puede asignar precio registra **$0**, y las ejecuciones sin costo quedan excluidas del resumen de **Uso y coste**. Un modelo local de Ollama, por lo tanto, no muestra ningún gasto, aunque sus conteos de tokens sí se registran. Un plan de tarifa plana (kimi-code, una suscripción de Claude) se comporta igual solo cuando el catálogo no tiene precio para el modelo que sirvió la ejecución; si lo tiene, la ejecución se estima de todos modos con esas tarifas. En una cadena de respaldo, la ejecución se cotiza según el modelo que realmente la sirvió, no el que se solicitó.
 
@@ -78,7 +78,7 @@ Abre el registro de ejecución de Resumen (las 50 ejecuciones filtradas más rec
 
 ## Qué ocurre si un presupuesto se define fuera de banda
 
-Para ser exhaustivos, si `monthlyBudgetCents` o una política de presupuesto se escriben directamente en la fila de un agente:
+Para ser exhaustivos, si `monthlyBudgetMicros` o una política de presupuesto se escriben directamente en la fila de un agente:
 
 - Los presupuestos se evalúan **después** de que termina una ejecución, no antes del despacho. Un listener al completarse la ejecución compara el gasto del agente en lo que va del mes con su techo.
 - Cruzar el umbral suave (80 % de forma predeterminada) registra un incidente de advertencia y dispara un evento `BudgetThresholdCrossed` al que puedes enganchar un disparador de pipeline.

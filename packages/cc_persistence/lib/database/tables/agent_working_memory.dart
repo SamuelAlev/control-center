@@ -2,11 +2,12 @@ import 'package:cc_persistence/database/tables/agents.dart';
 import 'package:drift/drift.dart';
 
 @TableIndex(
-  name: 'idx_agent_working_memory_workspaceId',
-  columns: {#workspaceId},
+  name: 'uq_agent_working_memory_agent',
+  columns: {#agentId},
+  unique: true,
 )
-@TableIndex(name: 'idx_agent_working_memory_agentId', columns: {#agentId})
-/// Drift table for per-agent working memory.
+/// Drift table for per-agent working memory: one entry per agent, written
+/// with one `INSERT … ON CONFLICT (agent_id)`.
 class AgentWorkingMemoryTable extends Table {
   /// Unique entry identifier.
   TextColumn get id => text()();
@@ -18,7 +19,7 @@ class AgentWorkingMemoryTable extends Table {
   TextColumn get agentId =>
       text().references(AgentsTable, #id, onDelete: KeyAction.cascade)();
 
-  /// JSON-encoded memory content.
+  /// The agent's working notes, as it wrote them (free text).
   TextColumn get content => text().withDefault(const Constant(''))();
 
   /// Last update timestamp.

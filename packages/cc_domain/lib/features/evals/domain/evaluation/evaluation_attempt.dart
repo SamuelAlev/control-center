@@ -3,14 +3,6 @@ import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart'
 import 'package:cc_domain/features/evals/domain/value_objects/eval_outcome.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 
-/// Micro-USD per US cent.
-///
-/// The canonical unit for all evaluation money is micro-USD (10⁻⁶ USD), the
-/// unit `ProviderCallRecord.costMicros` and `RunCost.costMicros` use. One cent
-/// is 10,000 µ$; a cheap auxiliary call is real spend that a cents-only figure
-/// would round to zero.
-const int microsPerCent = 10000;
-
 /// Tokens split by the axes the cost question actually needs
 /// (HARNESS_RESEARCH §6: "Track tokens as separate axes: uncached input, cache
 /// writes, cache reads, output, and reasoning where separately reported. Do not
@@ -185,12 +177,6 @@ class EvaluationCostRoles {
   int? get budgetMicros =>
       billedMicros ?? estimatedApiMicros ?? subscriptionMicros;
 
-  /// [budgetMicros] in whole cents (display only; arithmetic stays in micros).
-  int get budgetCents {
-    final micros = budgetMicros;
-    return micros == null ? 0 : (micros / microsPerCent).round();
-  }
-
   /// The total cost of *this attempt* including auxiliary and advisor calls, in
   /// micro-USD, or null when the primary spend was not observable.
   ///
@@ -202,12 +188,6 @@ class EvaluationCostRoles {
       return null;
     }
     return base + (auxMicros ?? 0) + (advisorMicros ?? 0);
-  }
-
-  /// [allAttemptMicros] in whole cents (display only).
-  int get allAttemptCents {
-    final micros = allAttemptMicros;
-    return micros == null ? 0 : (micros / microsPerCent).round();
   }
 
   /// Sums two role sets, treating null as "not observed" (so `null + 5 = 5`
@@ -1272,7 +1252,7 @@ class EvaluationAttempt {
     };
     return EvalOutcome(
       completed: completed,
-      costCents: cost.allAttemptCents,
+      costMicros: cost.allAttemptMicros ?? 0,
       turnCount: metrics.modelRoundTrips,
       toolCalls: [for (final e in toolEvents) e.name],
       sandboxViolations: metrics.policyDenials,

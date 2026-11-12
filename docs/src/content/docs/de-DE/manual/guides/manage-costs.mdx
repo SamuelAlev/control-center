@@ -2,14 +2,14 @@
 title: Kosten verwalten
 description: Sieh, was deine Agenten ausgeben, begrenze einen autonomen Lauf und senke den Tokenverbrauch.
 slug: de-DE/handbuch/anleitungen/kosten-verwalten
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Diese Anleitung zeigt dir, was Agentenläufe kosten und wie du einen autonomen Lauf begrenzst.
 
 ## Wie Kosten erfasst werden
 
-Jeder Agentenlauf schreibt ein Laufprotokoll mit seinen Eingabe-Token, Ausgabe-Token, Reasoning-Token, Token für Cache-Lesen und Cache-Schreiben, einer geschätzten Kostenangabe in Cent und den Kosten aller Subagenten, die er gestartet hat.
+Jeder Agentenlauf schreibt ein Laufprotokoll mit seinen Eingabe-Token, Ausgabe-Token, Reasoning-Token, Token für Cache-Lesen und Cache-Schreiben, einer geschätzten Kostenangabe in Mikrodollar (Millionstel US-Dollar) und den Kosten aller Subagenten, die er gestartet hat.
 
 Die Preise kommen aus dem Katalog models.dev. Der reichert die Modellliste nur mit Preis und Kontextfenster an — nie als Quelle für Modell-IDs. Ein Modell, das der Katalog nicht bepreisen kann, wird mit **0 $** erfasst, und Läufe ohne Kosten fehlen in der Zusammenfassung **Nutzung & Kosten**. Ein lokales Ollama-Modell zeigt deshalb gar keine Ausgaben, seine Tokenzahlen werden aber trotzdem erfasst. Ein Pauschaltarif (kimi-code, ein Claude-Abo) verhält sich genauso, aber nur wenn der Katalog für das ausgelieferte Modell keinen Preis hat; hat er einen, wird der Lauf trotzdem zu diesen Sätzen geschätzt. Bei einer Fallback-Kette wird der Lauf nach dem Modell bepreist, das ihn tatsächlich bedient hat, nicht nach dem angeforderten.
 
@@ -78,7 +78,7 @@ Das Modell ist ein Feld je Agent, deshalb kann ein Formatierungs- oder Triage-Ag
 
 ## Was passiert, wenn ein Budget direkt in die Zeile geschrieben wird
 
-Der Vollständigkeit halber, wenn `monthlyBudgetCents` oder eine Budgetrichtlinie direkt in eine Agentenzeile geschrieben wird:
+Der Vollständigkeit halber, wenn `monthlyBudgetMicros` oder eine Budgetrichtlinie direkt in eine Agentenzeile geschrieben wird:
 
 - Budgets werden **nach** dem Abschluss eines Laufs ausgewertet, nicht vor dem Dispatch. Ein Listener beim Laufabschluss vergleicht die Ausgaben des Agenten seit Monatsbeginn mit seiner Obergrenze.
 - Beim Überschreiten der weichen Schwelle (standardmäßig 80 %) entsteht ein Warnvorfall, und es wird ein Ereignis `BudgetThresholdCrossed` ausgelöst, an das du einen Pipeline-Trigger hängen kannst.

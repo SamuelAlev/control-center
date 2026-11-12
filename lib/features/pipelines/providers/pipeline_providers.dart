@@ -190,7 +190,7 @@ final pipelineStepRunsForRunProvider = StreamProvider.autoDispose
 /// queries. A record (value equality) so it works as a provider family key.
 typedef PipelineRunKey = ({String workspaceId, String runId});
 
-/// Per-step cost (in US cents) for a pipeline run, rolled up from the agent
+/// Per-step cost (in micro-dollars) for a pipeline run, rolled up from the agent
 /// run logs dispatched by each step. Keyed by the template step id, so the
 /// waterfall can label each bar with its cost. Workspace-scoped: reads only
 /// run logs belonging to the caller's workspace.
@@ -205,7 +205,7 @@ final pipelineStepCostProvider =
         if (stepId == null) {
           continue;
         }
-        byStep[stepId] = (byStep[stepId] ?? 0) + log.cost.estimatedCostCents;
+        byStep[stepId] = (byStep[stepId] ?? 0) + log.cost.costMicros;
       }
       return byStep;
     });

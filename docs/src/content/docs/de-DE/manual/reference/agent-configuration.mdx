@@ -2,7 +2,7 @@
 title: Agentenkonfiguration
 description: Jedes Feld der Agenten-Entität und die Enums, die sie verwendet.
 slug: de-DE/handbuch/referenz/agentenkonfiguration
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Diese Referenz listet jedes Feld der Agenten-Entität auf, dazu die Enums und Flags, die sie verwendet. Wie du einen Agenten in der App anlegst oder bearbeitest, steht Schritt für Schritt unter [Einen Agenten erstellen und konfigurieren](/de-DE/handbuch/anleitungen/agent-erstellen/).
@@ -26,17 +26,17 @@ Diese Referenz listet jedes Feld der Agenten-Entität auf, dazu die Enums und Fl
 | `effort`                | `String?`              | Nein         | ID der Denkstufe (z. B. `'low'`, `'xhigh'`), aus den `thinkingLevels` des gewählten Modells                                                                                                           |
 | `contextSize`           | `int?`                 | Nein         | Maximale Größe des Kontextfensters                                                                                                                                                                    |
 | `role`                  | `AgentRole?`           | Nein         | Agentenrolle                                                                                                                                                                                          |
-| `monthlyBudgetCents`    | `int`                  | Nein         | Monatliche Ausgabenobergrenze in Cent (Standard `0`, unbegrenzt)                                                                                                                                      |
+| `monthlyBudgetMicros`    | `int`                  | Nein         | Monatliche Ausgabenobergrenze in Mikrodollar (Standard `0`, unbegrenzt)                                                                                                                                      |
 | `silenceTimeoutMinutes` | `int?`                 | Nein         | Überschreibung des Stille-Timeouts in Minuten; null oder ein Wert von 1–240 (per Assertion im Konstruktor)                                                                                            |
 | `maxConcurrentTasks`    | `int`                  | Nein         | Standard `1`. Kapazitätszahl, die das Präsenzmodell meldet (laufende und wartende Anzahlen werden damit verglichen)                                                                            |
 | `visibility`            | `AgentVisibility`      | Nein         | Standard `workspace`                                                                                                                                                                                  |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Nein         | Governance-Status (Standard `active`). Geschrieben vom harten Budgetstopp, angezeigt im Organigramm und in der Präsenzliste. Die Ausführung nimmt von einem Agenten mit `paused` weiter Arbeit an    |
-| `budgetPolicyId`        | `String?`              | Nein         | ID einer gemeinsamen Budgetrichtlinie; ist der Wert null, gilt `monthlyBudgetCents` direkt                                                                                                            |
+| `budgetPolicyId`        | `String?`              | Nein         | ID einer gemeinsamen Budgetrichtlinie; ist der Wert null, gilt `monthlyBudgetMicros` direkt                                                                                                            |
 | `runtimeProfileId`      | `String?`              | Nein         | ID eines eigenen Laufzeitprofils                                                                                                                                                                      |
 | `createdAt`             | `DateTime`             | Ja           | Zeitpunkt der Erstellung                                                                                                                                                                              |
 
 `name` und `title` dürfen nicht leer sein (per Assertion im Konstruktor). Ein
-`monthlyBudgetCents` von `0` heißt unbegrenzt. Eine Obergrenze schreibst du mit
+`monthlyBudgetMicros` von `0` heißt unbegrenzt. Eine Obergrenze schreibst du mit
 `agents.upsert`.
 
 ## Enum AgentRole

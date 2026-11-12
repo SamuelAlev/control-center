@@ -2,7 +2,7 @@
 title: Domeingebeurtenissen
 description: Volledige catalogus van de 54 domeingebeurtenissen, hun payloads en de abonnees aan de serverkant die ze consumeren.
 slug: nl-NL/handleiding/referentie/domeingebeurtenissen
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Gebeurtenissenbus
@@ -112,7 +112,7 @@ Alleen eindovergangen worden gepubliceerd. Er is geen `PipelineRunStarted` en ge
 | Gebeurtenis              | Payload                                                                                                  | Wordt gepubliceerd wanneer    |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Er wordt een regel in het auditspoor aangemaakt |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Uitgaven overschrijden de drempel |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Uitgaven overschrijden de drempel |
 
 ## Gebeurtenissen rond identiteit en lidmaatschap
 

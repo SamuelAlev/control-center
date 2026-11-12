@@ -320,20 +320,20 @@ void main() {
             'turn': {
               'durationMs': 130000,
               'totalTokens': 41000,
-              'costCents': 12,
+              'costMicros': 120000,
             },
           },
         );
         expect(msg.turnDurationMs, 130000);
         expect(msg.turnTotalTokens, 41000);
-        expect(msg.turnCostCents, 12);
+        expect(msg.turnCostMicros, 120000);
       });
 
       test('turn stats are null when absent', () {
         final msg = createMessage();
         expect(msg.turnDurationMs, isNull);
         expect(msg.turnTotalTokens, isNull);
-        expect(msg.turnCostCents, isNull);
+        expect(msg.turnCostMicros, isNull);
       });
     });
 

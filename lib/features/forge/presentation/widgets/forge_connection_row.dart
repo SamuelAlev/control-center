@@ -16,6 +16,7 @@ import 'package:control_center/features/settings/presentation/widgets/sections/g
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -195,7 +196,7 @@ class ForgeConnectionRow extends ConsumerWidget {
         );
       }
     } on Object catch (e) {
-      toasts?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      toasts?.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     }
   }
 

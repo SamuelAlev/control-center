@@ -3,7 +3,7 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart'
 
 /// How a cost figure was obtained.
 ///
-/// A single cents integer could not say this, and the difference is
+/// A bare money integer could not say this, and the difference is
 /// load-bearing: a subscription CLI's `total_cost_usd` is a NOTIONAL
 /// list-price figure that bills nobody, an API response's reported cost is
 /// what was actually charged, and a locally-priced token count is an estimate.
@@ -76,7 +76,6 @@ class RunCost {
     this.thoughtTokens = 0,
     this.cachedReadTokens = 0,
     this.cachedWriteTokens = 0,
-    this.estimatedCostCents = 0,
     this.costMicros = 0,
     this.costBasis = CostBasis.estimated,
     this.durationMs,
@@ -98,21 +97,16 @@ class RunCost {
   /// Cache-hit write tokens (discounted by the model provider).
   final int cachedWriteTokens;
 
-  /// Estimated cost in whole cents: the rounded display projection of
-  /// [costMicros]. Arithmetic uses [costMicros].
-  final int estimatedCostCents;
-
-  /// Exact cost in micro-USD (`1e-6` USD), or `0` when no precise figure was
-  /// recorded.
+  /// Exact cost in micro-dollars (1 USD = 1,000,000), or `0` when no precise
+  /// figure was recorded.
   ///
-  /// Whole cents was the source of the accounting error the harness fix
-  /// exists to remove: a priced request costing a fraction of a cent rounded
-  /// to `0`, so a run that made hundreds of auxiliary calls persisted a total
-  /// of zero. Micro-USD keeps sub-cent arithmetic exact and is what makes
-  /// summing many small calls lossless.
+  /// Micro-dollars are the only money unit: a priced request costing a
+  /// fraction of a cent still adds to every total and budget it reaches, so
+  /// hundreds of small auxiliary calls sum to what they really cost. Cents
+  /// exist only in the display formatter.
   final int costMicros;
 
-  /// How [costMicros] / [estimatedCostCents] was obtained.
+  /// How [costMicros] was obtained.
   final CostBasis costBasis;
 
   /// Cost in US dollars, from [costMicros].
@@ -157,7 +151,6 @@ class RunCost {
       thoughtTokens: thoughtTokens + other.thoughtTokens,
       cachedReadTokens: cachedReadTokens + other.cachedReadTokens,
       cachedWriteTokens: cachedWriteTokens + other.cachedWriteTokens,
-      estimatedCostCents: (micros / 10000).round(),
       costMicros: micros,
       costBasis: _isEmpty
           ? other.costBasis
@@ -187,7 +180,6 @@ class RunCost {
     int? thoughtTokens,
     int? cachedReadTokens,
     int? cachedWriteTokens,
-    int? estimatedCostCents,
     int? costMicros,
     CostBasis? costBasis,
     int? durationMs,
@@ -198,7 +190,6 @@ class RunCost {
     thoughtTokens: thoughtTokens ?? this.thoughtTokens,
     cachedReadTokens: cachedReadTokens ?? this.cachedReadTokens,
     cachedWriteTokens: cachedWriteTokens ?? this.cachedWriteTokens,
-    estimatedCostCents: estimatedCostCents ?? this.estimatedCostCents,
     costMicros: costMicros ?? this.costMicros,
     costBasis: costBasis ?? this.costBasis,
     durationMs: durationMs ?? this.durationMs,
@@ -215,7 +206,6 @@ class RunCost {
           thoughtTokens == other.thoughtTokens &&
           cachedReadTokens == other.cachedReadTokens &&
           cachedWriteTokens == other.cachedWriteTokens &&
-          estimatedCostCents == other.estimatedCostCents &&
           costMicros == other.costMicros &&
           costBasis == other.costBasis &&
           durationMs == other.durationMs &&
@@ -229,7 +219,6 @@ class RunCost {
     thoughtTokens,
     cachedReadTokens,
     cachedWriteTokens,
-    estimatedCostCents,
     costMicros,
     costBasis,
     durationMs,
@@ -247,7 +236,6 @@ class RunUsage {
     this.thoughtTokens = 0,
     this.cachedReadTokens = 0,
     this.cachedWriteTokens = 0,
-    this.estimatedCostCents = 0,
     this.costMicros = 0,
     this.costBasis = CostBasis.estimated,
   });
@@ -266,9 +254,6 @@ class RunUsage {
 
   /// Cache-hit write tokens.
   final int cachedWriteTokens;
-
-  /// Estimated cost in whole cents: the rounded projection of [costMicros].
-  final int estimatedCostCents;
 
   /// Exact cost in micro-USD (`1e-6` USD), or `0` when unpriced.
   final int costMicros;
@@ -290,7 +275,6 @@ class RunUsage {
       thoughtTokens: thoughtTokens + other.thoughtTokens,
       cachedReadTokens: cachedReadTokens + other.cachedReadTokens,
       cachedWriteTokens: cachedWriteTokens + other.cachedWriteTokens,
-      estimatedCostCents: (micros / 10000).round(),
       costMicros: micros,
       costBasis: _isEmpty
           ? other.costBasis
@@ -310,7 +294,6 @@ class RunUsage {
     thoughtTokens: thoughtTokens,
     cachedReadTokens: cachedReadTokens,
     cachedWriteTokens: cachedWriteTokens,
-    estimatedCostCents: estimatedCostCents,
     costMicros: costMicros,
     costBasis: costBasis,
     durationMs: durationMs,
@@ -330,7 +313,6 @@ class RunUsage {
           thoughtTokens == other.thoughtTokens &&
           cachedReadTokens == other.cachedReadTokens &&
           cachedWriteTokens == other.cachedWriteTokens &&
-          estimatedCostCents == other.estimatedCostCents &&
           costMicros == other.costMicros &&
           costBasis == other.costBasis;
 
@@ -342,7 +324,6 @@ class RunUsage {
     thoughtTokens,
     cachedReadTokens,
     cachedWriteTokens,
-    estimatedCostCents,
     costMicros,
     costBasis,
   );

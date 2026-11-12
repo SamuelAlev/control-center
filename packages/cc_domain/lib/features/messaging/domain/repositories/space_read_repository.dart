@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
+
 /// Read-cursor port for messaging spaces.
 ///
 /// Kept separate from MessagingRepository so the sidebar's unread indicator
@@ -9,8 +11,9 @@
 /// read state, so one member opening a space never clears another's unread
 /// indicator.
 abstract class SpaceReadRepository {
-  /// Marks [userId]'s read cursor for [spaceId] within [workspaceId] as now,
-  /// clearing that user's sidebar unread indicator for the space.
+  /// Moves [userId]'s read cursor for [spaceId] within [workspaceId] to the
+  /// newest message in the space, clearing that user's sidebar unread
+  /// indicator for the space.
   ///
   /// [workspaceId] is required and names the workspace the caller validated
   /// [spaceId] against; the space id resolves only inside it, so a cursor
@@ -28,14 +31,16 @@ abstract class SpaceReadRepository {
   });
 
   /// Watches [userId]'s read cursor for [spaceId] within [workspaceId] (null
-  /// when the space has never been opened by that user).
+  /// when the space has never been opened by that user): the position of the
+  /// newest message they had seen. An agent message is unseen when its
+  /// position [FeedPosition.isAfter] the cursor.
   ///
   /// [workspaceId] is required and names the workspace the caller validated
   /// [spaceId] against. Carrying it explicitly (rather than relying on an
   /// ambient "active workspace") keeps the subscription self-consistent across
   /// a workspace switch: the transport can never pair this space with a
   /// different, newly-active workspace and trip the server's ownership check.
-  Stream<DateTime?> watchUserLastReadAt(
+  Stream<FeedPosition?> watchUserLastReadAt(
     String workspaceId,
     String spaceId,
     String userId,
@@ -43,7 +48,7 @@ abstract class SpaceReadRepository {
 
   /// All the user's opened-space cursors inside this workspace, in one watch.
   /// A space absent from the map has never been opened by this user.
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
     String workspaceId,
     String userId,
   );

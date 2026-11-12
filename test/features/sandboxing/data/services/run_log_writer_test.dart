@@ -512,7 +512,7 @@ void main() {
           inputTokens: 100,
           outputTokens: 50,
           thoughtTokens: 20,
-          estimatedCostCents: 3,
+          costMicros: 30000,
         );
         writer.logEvent(UsageEvent(usage: usage));
         final lines = await closeAndRead(writer);
@@ -521,7 +521,7 @@ void main() {
         expect(meta, isNotNull);
         expect(meta['inputTokens'], 100);
         expect(meta['outputTokens'], 50);
-        expect(meta['estimatedCostCents'], 3);
+        expect(meta['costMicros'], 30000);
       }, timeout: const Timeout.factor(2));
 
       test('SandboxViolationEvent includes action metadata', () async {

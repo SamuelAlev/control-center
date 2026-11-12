@@ -99,6 +99,7 @@ class DaoOrchestrationRepository implements OrchestrationRepository {
   Future<List<Orchestration>> approvedNeedingMaterialization() async {
     final perWorkspace = await _cross.fanOut(
       (db) => db.orchestrationDao.approvedNeedingMaterialization(),
+      backgroundWriter: 'orchestration materializer',
     );
     return [
       for (final rows in perWorkspace)
@@ -121,8 +122,8 @@ class DaoOrchestrationRepository implements OrchestrationRepository {
         pipelineRunId: Value(o.pipelineRunId),
         teamId: Value(o.teamId),
         projectId: Value(o.projectId),
-        estimatedCostCents: Value(o.estimatedCostCents),
-        maxCostCents: Value(o.maxCostCents),
+        estimatedCostMicros: Value(o.estimatedCostMicros),
+        maxCostMicros: Value(o.maxCostMicros),
         hiredAgentIdsJson: Value(jsonEncode(o.hiredAgentIds)),
         approvedNodeKeysJson: Value(
           o.approvedNodeKeys == null ? null : jsonEncode(o.approvedNodeKeys),
@@ -147,8 +148,8 @@ class DaoOrchestrationRepository implements OrchestrationRepository {
     pipelineRunId: row.pipelineRunId,
     teamId: row.teamId,
     projectId: row.projectId,
-    estimatedCostCents: row.estimatedCostCents,
-    maxCostCents: row.maxCostCents,
+    estimatedCostMicros: row.estimatedCostMicros,
+    maxCostMicros: row.maxCostMicros,
     hiredAgentIds: (jsonDecode(row.hiredAgentIdsJson) as List)
         .whereType<String>()
         .toList(),

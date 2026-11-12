@@ -31,15 +31,29 @@ void main() {
 
   Future<void> seedConv(String id) => db
       .into(db.conversationsTable)
-      .insert(ConversationsTableCompanion.insert(id: id, spaceId: id));
+      .insert(
+        ConversationsTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: id,
+          spaceId: id,
+        ),
+      );
 
   group('MessagingDao — spaces', () {
     test('insert and watch spaces', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-1', name: 'general'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-1',
+          name: 'general',
+        ),
       );
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-2', name: 'random'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-2',
+          name: 'random',
+        ),
       );
 
       final spaces = await db.messagingDao.watchSpaces().first;
@@ -53,7 +67,11 @@ void main() {
 
     test('updateSpaceUpdatedAt sets timestamp', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-ts', name: 'ts'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-ts',
+          name: 'ts',
+        ),
       );
 
       final now = DateTime(2026, 1, 1, 12, 0);
@@ -65,7 +83,11 @@ void main() {
 
     test('updateSpaceName changes name', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-ren', name: 'old'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-ren',
+          name: 'old',
+        ),
       );
 
       await db.messagingDao.updateSpaceName('ch-ren', 'new-name');
@@ -79,6 +101,7 @@ void main() {
       () async {
         await db.messagingDao.insertSpace(
           SpacesTableCompanion.insert(
+            workspaceId: 'test-workspace',
             id: 'ch-prov',
             name: 'prov',
             provisioningStatus: const Value('provisioning'),
@@ -103,13 +126,18 @@ void main() {
     test('spacesByProvisioningStatus finds stranded spaces', () async {
       await db.messagingDao.insertSpace(
         SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
           id: 'ch-stuck',
           name: 'stuck',
           provisioningStatus: const Value('provisioning'),
         ),
       );
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-ok', name: 'ok'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-ok',
+          name: 'ok',
+        ),
       );
 
       final stuck = await db.messagingDao.spacesByProvisioningStatus(
@@ -121,7 +149,11 @@ void main() {
     test('deleteSpaceCascade removes space, messages, participants', () async {
       await _seedAgent(db, 'agent-1', 'Agent 1');
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-cascade', name: 'c'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-cascade',
+          name: 'c',
+        ),
       );
       await db.messagingDao.insertParticipant(
         SpaceParticipantsTableCompanion.insert(
@@ -160,7 +192,11 @@ void main() {
       await _seedAgent(db, 'agent-a', 'Agent A');
       await _seedAgent(db, 'agent-b', 'Agent B');
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-p', name: 'p'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-p',
+          name: 'p',
+        ),
       );
       await db.messagingDao.insertParticipant(
         SpaceParticipantsTableCompanion.insert(
@@ -184,7 +220,11 @@ void main() {
     test('insertParticipant ignores duplicates', () async {
       await _seedAgent(db, 'agent-d', 'Agent D');
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-dup', name: 'dup'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-dup',
+          name: 'dup',
+        ),
       );
       await db.messagingDao.insertParticipant(
         SpaceParticipantsTableCompanion.insert(
@@ -208,7 +248,11 @@ void main() {
     test('getParticipants returns all participants for space', () async {
       await _seedAgent(db, 'a1', 'Agent A1');
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-gp', name: 'gp'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-gp',
+          name: 'gp',
+        ),
       );
       await db.messagingDao.insertParticipant(
         SpaceParticipantsTableCompanion.insert(
@@ -226,7 +270,11 @@ void main() {
     test('removeParticipant deletes participant', () async {
       await _seedAgent(db, 'agent-x', 'Agent X');
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-rm', name: 'rm'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-rm',
+          name: 'rm',
+        ),
       );
       await db.messagingDao.insertParticipant(
         SpaceParticipantsTableCompanion.insert(
@@ -246,7 +294,11 @@ void main() {
   group('MessagingDao — messages', () {
     test('insert and watch messages', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-msg', name: 'msg'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-msg',
+          name: 'msg',
+        ),
       );
       await seedConv('ch-msg');
       await db.messagingDao.insertMessage(
@@ -265,20 +317,24 @@ void main() {
           spaceId: 'ch-msg',
           conversationId: 'ch-msg',
           senderId: 'agent',
-          senderType: 'assistant',
+          senderType: 'agent',
           content: 'Hi!',
         ),
       );
 
       final msgs = await db.messagingDao.watchMessages('ch-msg').first;
       expect(msgs.length, 2);
-      expect(msgs[0].content, 'Hello');
-      expect(msgs[1].content, 'Hi!');
+      expect(msgs[0].data.content, 'Hello');
+      expect(msgs[1].data.content, 'Hi!');
     });
 
     test('getMessages returns future list', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-get', name: 'get'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-get',
+          name: 'get',
+        ),
       );
       await seedConv('ch-get');
       await db.messagingDao.insertMessage(
@@ -298,7 +354,11 @@ void main() {
 
     test('markCompacted sets compacted flag', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-comp', name: 'comp'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-comp',
+          name: 'comp',
+        ),
       );
       await seedConv('ch-comp');
       await db.messagingDao.insertMessage(
@@ -317,7 +377,7 @@ void main() {
           spaceId: 'ch-comp',
           conversationId: 'ch-comp',
           senderId: 'assistant',
-          senderType: 'assistant',
+          senderType: 'agent',
           content: 'old reply',
         ),
       );
@@ -332,7 +392,11 @@ void main() {
 
     test('clearSpaceMessages removes all messages', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-clear', name: 'clear'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-clear',
+          name: 'clear',
+        ),
       );
       await seedConv('ch-clear');
       await db.messagingDao.insertMessage(
@@ -364,7 +428,11 @@ void main() {
 
     test('updateMessage updates content', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-upd', name: 'upd'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-upd',
+          name: 'upd',
+        ),
       );
       await seedConv('ch-upd');
       await db.messagingDao.insertMessage(
@@ -386,7 +454,11 @@ void main() {
 
     test('updateMessage updates metadata', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-meta', name: 'meta'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-meta',
+          name: 'meta',
+        ),
       );
       await seedConv('ch-meta');
       await db.messagingDao.insertMessage(
@@ -408,7 +480,11 @@ void main() {
 
     test('updateMessage partially updates content only', () async {
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-part', name: 'part'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-part',
+          name: 'part',
+        ),
       );
       await seedConv('ch-part');
       await db.messagingDao.insertMessage(
@@ -441,7 +517,11 @@ void main() {
       // would reverse them; only the implicit `rowid` (insertion order) is
       // correct.
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-order', name: 'order'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-order',
+          name: 'order',
+        ),
       );
       final Value<DateTime> sameSecond = Value(
         DateTime.utc(2024, 1, 1, 12, 0, 0),
@@ -469,7 +549,7 @@ void main() {
       expect(fetched.map((m) => m.content), ['first', 'second', 'third']);
 
       final watched = await db.messagingDao.watchMessages('ch-order').first;
-      expect(watched.map((m) => m.content), ['first', 'second', 'third']);
+      expect(watched.map((m) => m.data.content), ['first', 'second', 'third']);
 
       // The window previously tied-break on `id desc`, which (with these ids)
       // would yield [third, second, first]. The rowid tie-break preserves
@@ -477,14 +557,18 @@ void main() {
       final window = await db.messagingDao
           .watchMessagesWindow('ch-order', limit: 50)
           .first;
-      expect(window.map((m) => m.content), ['first', 'second', 'third']);
+      expect(window.map((m) => m.data.content), ['first', 'second', 'third']);
     });
 
     test(
-      'list watches drop transcript segments and one-shot reads keep them',
+      'a turn\'s segments are rows, and list reads only say they exist',
       () async {
         await db.messagingDao.insertSpace(
-          SpacesTableCompanion.insert(id: 'ch-lite', name: 'lite'),
+          SpacesTableCompanion.insert(
+            workspaceId: 'test-workspace',
+            id: 'ch-lite',
+            name: 'lite',
+          ),
         );
         await seedConv('ch-lite');
         await db.messagingDao.insertMessage(
@@ -516,132 +600,76 @@ void main() {
         Map<String, dynamic> decoded(String? raw) =>
             jsonDecode(raw!) as Map<String, dynamic>;
 
+        // The stored JSON never holds the transcript.
+        final stored = await db.messagingDao.getMessageById('m-lite');
+        expect(decoded(stored!.metadata), {'keep': 'yes'});
+        final bodies = await db.runTranscriptDao.segmentBodiesForMessages([
+          'm-lite',
+          'm-plain',
+        ]);
+        expect(bodies.keys, ['m-lite']);
+        expect(bodies['m-lite']!.map(jsonDecode), [
+          {'t': 'text', 'text': 'blob'},
+        ]);
+
         final watched = await db.messagingDao.watchMessages('ch-lite').first;
-        final lite = decoded(
-          watched.firstWhere((m) => m.id == 'm-lite').metadata,
-        );
-        expect(lite.containsKey('segments'), isFalse);
-        expect(lite['segments_elided'], isTrue);
-        expect(lite['segment_count'], 1);
-        expect(lite['keep'], 'yes');
-        final plain = decoded(
-          watched.firstWhere((m) => m.id == 'm-plain').metadata,
-        );
-        expect(plain, {'keep': 'only'});
+        final lite = watched.firstWhere((r) => r.data.id == 'm-lite');
+        expect(lite.hasTranscript, isTrue);
+        expect(lite.segmentCount, 1);
+        expect(decoded(lite.data.metadata), {'keep': 'yes'});
+        final plain = watched.firstWhere((r) => r.data.id == 'm-plain');
+        expect(plain.hasTranscript, isFalse);
+        expect(plain.segmentCount, isNull);
 
         final window = await db.messagingDao
             .watchMessagesWindow('ch-lite', limit: 10)
             .first;
-        final windowLite = decoded(
-          window.firstWhere((m) => m.id == 'm-lite').metadata,
-        );
-        expect(windowLite['segment_count'], 1);
-        expect(windowLite.containsKey('segments'), isFalse);
-
+        expect(window.firstWhere((r) => r.data.id == 'm-lite').segmentCount, 1);
         final spaceWatch = await db.messagingDao
             .watchMessagesForSpace('ch-lite')
             .first;
         expect(
-          decoded(
-            spaceWatch.firstWhere((m) => m.id == 'm-lite').metadata,
-          ).containsKey('segments'),
-          isFalse,
+          spaceWatch.firstWhere((r) => r.data.id == 'm-lite').hasTranscript,
+          isTrue,
         );
-
-        final full = await db.messagingDao.getMessageById('m-lite');
-        expect(decoded(full!.metadata)['segments'], isA<List<dynamic>>());
-        final oneShot = await db.messagingDao.getMessages('ch-lite');
-        expect(
-          decoded(
-            oneShot.firstWhere((m) => m.id == 'm-lite').metadata,
-          )['segments'],
-          isA<List<dynamic>>(),
-        );
-
         final page = await db.messagingDao.getMessagePageRows(
           'ch-lite',
           'ch-lite',
           limit: 10,
         );
-        final pageLite = decoded(
-          page.firstWhere((r) => r.data.id == 'm-lite').data.metadata,
+        expect(
+          page
+              .firstWhere((r) => r.listed.data.id == 'm-lite')
+              .listed
+              .segmentCount,
+          1,
         );
-        expect(pageLite.containsKey('segments'), isFalse);
-        expect(pageLite['segment_count'], 1);
-        expect(pageLite['keep'], 'yes');
-
         final hits = await db.messagingDao.searchInSpace('ch-lite', 'answer');
-        final hit = hits.firstWhere((m) => m.id == 'm-lite');
-        final hitMeta = decoded(hit.metadata);
-        expect(hitMeta.containsKey('segments'), isFalse);
-        expect(hitMeta['keep'], 'yes');
-        expect(hit.embedding, isNull);
+        expect(hits.single.hasTranscript, isTrue);
 
-        final columns = db.messagingDao.messageListSelectColumns;
-        expect(columns, contains('list_metadata AS metadata'));
-        expect(columns, isNot(contains('json_type(')));
-
+        // Rewriting the content leaves the transcript alone.
         await db.messagingDao.updateMessage('m-lite', content: 'answer2');
-        final kept = await db
-            .customSelect(
-              'SELECT list_metadata, metadata, content FROM conversation_messages WHERE id = \'m-lite\'',
-            )
-            .getSingle();
-        expect(kept.read<String>('content'), 'answer2');
         expect(
-          decoded(kept.read<String>('list_metadata')).containsKey('segments'),
-          isFalse,
-        );
-        expect(
-          decoded(kept.read<String>('metadata'))['segments'],
-          isA<List<dynamic>>(),
+          (await db.runTranscriptDao.segmentBodiesForMessages([
+            'm-lite',
+          ]))['m-lite'],
+          hasLength(1),
         );
 
+        // A shorter whole transcript drops the rows past its end.
         await db.messagingDao.updateMessage(
           'm-lite',
           metadata: <String, dynamic>{
             'keep': 'yes',
-            'segments': <Map<String, dynamic>>[
-              <String, dynamic>{'t': 'text'},
-            ],
+            'segments': <Map<String, dynamic>>[],
           },
         );
-        final typed = await db
-            .customSelect(
-              'SELECT list_metadata, metadata FROM conversation_messages WHERE id = \'m-lite\'',
-            )
-            .getSingle();
-        final typedLite = decoded(typed.read<String>('list_metadata'));
-        expect(typedLite.containsKey('segments'), isFalse);
-        expect(typedLite['segment_count'], 1);
-        expect(typedLite['keep'], 'yes');
         expect(
-          decoded(typed.read<String>('metadata'))['segments'],
-          isA<List<dynamic>>(),
+          (await db.runTranscriptDao.segmentBodiesForMessages([
+            'm-lite',
+          ]))['m-lite'],
+          isEmpty,
         );
-
-        await db.customStatement(
-          'INSERT INTO conversation_messages (id, space_id, conversation_id, sender_id, sender_type, content, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            'm-raw',
-            'ch-lite',
-            'ch-lite',
-            'agent',
-            'agent',
-            'raw',
-            '{"keep":"raw","segments":[{"t":"text"}]}',
-          ],
-        );
-        final rawStored = await db
-            .customSelect(
-              'SELECT list_metadata FROM conversation_messages WHERE id = \'m-raw\'',
-            )
-            .getSingle();
-        expect(rawStored.read<String?>('list_metadata'), isNull);
-        final rawWatch = await db.messagingDao.watchMessages('ch-lite').first;
-        // A row written past the DAO has no list projection: list reads show
-        // no metadata rather than deriving one.
-        expect(rawWatch.firstWhere((m) => m.id == 'm-raw').metadata, isNull);
       },
     );
     test(
@@ -651,13 +679,14 @@ void main() {
           SpacesTableCompanion.insert(
             id: 'questions-space',
             name: 'Questions',
-            workspaceId: const Value('test-workspace'),
+            workspaceId: 'test-workspace',
           ),
         );
         await db
             .into(db.conversationsTable)
             .insert(
               ConversationsTableCompanion.insert(
+                workspaceId: 'test-workspace',
                 id: 'archived-thread',
                 spaceId: 'questions-space',
                 status: const Value('archived'),
@@ -740,13 +769,14 @@ void main() {
           SpacesTableCompanion.insert(
             id: 'expiry-space',
             name: 'Expiry',
-            workspaceId: const Value('test-workspace'),
+            workspaceId: 'test-workspace',
           ),
         );
         await db
             .into(db.conversationsTable)
             .insert(
               ConversationsTableCompanion.insert(
+                workspaceId: 'test-workspace',
                 id: 'expiry-thread',
                 spaceId: 'expiry-space',
               ),
@@ -788,7 +818,10 @@ void main() {
         await question('open', DateTime.utc(2026, 1, 1));
         expect(await db.messagingDao.expireQuestion('open'), isTrue);
         expect((await meta('open'))['expired'], isTrue);
-        expect((await meta('open'))['answered'], isTrue);
+        expect(
+          (await db.messagingDao.getMessageById('open'))!.answered,
+          isTrue,
+        );
 
         await question('orphan', DateTime.utc(2026, 1, 1));
         await question('after-boot', DateTime.utc(2026, 1, 3));
@@ -799,7 +832,10 @@ void main() {
           1,
         );
         expect((await meta('orphan'))['expired'], isTrue);
-        expect((await meta('after-boot'))['answered'], isFalse);
+        expect(
+          (await db.messagingDao.getMessageById('after-boot'))!.answered,
+          isFalse,
+        );
         expect((await meta('answered-first'))['expired'], isNull);
       },
     );
@@ -811,13 +847,14 @@ void main() {
           SpacesTableCompanion.insert(
             id: 'steer-space',
             name: 'Steer',
-            workspaceId: const Value('test-workspace'),
+            workspaceId: 'test-workspace',
           ),
         );
         await db
             .into(db.conversationsTable)
             .insert(
               ConversationsTableCompanion.insert(
+                workspaceId: 'test-workspace',
                 id: 'steer-thread',
                 spaceId: 'steer-space',
               ),
@@ -836,11 +873,13 @@ void main() {
             ),
           ),
         );
-        Future<Map<String, dynamic>> meta() async =>
-            jsonDecode(
-                  (await db.messagingDao.getMessageById('card'))!.metadata!,
-                )
-                as Map<String, dynamic>;
+        // The stored JSON plus the queue state, which lives in its column.
+        Future<Map<String, dynamic>> meta() async {
+          final row = (await db.messagingDao.getMessageById('card'))!;
+          final json = jsonDecode(row.metadata!) as Map<String, dynamic>;
+          expect(json.containsKey('steerState'), isFalse);
+          return {...json, 'steerState': ?row.steerState};
+        }
 
         // A live run drains the card...
         expect(

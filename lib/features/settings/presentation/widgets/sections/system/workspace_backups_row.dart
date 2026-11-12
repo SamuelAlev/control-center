@@ -3,6 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_flow.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_gate.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_snapshot_row.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_backup_entry.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
@@ -60,6 +61,9 @@ class WorkspaceBackupsRow extends ConsumerStatefulWidget {
 
 class _WorkspaceBackupsRowState extends ConsumerState<WorkspaceBackupsRow> {
   String? _restoring;
+
+  /// The path of the entry whose restore was refused, and why.
+  ({String path, String message})? _refusal;
   String? _deleting;
   String? _downloading;
   ({int transferred, int? total})? _progress;
@@ -82,6 +86,15 @@ class _WorkspaceBackupsRowState extends ConsumerState<WorkspaceBackupsRow> {
         onBusy: (busy) {
           if (mounted) {
             setState(() => _restoring = busy ? entry.path : null);
+          }
+        },
+        onRefused: (message) {
+          if (mounted) {
+            setState(
+              () => _refusal = message == null
+                  ? null
+                  : (path: entry.path, message: message),
+            );
           }
         },
       );
@@ -122,10 +135,15 @@ class _WorkspaceBackupsRowState extends ConsumerState<WorkspaceBackupsRow> {
     final confirmed = await showCcConfirmDialog(
       context: context,
       title: l10n.backupScheduledDeleteTitle,
-      message: l10n.backupScheduledDeleteBody(
-        workspaceBackupLabel(context, backup),
-        widget.workspaceName,
-      ),
+      message: [
+        l10n.backupScheduledDeleteBody(
+          workspaceBackupLabel(context, backup),
+          widget.workspaceName,
+        ),
+        // Cleanup spares a last good copy; deleting it by hand is allowed,
+        // so the confirmation says what it costs.
+        if (backup.isLastGoodCopy) l10n.backupDeleteLastGoodCopyDescription,
+      ].join('\n\n'),
       confirmLabel: l10n.delete,
       cancelLabel: l10n.cancel,
       danger: true,
@@ -181,9 +199,7 @@ class _WorkspaceBackupsRowState extends ConsumerState<WorkspaceBackupsRow> {
           : CcStatusTone.caution,
       statusLabel: widget.workspaceDeleted
           ? null
-          : latest.complete
-          ? l10n.backupSnapshotComplete
-          : l10n.backupSnapshotIncomplete,
+          : backupVerificationLabel(l10n, latest),
       subtitleWidget: latestAt == null
           ? null
           : AppTimestamp(
@@ -223,6 +239,11 @@ class _WorkspaceBackupsRowState extends ConsumerState<WorkspaceBackupsRow> {
                   _restoring == backup.workspaces.firstOrNull?.path,
               deleting: _deleting == backup.name,
               downloading: _downloading == backup.name,
+              refusal:
+                  _refusal != null &&
+                      _refusal!.path == backup.workspaces.firstOrNull?.path
+                  ? _refusal!.message
+                  : null,
               progress: _downloading == backup.name ? _progress : null,
               onRestore: _restore,
               onDownload: _download,

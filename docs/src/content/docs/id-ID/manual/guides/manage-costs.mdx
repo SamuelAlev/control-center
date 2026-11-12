@@ -2,14 +2,14 @@
 title: Kelola biaya
 description: Lihat berapa pengeluaran agen Anda, batasi run otonom, dan pangkas pemakaian token.
 slug: id-ID/panduan-pengguna/panduan-praktis/kelola-biaya
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Panduan ini menunjukkan cara melihat biaya run agen dan cara membatasi run otonom.
 
 ## Bagaimana biaya dicatat
 
-Setiap run agen menulis log run yang memuat token masukan, token keluaran, token penalaran, token pembacaan cache dan token penulisan cache, perkiraan biaya dalam sen, serta biaya subagen apa pun yang dibangkitkannya.
+Setiap run agen menulis log run yang memuat token masukan, token keluaran, token penalaran, token pembacaan cache dan token penulisan cache, perkiraan biaya dalam mikrodolar (sepersejuta dolar AS), serta biaya subagen apa pun yang dibangkitkannya.
 
 Harga berasal dari katalog models.dev, yang hanya dipakai untuk memperkaya daftar model dengan harga dan jendela konteks — tidak pernah sebagai sumber id model. Model yang tidak dapat diberi harga oleh katalog mencatat **$0** dan run tanpa biaya dikecualikan dari ringkasan **Pemakaian & biaya**. Model Ollama lokal karena itu tidak menampilkan pengeluaran sama sekali, meskipun jumlah tokennya tetap dicatat. Paket tarif tetap (kimi-code, langganan Claude) berperilaku sama hanya bila katalog tidak punya harga untuk model yang dilayani; jika katalog memilikinya, run tetap diestimasikan pada tarif tersebut. Dalam kondisi rantai fallback, biaya run dihitung berdasarkan model yang benar-benar melayaninya, bukan model yang diminta.
 
@@ -78,7 +78,7 @@ Buka log run Wawasan (50 run terfilter terbaru) dan laci transkrip pada apa pun 
 
 ## Apa yang terjadi jika anggaran disetel di luar jalur normal
 
-Sebagai kelengkapan, jika `monthlyBudgetCents` atau kebijakan anggaran ditulis langsung ke baris agen:
+Sebagai kelengkapan, jika `monthlyBudgetMicros` atau kebijakan anggaran ditulis langsung ke baris agen:
 
 - Anggaran dievaluasi **setelah** run selesai, bukan sebelum pengiriman. Sebuah listener pada penyelesaian run membandingkan pengeluaran agen sejak awal bulan dengan plafonnya.
 - Melewati ambang lunak (defaultnya 80%) mencatat insiden peringatan dan memicu peristiwa `BudgetThresholdCrossed` yang dapat Anda sandarkan pemicu pipeline padanya.

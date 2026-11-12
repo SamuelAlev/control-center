@@ -28,8 +28,8 @@ class PlanDiff {
     this.rolesAdded = const [],
     this.rolesRemoved = const [],
     this.rolesReassigned = const [],
-    this.maxCostCentsFrom,
-    this.maxCostCentsTo,
+    this.maxCostMicrosFrom,
+    this.maxCostMicrosTo,
   });
 
   /// Keys of nodes present only in the newer revision.
@@ -60,13 +60,13 @@ class PlanDiff {
   final List<String> rolesReassigned;
 
   /// Budget ceiling before (null = none set / unchanged when both null).
-  final int? maxCostCentsFrom;
+  final int? maxCostMicrosFrom;
 
   /// Budget ceiling after.
-  final int? maxCostCentsTo;
+  final int? maxCostMicrosTo;
 
   /// Whether the budget ceiling changed.
-  bool get budgetChanged => maxCostCentsFrom != maxCostCentsTo;
+  bool get budgetChanged => maxCostMicrosFrom != maxCostMicrosTo;
 
   /// Whether the two revisions are structurally identical.
   bool get isEmpty =>
@@ -183,8 +183,8 @@ class ProposalDiffService {
           if (!toRoles.containsKey(key)) key,
       ],
       rolesReassigned: reassigned,
-      maxCostCentsFrom: from.budget.maxCostCents,
-      maxCostCentsTo: to.budget.maxCostCents,
+      maxCostMicrosFrom: from.budget.maxCostMicros,
+      maxCostMicrosTo: to.budget.maxCostMicros,
     );
   }
 }

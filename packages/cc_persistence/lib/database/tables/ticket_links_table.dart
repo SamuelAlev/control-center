@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for directional dependencies between tickets.
@@ -7,7 +8,6 @@ import 'package:drift/drift.dart';
 /// The UI derives the inverse views from a given ticket's perspective:
 /// A partial-unique index on `(source_ticket_id, target_ticket_id, type)` keeps links
 /// idempotent.
-@TableIndex(name: 'idx_ticket_links_source', columns: {#sourceTicketId})
 @TableIndex(name: 'idx_ticket_links_target', columns: {#targetTicketId})
 @TableIndex(
   name: 'uq_ticket_links_source_target_type',
@@ -31,8 +31,11 @@ class TicketLinksTable extends Table {
     'NOT NULL REFERENCES tickets (id) ON DELETE CASCADE',
   )();
 
-  /// Canonical relationship type: `blocks` | `relates_to` | `duplicate_of`.
-  TextColumn get type => text()();
+  /// Canonical relationship type: a `TicketLinkType` storage string.
+  TextColumn get type => text().check(
+    // ignore: recursive_getters
+    type.isIn(AgentsStoredValues.ticketLinkType),
+  )();
 
   /// Creation timestamp.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

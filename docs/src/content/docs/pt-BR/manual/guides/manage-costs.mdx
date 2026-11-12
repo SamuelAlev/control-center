@@ -2,14 +2,14 @@
 title: Gerenciar custos
 description: Veja quanto seus agentes estão gastando, limite uma execução autônoma e reduza o uso de tokens.
 slug: pt-BR/manual/guias/gerenciar-custos
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Este guia mostra como ver quanto custam as execuções de agentes e como limitar uma execução autônoma.
 
 ## Como os custos são registrados
 
-Cada execução de agente grava um log de execução com seus tokens de entrada, tokens de saída, tokens de raciocínio, tokens de leitura em cache e de gravação em cache, um custo estimado em centavos e o custo de todos os subagentes que ela gerou.
+Cada execução de agente grava um log de execução com seus tokens de entrada, tokens de saída, tokens de raciocínio, tokens de leitura em cache e de gravação em cache, um custo estimado em microdólares (milionésimos de dólar americano) e o custo de todos os subagentes que ela gerou.
 
 Os preços vêm do catálogo models.dev, que serve apenas para enriquecer a lista de modelos com preço e janela de contexto — nunca como fonte de ids de modelo. Um modelo que o catálogo não consegue precificar registra **$0**, e execuções de custo zero ficam fora do resumo **Uso e custo**. Um modelo Ollama local, portanto, não mostra gasto nenhum, embora suas contagens de tokens ainda sejam registradas. Um plano de tarifa fixa (kimi-code, uma assinatura Claude) só se comporta da mesma forma quando o catálogo não tem preço para o modelo servido; se tiver, a execução é estimada nessas tarifas de qualquer maneira. Em uma cadeia de fallback, a execução é tarifada com base no modelo que de fato a atendeu, e não no que foi solicitado.
 
@@ -78,7 +78,7 @@ Abra o log de execução do Resumo (as 50 execuções filtradas mais recentes) e
 
 ## O que acontece se um orçamento for definido fora do fluxo normal
 
-Para ser completo: se `monthlyBudgetCents` ou uma política de orçamento for gravado diretamente em uma linha de agente:
+Para ser completo: se `monthlyBudgetMicros` ou uma política de orçamento for gravado diretamente em uma linha de agente:
 
 - Os orçamentos são avaliados **depois** que uma execução é concluída, e não antes do despacho. Um listener na conclusão da execução compara os gastos do agente no mês até a data com seu teto.
 - Cruzar o limite suave (80% por padrão) registra um incidente de aviso e dispara um evento `BudgetThresholdCrossed` no qual você pode pendurar um gatilho de pipeline.

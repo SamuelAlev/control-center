@@ -98,7 +98,6 @@ class RunUsageTotals {
     thoughtTokens: thoughtTokens,
     cachedReadTokens: cachedReadTokens,
     cachedWriteTokens: cachedWriteTokens,
-    estimatedCostCents: (costMicros / 10000).round(),
     costMicros: costMicros,
     costBasis: costBasis,
   );

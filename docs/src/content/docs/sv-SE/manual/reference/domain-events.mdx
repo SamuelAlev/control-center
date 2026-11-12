@@ -2,7 +2,7 @@
 title: Domänhändelser
 description: Fullständig katalog över de 54 domänhändelserna, deras nyttolaster och prenumeranterna på serversidan som konsumerar dem.
 slug: sv-SE/handbok/referens/domanhandelser
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Händelsebussen
@@ -130,7 +130,7 @@ bussen.
 | Händelse                 | Nyttolast                                                                                                | Utlöses när               |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | En post i granskningsloggen skapas |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Utgifterna passerar tröskeln |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Utgifterna passerar tröskeln |
 
 ## Identitets- och medlemskapshändelser
 

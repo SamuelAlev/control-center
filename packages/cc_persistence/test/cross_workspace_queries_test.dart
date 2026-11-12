@@ -94,25 +94,15 @@ void main() {
       expect(seen, hasLength(2));
     });
 
-    test('skips soft-deleted workspaces unless asked for them', () async {
-      // A READ fan-out serves operator-facing all-workspace views, and opening
-      // a removed workspace's file pays a cold open to contribute rows the
-      // operator asked to stop seeing. Maintenance is the opposite case — the
-      // file is still on disk, so retention and backup must still reach it —
-      // hence the opt-in rather than a blanket rule.
-      for (final id in const ['w-1', 'w-2', 'w-3']) {
-        await global.workspaceRegistryDao.deleteWorkspace(id);
-      }
-      expect(await cross.fanOut((db) async => db.workspaceId), isEmpty);
-      expect(
-        await cross.fanOut((db) async => db.workspaceId, includeDeleted: true),
-        hasLength(3),
-      );
+    test('never reaches a deleted workspace', () async {
+      // A deleted workspace is gone for every reader: its file is removed
+      // with it, so there is nothing for maintenance to reach either, and
+      // opening it again would bring an empty database back to life.
+      await global.workspaceRegistryDao.deleteWorkspace('w-2');
 
-      await global.customStatement('DELETE FROM workspaces');
       expect(
-        await cross.fanOut((db) async => db.workspaceId, includeDeleted: true),
-        isEmpty,
+        await cross.fanOut((db) async => db.workspaceId),
+        unorderedEquals(<String>['w-1', 'w-3']),
       );
     });
 

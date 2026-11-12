@@ -39,10 +39,14 @@ class WebhookHandlerResult {
 /// An inbound POST to `/webhooks/<token>` is routed here. The token both
 /// identifies the trigger and is the HMAC secret: the request's
 /// `X-Hub-Signature-256: sha256=<hex>` header is verified against
-/// `HMAC-SHA256(body, token)`. A delivery that fails verification is rejected,
-/// logged and is **not** replayable. Duplicates (by `dedupe_key`) are ignored.
-/// A verified, non-duplicate, filter-passing delivery starts the trigger's
-/// pipeline and is logged as `dispatched`.
+/// `HMAC-SHA256(body, token)`. A delivery that fails verification is rejected
+/// and logged. A verified, filter-passing delivery claims its dedupe key and
+/// starts the trigger's pipeline; a re-delivery of one that is in flight or
+/// was dispatched is answered as a duplicate, while one whose dispatch failed
+/// is dispatched again when the provider retries it.
+///
+/// The log keeps only [loggedHeaders] and never the body (see
+/// `WebhookDeliveriesTable`).
 class WebhookDeliveryService {
   /// Creates a [WebhookDeliveryService].
   WebhookDeliveryService({
@@ -72,6 +76,15 @@ class WebhookDeliveryService {
   /// Headers consulted (in order) for the event action.
   static const List<String> _eventHeaders = ['x-github-event', 'x-event-type'];
 
+  /// The only request headers a delivery log keeps: what the request was and
+  /// which delivery it was. Never `Authorization`, cookies or the signature.
+  static const Set<String> loggedHeaders = {
+    'content-type',
+    'user-agent',
+    ..._dedupeHeaders,
+    ..._eventHeaders,
+  };
+
   /// Handles an inbound webhook POST.
   Future<WebhookHandlerResult> handle({
     required String token,
@@ -91,7 +104,7 @@ class WebhookDeliveryService {
     final (eventAction, _) = _extract(lower, _eventHeaders);
     final signatureStatus = _verifySignature(lower, body, token);
 
-    WebhookDelivery delivery = WebhookDelivery(
+    final delivery = WebhookDelivery(
       id: _id(),
       workspaceId: trigger.workspaceId,
       triggerId: trigger.id,
@@ -100,118 +113,81 @@ class WebhookDeliveryService {
       dedupeKey: dedupeKey,
       dedupeSource: dedupeSource,
       eventAction: eventAction,
-      rawBody: body,
-      headers: lower,
+      headers: {
+        for (final e in lower.entries)
+          if (loggedHeaders.contains(e.key)) e.key: e.value,
+      },
       createdAt: DateTime.now().toUtc(),
     );
 
-    // 1. Signature gate (fail closed — not replayable).
+    // 1. Signature gate (fail closed).
     if (signatureStatus != WebhookSignatureStatus.valid) {
-      delivery = delivery.copyWith(
-        status: WebhookDeliveryStatus.rejected,
-        responseStatus: 401,
-        responseBody: 'invalid signature',
+      await _deliveries.record(
+        delivery.copyWith(
+          status: WebhookDeliveryStatus.rejected,
+          responseStatus: 401,
+          responseBody: 'invalid signature',
+        ),
       );
-      await _deliveries.record(delivery);
       return const WebhookHandlerResult(401, 'invalid signature');
     }
 
-    // 2. Dedup.
-    if (dedupeKey != null &&
-        await _deliveries.existsByDedupeKey(
-          trigger.workspaceId,
-          trigger.id,
-          dedupeKey,
-        )) {
-      delivery = delivery.copyWith(
-        status: WebhookDeliveryStatus.ignored,
-        responseStatus: 200,
-        responseBody: 'duplicate delivery',
-      );
-      await _deliveries.record(delivery);
-      return const WebhookHandlerResult(200, 'duplicate delivery');
-    }
-
-    // 3. Event-action filter.
+    // 2. Event-action filter.
     if (!_passesEventFilter(trigger, eventAction)) {
-      delivery = delivery.copyWith(
-        status: WebhookDeliveryStatus.ignored,
-        responseStatus: 200,
-        responseBody: 'event filtered',
+      await _deliveries.record(
+        delivery.copyWith(
+          status: WebhookDeliveryStatus.ignored,
+          responseStatus: 200,
+          responseBody: 'event filtered',
+        ),
       );
-      await _deliveries.record(delivery);
       return const WebhookHandlerResult(200, 'event filtered');
     }
 
-    // 4. Dispatch the pipeline.
+    // 3. Claim the dedupe key: only a delivery that is in flight or was
+    // dispatched holds it.
+    if (!await _deliveries.claim(delivery)) {
+      await _deliveries.record(
+        delivery.copyWith(
+          status: WebhookDeliveryStatus.ignored,
+          responseStatus: 200,
+          responseBody: 'duplicate delivery',
+        ),
+      );
+      return const WebhookHandlerResult(200, 'duplicate delivery');
+    }
+
+    // 4. Dispatch the pipeline. A failure releases the key (a failed delivery
+    // holds none), so the provider's retry is dispatched again.
+    final PipelineRun? run;
     try {
-      final payload = _buildPayload(trigger, body, eventAction);
-      final run = await _startRun(
+      run = await _startRun(
         templateId: trigger.templateId,
         workspaceId: trigger.workspaceId,
         triggerEventType: PipelineTrigger.webhookEventType,
-        triggerPayload: payload,
+        triggerPayload: _buildPayload(trigger, body, eventAction),
         dedupKey: dedupeKey,
         armedByUserIds: trigger.armedByUserIds,
       );
-      delivery = delivery.copyWith(
-        status: WebhookDeliveryStatus.dispatched,
-        runId: run?.id,
-        responseStatus: 202,
-        responseBody: 'accepted',
-      );
-      await _deliveries.record(delivery);
-      return const WebhookHandlerResult(202, 'accepted');
     } on Object catch (e) {
-      delivery = delivery.copyWith(
-        status: WebhookDeliveryStatus.failed,
-        responseStatus: 500,
-        responseBody: 'dispatch failed: $e',
+      await _deliveries.update(
+        delivery.copyWith(
+          status: WebhookDeliveryStatus.failed,
+          responseStatus: 500,
+          responseBody: 'dispatch failed: $e',
+        ),
       );
-      await _deliveries.record(delivery);
       return const WebhookHandlerResult(500, 'dispatch failed');
     }
-  }
-
-  /// Re-dispatches a previously-logged delivery. Refuses non-replayable
-  /// deliveries (those that failed signature verification).
-  Future<WebhookHandlerResult> replay(
-    String workspaceId,
-    String deliveryId,
-  ) async {
-    final delivery = await _deliveries.getById(workspaceId, deliveryId);
-    if (delivery == null) {
-      return const WebhookHandlerResult(404, 'unknown delivery');
-    }
-    if (!delivery.replayable) {
-      return const WebhookHandlerResult(
-        409,
-        'delivery is not replayable (failed signature verification)',
-      );
-    }
-    final trigger = await _triggers.getById(workspaceId, delivery.triggerId);
-    if (trigger == null || trigger.workspaceId != workspaceId) {
-      return const WebhookHandlerResult(404, 'unknown trigger');
-    }
-    final payload = _buildPayload(
-      trigger,
-      delivery.rawBody ?? '',
-      delivery.eventAction,
-    );
-    final run = await _startRun(
-      templateId: trigger.templateId,
-      workspaceId: trigger.workspaceId,
-      triggerEventType: PipelineTrigger.webhookEventType,
-      triggerPayload: payload,
-      armedByUserIds: trigger.armedByUserIds,
-    );
     await _deliveries.update(
       delivery.copyWith(
         status: WebhookDeliveryStatus.dispatched,
         runId: run?.id,
+        responseStatus: 202,
+        responseBody: 'accepted',
       ),
     );
-    return const WebhookHandlerResult(202, 'replayed');
+    return const WebhookHandlerResult(202, 'accepted');
   }
 
   (String?, String?) _extract(Map<String, String> headers, List<String> keys) {

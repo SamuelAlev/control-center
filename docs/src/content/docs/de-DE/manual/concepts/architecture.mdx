@@ -3,7 +3,7 @@ title: "Architektur"
 description: "Wie Control Center aufgebaut ist: Thin Client über einem Headless-Server, Clean Architecture nach Features sowie Ports und Adapter."
 dateModified: 2026-09-19
 slug: de-DE/handbuch/konzepte/architektur
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Überblick
@@ -100,9 +100,9 @@ Die Kompositionswurzel der App (`di/providers.dart`) bindet clientseitige Ports 
 **Drift** (SQLite), aufgeteilt in zwei Datenbanken, beide in `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) hält eine kurze Liste wirklich serverweiter Tabellen: die Registry der Arbeitsbereiche, User, Präferenzen und gekoppelte Geräte, SSO-Verbindungen, serverweite Einstellungen der Installation, verwaltete Aktionsrichtlinien (eine installationsweite Klammer, die Schutzregeln eines Arbeitsbereichs nur verschärfen kann), den Newsfeed pro User, die Fleet-Warteschlange (Worker, Jobs, Placement-Log), den Index `workspace_routes` vor der Authentifizierung und die Installationsmetadaten. Der Start öffnet nur diese Datei, deshalb bleibt der Startaufwand gleich, egal wie viel Verlauf die Arbeitsbereiche ansammeln. Eine Tabelle hier anzulegen ist eine Isolationsentscheidung, und ein Ratchet-Test zwingt dich, sie zu begründen.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) ist ein _Verzeichnis_ pro Arbeitsbereich. Darin liegen eine SQLite-Datei und alles andere, das nur zu diesem Arbeitsbereich gehört, sodass die Worktrees einer Unterhaltung und die Agentendateien neben der Datenbank liegen und mit ihr gelöscht werden. Hier liegt fast alles: Agenten, Bereiche, Tickets, Gedächtnis, Pipelines, Besprechungen, der Code-Graph, Reviews und Repos. Dateien öffnen sich erst beim ersten Zugriff über `WorkspaceDatabaseManager.of(workspaceId)` und führen dann ihr eigenes `quick_check`, die Installation von FTS und Triggern sowie `vector_init` aus.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) ist ein _Verzeichnis_ pro Arbeitsbereich. Darin liegen eine SQLite-Datei und alles andere, das nur zu diesem Arbeitsbereich gehört, sodass die Worktrees einer Unterhaltung und die Agentendateien neben der Datenbank liegen und mit ihr gelöscht werden. Hier liegt fast alles: Agenten, Bereiche, Tickets, Gedächtnis, Pipelines, Besprechungen, Reviews und Repos. Der Code-Graph ist eine zweite Datei im selben Verzeichnis, `code_index.db`, die neu aufgebaut statt gesichert wird. Dateien öffnen sich erst beim ersten Zugriff über `WorkspaceDatabaseManager.of(workspaceId)` und führen dann ihr eigenes `quick_check`, die Installation von FTS und Triggern sowie `vector_init` aus.
 
-Beide Hälften gehen von einer zusammengefassten v1-Basis aus. `onCreate` baut das aktuelle Schema. Migrationsschritte kommen nur dazu, wenn eine ausgerollte Datenbank weitergetragen werden muss.
+Keine der beiden Hälften hat Migrationsschritte. Eine neue Datei wird aus den Tabellendefinitionen gebaut. Eine Datei aus einer älteren Version wird zuerst beiseitegelegt (`pre_upgrade/`) und beim Öffnen auf dieselben Definitionen gebracht, sodass eine neue Installation und eine aktualisierte am Ende dasselbe Schema haben. Eine Datei, die eine neuere Version geschrieben hat, wird abgelehnt.
 
 Ein Arbeitsbereich ist eine Datei. Der Export ist deshalb ein einzelnes Statement `VACUUM INTO` (`workspace.export`), kein Dump Tabelle für Tabelle. `workspace.import` übernimmt eine solche Datei und unterscheidet anhand des eingebetteten `workspace_meta` die eigene, erneut übernommene Datei von einer Datei, die von einer anderen Installation stammt.
 

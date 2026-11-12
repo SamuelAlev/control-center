@@ -14386,13 +14386,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get backupSnapshotComplete => 'Lengkap';
 
   @override
-  String get backupSnapshotIncomplete => 'Tidak lengkap';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Manifest hilang atau merujuk file yang tidak ada, jadi snapshot ini tidak bisa memulihkan seluruh instalasi. File ruang kerja yang ada masih bisa diadopsi satu per satu.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Hapus snapshot';
 
   @override
@@ -18530,4 +18523,234 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Anda dapat menonton mesin ini. Mesin ini menggunakan akun masuk milik orang yang mesin ini dibuka untuknya, sehingga hanya orang tersebut yang dapat mengendalikannya, meneruskan portnya, menempelkan sesuatu ke dalamnya, atau menjatuhkan file ke dalamnya.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Basis data server sedang sibuk. Coba lagi sebentar lagi.';
+
+  @override
+  String get refusalStorageFull =>
+      'Disk server sudah penuh, sehingga tidak ada yang bisa disimpan. Pemilik server harus membebaskan ruang terlebih dahulu.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Data ruang kerja ini rusak. Pemilik server harus memulihkannya dari cadangan.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Ruang kerja ini hanya baca sampai pemilik server memulihkannya dari cadangan, sehingga perubahan tidak dapat disimpan.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Data ini ditulis oleh versi server yang lebih baru. Perbarui server, lalu coba lagi.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Server menemukan file basis data yang tidak ditulisnya. Pemilik server harus memeriksa folder data server.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Ruang kerja ini telah dihapus.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Permintaan ini masih diproses. Tunggu hingga selesai, lalu periksa hasilnya.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Tidak ada file di jalur tersebut pada server. Tidak ada yang diganti.';
+
+  @override
+  String get refusalImportDamaged =>
+      'File itu rusak, sehingga tidak dapat dipulihkan. Tidak ada yang diganti.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'File itu tidak cocok dengan checksum yang tercatat di cadangannya, sehingga mungkin telah diubah atau rusak. Tidak ada yang diganti.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'File itu ditulis oleh versi server yang lebih baru. Perbarui server untuk memulihkannya. Tidak ada yang diganti.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'File itu bukan basis data ruang kerja. Tidak ada yang diganti.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'File itu tidak dapat disesuaikan dengan format server ini. Tidak ada yang diganti.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'File itu berisi tautan yang milik ruang kerja lain di server ini, dan memulihkannya akan mengambil alih tautan tersebut. Tidak ada yang diganti.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'Ruang kerja ini hanya baca';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Datanya gagal dalam pemeriksaan integritas, sehingga perubahan tidak dapat disimpan. Semuanya tetap bisa dibaca. Pemilik server dapat memulihkannya dari cadangan.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Datanya gagal dalam pemeriksaan integritas, sehingga perubahan tidak dapat disimpan. Semuanya tetap bisa dibaca. Pulihkan dari cadangan agar bisa ditulis kembali.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Buka cadangan';
+
+  @override
+  String get serverNoticesLabel => 'Perlu perhatian Anda';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Hanya baca';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Sejak $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Basis datanya gagal dalam pemeriksaan integritas, sehingga hanya bisa dibaca dan menolak setiap perubahan. Pulihkan dari cadangan dalam daftar di bawah; salinan baik terakhirnya disimpan sampai Anda melakukannya.';
+
+  @override
+  String get serverNoticeDetails => 'Detail';
+
+  @override
+  String get backupSnapshotUnverified => 'Belum diverifikasi';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Snapshot ini tidak dapat diverifikasi. Snapshot belum selesai, atau dibuat sebelum snapshot mencatat checksum, sehingga tidak dapat memulihkan seluruh instalasi. File ruang kerja di dalamnya tetap dapat dipulihkan satu per satu.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Salinan baik terakhir';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Disimpan karena berisi salinan baik terakhir dari ruang kerja yang rusak. Pembersihan tidak menyentuhnya sampai ruang kerja itu dipulihkan.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Ini adalah salinan baik terakhir dari ruang kerja yang rusak. Jika dihapus, tidak ada lagi yang dapat dipakai untuk memulihkan ruang kerja itu.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count izin ditahan untuk ditinjau Anda. Izin-izin itu tercantum di bagian atas halaman ini.',
+      one:
+          '1 izin ditahan untuk ditinjau Anda. Izin itu tercantum di bagian atas halaman ini.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Ditahan dari salinan yang dipulihkan';
+
+  @override
+  String get importHoldsExplainer =>
+      'Salinan yang dipulihkan tidak dapat memberikan izin apa pun di server ini dengan sendirinya. Izin-izin ini ada di dalamnya: terima salah satu untuk memberikannya kembali, atau tolak untuk membuangnya.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agen boleh melakukan ini tanpa persetujuan: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agen boleh melakukan ini setelah seseorang menyetujui: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Jalankan perintah yang diawali dengan $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Di mana saja dalam ruang kerja ini';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'Dalam space $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Untuk agen $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandbox boleh menjalankan $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person boleh mengubah $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person boleh meninjau pull request di $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person mendapat akses $level ke $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person mendapat peran $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Undangan terbuka untuk bergabung dengan peran $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Undangan terbuka untuk bergabung dengan peran $role dan akses tinjau atau tulis ke $count repositori',
+      one:
+          'Undangan terbuka untuk bergabung dengan peran $role dan akses tinjau atau tulis ke 1 repositori',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Izin yang tidak dapat dijelaskan oleh versi aplikasi ini';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Dipulihkan $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Terima';
+
+  @override
+  String get importHoldDismiss => 'Tolak';
+
+  @override
+  String get importHoldAcceptTitle => 'Berikan izin ini?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nMenerima berarti izin ini langsung diberikan di server.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Izin diberikan.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Tidak ada yang diberikan: pihak yang dituju, yaitu anggota atau repositori, sudah tidak ada di ruang kerja ini.';
 }

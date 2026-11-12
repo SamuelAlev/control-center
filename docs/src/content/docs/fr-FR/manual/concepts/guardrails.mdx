@@ -2,7 +2,7 @@
 title: Garde-fous — une politique unique pour chaque action qui modifie l’état
 description: Pourquoi Control Center fait passer chaque effet de bord d’un agent par un moteur unique d’autorisation, de demande ou de refus, pourquoi la taxonomie des ActionClasses reste volontairement restreinte et ce que le cadran d’autonomie change réellement.
 slug: fr-FR/manuel/concepts/garde-fous
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Les agents de Control Center peuvent supprimer des fichiers, pousser des
@@ -118,7 +118,7 @@ Une contrainte peut viser :
 - **commandes** — des préfixes de commande, mis en correspondance sur une limite
   de mot
 - **outils** — l’outil exact que nomme un appel, de sorte qu’une approbation peut couvrir un seul outil plutôt que tous les outils ayant le même effet
-- **plafonds** — `maxCount` / `maxCents`, ce qui permet d’exprimer « supprimer
+- **plafonds** — `maxCount` / `maxMicros`, ce qui permet d’exprimer « supprimer
   jusqu’à 50 fichiers »
 
 Trois propriétés découlent du maintien d’une grammaire fermée et sans boucle, et

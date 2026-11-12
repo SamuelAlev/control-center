@@ -2,6 +2,7 @@ import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 /// Drift stores [DateTime] in local time, so a UTC [DateTime] round-trips as
@@ -232,6 +233,11 @@ void main() {
   });
 
   group('FleetDao scheduler queries (CROSS-WORKSPACE BY DESIGN)', () {
+    setUp(() async {
+      await seedWorker(db, 'wk-1');
+      await seedWorker(db, 'wk-2');
+    });
+
     test(
       'queuedJobsGlobal orders by priority desc then createdAt asc',
       () async {
@@ -298,6 +304,11 @@ void main() {
   });
 
   group('FleetDao lease lifecycle', () {
+    setUp(() async {
+      await seedWorker(db, 'wk-1');
+      await seedWorker(db, 'wk-2');
+    });
+
     test(
       'tryLeaseJob succeeds on a queued job and stamps lease fields',
       () async {
@@ -327,26 +338,43 @@ void main() {
     test('renewLease extends the expiry on an active job', () async {
       await seedJob('j-1', 'w-1');
       await db.fleetDao.tryLeaseJob('j-1', 'wk-1', soon, now);
-      await db.fleetDao.renewLease('j-1', later, lastAckedSeq: 7);
+      expect(
+        await db.fleetDao.renewLease('j-1', 'wk-1', later, lastAckedSeq: 7),
+        isTrue,
+      );
       final row = await db.fleetDao.jobByIdGlobal('j-1');
       expect(row?.leaseExpiresAt, sameInstant(later));
       expect(row?.lastAckedSeq, 7);
     });
 
     test('renewLease is a no-op on a terminal job', () async {
-      await seedJob('j-1', 'w-1', status: 'done');
-      await db.fleetDao.renewLease('j-1', later);
+      await seedJob('j-1', 'w-1', status: 'done', workerId: 'wk-1');
+      expect(await db.fleetDao.renewLease('j-1', 'wk-1', later), isFalse);
       final row = await db.fleetDao.jobByIdGlobal('j-1');
       expect(row?.leaseExpiresAt, isNull);
+    });
+
+    test('renewLease by a worker that lost the lease is refused', () async {
+      await seedJob('j-1', 'w-1');
+      await db.fleetDao.tryLeaseJob('j-1', 'wk-2', soon, now);
+      expect(await db.fleetDao.renewLease('j-1', 'wk-1', later), isFalse);
+      final row = await db.fleetDao.jobByIdGlobal('j-1');
+      expect(row?.leaseExpiresAt, sameInstant(soon));
     });
 
     test('markJobRunning stamps startedAt and status=running', () async {
       await seedJob('j-1', 'w-1');
       await db.fleetDao.tryLeaseJob('j-1', 'wk-1', soon, now);
-      await db.fleetDao.markJobRunning('j-1', now);
+      expect(await db.fleetDao.markJobRunning('j-1', 'wk-1', now), isTrue);
       final row = await db.fleetDao.jobByIdGlobal('j-1');
       expect(row?.status, 'running');
       expect(row?.startedAt, sameInstant(now));
+    });
+
+    test('markJobRunning never revives a cancelled job', () async {
+      await seedJob('j-1', 'w-1', status: 'cancelled', workerId: 'wk-1');
+      expect(await db.fleetDao.markJobRunning('j-1', 'wk-1', now), isFalse);
+      expect((await db.fleetDao.jobByIdGlobal('j-1'))?.status, 'cancelled');
     });
 
     test(
@@ -354,13 +382,16 @@ void main() {
       () async {
         await seedJob('j-1', 'w-1');
         await db.fleetDao.tryLeaseJob('j-1', 'wk-1', soon, now);
-        await db.fleetDao.markJobTerminal(
+        final applied = await db.fleetDao.markJobTerminal(
           'j-1',
           'done',
           now,
+          from: const ['leased', 'running'],
+          leasedTo: 'wk-1',
           resultJson: '{"branch":"main"}',
-          costCents: 42,
+          costMicros: 42,
         );
+        expect(applied, isTrue);
         final row = await db.fleetDao.jobByIdGlobal('j-1');
         expect(row?.status, 'done');
         expect(row?.finishedAt, sameInstant(now));
@@ -368,33 +399,92 @@ void main() {
         // assignment alone) but `leaseExpiresAt: Value(null)` (clears the lease).
         expect(row?.leaseExpiresAt, isNull);
         expect(row?.resultJson, '{"branch":"main"}');
-        expect(row?.costCents, 42);
+        expect(row?.costMicros, 42);
       },
     );
 
     test('markJobTerminal records the error on failure', () async {
       await seedJob('j-1', 'w-1');
-      await db.fleetDao.markJobTerminal('j-1', 'failed', now, error: 'boom');
+      await db.fleetDao.markJobTerminal(
+        'j-1',
+        'failed',
+        now,
+        from: const ['queued'],
+        error: 'boom',
+      );
       final row = await db.fleetDao.jobByIdGlobal('j-1');
       expect(row?.status, 'failed');
       expect(row?.error, 'boom');
+    });
+
+    test('markJobTerminal never overwrites a job that moved on', () async {
+      await seedJob('j-1', 'w-1', status: 'cancelled', workerId: 'wk-1');
+      expect(
+        await db.fleetDao.markJobTerminal(
+          'j-1',
+          'done',
+          now,
+          from: const ['leased', 'running'],
+          leasedTo: 'wk-1',
+        ),
+        isFalse,
+      );
+      expect((await db.fleetDao.jobByIdGlobal('j-1'))?.status, 'cancelled');
+      // Re-leased to another worker: the old worker's outcome is refused.
+      await seedJob('j-2', 'w-1', status: 'running', workerId: 'wk-2');
+      expect(
+        await db.fleetDao.markJobTerminal(
+          'j-2',
+          'failed',
+          now,
+          from: const ['leased', 'running'],
+          leasedTo: 'wk-1',
+        ),
+        isFalse,
+      );
+      expect((await db.fleetDao.jobByIdGlobal('j-2'))?.status, 'running');
     });
 
     test(
       'requeueJob moves a reaped job back to queued with incremented attempts',
       () async {
         await seedJob('j-1', 'w-1', status: 'leased', workerId: 'wk-1');
-        await db.fleetDao.requeueJob('j-1', 2);
+        expect(
+          await db.fleetDao.requeueJob(
+            'j-1',
+            2,
+            from: 'leased',
+            leasedTo: 'wk-1',
+          ),
+          isTrue,
+        );
         final row = await db.fleetDao.jobByIdGlobal('j-1');
         expect(row?.status, 'queued');
         expect(row?.workerId, isNull);
         expect(row?.leaseExpiresAt, isNull);
         expect(row?.attempts, 2);
+        // A second report of the same failure finds it requeued already.
+        expect(
+          await db.fleetDao.requeueJob(
+            'j-1',
+            3,
+            from: 'leased',
+            leasedTo: 'wk-1',
+          ),
+          isFalse,
+        );
+        expect((await db.fleetDao.jobByIdGlobal('j-1'))?.attempts, 2);
       },
     );
   });
 
   group('FleetDao placement log (workspace-scoped)', () {
+    setUp(() async {
+      await seedWorker(db, 'wk-1');
+      await seedWorker(db, 'wk-2');
+      await seedJob('j-1', 'w-1');
+    });
+
     Future<void> log(
       String id,
       String ws,

@@ -3,7 +3,7 @@ title: Seni bina
 description: Bagaimana Control Center distrukturkan dengan model pelayan klien nipis, Clean Architecture berteraskan ciri serta port dan penyesuai.
 dateModified: 2026-09-19
 slug: ms-MY/manual-pengguna/konsep/seni-bina
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Gambaran keseluruhan
@@ -100,9 +100,9 @@ Akar komposisi aplikasi (`di/providers.dart`) mengikat port sebelah klien kepada
 **Drift** (SQLite), dipecahkan kepada dua pangkalan data, kedua-duanya dalam `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — senarai pendek jadual yang benar-benar merentas seluruh pelayan: daftar ruang kerja, pengguna/keutamaan/peranti berganding, sambungan SSO, tetapan pelayan seluruh pemasangan, polisi tindakan terurus (pengapit seluruh pemasangan yang hanya boleh mengetatkan guardrail ruang kerja), suapan berita setiap pengguna, baris gilir armada (pekerja/kerja/log penempatan), indeks `workspace_routes` pra-pengesahan dan metadata pemasangan. Permulaan hanya membuka fail ini, jadi kos permulaan kekal rata tidak kira berapa banyak sejarah yang dikumpulkan oleh ruang kerja. Menambah jadual di sini ialah keputusan pengasingan yang perlu anda pertahankan melalui ujian ratchet.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — satu _direktori_ bagi setiap ruang kerja, memegang satu fail SQLite serta segala yang lain yang hanya milik ruang kerja itu, jadi worktree sesuatu perbualan dan fail ejen duduk bersebelahan pangkalan data dan dipadam bersamanya. Hampir semuanya hidup di sini: ejen, ruang, tiket, memori, pipeline, mesyuarat, graf kod, semakan, repo. Fail dibuka secara malas pada sentuhan pertama melalui `WorkspaceDatabaseManager.of(workspaceId)` dan membayar `quick_check`, pemasangan FTS/pencetus dan `vector_init` sendiri pada masa itu.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — satu _direktori_ bagi setiap ruang kerja, memegang satu fail SQLite serta segala yang lain yang hanya milik ruang kerja itu, jadi worktree sesuatu perbualan dan fail ejen duduk bersebelahan pangkalan data dan dipadam bersamanya. Hampir semuanya hidup di sini: ejen, ruang, tiket, memori, pipeline, mesyuarat, semakan, repo. Graf kod ialah fail kedua dalam direktori yang sama, `code_index.db`, yang dibina semula dan bukannya disandarkan. Fail dibuka secara malas pada sentuhan pertama melalui `WorkspaceDatabaseManager.of(workspaceId)` dan membayar `quick_check`, pemasangan FTS/pencetus dan `vector_init` sendiri pada masa itu.
 
-Kedua-dua bahagian bermula daripada garis dasar v1 yang digabungkan — `onCreate` membina skema semasa — dengan langkah migrasi hanya ditambahkan apabila pangkalan data yang telah diterapkan perlu dibawa ke hadapan.
+Kedua-dua bahagian tidak mempunyai langkah migrasi. Fail baharu dibina daripada definisi jadual. Fail daripada versi lama mula-mula disalin ke tepi (`pre_upgrade/`) dan kemudian dibawa kepada definisi yang sama apabila ia dibuka, supaya pemasangan baharu dan pemasangan yang dikemas kini berakhir dengan skema yang sama. Fail yang ditulis oleh versi yang lebih baharu ditolak.
 
 Kerana satu ruang kerja ialah satu fail, mengeksport ruang kerja ialah satu pernyataan `VACUUM INTO` (`workspace.export`), bukan lambakan jadual demi jadual; `workspace.import` menerima pakai fail sedemikian dan menggunakan `workspace_meta` terbenam untuk membezakan failnya sendiri yang diterima pakai semula daripada fail yang datang daripada pemasangan lain.
 

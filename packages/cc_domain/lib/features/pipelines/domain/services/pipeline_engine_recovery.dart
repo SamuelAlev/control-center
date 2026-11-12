@@ -35,6 +35,17 @@ extension _PipelineRecovery on PipelineEngine {
     );
 
     for (final staleRun in runs) {
+      // A run that holds no pinned graph cannot be continued by anyone: left
+      // as it is, it would read "running" forever and keep a slot of its
+      // template's parallel cap. Queued ones are cancelled by admission.
+      if (staleRun.templateSnapshot == null) {
+        await _failRun(
+          staleRun,
+          'This run no longer holds the pipeline definition it started '
+          'with, so it cannot continue. Start it again.',
+        );
+        continue;
+      }
       // PRD 25 §6: the app was down between the crash and this resume; that gap
       // is idle, not active. Re-stamp lastResumedAt = now so the downtime is
       // excluded from the run's active duration. The pre-crash running segment
@@ -69,14 +80,7 @@ extension _PipelineRecovery on PipelineEngine {
         attemptCount: isNewAttempt ? staleRun.attemptCount + 1 : null,
       );
       await repository.updateRun(run);
-      final definition = await _definitionFor(run);
-      if (definition == null) {
-        CcDomainLog.warning(
-          'PipelineEngine: Cannot resume run ${run.id}: it has no pinned '
-          'template snapshot',
-        );
-        continue;
-      }
+      final definition = staleRun.templateSnapshot!;
 
       // A backstop failure below fails the whole run (and closes out its other
       // open rows), so the remaining steps of this run must not be resumed.

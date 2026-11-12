@@ -2,7 +2,7 @@
 title: การวิเคราะห์การใช้งาน
 description: สิ่งที่ Control Center บันทึกเมื่อเปิดการวิเคราะห์การใช้งาน ใครเป็นผู้ตัดสินใจ และสิ่งใดที่ไม่มีวันถูกส่งออกไป
 slug: th-TH/คู่มือ/อ้างอิง/การวิเคราะห์การใช้งาน
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center สามารถส่ง **เหตุการณ์การใช้งานแบบใช้นามแฝง** ไปยังอินสแตนซ์ [Umami](https://umami.is) ได้ การวิเคราะห์การใช้งาน **ปิดอยู่จนกว่าผู้ดูแลเซิร์ฟเวอร์จะเปิด** การตั้งค่านี้เป็นของเซิร์ฟเวอร์และมีผลกับทุกไคลเอนต์ที่เชื่อมต่ออยู่ ได้แก่ แอปเดสก์ท็อป เว็บแอป โทรศัพท์ และตัวเซิร์ฟเวอร์เอง
@@ -109,7 +109,7 @@ ID ถูกส่งไป แต่ในรูปของนามแฝง�
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | สกิลของเวิร์กสเปซมีการเปลี่ยนแปลง |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | ข้อเสนอการประสานงานได้รับการตอบกลับ |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | แผนได้รับการอนุมัติหรือถูกปฏิเสธ (โทรศัพท์) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | เป้าหมายหรือลูปที่มีการกำกับดูแลเริ่มต้น (โทรศัพท์) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | เป้าหมายหรือลูปที่มีการกำกับดูแลเริ่มต้น (โทรศัพท์) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | บทสนทนาถูกสร้างหรือแตกแขนง |
 | `conversation_rewound` | `conversation_id` | บทสนทนาถูกทำต่อจากข้อความก่อนหน้า |
 | `space_archived` | `workspace_id`, `space_id` | สเปซถูกเก็บถาวร |
@@ -128,7 +128,7 @@ ID ถูกส่งไป แต่ในรูปของนามแฝง�
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | การรันของเอเจนต์เสร็จสิ้น |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | เอเจนต์หยุดเพื่อรอผู้ใช้ |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | นโยบายการกระทำปฏิเสธการกระทำของเอเจนต์ |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | การรันไปป์ไลน์สิ้นสุด `trigger` คือ `manual` ประเภทของเหตุการณ์ที่เริ่มการรัน หรือเพียงชนิดของทริกเกอร์ที่ตั้งชื่อไว้ (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | การรันไปป์ไลน์สิ้นสุด `trigger` คือ `manual` ประเภทของเหตุการณ์ที่เริ่มการรัน หรือเพียงชนิดของทริกเกอร์ที่ตั้งชื่อไว้ (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | มีการเผยแพร่ pull request จากสเปซ |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | pull request ที่เอเจนต์เปิดถูก merge |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | บันทึกการประชุมถูกบันทึกไว้ |
@@ -142,7 +142,7 @@ ID ถูกส่งไป แต่ในรูปของนามแฝง�
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | สกิลของเวิร์กสเปซถูกติดตั้ง อัปเดต หรือเปลี่ยนแปลงบนดิสก์ |
 | `calendar_auth_expired` | `workspace_id` | การเชื่อมต่อปฏิทินต้องลงชื่อเข้าใช้ใหม่ |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | กิจกรรมในปฏิทินกำลังจะเริ่ม |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | การใช้จ่ายข้ามเกณฑ์งบประมาณ |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | การใช้จ่ายข้ามเกณฑ์งบประมาณ |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | มีการขอรีวิวบน PR ที่ติดตามอยู่ |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | ผลการตัดสินรีวิวของ PR ที่ติดตามอยู่เปลี่ยนไป |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | PR ที่ไม่ได้เปิดโดยเอเจนต์ถูก merge ในรีโพซิทอรีที่เชื่อมไว้ |

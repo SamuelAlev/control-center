@@ -172,7 +172,6 @@ List<DemoObservabilityRun> buildDemoObservabilityRuns(DateTime now) {
         cachedReadTokens: 4200,
         cachedWriteTokens: 640,
         thoughtTokens: 180,
-        estimatedCostCents: 18,
         costMicros: 180000,
       ),
     ),
@@ -225,7 +224,7 @@ List<DemoEvalSeed> buildDemoEvalSeeds(String workspaceId, DateTime now) {
     required int batch,
     required double passRate,
     required String status,
-    required int costCents,
+    required int costMicros,
     required String triggeredBy,
   }) {
     final created = now.subtract(Duration(hours: hoursAgo));
@@ -237,7 +236,7 @@ List<DemoEvalSeed> buildDemoEvalSeeds(String workspaceId, DateTime now) {
       batchSize: batch,
       passRate: passRate,
       status: status,
-      costCents: costCents,
+      costMicros: costMicros,
       triggeredBy: triggeredBy,
       createdAt: created,
       startedAt: created,
@@ -267,7 +266,7 @@ List<DemoEvalSeed> buildDemoEvalSeeds(String workspaceId, DateTime now) {
           batch: 8,
           passRate: 0.75,
           status: 'failed',
-          costCents: 186,
+          costMicros: 1860000,
           triggeredBy: 'ci',
         ),
         run(
@@ -277,7 +276,7 @@ List<DemoEvalSeed> buildDemoEvalSeeds(String workspaceId, DateTime now) {
           batch: 8,
           passRate: 0.875,
           status: 'done',
-          costCents: 164,
+          costMicros: 1640000,
           triggeredBy: 'canary',
         ),
         run(
@@ -287,7 +286,7 @@ List<DemoEvalSeed> buildDemoEvalSeeds(String workspaceId, DateTime now) {
           batch: 8,
           passRate: 1,
           status: 'done',
-          costCents: 142,
+          costMicros: 1420000,
           triggeredBy: 'manual',
         ),
       ],
@@ -311,7 +310,7 @@ List<DemoEvalSeed> buildDemoEvalSeeds(String workspaceId, DateTime now) {
           batch: 5,
           passRate: 0.8,
           status: 'done',
-          costCents: 96,
+          costMicros: 960000,
           triggeredBy: 'ci',
         ),
         run(
@@ -321,7 +320,7 @@ List<DemoEvalSeed> buildDemoEvalSeeds(String workspaceId, DateTime now) {
           batch: 5,
           passRate: 0.6,
           status: 'failed',
-          costCents: 110,
+          costMicros: 1100000,
           triggeredBy: 'manual',
         ),
       ],
@@ -423,7 +422,7 @@ List<DemoFleetJobSeed> buildDemoFleetJobs(String workspaceId, DateTime now) {
         priority: 10,
         attempts: 1,
         maxAttempts: 2,
-        costCents: 142,
+        costMicros: 1420000,
         agentId: 'demo-agent-reviewer',
         createdAt: now.subtract(const Duration(hours: 6, minutes: 10)),
         leasedAt: now.subtract(const Duration(hours: 6, minutes: 8)),
@@ -448,7 +447,7 @@ List<DemoFleetJobSeed> buildDemoFleetJobs(String workspaceId, DateTime now) {
         status: JobStatus.done,
         workerId: 'demo-worker-eval-b',
         attempts: 1,
-        costCents: 64,
+        costMicros: 640000,
         agentId: 'demo-agent-reviewer',
         createdAt: now.subtract(const Duration(hours: 5)),
         startedAt: now.subtract(const Duration(hours: 4, minutes: 50)),
@@ -490,7 +489,7 @@ List<DemoFleetJobSeed> buildDemoFleetJobs(String workspaceId, DateTime now) {
         workerId: 'demo-worker-batch',
         attempts: 2,
         maxAttempts: 2,
-        costCents: 40,
+        costMicros: 400000,
         error: 'Worker started draining before the benchmark shard finished.',
         createdAt: now.subtract(const Duration(hours: 2)),
         startedAt: now.subtract(const Duration(hours: 1, minutes: 40)),
@@ -574,7 +573,8 @@ DemoObservabilityRun _completedRun({
   final cacheWrite = 200 + random.nextInt(1400);
   final seconds = 22 + random.nextInt(failed ? 40 : 160);
   final (inPerM, outPerM) = _rates(model);
-  final cents = (input * inPerM + (output + thought) * outPerM) ~/ 1000000;
+  // One token at 1 USD per million tokens is one micro-dollar.
+  final micros = (input * inPerM + (output + thought) * outPerM).round();
   return DemoObservabilityRun(
     id: id,
     agentIndex: _agentFor(model, random),
@@ -601,8 +601,7 @@ DemoObservabilityRun _completedRun({
       thoughtTokens: thought,
       cachedReadTokens: cacheRead,
       cachedWriteTokens: cacheWrite,
-      estimatedCostCents: cents < 1 ? 1 : cents,
-      costMicros: (cents < 1 ? 1 : cents) * 10000,
+      costMicros: micros,
       durationMs: seconds * 1000,
       timeToFirstTokenMs: 280 + random.nextInt(2200),
     ),
@@ -645,11 +644,12 @@ int _inputTokens(String model, Random random) {
   return base + random.nextInt(base);
 }
 
-(int, int) _rates(String model) => switch (model) {
-  kDemoModelOpus => (1500, 7500),
-  kDemoModelFable => (300, 1500),
-  kDemoModelGrok => (500, 2500),
-  _ => (100, 400),
+/// Input and output prices in USD per million tokens.
+(double, double) _rates(String model) => switch (model) {
+  kDemoModelOpus => (15, 75),
+  kDemoModelFable => (3, 15),
+  kDemoModelGrok => (5, 25),
+  _ => (1, 4),
 };
 
 List<DemoObservabilityRun> _pinRecentCompleted(

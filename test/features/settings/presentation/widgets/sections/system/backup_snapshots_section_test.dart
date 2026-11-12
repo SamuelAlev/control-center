@@ -1,9 +1,12 @@
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/media_proxy_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_snapshots_section.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
@@ -29,6 +32,7 @@ void main() {
     bool complete = true,
     List<Map<String, dynamic>> workspaces = const [],
     List<String> skipped = const [],
+    String? pinnedReason,
   }) => {
     'path': '/data/backups/$name',
     'name': name,
@@ -37,6 +41,7 @@ void main() {
     'complete': complete,
     'workspaces': workspaces,
     'skipped_workspace_ids': skipped,
+    'pinned_reason': ?pinnedReason,
   };
 
   Widget wrap(
@@ -44,6 +49,7 @@ void main() {
     List<Workspace> workspaces = const [],
     MediaProxyConfig? proxy,
     bool owner = true,
+    TextDirection textDirection = TextDirection.ltr,
   }) {
     return ProviderScope(
       overrides: [
@@ -54,11 +60,14 @@ void main() {
       ],
       child: CcTheme(
         data: CcThemeData.light(),
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SingleChildScrollView(child: BackupSnapshotsSection()),
+          home: Directionality(
+            textDirection: textDirection,
+            child: const Scaffold(
+              body: SingleChildScrollView(child: BackupSnapshotsSection()),
+            ),
           ),
         ),
       ),
@@ -80,7 +89,9 @@ void main() {
     expect(find.text('good'), findsOneWidget);
     expect(find.text('interrupted'), findsOneWidget);
     expect(find.text('Complete'), findsOneWidget);
-    expect(find.text('Incomplete'), findsOneWidget);
+    // "Unverified", not "Failed": an incomplete entry may simply predate
+    // checksums.
+    expect(find.text('Unverified'), findsOneWidget);
     expect(find.text('1 workspace not captured'), findsOneWidget);
   });
 
@@ -339,5 +350,95 @@ void main() {
           .onPressed,
       isNull,
     );
+  });
+
+  testWidgets('the last good copy of a damaged workspace says why it stays', (
+    tester,
+  ) async {
+    final host = FakeRpcHost();
+    host.onCall = (op, args) => {
+      'backups': [
+        snapshot(name: 'kept', pinnedReason: 'last_good_copy'),
+        snapshot(name: 'plain'),
+      ],
+    };
+
+    await tester.pumpWidget(wrap(host));
+    await tester.pumpAndSettle();
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(BackupSnapshotsSection)),
+    );
+    expect(find.text(l10n.backupSnapshotLastGoodCopy), findsOneWidget);
+
+    await tester.tap(find.text('kept'));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.backupSnapshotLastGoodCopyNote), findsOneWidget);
+    // Deleting it by hand is allowed; the callout says what it costs.
+    expect(find.text(l10n.backupDeleteLastGoodCopyDescription), findsOneWidget);
+    expect(find.text(l10n.backupDeleteSnapshotDescription), findsNothing);
+  });
+
+  testWidgets('a refused restore is worded in place by its kind', (
+    tester,
+  ) async {
+    final host = FakeRpcHost();
+    host.onCall = (op, args) {
+      if (op == 'workspace.import') {
+        throw RemoteRpcException(
+          RpcErrorCodes.validation,
+          'The file is damaged',
+          {'kind': 'import.damaged'},
+        );
+      }
+      return {
+        'backups': [
+          snapshot(
+            name: 'snap',
+            workspaces: [
+              {
+                'workspace_id': 'ws-1',
+                'path': '/data/backups/snap/ws-1/workspace.db',
+                'bytes': 2048,
+              },
+            ],
+          ),
+        ],
+      };
+    };
+
+    await tester.pumpWidget(
+      wrap(host, workspaces: [workspace('ws-1', 'Control Center')]),
+    );
+    await tester.pumpAndSettle();
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(BackupSnapshotsSection)),
+    );
+    await tester.tap(find.text('snap'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CcButton, 'Restore'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(CcTextField).last, 'Control Center');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CcButton, 'Restore').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BackupRestoreRefusal), findsOneWidget);
+    expect(find.text(l10n.refusalImportDamaged), findsOneWidget);
+    expect(find.text('The file is damaged'), findsNothing);
+  });
+
+  testWidgets('a pinned snapshot reads right to left too', (tester) async {
+    final host = FakeRpcHost();
+    host.onCall = (op, args) => {
+      'backups': [snapshot(name: 'kept', pinnedReason: 'last_good_copy')],
+    };
+
+    await tester.pumpWidget(wrap(host, textDirection: TextDirection.rtl));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('kept'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Last good copy'), findsOneWidget);
   });
 }

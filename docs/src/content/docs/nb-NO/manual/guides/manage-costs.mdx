@@ -2,14 +2,14 @@
 title: Administrer kostnader
 description: Se hva agentene dine bruker, sett et tak på en autonom kjøring og kutt tokenbruken.
 slug: nb-NO/handbok/slik-gjor-du/administrer-kostnader
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Denne veiledningen viser hvordan du ser hva agentkjøringer koster, og hvordan du setter et tak på en autonom kjøring.
 
 ## Hvordan kostnader registreres
 
-Hver agentkjøring skriver en kjørelogg som inneholder inndatatokens, utdatatokens, resonneringstokens, bufferleste og bufferskrevne tokens, en estimert kostnad i cent og kostnaden for eventuelle underagenter den startet.
+Hver agentkjøring skriver en kjørelogg som inneholder inndatatokens, utdatatokens, resonneringstokens, bufferleste og bufferskrevne tokens, en estimert kostnad i mikrodollar (milliondeler av en amerikansk dollar) og kostnaden for eventuelle underagenter den startet.
 
 Prisene kommer fra katalogen til models.dev, som bare brukes til å berike modellisten med pris og kontekstvindu — aldri som kilde til modell-id-er. En modell katalogen ikke kan prise, registrerer **$0**, og kjøringer uten kostnad holdes utenfor **Bruk og kostnad**-sammendraget. En lokal Ollama-modell viser derfor ikke noe forbruk i det hele tatt, selv om tokentallene fortsatt registreres. En fastprisordning (kimi-code, et Claude-abonnement) er likestilt bare når katalogen ikke har en pris for modellen som betjente kjøringen; har den det, estimeres kjøringen likevel etter disse satsene. Under en reservekjede prises kjøringen etter modellen som faktisk betjente den, ikke den som ble forespurt.
 
@@ -78,7 +78,7 @@ Modell er et felt per agent, så en formaterings- eller prioriteringsagent kan k
 
 ## Hva som skjer hvis et budsjett settes utenom normalen
 
-For fullstendighetens skyld: hvis `monthlyBudgetCents` eller en budsjettpolicy skrives direkte til en agentrad:
+For fullstendighetens skyld: hvis `monthlyBudgetMicros` eller en budsjettpolicy skrives direkte til en agentrad:
 
 - Budsjetter vurderes **etter** at en kjøring er fullført, ikke før utsending. En lytter på kjøringsfullføring sammenligner agentens forbruk så langt i måneden mot taket.
 - Å krysse den myke terskelen (80 % som standard) registrerer en varselhendelse og utløser en `BudgetThresholdCrossed`-hendelse du kan henge en pipeline-utløser på.

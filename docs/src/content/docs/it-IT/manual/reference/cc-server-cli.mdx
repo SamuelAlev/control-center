@@ -2,7 +2,7 @@
 title: CLI di cc_server
 description: Ogni flag, variabile d'ambiente, sottocomando e percorso della directory dei dati del server headless.
 slug: it-IT/manuale/riferimento/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Ogni parametro del processo accetta un flag CLI o una variabile d'ambiente; vince
@@ -249,12 +249,16 @@ su macOS, `%APPDATA%\control-center` su Windows e `$XDG_DATA_HOME/control-center
 alla cwd viene usato solo quando non si risolve alcuna directory home o dei dati
 applicativi.
 
+Il server mantiene la directory dei dati privata per il proprio account (`0700`). Si rifiuta di avviarsi (codice di uscita `78`) quando non può farlo, quando `global.db` è danneggiato o è stato scritto da una versione più recente, o quando non può leggere il proprio file di identità.
+
 | Percorso                          | Contenuto                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Il registro degli spazi di lavoro, gli utenti, i dispositivi associati, il feed di notizie e la coda della flotta |
-| `<workspaceId>/workspace.db`      | Un database per spazio di lavoro — agenti, spazi, ticket, memoria, il grafo del codice |
+| `<workspaceId>/workspace.db`      | Un database per spazio di lavoro — agenti, spazi, ticket, memoria |
+| `<workspaceId>/code_index.db` | Il grafo del codice di quello spazio di lavoro. Viene ricostruito quando manca, e non entra mai in un backup |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Le due copie più recenti di un database precedente a un aggiornamento che ne ha cambiato il formato |
 | `<workspaceId>/chat_credentials/` | Token dei bot di chat, come JSON in chiaro, così seguono lo spazio di lavoro     |
-| `secrets.json`                    | Chiavi di abbinamento, la chiave di installazione Connect, le app dei provider, gli accessi delle persone (sigillati quando avvengono tramite Connect), SSO (`0600`) |
+| `secrets.json`                    | Chiavi di abbinamento, la chiave di installazione Connect, le app dei provider, gli accessi delle persone (sigillati quando avvengono tramite Connect), segreti dei webhook, SSO (`0600`) |
 | `backups/<timestamp>/`            | Un'istantanea dell'installazione — `manifest.json`, `global.db` e una copia di ogni spazio di lavoro |
 | `backups/exports/`                | Esportazioni di singoli spazi di lavoro, `<workspaceId>-<timestamp>.db`          |
 | `backups/transfer/`               | Banco di lavoro per i download e gli upload dei backup; ripulito dalla route che vi scrive |

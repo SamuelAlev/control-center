@@ -31,7 +31,7 @@ RunCost _cost({
   int reasoning = 0,
   int cacheRead = 0,
   int cacheWrite = 0,
-  int cents = 0,
+  int micros = 0,
 }) {
   return RunCost(
     inputTokens: input,
@@ -39,7 +39,7 @@ RunCost _cost({
     thoughtTokens: reasoning,
     cachedReadTokens: cacheRead,
     cachedWriteTokens: cacheWrite,
-    estimatedCostCents: cents,
+    costMicros: micros,
   );
 }
 
@@ -54,7 +54,7 @@ void main() {
       expect(zero.reasoning, 0);
       expect(zero.cacheRead, 0);
       expect(zero.cacheWrite, 0);
-      expect(zero.costCents, 0);
+      expect(zero.costMicros, 0);
       expect(zero.total, 0);
     });
 
@@ -65,7 +65,7 @@ void main() {
         reasoning: 4,
         cacheRead: 8,
         cacheWrite: 16,
-        costCents: 999,
+        costMicros: 999,
       );
       expect(t.total, 31);
     });
@@ -80,7 +80,7 @@ void main() {
             reasoning: 30,
             cacheRead: 40,
             cacheWrite: 50,
-            cents: 7,
+            micros: 7,
           ),
         );
         expect(t.input, 10);
@@ -88,7 +88,7 @@ void main() {
         expect(t.reasoning, 30);
         expect(t.cacheRead, 40);
         expect(t.cacheWrite, 50);
-        expect(t.costCents, 7);
+        expect(t.costMicros, 7);
         expect(t.total, 150);
       },
     );
@@ -100,7 +100,7 @@ void main() {
         reasoning: 3,
         cacheRead: 4,
         cacheWrite: 5,
-        costCents: 6,
+        costMicros: 6,
       );
       const b = TokenAxisTotals(
         input: 10,
@@ -108,7 +108,7 @@ void main() {
         reasoning: 30,
         cacheRead: 40,
         cacheWrite: 50,
-        costCents: 60,
+        costMicros: 60,
       );
       final sum = a + b;
       expect(sum.input, 11);
@@ -116,13 +116,13 @@ void main() {
       expect(sum.reasoning, 33);
       expect(sum.cacheRead, 44);
       expect(sum.cacheWrite, 55);
-      expect(sum.costCents, 66);
+      expect(sum.costMicros, 66);
     });
 
     test('== and hashCode are structural', () {
-      const a = TokenAxisTotals(input: 1, costCents: 2);
-      const b = TokenAxisTotals(input: 1, costCents: 2);
-      const c = TokenAxisTotals(input: 1, costCents: 3);
+      const a = TokenAxisTotals(input: 1, costMicros: 2);
+      const b = TokenAxisTotals(input: 1, costMicros: 2);
+      const c = TokenAxisTotals(input: 1, costMicros: 3);
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
       expect(a, isNot(equals(c)));
@@ -132,14 +132,14 @@ void main() {
   group('RoleCostBreakdown', () {
     test('cost getters read each role bucket and total sums them', () {
       const breakdown = RoleCostBreakdown(
-        main: TokenAxisTotals(costCents: 100),
-        sub: TokenAxisTotals(costCents: 30),
-        advisor: TokenAxisTotals(costCents: 5),
+        main: TokenAxisTotals(costMicros: 100),
+        sub: TokenAxisTotals(costMicros: 30),
+        advisor: TokenAxisTotals(costMicros: 5),
       );
-      expect(breakdown.mainCostCents, 100);
-      expect(breakdown.subCostCents, 30);
-      expect(breakdown.advisorCostCents, 5);
-      expect(breakdown.totalCostCents, 135);
+      expect(breakdown.mainCostMicros, 100);
+      expect(breakdown.subCostMicros, 30);
+      expect(breakdown.advisorCostMicros, 5);
+      expect(breakdown.totalCostMicros, 135);
     });
 
     test('defaults to zero buckets', () {
@@ -147,13 +147,13 @@ void main() {
       expect(breakdown.main, TokenAxisTotals.zero);
       expect(breakdown.sub, TokenAxisTotals.zero);
       expect(breakdown.advisor, TokenAxisTotals.zero);
-      expect(breakdown.totalCostCents, 0);
+      expect(breakdown.totalCostMicros, 0);
     });
 
     test('== and hashCode are structural', () {
-      const a = RoleCostBreakdown(main: TokenAxisTotals(costCents: 1));
-      const b = RoleCostBreakdown(main: TokenAxisTotals(costCents: 1));
-      const c = RoleCostBreakdown(main: TokenAxisTotals(costCents: 2));
+      const a = RoleCostBreakdown(main: TokenAxisTotals(costMicros: 1));
+      const b = RoleCostBreakdown(main: TokenAxisTotals(costMicros: 1));
+      const c = RoleCostBreakdown(main: TokenAxisTotals(costMicros: 2));
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
       expect(a, isNot(equals(c)));
@@ -220,9 +220,9 @@ void main() {
   group('TokenAxisAggregator.aggregate — totals', () {
     test('grand totals sum every axis and cost across all runs', () {
       final result = aggregator.aggregate([
-        _run(id: 'a', cost: _cost(input: 10, output: 5, cents: 3)),
-        _run(id: 'b', cost: _cost(reasoning: 7, cacheRead: 2, cents: 4)),
-        _run(id: 'c', cost: _cost(cacheWrite: 9, cents: 1)),
+        _run(id: 'a', cost: _cost(input: 10, output: 5, micros: 3)),
+        _run(id: 'b', cost: _cost(reasoning: 7, cacheRead: 2, micros: 4)),
+        _run(id: 'c', cost: _cost(cacheWrite: 9, micros: 1)),
       ]);
       expect(result.runCount, 3);
       expect(result.totals.input, 10);
@@ -230,7 +230,7 @@ void main() {
       expect(result.totals.reasoning, 7);
       expect(result.totals.cacheRead, 2);
       expect(result.totals.cacheWrite, 9);
-      expect(result.totals.costCents, 8);
+      expect(result.totals.costMicros, 8);
       expect(result.totals.total, 33);
     });
   });
@@ -241,37 +241,37 @@ void main() {
         _run(
           id: 'm1',
           role: AgentRunRole.main,
-          cost: _cost(input: 100, cents: 50),
+          cost: _cost(input: 100, micros: 50),
         ),
         _run(
           id: 'm2',
           role: AgentRunRole.main,
-          cost: _cost(input: 10, cents: 5),
+          cost: _cost(input: 10, micros: 5),
         ),
         _run(
           id: 's1',
           role: AgentRunRole.sub,
-          cost: _cost(output: 20, cents: 8),
+          cost: _cost(output: 20, micros: 8),
         ),
         _run(
           id: 'adv',
           role: AgentRunRole.advisor,
-          cost: _cost(reasoning: 3, cents: 2),
+          cost: _cost(reasoning: 3, micros: 2),
         ),
       ]);
 
       expect(result.byRole.main.input, 110);
-      expect(result.byRole.mainCostCents, 55);
+      expect(result.byRole.mainCostMicros, 55);
       expect(result.byRole.sub.output, 20);
-      expect(result.byRole.subCostCents, 8);
+      expect(result.byRole.subCostMicros, 8);
       expect(result.byRole.advisor.reasoning, 3);
-      expect(result.byRole.advisorCostCents, 2);
-      expect(result.byRole.totalCostCents, 65);
+      expect(result.byRole.advisorCostMicros, 2);
+      expect(result.byRole.totalCostMicros, 65);
     });
 
     test('a role with no runs stays at zero', () {
       final result = aggregator.aggregate([
-        _run(role: AgentRunRole.main, cost: _cost(input: 1, cents: 1)),
+        _run(role: AgentRunRole.main, cost: _cost(input: 1, micros: 1)),
       ]);
       expect(result.byRole.sub, TokenAxisTotals.zero);
       expect(result.byRole.advisor, TokenAxisTotals.zero);
@@ -283,10 +283,10 @@ void main() {
       'groups by modelId (with adapter fallback) and sorts by cost descending',
       () {
         final result = aggregator.aggregate([
-          _run(id: 'a', modelId: 'cheap-m', cost: _cost(input: 1, cents: 5)),
-          _run(id: 'b', modelId: 'pricey-m', cost: _cost(input: 1, cents: 40)),
-          _run(id: 'c', modelId: 'cheap-m', cost: _cost(input: 1, cents: 5)),
-          _run(id: 'd', modelId: 'mid-m', cost: _cost(input: 1, cents: 20)),
+          _run(id: 'a', modelId: 'cheap-m', cost: _cost(input: 1, micros: 5)),
+          _run(id: 'b', modelId: 'pricey-m', cost: _cost(input: 1, micros: 40)),
+          _run(id: 'c', modelId: 'cheap-m', cost: _cost(input: 1, micros: 5)),
+          _run(id: 'd', modelId: 'mid-m', cost: _cost(input: 1, micros: 20)),
         ]);
 
         expect(result.byModel.map((m) => m.model).toList(), [
@@ -295,11 +295,11 @@ void main() {
           'cheap-m',
         ]);
         expect(result.byModel[0].runs, 1);
-        expect(result.byModel[0].tokens.costCents, 40);
+        expect(result.byModel[0].tokens.costMicros, 40);
         // cheap-m appears twice -> 2 runs, summed cost 10.
         final cheap = result.byModel.firstWhere((m) => m.model == 'cheap-m');
         expect(cheap.runs, 2);
-        expect(cheap.tokens.costCents, 10);
+        expect(cheap.tokens.costMicros, 10);
         expect(cheap.tokens.input, 2);
       },
     );
@@ -311,10 +311,10 @@ void main() {
           id: 'a',
           adapter: 'claude',
           modelId: 'claude-opus-4-5',
-          cost: _cost(input: 1, cents: 10),
+          cost: _cost(input: 1, micros: 10),
         ),
         // No modelId: falls back to adapter.
-        _run(id: 'b', adapter: 'claude', cost: _cost(input: 1, cents: 3)),
+        _run(id: 'b', adapter: 'claude', cost: _cost(input: 1, micros: 3)),
       ]);
 
       final models = result.byModel.map((m) => m.model).toSet();
@@ -323,23 +323,23 @@ void main() {
         (m) => m.model == 'claude-opus-4-5',
       );
       expect(byModel.runs, 1);
-      expect(byModel.tokens.costCents, 10);
+      expect(byModel.tokens.costMicros, 10);
       final byAdapter = result.byModel.firstWhere((m) => m.model == 'claude');
       expect(byAdapter.runs, 1);
-      expect(byAdapter.tokens.costCents, 3);
+      expect(byAdapter.tokens.costMicros, 3);
     });
 
     test('a missing adapter and modelId is grouped under "unknown"', () {
       final result = aggregator.aggregate([
-        _run(id: 'a', cost: _cost(input: 1, cents: 1)),
-        _run(id: 'b', adapter: 'claude', cost: _cost(input: 1, cents: 2)),
-        _run(id: 'c', cost: _cost(input: 1, cents: 1)),
+        _run(id: 'a', cost: _cost(input: 1, micros: 1)),
+        _run(id: 'b', adapter: 'claude', cost: _cost(input: 1, micros: 2)),
+        _run(id: 'c', cost: _cost(input: 1, micros: 1)),
       ]);
       final unknown = result.byModel.firstWhere(
         (m) => m.model == TokenAxisAggregator.unknownModel,
       );
       expect(unknown.runs, 2);
-      expect(unknown.tokens.costCents, 2);
+      expect(unknown.tokens.costMicros, 2);
       expect(unknown.model, 'unknown');
     });
   });
@@ -350,18 +350,18 @@ void main() {
         _run(
           id: 'late',
           startedAt: DateTime(2026, 3, 5, 23, 59),
-          cost: _cost(input: 2, cents: 2),
+          cost: _cost(input: 2, micros: 2),
         ),
         _run(
           id: 'early',
           startedAt: DateTime(2026, 3, 1, 0, 1),
-          cost: _cost(input: 1, cents: 1),
+          cost: _cost(input: 1, micros: 1),
         ),
         // Same calendar day as 'late' but a different time of day.
         _run(
           id: 'sameDay',
           startedAt: DateTime(2026, 3, 5, 8),
-          cost: _cost(input: 3, cents: 3),
+          cost: _cost(input: 3, micros: 3),
         ),
       ]);
 
@@ -375,7 +375,7 @@ void main() {
       // March 5 collapses the two runs (different times, same day).
       expect(result.byDay[1].runs, 2);
       expect(result.byDay[1].tokens.input, 5);
-      expect(result.byDay[1].tokens.costCents, 5);
+      expect(result.byDay[1].tokens.costMicros, 5);
       // The day key carries no time component.
       expect(result.byDay[1].day.hour, 0);
       expect(result.byDay[1].day.minute, 0);
@@ -461,58 +461,58 @@ void main() {
             role: AgentRunRole.main,
             modelId: 'claude-opus-4-5',
             startedAt: DateTime(2026, 2, 1, 9),
-            cost: _cost(input: 100, output: 50, cents: 25),
+            cost: _cost(input: 100, output: 50, micros: 25),
           ),
           _run(
             id: '2',
             role: AgentRunRole.sub,
             modelId: 'claude-opus-4-5',
             startedAt: DateTime(2026, 2, 1, 18),
-            cost: _cost(input: 10, reasoning: 5, cents: 7),
+            cost: _cost(input: 10, reasoning: 5, micros: 7),
           ),
           _run(
             id: '3',
             role: AgentRunRole.advisor,
             modelId: 'codex-1',
             startedAt: DateTime(2026, 2, 2, 9),
-            cost: _cost(output: 20, cacheRead: 8, cents: 3),
+            cost: _cost(output: 20, cacheRead: 8, micros: 3),
           ),
           _run(
             id: '4',
             role: AgentRunRole.main,
             startedAt: DateTime(2026, 2, 2, 11),
-            cost: _cost(cacheWrite: 4, cents: 1),
+            cost: _cost(cacheWrite: 4, micros: 1),
           ),
         ];
         final result = aggregator.aggregate(runs);
 
         expect(result.runCount, 4);
-        expect(result.totals.costCents, 36);
+        expect(result.totals.costMicros, 36);
 
         // Role attribution reconciles to the grand total.
-        expect(result.byRole.totalCostCents, result.totals.costCents);
+        expect(result.byRole.totalCostMicros, result.totals.costMicros);
 
         // Model attribution reconciles to the grand total.
         final modelCost = result.byModel.fold<int>(
           0,
-          (sum, m) => sum + m.tokens.costCents,
+          (sum, m) => sum + m.tokens.costMicros,
         );
-        expect(modelCost, result.totals.costCents);
+        expect(modelCost, result.totals.costMicros);
         final modelRuns = result.byModel.fold<int>(0, (sum, m) => sum + m.runs);
         expect(modelRuns, result.runCount);
 
         // Day attribution reconciles to the grand total.
         final dayCost = result.byDay.fold<int>(
           0,
-          (sum, d) => sum + d.tokens.costCents,
+          (sum, d) => sum + d.tokens.costMicros,
         );
-        expect(dayCost, result.totals.costCents);
+        expect(dayCost, result.totals.costMicros);
         final dayRuns = result.byDay.fold<int>(0, (sum, d) => sum + d.runs);
         expect(dayRuns, result.runCount);
 
         // claude-opus-4-5 (25 + 7 = 32) outranks codex-1 (3) and unknown (1).
         expect(result.byModel.first.model, 'claude-opus-4-5');
-        expect(result.byModel.first.tokens.costCents, 32);
+        expect(result.byModel.first.tokens.costMicros, 32);
         expect(result.byModel.first.runs, 2);
 
         // Two distinct days, ascending.

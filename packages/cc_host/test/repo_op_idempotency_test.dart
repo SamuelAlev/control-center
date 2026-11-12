@@ -1,27 +1,60 @@
+import 'dart:async';
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:test/test.dart';
 
-/// An in-memory [WriteLedgerPort] for the dispatcher idempotency tests.
+/// An in-memory [WriteLedgerPort] for the dispatcher idempotency tests. A key
+/// mapped to null is claimed and not yet completed.
 class _FakeLedger implements WriteLedgerPort {
-  final Map<String, Map<String, dynamic>> _rows = {};
+  final Map<String, Map<String, dynamic>?> _rows = {};
   int records = 0;
+  int releases = 0;
 
   String _k(String ws, String key) => '$ws|$key';
 
-  @override
-  Future<Map<String, dynamic>?> find(String workspaceId, String key) async =>
-      _rows[_k(workspaceId, key)];
+  bool holds(String ws, String key) => _rows.containsKey(_k(ws, key));
 
   @override
-  Future<void> record({
+  Future<WriteLedgerClaim> claim({
     required String workspaceId,
     required String key,
     required String opName,
+  }) async {
+    final k = _k(workspaceId, key);
+    if (!_rows.containsKey(k)) {
+      _rows[k] = null;
+      return const LedgerClaimed();
+    }
+    final data = _rows[k];
+    return data == null ? const LedgerInProgress() : LedgerReplay(data);
+  }
+
+  @override
+  Future<bool> complete({
+    required String workspaceId,
+    required String key,
     required Map<String, dynamic> data,
   }) async {
+    final k = _k(workspaceId, key);
+    if (!_rows.containsKey(k) || _rows[k] != null) {
+      return false;
+    }
     records++;
-    _rows.putIfAbsent(_k(workspaceId, key), () => data);
+    _rows[k] = data;
+    return true;
+  }
+
+  @override
+  Future<void> release({
+    required String workspaceId,
+    required String key,
+  }) async {
+    final k = _k(workspaceId, key);
+    if (_rows.containsKey(k) && _rows[k] == null) {
+      releases++;
+      _rows.remove(k);
+    }
   }
 }
 
@@ -82,6 +115,88 @@ void main() {
       },
     );
 
+    test(
+      'a duplicate arriving while the first is running is refused',
+      () async {
+        var runs = 0;
+        final gate = Completer<void>();
+        final ledger = _FakeLedger();
+        final d = dispatcher([
+          RepoOp(
+            name: 'thing.mutate',
+            kind: RepoOpKind.mutate,
+            handler: (ctx) async {
+              runs++;
+              await gate.future;
+              return {'applied': runs};
+            },
+          ),
+        ], ledger: ledger);
+
+        final first = call(d, 'thing.mutate', idempotencyKey: 'k1');
+        final second = await call(d, 'thing.mutate', idempotencyKey: 'k1');
+        final error = second['error'] as Map;
+        expect(error['code'], RpcErrorCodes.conflict);
+        expect((error['data'] as Map)['kind'], idempotencyInProgressKind);
+
+        gate.complete();
+        expect(((await first)['result'] as Map)['data'], {'applied': 1});
+        expect(runs, 1);
+        final replay = await call(d, 'thing.mutate', idempotencyKey: 'k1');
+        expect((replay['result'] as Map)['deduplicated'], isTrue);
+        expect(runs, 1);
+      },
+    );
+
+    test('a failed handler releases the key so a retry runs', () async {
+      var runs = 0;
+      final ledger = _FakeLedger();
+      final d = dispatcher([
+        RepoOp(
+          name: 'thing.mutate',
+          kind: RepoOpKind.mutate,
+          handler: (ctx) async {
+            runs++;
+            if (runs == 1) {
+              throw StateError('transient');
+            }
+            return {'applied': runs};
+          },
+        ),
+      ], ledger: ledger);
+
+      final failed = await call(d, 'thing.mutate', idempotencyKey: 'k1');
+      expect(failed['error'], isNotNull);
+      expect(ledger.holds('ws-1', 'k1'), isFalse);
+
+      final retry = await call(d, 'thing.mutate', idempotencyKey: 'k1');
+      expect((retry['result'] as Map)['data'], {'applied': 2});
+      expect((retry['result'] as Map)['deduplicated'], isNull);
+      expect(runs, 2);
+    });
+
+    test('a refusal before the handler releases the key', () async {
+      var runs = 0;
+      final ledger = _FakeLedger();
+      final d = dispatcher([
+        RepoOp(
+          name: 'thing.destroy',
+          kind: RepoOpKind.destructive,
+          handler: (ctx) async {
+            runs++;
+            return {'ok': true};
+          },
+        ),
+      ], ledger: ledger);
+
+      // No approver: destructive ops are refused before the handler.
+      final refused = await call(d, 'thing.destroy', idempotencyKey: 'k1');
+      expect((refused['error'] as Map)['code'], RpcErrorCodes.unauthorized);
+      expect(runs, 0);
+      expect(ledger.holds('ws-1', 'k1'), isFalse);
+      expect(ledger.releases, 1);
+    });
+
     test('distinct keys each apply', () async {
       var runs = 0;
       final d = dispatcher([
@@ -133,6 +248,39 @@ void main() {
       await call(d, 'thing.get', idempotencyKey: 'k');
       expect(runs, 2);
       expect(ledger.records, 0);
+    });
+  });
+
+  group('failure logging', () {
+    final logged = <String>[];
+    final errors = <Object?>[];
+    setUp(() {
+      logged.clear();
+      errors.clear();
+      CcHostLog.sink = (level, message, [error, stackTrace]) {
+        logged.add(message);
+        errors.add(error);
+      };
+    });
+    tearDown(() => CcHostLog.sink = null);
+
+    test('an unmapped failure is logged only through describeError', () async {
+      final d = RepoOpDispatcher(
+        registry: RepoOpRegistry([
+          RepoOp(
+            name: 'thing.mutate',
+            kind: RepoOpKind.mutate,
+            handler: (ctx) async => throw StateError('bound value: secret'),
+          ),
+        ]),
+        describeError: (e) => 'redacted ${e.runtimeType}',
+      );
+      final res = await call(d, 'thing.mutate');
+      expect((res['error'] as Map)['code'], RpcErrorCodes.internalError);
+      expect(logged.single, contains('redacted StateError'));
+      expect(logged.single, isNot(contains('secret')));
+      // The raw error object is never handed to the log sink either.
+      expect(errors.single, isNull);
     });
   });
 

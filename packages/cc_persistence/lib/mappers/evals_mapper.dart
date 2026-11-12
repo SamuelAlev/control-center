@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/features/evals/domain/entities/evals_entities.dart';
 import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
+import 'package:cc_domain/features/evals/domain/value_objects/eval_stored_values.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
@@ -75,10 +76,10 @@ class EvalsMapper {
         workspaceId: Value(g.workspaceId),
         agentId: Value(g.agentId),
         recordingId: Value(g.recordingId),
-        mode: Value(g.mode),
+        mode: Value(GoldenMode.parse(g.mode).wire),
         name: Value(g.name),
         enabled: Value(g.enabled),
-        lastStatus: Value(g.lastStatus),
+        lastStatus: Value(GoldenStatus.parse(g.lastStatus).wire),
         lastScorecardJson: Value(g.lastScorecardJson),
         blessedBy: Value(g.blessedBy),
         blessedAt: Value(g.blessedAt),
@@ -131,7 +132,7 @@ class EvalsMapper {
     scorecardJson: row.scorecardJson,
     passRate: row.passRate,
     status: row.status,
-    costCents: row.costCents,
+    costMicros: row.costMicros,
     triggeredBy: row.triggeredBy,
     jobId: row.jobId,
     createdAt: row.createdAt,
@@ -148,9 +149,9 @@ class EvalsMapper {
     batchSize: Value(r.batchSize),
     scorecardJson: Value(r.scorecardJson),
     passRate: Value(r.passRate),
-    status: Value(r.status),
-    costCents: Value(r.costCents),
-    triggeredBy: Value(r.triggeredBy),
+    status: Value(EvalRunStatus.parse(r.status).wire),
+    costMicros: Value(r.costMicros),
+    triggeredBy: Value(EvalTrigger.parse(r.triggeredBy).wire),
     jobId: Value(r.jobId),
     createdAt: Value(r.createdAt),
     startedAt: Value(r.startedAt),
@@ -185,7 +186,7 @@ class EvalsMapper {
     configHash: Value(v.configHash),
     hashVersion: Value(v.hashVersion),
     configJson: Value(v.configJson),
-    status: Value(v.status),
+    status: Value(AgentConfigVersionStatus.parse(v.status).wire),
     scorecardJson: Value(v.scorecardJson),
     promotedBy: Value(v.promotedBy),
     promotedAt: Value(v.promotedAt),

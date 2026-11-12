@@ -3,872 +3,6 @@
 part of 'global_database.dart';
 
 // ignore_for_file: type=lint
-class $WorkspacesTableTable extends WorkspacesTable
-    with TableInfo<$WorkspacesTableTable, WorkspacesTableData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $WorkspacesTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _logoPathMeta = const VerificationMeta(
-    'logoPath',
-  );
-  @override
-  late final GeneratedColumn<String> logoPath = GeneratedColumn<String>(
-    'logo_path',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _ownerUserIdMeta = const VerificationMeta(
-    'ownerUserId',
-  );
-  @override
-  late final GeneratedColumn<String> ownerUserId = GeneratedColumn<String>(
-    'owner_user_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _secretExcludeGlobsMeta =
-      const VerificationMeta('secretExcludeGlobs');
-  @override
-  late final GeneratedColumn<String> secretExcludeGlobs =
-      GeneratedColumn<String>(
-        'secret_exclude_globs',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-        defaultValue: const Constant('[]'),
-      );
-  static const VerificationMeta _reviewConcurrencyMeta = const VerificationMeta(
-    'reviewConcurrency',
-  );
-  @override
-  late final GeneratedColumn<int> reviewConcurrency = GeneratedColumn<int>(
-    'review_concurrency',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(3),
-  );
-  static const VerificationMeta _autoPublishReviewMeta = const VerificationMeta(
-    'autoPublishReview',
-  );
-  @override
-  late final GeneratedColumn<bool> autoPublishReview = GeneratedColumn<bool>(
-    'auto_publish_review',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("auto_publish_review" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _connectModeMeta = const VerificationMeta(
-    'connectMode',
-  );
-  @override
-  late final GeneratedColumn<String> connectMode = GeneratedColumn<String>(
-    'connect_mode',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('inherit'),
-  );
-  static const VerificationMeta _connectUrlMeta = const VerificationMeta(
-    'connectUrl',
-  );
-  @override
-  late final GeneratedColumn<String> connectUrl = GeneratedColumn<String>(
-    'connect_url',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(''),
-  );
-  static const VerificationMeta _githubAppIdMeta = const VerificationMeta(
-    'githubAppId',
-  );
-  @override
-  late final GeneratedColumn<String> githubAppId = GeneratedColumn<String>(
-    'github_app_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(''),
-  );
-  static const VerificationMeta _positionMeta = const VerificationMeta(
-    'position',
-  );
-  @override
-  late final GeneratedColumn<int> position = GeneratedColumn<int>(
-    'position',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
-  );
-  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
-    'deletedAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
-    'deleted_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    name,
-    logoPath,
-    ownerUserId,
-    secretExcludeGlobs,
-    reviewConcurrency,
-    autoPublishReview,
-    connectMode,
-    connectUrl,
-    githubAppId,
-    position,
-    createdAt,
-    updatedAt,
-    deletedAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'workspaces';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<WorkspacesTableData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('name')) {
-      context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nameMeta);
-    }
-    if (data.containsKey('logo_path')) {
-      context.handle(
-        _logoPathMeta,
-        logoPath.isAcceptableOrUnknown(data['logo_path']!, _logoPathMeta),
-      );
-    }
-    if (data.containsKey('owner_user_id')) {
-      context.handle(
-        _ownerUserIdMeta,
-        ownerUserId.isAcceptableOrUnknown(
-          data['owner_user_id']!,
-          _ownerUserIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('secret_exclude_globs')) {
-      context.handle(
-        _secretExcludeGlobsMeta,
-        secretExcludeGlobs.isAcceptableOrUnknown(
-          data['secret_exclude_globs']!,
-          _secretExcludeGlobsMeta,
-        ),
-      );
-    }
-    if (data.containsKey('review_concurrency')) {
-      context.handle(
-        _reviewConcurrencyMeta,
-        reviewConcurrency.isAcceptableOrUnknown(
-          data['review_concurrency']!,
-          _reviewConcurrencyMeta,
-        ),
-      );
-    }
-    if (data.containsKey('auto_publish_review')) {
-      context.handle(
-        _autoPublishReviewMeta,
-        autoPublishReview.isAcceptableOrUnknown(
-          data['auto_publish_review']!,
-          _autoPublishReviewMeta,
-        ),
-      );
-    }
-    if (data.containsKey('connect_mode')) {
-      context.handle(
-        _connectModeMeta,
-        connectMode.isAcceptableOrUnknown(
-          data['connect_mode']!,
-          _connectModeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('connect_url')) {
-      context.handle(
-        _connectUrlMeta,
-        connectUrl.isAcceptableOrUnknown(data['connect_url']!, _connectUrlMeta),
-      );
-    }
-    if (data.containsKey('github_app_id')) {
-      context.handle(
-        _githubAppIdMeta,
-        githubAppId.isAcceptableOrUnknown(
-          data['github_app_id']!,
-          _githubAppIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('position')) {
-      context.handle(
-        _positionMeta,
-        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    }
-    if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
-    }
-    if (data.containsKey('deleted_at')) {
-      context.handle(
-        _deletedAtMeta,
-        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  WorkspacesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return WorkspacesTableData(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      logoPath: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}logo_path'],
-      ),
-      ownerUserId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}owner_user_id'],
-      ),
-      secretExcludeGlobs: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}secret_exclude_globs'],
-      )!,
-      reviewConcurrency: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}review_concurrency'],
-      )!,
-      autoPublishReview: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}auto_publish_review'],
-      )!,
-      connectMode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}connect_mode'],
-      )!,
-      connectUrl: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}connect_url'],
-      )!,
-      githubAppId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}github_app_id'],
-      )!,
-      position: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}position'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-      updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}updated_at'],
-      )!,
-      deletedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}deleted_at'],
-      ),
-    );
-  }
-
-  @override
-  $WorkspacesTableTable createAlias(String alias) {
-    return $WorkspacesTableTable(attachedDatabase, alias);
-  }
-}
-
-class WorkspacesTableData extends DataClass
-    implements Insertable<WorkspacesTableData> {
-  /// Unique workspace identifier.
-  final String id;
-
-  /// Workspace display name (user-supplied at creation).
-  final String name;
-
-  /// Optional path to a local image file used as the workspace logo.
-  final String? logoPath;
-
-  /// The user who owns this workspace (holds the `owner` membership role).
-  /// Nullable in SQL only until the identity bootstrap backfills it on first
-  /// boot; treated as required everywhere else.
-  final String? ownerUserId;
-
-  /// JSON array of glob patterns whose matching paths are hard-blocked from
-  /// guest/viewer visibility on code-bearing surfaces (secret exclusion).
-  final String secretExcludeGlobs;
-
-  /// Default fan-out for parallel reviewer dispatch on this workspace.
-  /// `dispatch_reviewers` MCP tool uses this when no explicit `concurrency`
-  /// argument is provided.
-  final int reviewConcurrency;
-
-  /// Whether a completed review publishes to GitHub automatically (opt-in;
-  /// off by default — publishing is otherwise user-gated behind the
-  /// "Publish to GitHub" action, which itself stays ActionClass-guarded).
-  final bool autoPublishReview;
-
-  /// Whose provider apps this workspace uses (`inherit` / `hosted` /
-  /// `custom` / `own`): the server's choice, a Connect of its own, or its own
-  /// apps. Typed because the server reads it on every credential path — not
-  /// an opaque `workspace_settings` string.
-  final String connectMode;
-
-  /// The canonical Connect base URL when [connectMode] is `custom`. Empty
-  /// otherwise.
-  final String connectUrl;
-
-  /// Numeric id of this workspace's own GitHub App, used while [connectMode]
-  /// is `own`. Empty when none is saved. The private key is never a column;
-  /// it lives in `secrets.json`.
-  final String githubAppId;
-
-  /// The operator's manual order for the workspace switcher / manager
-  /// (drag-to-reorder in "manage workspaces"). Lower sorts first;
-  /// [createdAt] is the stable tiebreak. Mirrors `repos.position` — one manual
-  /// order per list, server-owned, so every client (desktop/web/phone) renders
-  /// workspaces in the same sequence.
-  final int position;
-
-  /// Creation timestamp.
-  final DateTime createdAt;
-
-  /// Last update timestamp.
-  final DateTime updatedAt;
-
-  /// Soft-delete timestamp. When non-null, the workspace is considered deleted.
-  final DateTime? deletedAt;
-  const WorkspacesTableData({
-    required this.id,
-    required this.name,
-    this.logoPath,
-    this.ownerUserId,
-    required this.secretExcludeGlobs,
-    required this.reviewConcurrency,
-    required this.autoPublishReview,
-    required this.connectMode,
-    required this.connectUrl,
-    required this.githubAppId,
-    required this.position,
-    required this.createdAt,
-    required this.updatedAt,
-    this.deletedAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['name'] = Variable<String>(name);
-    if (!nullToAbsent || logoPath != null) {
-      map['logo_path'] = Variable<String>(logoPath);
-    }
-    if (!nullToAbsent || ownerUserId != null) {
-      map['owner_user_id'] = Variable<String>(ownerUserId);
-    }
-    map['secret_exclude_globs'] = Variable<String>(secretExcludeGlobs);
-    map['review_concurrency'] = Variable<int>(reviewConcurrency);
-    map['auto_publish_review'] = Variable<bool>(autoPublishReview);
-    map['connect_mode'] = Variable<String>(connectMode);
-    map['connect_url'] = Variable<String>(connectUrl);
-    map['github_app_id'] = Variable<String>(githubAppId);
-    map['position'] = Variable<int>(position);
-    map['created_at'] = Variable<DateTime>(createdAt);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
-    if (!nullToAbsent || deletedAt != null) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt);
-    }
-    return map;
-  }
-
-  WorkspacesTableCompanion toCompanion(bool nullToAbsent) {
-    return WorkspacesTableCompanion(
-      id: Value(id),
-      name: Value(name),
-      logoPath: logoPath == null && nullToAbsent
-          ? const Value.absent()
-          : Value(logoPath),
-      ownerUserId: ownerUserId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(ownerUserId),
-      secretExcludeGlobs: Value(secretExcludeGlobs),
-      reviewConcurrency: Value(reviewConcurrency),
-      autoPublishReview: Value(autoPublishReview),
-      connectMode: Value(connectMode),
-      connectUrl: Value(connectUrl),
-      githubAppId: Value(githubAppId),
-      position: Value(position),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
-      deletedAt: deletedAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(deletedAt),
-    );
-  }
-
-  factory WorkspacesTableData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return WorkspacesTableData(
-      id: serializer.fromJson<String>(json['id']),
-      name: serializer.fromJson<String>(json['name']),
-      logoPath: serializer.fromJson<String?>(json['logoPath']),
-      ownerUserId: serializer.fromJson<String?>(json['ownerUserId']),
-      secretExcludeGlobs: serializer.fromJson<String>(
-        json['secretExcludeGlobs'],
-      ),
-      reviewConcurrency: serializer.fromJson<int>(json['reviewConcurrency']),
-      autoPublishReview: serializer.fromJson<bool>(json['autoPublishReview']),
-      connectMode: serializer.fromJson<String>(json['connectMode']),
-      connectUrl: serializer.fromJson<String>(json['connectUrl']),
-      githubAppId: serializer.fromJson<String>(json['githubAppId']),
-      position: serializer.fromJson<int>(json['position']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'name': serializer.toJson<String>(name),
-      'logoPath': serializer.toJson<String?>(logoPath),
-      'ownerUserId': serializer.toJson<String?>(ownerUserId),
-      'secretExcludeGlobs': serializer.toJson<String>(secretExcludeGlobs),
-      'reviewConcurrency': serializer.toJson<int>(reviewConcurrency),
-      'autoPublishReview': serializer.toJson<bool>(autoPublishReview),
-      'connectMode': serializer.toJson<String>(connectMode),
-      'connectUrl': serializer.toJson<String>(connectUrl),
-      'githubAppId': serializer.toJson<String>(githubAppId),
-      'position': serializer.toJson<int>(position),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
-    };
-  }
-
-  WorkspacesTableData copyWith({
-    String? id,
-    String? name,
-    Value<String?> logoPath = const Value.absent(),
-    Value<String?> ownerUserId = const Value.absent(),
-    String? secretExcludeGlobs,
-    int? reviewConcurrency,
-    bool? autoPublishReview,
-    String? connectMode,
-    String? connectUrl,
-    String? githubAppId,
-    int? position,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    Value<DateTime?> deletedAt = const Value.absent(),
-  }) => WorkspacesTableData(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    logoPath: logoPath.present ? logoPath.value : this.logoPath,
-    ownerUserId: ownerUserId.present ? ownerUserId.value : this.ownerUserId,
-    secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
-    reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
-    autoPublishReview: autoPublishReview ?? this.autoPublishReview,
-    connectMode: connectMode ?? this.connectMode,
-    connectUrl: connectUrl ?? this.connectUrl,
-    githubAppId: githubAppId ?? this.githubAppId,
-    position: position ?? this.position,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
-  );
-  WorkspacesTableData copyWithCompanion(WorkspacesTableCompanion data) {
-    return WorkspacesTableData(
-      id: data.id.present ? data.id.value : this.id,
-      name: data.name.present ? data.name.value : this.name,
-      logoPath: data.logoPath.present ? data.logoPath.value : this.logoPath,
-      ownerUserId: data.ownerUserId.present
-          ? data.ownerUserId.value
-          : this.ownerUserId,
-      secretExcludeGlobs: data.secretExcludeGlobs.present
-          ? data.secretExcludeGlobs.value
-          : this.secretExcludeGlobs,
-      reviewConcurrency: data.reviewConcurrency.present
-          ? data.reviewConcurrency.value
-          : this.reviewConcurrency,
-      autoPublishReview: data.autoPublishReview.present
-          ? data.autoPublishReview.value
-          : this.autoPublishReview,
-      connectMode: data.connectMode.present
-          ? data.connectMode.value
-          : this.connectMode,
-      connectUrl: data.connectUrl.present
-          ? data.connectUrl.value
-          : this.connectUrl,
-      githubAppId: data.githubAppId.present
-          ? data.githubAppId.value
-          : this.githubAppId,
-      position: data.position.present ? data.position.value : this.position,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('WorkspacesTableData(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('logoPath: $logoPath, ')
-          ..write('ownerUserId: $ownerUserId, ')
-          ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
-          ..write('reviewConcurrency: $reviewConcurrency, ')
-          ..write('autoPublishReview: $autoPublishReview, ')
-          ..write('connectMode: $connectMode, ')
-          ..write('connectUrl: $connectUrl, ')
-          ..write('githubAppId: $githubAppId, ')
-          ..write('position: $position, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    name,
-    logoPath,
-    ownerUserId,
-    secretExcludeGlobs,
-    reviewConcurrency,
-    autoPublishReview,
-    connectMode,
-    connectUrl,
-    githubAppId,
-    position,
-    createdAt,
-    updatedAt,
-    deletedAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is WorkspacesTableData &&
-          other.id == this.id &&
-          other.name == this.name &&
-          other.logoPath == this.logoPath &&
-          other.ownerUserId == this.ownerUserId &&
-          other.secretExcludeGlobs == this.secretExcludeGlobs &&
-          other.reviewConcurrency == this.reviewConcurrency &&
-          other.autoPublishReview == this.autoPublishReview &&
-          other.connectMode == this.connectMode &&
-          other.connectUrl == this.connectUrl &&
-          other.githubAppId == this.githubAppId &&
-          other.position == this.position &&
-          other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.deletedAt == this.deletedAt);
-}
-
-class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
-  final Value<String> id;
-  final Value<String> name;
-  final Value<String?> logoPath;
-  final Value<String?> ownerUserId;
-  final Value<String> secretExcludeGlobs;
-  final Value<int> reviewConcurrency;
-  final Value<bool> autoPublishReview;
-  final Value<String> connectMode;
-  final Value<String> connectUrl;
-  final Value<String> githubAppId;
-  final Value<int> position;
-  final Value<DateTime> createdAt;
-  final Value<DateTime> updatedAt;
-  final Value<DateTime?> deletedAt;
-  final Value<int> rowid;
-  const WorkspacesTableCompanion({
-    this.id = const Value.absent(),
-    this.name = const Value.absent(),
-    this.logoPath = const Value.absent(),
-    this.ownerUserId = const Value.absent(),
-    this.secretExcludeGlobs = const Value.absent(),
-    this.reviewConcurrency = const Value.absent(),
-    this.autoPublishReview = const Value.absent(),
-    this.connectMode = const Value.absent(),
-    this.connectUrl = const Value.absent(),
-    this.githubAppId = const Value.absent(),
-    this.position = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  WorkspacesTableCompanion.insert({
-    required String id,
-    required String name,
-    this.logoPath = const Value.absent(),
-    this.ownerUserId = const Value.absent(),
-    this.secretExcludeGlobs = const Value.absent(),
-    this.reviewConcurrency = const Value.absent(),
-    this.autoPublishReview = const Value.absent(),
-    this.connectMode = const Value.absent(),
-    this.connectUrl = const Value.absent(),
-    this.githubAppId = const Value.absent(),
-    this.position = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.deletedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       name = Value(name);
-  static Insertable<WorkspacesTableData> custom({
-    Expression<String>? id,
-    Expression<String>? name,
-    Expression<String>? logoPath,
-    Expression<String>? ownerUserId,
-    Expression<String>? secretExcludeGlobs,
-    Expression<int>? reviewConcurrency,
-    Expression<bool>? autoPublishReview,
-    Expression<String>? connectMode,
-    Expression<String>? connectUrl,
-    Expression<String>? githubAppId,
-    Expression<int>? position,
-    Expression<DateTime>? createdAt,
-    Expression<DateTime>? updatedAt,
-    Expression<DateTime>? deletedAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (name != null) 'name': name,
-      if (logoPath != null) 'logo_path': logoPath,
-      if (ownerUserId != null) 'owner_user_id': ownerUserId,
-      if (secretExcludeGlobs != null)
-        'secret_exclude_globs': secretExcludeGlobs,
-      if (reviewConcurrency != null) 'review_concurrency': reviewConcurrency,
-      if (autoPublishReview != null) 'auto_publish_review': autoPublishReview,
-      if (connectMode != null) 'connect_mode': connectMode,
-      if (connectUrl != null) 'connect_url': connectUrl,
-      if (githubAppId != null) 'github_app_id': githubAppId,
-      if (position != null) 'position': position,
-      if (createdAt != null) 'created_at': createdAt,
-      if (updatedAt != null) 'updated_at': updatedAt,
-      if (deletedAt != null) 'deleted_at': deletedAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  WorkspacesTableCompanion copyWith({
-    Value<String>? id,
-    Value<String>? name,
-    Value<String?>? logoPath,
-    Value<String?>? ownerUserId,
-    Value<String>? secretExcludeGlobs,
-    Value<int>? reviewConcurrency,
-    Value<bool>? autoPublishReview,
-    Value<String>? connectMode,
-    Value<String>? connectUrl,
-    Value<String>? githubAppId,
-    Value<int>? position,
-    Value<DateTime>? createdAt,
-    Value<DateTime>? updatedAt,
-    Value<DateTime?>? deletedAt,
-    Value<int>? rowid,
-  }) {
-    return WorkspacesTableCompanion(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      logoPath: logoPath ?? this.logoPath,
-      ownerUserId: ownerUserId ?? this.ownerUserId,
-      secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
-      reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
-      autoPublishReview: autoPublishReview ?? this.autoPublishReview,
-      connectMode: connectMode ?? this.connectMode,
-      connectUrl: connectUrl ?? this.connectUrl,
-      githubAppId: githubAppId ?? this.githubAppId,
-      position: position ?? this.position,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (name.present) {
-      map['name'] = Variable<String>(name.value);
-    }
-    if (logoPath.present) {
-      map['logo_path'] = Variable<String>(logoPath.value);
-    }
-    if (ownerUserId.present) {
-      map['owner_user_id'] = Variable<String>(ownerUserId.value);
-    }
-    if (secretExcludeGlobs.present) {
-      map['secret_exclude_globs'] = Variable<String>(secretExcludeGlobs.value);
-    }
-    if (reviewConcurrency.present) {
-      map['review_concurrency'] = Variable<int>(reviewConcurrency.value);
-    }
-    if (autoPublishReview.present) {
-      map['auto_publish_review'] = Variable<bool>(autoPublishReview.value);
-    }
-    if (connectMode.present) {
-      map['connect_mode'] = Variable<String>(connectMode.value);
-    }
-    if (connectUrl.present) {
-      map['connect_url'] = Variable<String>(connectUrl.value);
-    }
-    if (githubAppId.present) {
-      map['github_app_id'] = Variable<String>(githubAppId.value);
-    }
-    if (position.present) {
-      map['position'] = Variable<int>(position.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<DateTime>(updatedAt.value);
-    }
-    if (deletedAt.present) {
-      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('WorkspacesTableCompanion(')
-          ..write('id: $id, ')
-          ..write('name: $name, ')
-          ..write('logoPath: $logoPath, ')
-          ..write('ownerUserId: $ownerUserId, ')
-          ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
-          ..write('reviewConcurrency: $reviewConcurrency, ')
-          ..write('autoPublishReview: $autoPublishReview, ')
-          ..write('connectMode: $connectMode, ')
-          ..write('connectUrl: $connectUrl, ')
-          ..write('githubAppId: $githubAppId, ')
-          ..write('position: $position, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('deletedAt: $deletedAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $UsersTableTable extends UsersTable
     with TableInfo<$UsersTableTable, UsersTableData> {
   @override
@@ -1712,6 +846,879 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
   }
 }
 
+class $WorkspacesTableTable extends WorkspacesTable
+    with TableInfo<$WorkspacesTableTable, WorkspacesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorkspacesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _logoPathMeta = const VerificationMeta(
+    'logoPath',
+  );
+  @override
+  late final GeneratedColumn<String> logoPath = GeneratedColumn<String>(
+    'logo_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ownerUserIdMeta = const VerificationMeta(
+    'ownerUserId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerUserId = GeneratedColumn<String>(
+    'owner_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _secretExcludeGlobsMeta =
+      const VerificationMeta('secretExcludeGlobs');
+  @override
+  late final GeneratedColumn<String> secretExcludeGlobs =
+      GeneratedColumn<String>(
+        'secret_exclude_globs',
+        aliasedName,
+        false,
+        check: () => isJsonArray(secretExcludeGlobs),
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('[]'),
+      );
+  static const VerificationMeta _reviewConcurrencyMeta = const VerificationMeta(
+    'reviewConcurrency',
+  );
+  @override
+  late final GeneratedColumn<int> reviewConcurrency = GeneratedColumn<int>(
+    'review_concurrency',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(3),
+  );
+  static const VerificationMeta _autoPublishReviewMeta = const VerificationMeta(
+    'autoPublishReview',
+  );
+  @override
+  late final GeneratedColumn<bool> autoPublishReview = GeneratedColumn<bool>(
+    'auto_publish_review',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("auto_publish_review" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _connectModeMeta = const VerificationMeta(
+    'connectMode',
+  );
+  @override
+  late final GeneratedColumn<String> connectMode = GeneratedColumn<String>(
+    'connect_mode',
+    aliasedName,
+    false,
+    check: () => connectMode.isIn(PlatformStoredValues.workspaceConnectMode),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('inherit'),
+  );
+  static const VerificationMeta _connectUrlMeta = const VerificationMeta(
+    'connectUrl',
+  );
+  @override
+  late final GeneratedColumn<String> connectUrl = GeneratedColumn<String>(
+    'connect_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _githubAppIdMeta = const VerificationMeta(
+    'githubAppId',
+  );
+  @override
+  late final GeneratedColumn<String> githubAppId = GeneratedColumn<String>(
+    'github_app_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    logoPath,
+    ownerUserId,
+    secretExcludeGlobs,
+    reviewConcurrency,
+    autoPublishReview,
+    connectMode,
+    connectUrl,
+    githubAppId,
+    position,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'workspaces';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WorkspacesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('logo_path')) {
+      context.handle(
+        _logoPathMeta,
+        logoPath.isAcceptableOrUnknown(data['logo_path']!, _logoPathMeta),
+      );
+    }
+    if (data.containsKey('owner_user_id')) {
+      context.handle(
+        _ownerUserIdMeta,
+        ownerUserId.isAcceptableOrUnknown(
+          data['owner_user_id']!,
+          _ownerUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('secret_exclude_globs')) {
+      context.handle(
+        _secretExcludeGlobsMeta,
+        secretExcludeGlobs.isAcceptableOrUnknown(
+          data['secret_exclude_globs']!,
+          _secretExcludeGlobsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('review_concurrency')) {
+      context.handle(
+        _reviewConcurrencyMeta,
+        reviewConcurrency.isAcceptableOrUnknown(
+          data['review_concurrency']!,
+          _reviewConcurrencyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('auto_publish_review')) {
+      context.handle(
+        _autoPublishReviewMeta,
+        autoPublishReview.isAcceptableOrUnknown(
+          data['auto_publish_review']!,
+          _autoPublishReviewMeta,
+        ),
+      );
+    }
+    if (data.containsKey('connect_mode')) {
+      context.handle(
+        _connectModeMeta,
+        connectMode.isAcceptableOrUnknown(
+          data['connect_mode']!,
+          _connectModeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('connect_url')) {
+      context.handle(
+        _connectUrlMeta,
+        connectUrl.isAcceptableOrUnknown(data['connect_url']!, _connectUrlMeta),
+      );
+    }
+    if (data.containsKey('github_app_id')) {
+      context.handle(
+        _githubAppIdMeta,
+        githubAppId.isAcceptableOrUnknown(
+          data['github_app_id']!,
+          _githubAppIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WorkspacesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WorkspacesTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      logoPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}logo_path'],
+      ),
+      ownerUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_user_id'],
+      ),
+      secretExcludeGlobs: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}secret_exclude_globs'],
+      )!,
+      reviewConcurrency: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}review_concurrency'],
+      )!,
+      autoPublishReview: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}auto_publish_review'],
+      )!,
+      connectMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}connect_mode'],
+      )!,
+      connectUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}connect_url'],
+      )!,
+      githubAppId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}github_app_id'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $WorkspacesTableTable createAlias(String alias) {
+    return $WorkspacesTableTable(attachedDatabase, alias);
+  }
+}
+
+class WorkspacesTableData extends DataClass
+    implements Insertable<WorkspacesTableData> {
+  /// Unique workspace identifier.
+  final String id;
+
+  /// Workspace display name (user-supplied at creation).
+  final String name;
+
+  /// Optional path to a local image file used as the workspace logo.
+  final String? logoPath;
+
+  /// The user who owns this workspace (holds the `owner` membership role).
+  /// Nullable in SQL only until the identity bootstrap backfills it on first
+  /// boot; treated as required everywhere else. A user is never deleted
+  /// (attribution is permanent), and must not be while they own a workspace.
+  final String? ownerUserId;
+
+  /// JSON array of glob patterns whose matching paths are hard-blocked from
+  /// guest/viewer visibility on code-bearing surfaces (secret exclusion).
+  final String secretExcludeGlobs;
+
+  /// Default fan-out for parallel reviewer dispatch on this workspace.
+  /// `dispatch_reviewers` MCP tool uses this when no explicit `concurrency`
+  /// argument is provided.
+  final int reviewConcurrency;
+
+  /// Whether a completed review publishes to GitHub automatically (opt-in;
+  /// off by default — publishing is otherwise user-gated behind the
+  /// "Publish to GitHub" action, which itself stays ActionClass-guarded).
+  final bool autoPublishReview;
+
+  /// Whose provider apps this workspace uses (`inherit` / `hosted` /
+  /// `custom` / `own`): the server's choice, a Connect of its own, or its own
+  /// apps. Typed because the server reads it on every credential path — not
+  /// an opaque `workspace_settings` string. A `WorkspaceConnectMode` wire
+  /// name.
+  final String connectMode;
+
+  /// The canonical Connect base URL when [connectMode] is `custom`. Empty
+  /// otherwise.
+  final String connectUrl;
+
+  /// Numeric id of this workspace's own GitHub App, used while [connectMode]
+  /// is `own`. Empty when none is saved. The private key is never a column;
+  /// it lives in `secrets.json`.
+  final String githubAppId;
+
+  /// The operator's manual order for the workspace switcher / manager
+  /// (drag-to-reorder in "manage workspaces"). Lower sorts first;
+  /// [createdAt] is the stable tiebreak. Mirrors `repos.position` — one manual
+  /// order per list, server-owned, so every client (desktop/web/phone) renders
+  /// workspaces in the same sequence.
+  final int position;
+
+  /// Creation timestamp.
+  final DateTime createdAt;
+
+  /// Last update timestamp.
+  final DateTime updatedAt;
+
+  /// Soft-delete timestamp. When non-null, the workspace is considered deleted.
+  final DateTime? deletedAt;
+  const WorkspacesTableData({
+    required this.id,
+    required this.name,
+    this.logoPath,
+    this.ownerUserId,
+    required this.secretExcludeGlobs,
+    required this.reviewConcurrency,
+    required this.autoPublishReview,
+    required this.connectMode,
+    required this.connectUrl,
+    required this.githubAppId,
+    required this.position,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || logoPath != null) {
+      map['logo_path'] = Variable<String>(logoPath);
+    }
+    if (!nullToAbsent || ownerUserId != null) {
+      map['owner_user_id'] = Variable<String>(ownerUserId);
+    }
+    map['secret_exclude_globs'] = Variable<String>(secretExcludeGlobs);
+    map['review_concurrency'] = Variable<int>(reviewConcurrency);
+    map['auto_publish_review'] = Variable<bool>(autoPublishReview);
+    map['connect_mode'] = Variable<String>(connectMode);
+    map['connect_url'] = Variable<String>(connectUrl);
+    map['github_app_id'] = Variable<String>(githubAppId);
+    map['position'] = Variable<int>(position);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  WorkspacesTableCompanion toCompanion(bool nullToAbsent) {
+    return WorkspacesTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      logoPath: logoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(logoPath),
+      ownerUserId: ownerUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerUserId),
+      secretExcludeGlobs: Value(secretExcludeGlobs),
+      reviewConcurrency: Value(reviewConcurrency),
+      autoPublishReview: Value(autoPublishReview),
+      connectMode: Value(connectMode),
+      connectUrl: Value(connectUrl),
+      githubAppId: Value(githubAppId),
+      position: Value(position),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory WorkspacesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WorkspacesTableData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      logoPath: serializer.fromJson<String?>(json['logoPath']),
+      ownerUserId: serializer.fromJson<String?>(json['ownerUserId']),
+      secretExcludeGlobs: serializer.fromJson<String>(
+        json['secretExcludeGlobs'],
+      ),
+      reviewConcurrency: serializer.fromJson<int>(json['reviewConcurrency']),
+      autoPublishReview: serializer.fromJson<bool>(json['autoPublishReview']),
+      connectMode: serializer.fromJson<String>(json['connectMode']),
+      connectUrl: serializer.fromJson<String>(json['connectUrl']),
+      githubAppId: serializer.fromJson<String>(json['githubAppId']),
+      position: serializer.fromJson<int>(json['position']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'logoPath': serializer.toJson<String?>(logoPath),
+      'ownerUserId': serializer.toJson<String?>(ownerUserId),
+      'secretExcludeGlobs': serializer.toJson<String>(secretExcludeGlobs),
+      'reviewConcurrency': serializer.toJson<int>(reviewConcurrency),
+      'autoPublishReview': serializer.toJson<bool>(autoPublishReview),
+      'connectMode': serializer.toJson<String>(connectMode),
+      'connectUrl': serializer.toJson<String>(connectUrl),
+      'githubAppId': serializer.toJson<String>(githubAppId),
+      'position': serializer.toJson<int>(position),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  WorkspacesTableData copyWith({
+    String? id,
+    String? name,
+    Value<String?> logoPath = const Value.absent(),
+    Value<String?> ownerUserId = const Value.absent(),
+    String? secretExcludeGlobs,
+    int? reviewConcurrency,
+    bool? autoPublishReview,
+    String? connectMode,
+    String? connectUrl,
+    String? githubAppId,
+    int? position,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => WorkspacesTableData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    logoPath: logoPath.present ? logoPath.value : this.logoPath,
+    ownerUserId: ownerUserId.present ? ownerUserId.value : this.ownerUserId,
+    secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
+    reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
+    autoPublishReview: autoPublishReview ?? this.autoPublishReview,
+    connectMode: connectMode ?? this.connectMode,
+    connectUrl: connectUrl ?? this.connectUrl,
+    githubAppId: githubAppId ?? this.githubAppId,
+    position: position ?? this.position,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  WorkspacesTableData copyWithCompanion(WorkspacesTableCompanion data) {
+    return WorkspacesTableData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      logoPath: data.logoPath.present ? data.logoPath.value : this.logoPath,
+      ownerUserId: data.ownerUserId.present
+          ? data.ownerUserId.value
+          : this.ownerUserId,
+      secretExcludeGlobs: data.secretExcludeGlobs.present
+          ? data.secretExcludeGlobs.value
+          : this.secretExcludeGlobs,
+      reviewConcurrency: data.reviewConcurrency.present
+          ? data.reviewConcurrency.value
+          : this.reviewConcurrency,
+      autoPublishReview: data.autoPublishReview.present
+          ? data.autoPublishReview.value
+          : this.autoPublishReview,
+      connectMode: data.connectMode.present
+          ? data.connectMode.value
+          : this.connectMode,
+      connectUrl: data.connectUrl.present
+          ? data.connectUrl.value
+          : this.connectUrl,
+      githubAppId: data.githubAppId.present
+          ? data.githubAppId.value
+          : this.githubAppId,
+      position: data.position.present ? data.position.value : this.position,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkspacesTableData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('logoPath: $logoPath, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
+          ..write('reviewConcurrency: $reviewConcurrency, ')
+          ..write('autoPublishReview: $autoPublishReview, ')
+          ..write('connectMode: $connectMode, ')
+          ..write('connectUrl: $connectUrl, ')
+          ..write('githubAppId: $githubAppId, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    logoPath,
+    ownerUserId,
+    secretExcludeGlobs,
+    reviewConcurrency,
+    autoPublishReview,
+    connectMode,
+    connectUrl,
+    githubAppId,
+    position,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorkspacesTableData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.logoPath == this.logoPath &&
+          other.ownerUserId == this.ownerUserId &&
+          other.secretExcludeGlobs == this.secretExcludeGlobs &&
+          other.reviewConcurrency == this.reviewConcurrency &&
+          other.autoPublishReview == this.autoPublishReview &&
+          other.connectMode == this.connectMode &&
+          other.connectUrl == this.connectUrl &&
+          other.githubAppId == this.githubAppId &&
+          other.position == this.position &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String?> logoPath;
+  final Value<String?> ownerUserId;
+  final Value<String> secretExcludeGlobs;
+  final Value<int> reviewConcurrency;
+  final Value<bool> autoPublishReview;
+  final Value<String> connectMode;
+  final Value<String> connectUrl;
+  final Value<String> githubAppId;
+  final Value<int> position;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const WorkspacesTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.logoPath = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    this.secretExcludeGlobs = const Value.absent(),
+    this.reviewConcurrency = const Value.absent(),
+    this.autoPublishReview = const Value.absent(),
+    this.connectMode = const Value.absent(),
+    this.connectUrl = const Value.absent(),
+    this.githubAppId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorkspacesTableCompanion.insert({
+    required String id,
+    required String name,
+    this.logoPath = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    this.secretExcludeGlobs = const Value.absent(),
+    this.reviewConcurrency = const Value.absent(),
+    this.autoPublishReview = const Value.absent(),
+    this.connectMode = const Value.absent(),
+    this.connectUrl = const Value.absent(),
+    this.githubAppId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name);
+  static Insertable<WorkspacesTableData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? logoPath,
+    Expression<String>? ownerUserId,
+    Expression<String>? secretExcludeGlobs,
+    Expression<int>? reviewConcurrency,
+    Expression<bool>? autoPublishReview,
+    Expression<String>? connectMode,
+    Expression<String>? connectUrl,
+    Expression<String>? githubAppId,
+    Expression<int>? position,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (logoPath != null) 'logo_path': logoPath,
+      if (ownerUserId != null) 'owner_user_id': ownerUserId,
+      if (secretExcludeGlobs != null)
+        'secret_exclude_globs': secretExcludeGlobs,
+      if (reviewConcurrency != null) 'review_concurrency': reviewConcurrency,
+      if (autoPublishReview != null) 'auto_publish_review': autoPublishReview,
+      if (connectMode != null) 'connect_mode': connectMode,
+      if (connectUrl != null) 'connect_url': connectUrl,
+      if (githubAppId != null) 'github_app_id': githubAppId,
+      if (position != null) 'position': position,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorkspacesTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String?>? logoPath,
+    Value<String?>? ownerUserId,
+    Value<String>? secretExcludeGlobs,
+    Value<int>? reviewConcurrency,
+    Value<bool>? autoPublishReview,
+    Value<String>? connectMode,
+    Value<String>? connectUrl,
+    Value<String>? githubAppId,
+    Value<int>? position,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return WorkspacesTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      logoPath: logoPath ?? this.logoPath,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
+      reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
+      autoPublishReview: autoPublishReview ?? this.autoPublishReview,
+      connectMode: connectMode ?? this.connectMode,
+      connectUrl: connectUrl ?? this.connectUrl,
+      githubAppId: githubAppId ?? this.githubAppId,
+      position: position ?? this.position,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (logoPath.present) {
+      map['logo_path'] = Variable<String>(logoPath.value);
+    }
+    if (ownerUserId.present) {
+      map['owner_user_id'] = Variable<String>(ownerUserId.value);
+    }
+    if (secretExcludeGlobs.present) {
+      map['secret_exclude_globs'] = Variable<String>(secretExcludeGlobs.value);
+    }
+    if (reviewConcurrency.present) {
+      map['review_concurrency'] = Variable<int>(reviewConcurrency.value);
+    }
+    if (autoPublishReview.present) {
+      map['auto_publish_review'] = Variable<bool>(autoPublishReview.value);
+    }
+    if (connectMode.present) {
+      map['connect_mode'] = Variable<String>(connectMode.value);
+    }
+    if (connectUrl.present) {
+      map['connect_url'] = Variable<String>(connectUrl.value);
+    }
+    if (githubAppId.present) {
+      map['github_app_id'] = Variable<String>(githubAppId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorkspacesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('logoPath: $logoPath, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
+          ..write('reviewConcurrency: $reviewConcurrency, ')
+          ..write('autoPublishReview: $autoPublishReview, ')
+          ..write('connectMode: $connectMode, ')
+          ..write('connectUrl: $connectUrl, ')
+          ..write('githubAppId: $githubAppId, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $UserPreferencesTableTable extends UserPreferencesTable
     with TableInfo<$UserPreferencesTableTable, UserPreferencesTableData> {
   @override
@@ -2056,21 +2063,27 @@ class $PairedDevicesTableTable extends PairedDevicesTable
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
     'user_id',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id) ON DELETE CASCADE',
+    ),
   );
-  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
-    'workspaceId',
-  );
+  static const VerificationMeta _landingWorkspaceIdMeta =
+      const VerificationMeta('landingWorkspaceId');
   @override
-  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
-    'workspace_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
+  late final GeneratedColumn<String> landingWorkspaceId =
+      GeneratedColumn<String>(
+        'landing_workspace_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES workspaces (id) ON DELETE SET NULL',
+        ),
+      );
   static const VerificationMeta _labelMeta = const VerificationMeta('label');
   @override
   late final GeneratedColumn<String> label = GeneratedColumn<String>(
@@ -2119,6 +2132,7 @@ class $PairedDevicesTableTable extends PairedDevicesTable
     'status',
     aliasedName,
     false,
+    check: () => status.isIn(PlatformStoredValues.pairedDeviceStatus),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('pendingConfirm'),
@@ -2161,7 +2175,7 @@ class $PairedDevicesTableTable extends PairedDevicesTable
   List<GeneratedColumn> get $columns => [
     id,
     userId,
-    workspaceId,
+    landingWorkspaceId,
     label,
     platform,
     pskRef,
@@ -2193,13 +2207,15 @@ class $PairedDevicesTableTable extends PairedDevicesTable
         _userIdMeta,
         userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
       );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
     }
-    if (data.containsKey('workspace_id')) {
+    if (data.containsKey('landing_workspace_id')) {
       context.handle(
-        _workspaceIdMeta,
-        workspaceId.isAcceptableOrUnknown(
-          data['workspace_id']!,
-          _workspaceIdMeta,
+        _landingWorkspaceIdMeta,
+        landingWorkspaceId.isAcceptableOrUnknown(
+          data['landing_workspace_id']!,
+          _landingWorkspaceIdMeta,
         ),
       );
     }
@@ -2277,10 +2293,10 @@ class $PairedDevicesTableTable extends PairedDevicesTable
       userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}user_id'],
-      ),
-      workspaceId: attachedDatabase.typeMapping.read(
+      )!,
+      landingWorkspaceId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}workspace_id'],
+        data['${effectivePrefix}landing_workspace_id'],
       ),
       label: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2328,12 +2344,13 @@ class PairedDevicesTableData extends DataClass
   /// Unique device id (generated at pairing).
   final String id;
 
-  /// The user this device authenticates as. Every writer sets it; a row
-  /// without one is refused at authentication.
-  final String? userId;
+  /// The user this device authenticates as; the device goes with them.
+  final String userId;
 
-  /// Workspace active at pairing time (seed for the session binding).
-  final String? workspaceId;
+  /// The workspace active at pairing time (seed for the session binding), or
+  /// null when it was paired outside one (the local desktop, a web sign-in).
+  /// History, not ownership: cleared if the workspace row ever goes.
+  final String? landingWorkspaceId;
 
   /// User-editable label (e.g. "iPhone").
   final String label;
@@ -2348,7 +2365,7 @@ class PairedDevicesTableData extends DataClass
   /// Pinned remote DTLS fingerprint (TOFU on first connect).
   final String? remoteFingerprint;
 
-  /// Pairing status: `pendingConfirm`, `active`, or `revoked`.
+  /// Pairing status: a [PlatformStoredValues.pairedDeviceStatus] value.
   final String status;
 
   /// When the device was paired.
@@ -2368,8 +2385,8 @@ class PairedDevicesTableData extends DataClass
   final DateTime? expiresAt;
   const PairedDevicesTableData({
     required this.id,
-    this.userId,
-    this.workspaceId,
+    required this.userId,
+    this.landingWorkspaceId,
     required this.label,
     required this.platform,
     required this.pskRef,
@@ -2383,11 +2400,9 @@ class PairedDevicesTableData extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    if (!nullToAbsent || userId != null) {
-      map['user_id'] = Variable<String>(userId);
-    }
-    if (!nullToAbsent || workspaceId != null) {
-      map['workspace_id'] = Variable<String>(workspaceId);
+    map['user_id'] = Variable<String>(userId);
+    if (!nullToAbsent || landingWorkspaceId != null) {
+      map['landing_workspace_id'] = Variable<String>(landingWorkspaceId);
     }
     map['label'] = Variable<String>(label);
     map['platform'] = Variable<String>(platform);
@@ -2409,12 +2424,10 @@ class PairedDevicesTableData extends DataClass
   PairedDevicesTableCompanion toCompanion(bool nullToAbsent) {
     return PairedDevicesTableCompanion(
       id: Value(id),
-      userId: userId == null && nullToAbsent
+      userId: Value(userId),
+      landingWorkspaceId: landingWorkspaceId == null && nullToAbsent
           ? const Value.absent()
-          : Value(userId),
-      workspaceId: workspaceId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(workspaceId),
+          : Value(landingWorkspaceId),
       label: Value(label),
       platform: Value(platform),
       pskRef: Value(pskRef),
@@ -2439,8 +2452,10 @@ class PairedDevicesTableData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PairedDevicesTableData(
       id: serializer.fromJson<String>(json['id']),
-      userId: serializer.fromJson<String?>(json['userId']),
-      workspaceId: serializer.fromJson<String?>(json['workspaceId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      landingWorkspaceId: serializer.fromJson<String?>(
+        json['landingWorkspaceId'],
+      ),
       label: serializer.fromJson<String>(json['label']),
       platform: serializer.fromJson<String>(json['platform']),
       pskRef: serializer.fromJson<String>(json['pskRef']),
@@ -2458,8 +2473,8 @@ class PairedDevicesTableData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'userId': serializer.toJson<String?>(userId),
-      'workspaceId': serializer.toJson<String?>(workspaceId),
+      'userId': serializer.toJson<String>(userId),
+      'landingWorkspaceId': serializer.toJson<String?>(landingWorkspaceId),
       'label': serializer.toJson<String>(label),
       'platform': serializer.toJson<String>(platform),
       'pskRef': serializer.toJson<String>(pskRef),
@@ -2473,8 +2488,8 @@ class PairedDevicesTableData extends DataClass
 
   PairedDevicesTableData copyWith({
     String? id,
-    Value<String?> userId = const Value.absent(),
-    Value<String?> workspaceId = const Value.absent(),
+    String? userId,
+    Value<String?> landingWorkspaceId = const Value.absent(),
     String? label,
     String? platform,
     String? pskRef,
@@ -2485,8 +2500,10 @@ class PairedDevicesTableData extends DataClass
     Value<DateTime?> expiresAt = const Value.absent(),
   }) => PairedDevicesTableData(
     id: id ?? this.id,
-    userId: userId.present ? userId.value : this.userId,
-    workspaceId: workspaceId.present ? workspaceId.value : this.workspaceId,
+    userId: userId ?? this.userId,
+    landingWorkspaceId: landingWorkspaceId.present
+        ? landingWorkspaceId.value
+        : this.landingWorkspaceId,
     label: label ?? this.label,
     platform: platform ?? this.platform,
     pskRef: pskRef ?? this.pskRef,
@@ -2502,9 +2519,9 @@ class PairedDevicesTableData extends DataClass
     return PairedDevicesTableData(
       id: data.id.present ? data.id.value : this.id,
       userId: data.userId.present ? data.userId.value : this.userId,
-      workspaceId: data.workspaceId.present
-          ? data.workspaceId.value
-          : this.workspaceId,
+      landingWorkspaceId: data.landingWorkspaceId.present
+          ? data.landingWorkspaceId.value
+          : this.landingWorkspaceId,
       label: data.label.present ? data.label.value : this.label,
       platform: data.platform.present ? data.platform.value : this.platform,
       pskRef: data.pskRef.present ? data.pskRef.value : this.pskRef,
@@ -2525,7 +2542,7 @@ class PairedDevicesTableData extends DataClass
     return (StringBuffer('PairedDevicesTableData(')
           ..write('id: $id, ')
           ..write('userId: $userId, ')
-          ..write('workspaceId: $workspaceId, ')
+          ..write('landingWorkspaceId: $landingWorkspaceId, ')
           ..write('label: $label, ')
           ..write('platform: $platform, ')
           ..write('pskRef: $pskRef, ')
@@ -2542,7 +2559,7 @@ class PairedDevicesTableData extends DataClass
   int get hashCode => Object.hash(
     id,
     userId,
-    workspaceId,
+    landingWorkspaceId,
     label,
     platform,
     pskRef,
@@ -2558,7 +2575,7 @@ class PairedDevicesTableData extends DataClass
       (other is PairedDevicesTableData &&
           other.id == this.id &&
           other.userId == this.userId &&
-          other.workspaceId == this.workspaceId &&
+          other.landingWorkspaceId == this.landingWorkspaceId &&
           other.label == this.label &&
           other.platform == this.platform &&
           other.pskRef == this.pskRef &&
@@ -2572,8 +2589,8 @@ class PairedDevicesTableData extends DataClass
 class PairedDevicesTableCompanion
     extends UpdateCompanion<PairedDevicesTableData> {
   final Value<String> id;
-  final Value<String?> userId;
-  final Value<String?> workspaceId;
+  final Value<String> userId;
+  final Value<String?> landingWorkspaceId;
   final Value<String> label;
   final Value<String> platform;
   final Value<String> pskRef;
@@ -2586,7 +2603,7 @@ class PairedDevicesTableCompanion
   const PairedDevicesTableCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
-    this.workspaceId = const Value.absent(),
+    this.landingWorkspaceId = const Value.absent(),
     this.label = const Value.absent(),
     this.platform = const Value.absent(),
     this.pskRef = const Value.absent(),
@@ -2599,8 +2616,8 @@ class PairedDevicesTableCompanion
   });
   PairedDevicesTableCompanion.insert({
     required String id,
-    this.userId = const Value.absent(),
-    this.workspaceId = const Value.absent(),
+    required String userId,
+    this.landingWorkspaceId = const Value.absent(),
     required String label,
     this.platform = const Value.absent(),
     required String pskRef,
@@ -2611,12 +2628,13 @@ class PairedDevicesTableCompanion
     this.expiresAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
+       userId = Value(userId),
        label = Value(label),
        pskRef = Value(pskRef);
   static Insertable<PairedDevicesTableData> custom({
     Expression<String>? id,
     Expression<String>? userId,
-    Expression<String>? workspaceId,
+    Expression<String>? landingWorkspaceId,
     Expression<String>? label,
     Expression<String>? platform,
     Expression<String>? pskRef,
@@ -2630,7 +2648,8 @@ class PairedDevicesTableCompanion
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (userId != null) 'user_id': userId,
-      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (landingWorkspaceId != null)
+        'landing_workspace_id': landingWorkspaceId,
       if (label != null) 'label': label,
       if (platform != null) 'platform': platform,
       if (pskRef != null) 'psk_ref': pskRef,
@@ -2645,8 +2664,8 @@ class PairedDevicesTableCompanion
 
   PairedDevicesTableCompanion copyWith({
     Value<String>? id,
-    Value<String?>? userId,
-    Value<String?>? workspaceId,
+    Value<String>? userId,
+    Value<String?>? landingWorkspaceId,
     Value<String>? label,
     Value<String>? platform,
     Value<String>? pskRef,
@@ -2660,7 +2679,7 @@ class PairedDevicesTableCompanion
     return PairedDevicesTableCompanion(
       id: id ?? this.id,
       userId: userId ?? this.userId,
-      workspaceId: workspaceId ?? this.workspaceId,
+      landingWorkspaceId: landingWorkspaceId ?? this.landingWorkspaceId,
       label: label ?? this.label,
       platform: platform ?? this.platform,
       pskRef: pskRef ?? this.pskRef,
@@ -2682,8 +2701,8 @@ class PairedDevicesTableCompanion
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
     }
-    if (workspaceId.present) {
-      map['workspace_id'] = Variable<String>(workspaceId.value);
+    if (landingWorkspaceId.present) {
+      map['landing_workspace_id'] = Variable<String>(landingWorkspaceId.value);
     }
     if (label.present) {
       map['label'] = Variable<String>(label.value);
@@ -2720,7 +2739,7 @@ class PairedDevicesTableCompanion
     return (StringBuffer('PairedDevicesTableCompanion(')
           ..write('id: $id, ')
           ..write('userId: $userId, ')
-          ..write('workspaceId: $workspaceId, ')
+          ..write('landingWorkspaceId: $landingWorkspaceId, ')
           ..write('label: $label, ')
           ..write('platform: $platform, ')
           ..write('pskRef: $pskRef, ')
@@ -4215,6 +4234,7 @@ class $WorkersTableTable extends WorkersTable
     'caps_json',
     aliasedName,
     false,
+    check: () => isJsonObject(capsJson),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('{}'),
@@ -4252,6 +4272,9 @@ class $WorkersTableTable extends WorkersTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES paired_devices (id) ON DELETE SET NULL',
+    ),
   );
   static const VerificationMeta _protocolVersionMeta = const VerificationMeta(
     'protocolVersion',
@@ -4271,6 +4294,7 @@ class $WorkersTableTable extends WorkersTable
     'status',
     aliasedName,
     false,
+    check: () => status.isIn(PlatformStoredValues.workerStatus),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('offline'),
@@ -4297,6 +4321,9 @@ class $WorkersTableTable extends WorkersTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id) ON DELETE SET NULL',
+    ),
   );
   static const VerificationMeta _drainedAtMeta = const VerificationMeta(
     'drainedAt',
@@ -4555,29 +4582,32 @@ class WorkersTableData extends DataClass
   final String name;
 
   /// JSON-encoded `WorkerCapabilities` (OS, arch, cores, RAM, flutter SDK,
-  /// sandbox backends, ML/GPU, always-on).
+  /// sandbox backends, ML/GPU, always-on): a JSON object.
   final String capsJson;
 
   /// Coarse platform string (`macos`/`linux`/`windows`) for quick display.
+  /// An open set: whatever the worker reports.
   final String platform;
 
   /// Reference to the paired-device credential (never the secret itself).
   final String? credentialRef;
 
-  /// The paired-device row backing this worker (PRD 15), when paired.
+  /// The paired-device row backing this worker (PRD 15), when paired. Cleared
+  /// when the device goes: the worker then authenticates as nothing.
   final String? pairedDeviceId;
 
   /// Wire protocol version the worker handshaked with. A mismatch marks the
   /// worker `incompatible` and withholds leases (spec Clarifications).
   final int protocolVersion;
 
-  /// Lifecycle status: `online`/`draining`/`offline`/`incompatible`/`revoked`.
+  /// Lifecycle status: a `WorkerStatus` wire name.
   final String status;
 
   /// Last heartbeat time (server clock; workers never set server time).
   final DateTime? lastHeartbeatAt;
 
-  /// Principal (user id) that registered this worker.
+  /// Principal (user id) that registered this worker. History: cleared if
+  /// the user row goes.
   final String? registeredBy;
 
   /// When the operator put the worker into drain (finish current, take no new).
@@ -5063,6 +5093,9 @@ class $JobsTableTable extends JobsTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES workspaces (id) ON DELETE CASCADE',
+    ),
   );
   static const VerificationMeta _kindMeta = const VerificationMeta('kind');
   @override
@@ -5070,6 +5103,7 @@ class $JobsTableTable extends JobsTable
     'kind',
     aliasedName,
     false,
+    check: () => kind.isIn(PlatformStoredValues.jobKind),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -5081,6 +5115,7 @@ class $JobsTableTable extends JobsTable
     'spec_json',
     aliasedName,
     false,
+    check: () => isJsonObject(specJson),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('{}'),
@@ -5093,6 +5128,7 @@ class $JobsTableTable extends JobsTable
     'required_caps_json',
     aliasedName,
     false,
+    check: () => isJsonArray(requiredCapsJson),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
@@ -5106,6 +5142,7 @@ class $JobsTableTable extends JobsTable
         'preferred_caps_json',
         aliasedName,
         false,
+        check: () => isJsonArray(preferredCapsJson),
         type: DriftSqlType.string,
         requiredDuringInsert: false,
         defaultValue: const Constant('[]'),
@@ -5116,6 +5153,7 @@ class $JobsTableTable extends JobsTable
     'status',
     aliasedName,
     false,
+    check: () => status.isIn(PlatformStoredValues.jobStatus),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('queued'),
@@ -5130,6 +5168,9 @@ class $JobsTableTable extends JobsTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES workers (id) ON DELETE SET NULL',
+    ),
   );
   static const VerificationMeta _pinnedWorkerIdMeta = const VerificationMeta(
     'pinnedWorkerId',
@@ -5176,13 +5217,16 @@ class $JobsTableTable extends JobsTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id) ON DELETE SET NULL',
+    ),
   );
-  static const VerificationMeta _costCentsMeta = const VerificationMeta(
-    'costCents',
+  static const VerificationMeta _costMicrosMeta = const VerificationMeta(
+    'costMicros',
   );
   @override
-  late final GeneratedColumn<int> costCents = GeneratedColumn<int>(
-    'cost_cents',
+  late final GeneratedColumn<int> costMicros = GeneratedColumn<int>(
+    'cost_micros',
     aliasedName,
     false,
     type: DriftSqlType.int,
@@ -5233,6 +5277,7 @@ class $JobsTableTable extends JobsTable
     'result_json',
     aliasedName,
     true,
+    check: () => isJson(resultJson),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
@@ -5326,7 +5371,7 @@ class $JobsTableTable extends JobsTable
     leaseExpiresAt,
     priority,
     submittedBy,
-    costCents,
+    costMicros,
     attempts,
     maxAttempts,
     lastAckedSeq,
@@ -5444,10 +5489,10 @@ class $JobsTableTable extends JobsTable
         ),
       );
     }
-    if (data.containsKey('cost_cents')) {
+    if (data.containsKey('cost_micros')) {
       context.handle(
-        _costCentsMeta,
-        costCents.isAcceptableOrUnknown(data['cost_cents']!, _costCentsMeta),
+        _costMicrosMeta,
+        costMicros.isAcceptableOrUnknown(data['cost_micros']!, _costMicrosMeta),
       );
     }
     if (data.containsKey('attempts')) {
@@ -5582,9 +5627,9 @@ class $JobsTableTable extends JobsTable
         DriftSqlType.string,
         data['${effectivePrefix}submitted_by'],
       ),
-      costCents: attachedDatabase.typeMapping.read(
+      costMicros: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}cost_cents'],
+        data['${effectivePrefix}cost_micros'],
       )!,
       attempts: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -5643,14 +5688,13 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
   /// Unique job id (UUID v4).
   final String id;
 
-  /// Workspace scope.
+  /// Workspace scope; a job is part of its workspace.
   final String workspaceId;
 
-  /// Job kind wire name (`agentRun`/`pipelineStep`/`codeIndex`/`goldenRender`/
-  /// `benchmark`/`evalBatch`).
+  /// Job kind: a `JobKind` wire name.
   final String kind;
 
-  /// JSON-encoded `JobSpec` payload (kind-specific).
+  /// JSON-encoded `JobSpec` payload (kind-specific): a JSON object.
   final String specJson;
 
   /// JSON array of required capability keys (must all be present on a worker).
@@ -5659,13 +5703,16 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
   /// JSON array of preferred capability keys (break ties / prefer placement).
   final String preferredCapsJson;
 
-  /// Status: `queued`/`leased`/`running`/`done`/`failed`/`reaped`/`cancelled`.
+  /// Status: a `JobStatus` wire name.
   final String status;
 
-  /// The worker currently holding the lease (null while queued).
+  /// The worker currently holding the lease (null while queued). Cleared if
+  /// the worker row goes: the reaper then sees a lease nobody holds.
   final String? workerId;
 
   /// An explicit pin: this job MUST run on this worker id (deterministic).
+  /// No foreign key: a pin may name a worker that is not registered (yet, or
+  /// any more); the scheduler then reports it unavailable.
   final String? pinnedWorkerId;
 
   /// Lease expiry (server clock). A worker that vanishes has its lease reaped
@@ -5675,11 +5722,13 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
   /// Scheduling priority (higher runs first within a workspace).
   final int priority;
 
-  /// Principal (user id) that submitted the job.
+  /// Principal (user id) that submitted the job. History: cleared if the user
+  /// row goes.
   final String? submittedBy;
 
-  /// Metered worker cost in cents (token cost stays the billable cost).
-  final int costCents;
+  /// Metered worker cost in micro-dollars (token cost stays the billable
+  /// cost).
+  final int costMicros;
 
   /// Attempt count (incremented on each lease → reap/retry cycle).
   final int attempts;
@@ -5697,9 +5746,11 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
   final String? error;
 
   /// Correlated agent run / conversation this job drives, when applicable.
+  /// No foreign key: agents live in the workspace's own database.
   final String? agentId;
 
-  /// Correlated conversation (space) id, when applicable.
+  /// Correlated conversation (space) id, when applicable. No foreign key:
+  /// conversations live in the workspace's own database.
   final String? conversationId;
 
   /// Submission time.
@@ -5726,7 +5777,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
     this.leaseExpiresAt,
     required this.priority,
     this.submittedBy,
-    required this.costCents,
+    required this.costMicros,
     required this.attempts,
     required this.maxAttempts,
     required this.lastAckedSeq,
@@ -5762,7 +5813,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
     if (!nullToAbsent || submittedBy != null) {
       map['submitted_by'] = Variable<String>(submittedBy);
     }
-    map['cost_cents'] = Variable<int>(costCents);
+    map['cost_micros'] = Variable<int>(costMicros);
     map['attempts'] = Variable<int>(attempts);
     map['max_attempts'] = Variable<int>(maxAttempts);
     map['last_acked_seq'] = Variable<int>(lastAckedSeq);
@@ -5813,7 +5864,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
       submittedBy: submittedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(submittedBy),
-      costCents: Value(costCents),
+      costMicros: Value(costMicros),
       attempts: Value(attempts),
       maxAttempts: Value(maxAttempts),
       lastAckedSeq: Value(lastAckedSeq),
@@ -5860,7 +5911,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
       leaseExpiresAt: serializer.fromJson<DateTime?>(json['leaseExpiresAt']),
       priority: serializer.fromJson<int>(json['priority']),
       submittedBy: serializer.fromJson<String?>(json['submittedBy']),
-      costCents: serializer.fromJson<int>(json['costCents']),
+      costMicros: serializer.fromJson<int>(json['costMicros']),
       attempts: serializer.fromJson<int>(json['attempts']),
       maxAttempts: serializer.fromJson<int>(json['maxAttempts']),
       lastAckedSeq: serializer.fromJson<int>(json['lastAckedSeq']),
@@ -5890,7 +5941,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
       'leaseExpiresAt': serializer.toJson<DateTime?>(leaseExpiresAt),
       'priority': serializer.toJson<int>(priority),
       'submittedBy': serializer.toJson<String?>(submittedBy),
-      'costCents': serializer.toJson<int>(costCents),
+      'costMicros': serializer.toJson<int>(costMicros),
       'attempts': serializer.toJson<int>(attempts),
       'maxAttempts': serializer.toJson<int>(maxAttempts),
       'lastAckedSeq': serializer.toJson<int>(lastAckedSeq),
@@ -5918,7 +5969,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
     Value<DateTime?> leaseExpiresAt = const Value.absent(),
     int? priority,
     Value<String?> submittedBy = const Value.absent(),
-    int? costCents,
+    int? costMicros,
     int? attempts,
     int? maxAttempts,
     int? lastAckedSeq,
@@ -5947,7 +5998,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
         : this.leaseExpiresAt,
     priority: priority ?? this.priority,
     submittedBy: submittedBy.present ? submittedBy.value : this.submittedBy,
-    costCents: costCents ?? this.costCents,
+    costMicros: costMicros ?? this.costMicros,
     attempts: attempts ?? this.attempts,
     maxAttempts: maxAttempts ?? this.maxAttempts,
     lastAckedSeq: lastAckedSeq ?? this.lastAckedSeq,
@@ -5988,7 +6039,9 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
       submittedBy: data.submittedBy.present
           ? data.submittedBy.value
           : this.submittedBy,
-      costCents: data.costCents.present ? data.costCents.value : this.costCents,
+      costMicros: data.costMicros.present
+          ? data.costMicros.value
+          : this.costMicros,
       attempts: data.attempts.present ? data.attempts.value : this.attempts,
       maxAttempts: data.maxAttempts.present
           ? data.maxAttempts.value
@@ -6028,7 +6081,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
           ..write('leaseExpiresAt: $leaseExpiresAt, ')
           ..write('priority: $priority, ')
           ..write('submittedBy: $submittedBy, ')
-          ..write('costCents: $costCents, ')
+          ..write('costMicros: $costMicros, ')
           ..write('attempts: $attempts, ')
           ..write('maxAttempts: $maxAttempts, ')
           ..write('lastAckedSeq: $lastAckedSeq, ')
@@ -6058,7 +6111,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
     leaseExpiresAt,
     priority,
     submittedBy,
-    costCents,
+    costMicros,
     attempts,
     maxAttempts,
     lastAckedSeq,
@@ -6087,7 +6140,7 @@ class JobsTableData extends DataClass implements Insertable<JobsTableData> {
           other.leaseExpiresAt == this.leaseExpiresAt &&
           other.priority == this.priority &&
           other.submittedBy == this.submittedBy &&
-          other.costCents == this.costCents &&
+          other.costMicros == this.costMicros &&
           other.attempts == this.attempts &&
           other.maxAttempts == this.maxAttempts &&
           other.lastAckedSeq == this.lastAckedSeq &&
@@ -6114,7 +6167,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
   final Value<DateTime?> leaseExpiresAt;
   final Value<int> priority;
   final Value<String?> submittedBy;
-  final Value<int> costCents;
+  final Value<int> costMicros;
   final Value<int> attempts;
   final Value<int> maxAttempts;
   final Value<int> lastAckedSeq;
@@ -6140,7 +6193,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
     this.leaseExpiresAt = const Value.absent(),
     this.priority = const Value.absent(),
     this.submittedBy = const Value.absent(),
-    this.costCents = const Value.absent(),
+    this.costMicros = const Value.absent(),
     this.attempts = const Value.absent(),
     this.maxAttempts = const Value.absent(),
     this.lastAckedSeq = const Value.absent(),
@@ -6167,7 +6220,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
     this.leaseExpiresAt = const Value.absent(),
     this.priority = const Value.absent(),
     this.submittedBy = const Value.absent(),
-    this.costCents = const Value.absent(),
+    this.costMicros = const Value.absent(),
     this.attempts = const Value.absent(),
     this.maxAttempts = const Value.absent(),
     this.lastAckedSeq = const Value.absent(),
@@ -6196,7 +6249,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
     Expression<DateTime>? leaseExpiresAt,
     Expression<int>? priority,
     Expression<String>? submittedBy,
-    Expression<int>? costCents,
+    Expression<int>? costMicros,
     Expression<int>? attempts,
     Expression<int>? maxAttempts,
     Expression<int>? lastAckedSeq,
@@ -6223,7 +6276,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
       if (leaseExpiresAt != null) 'lease_expires_at': leaseExpiresAt,
       if (priority != null) 'priority': priority,
       if (submittedBy != null) 'submitted_by': submittedBy,
-      if (costCents != null) 'cost_cents': costCents,
+      if (costMicros != null) 'cost_micros': costMicros,
       if (attempts != null) 'attempts': attempts,
       if (maxAttempts != null) 'max_attempts': maxAttempts,
       if (lastAckedSeq != null) 'last_acked_seq': lastAckedSeq,
@@ -6252,7 +6305,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
     Value<DateTime?>? leaseExpiresAt,
     Value<int>? priority,
     Value<String?>? submittedBy,
-    Value<int>? costCents,
+    Value<int>? costMicros,
     Value<int>? attempts,
     Value<int>? maxAttempts,
     Value<int>? lastAckedSeq,
@@ -6279,7 +6332,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
       leaseExpiresAt: leaseExpiresAt ?? this.leaseExpiresAt,
       priority: priority ?? this.priority,
       submittedBy: submittedBy ?? this.submittedBy,
-      costCents: costCents ?? this.costCents,
+      costMicros: costMicros ?? this.costMicros,
       attempts: attempts ?? this.attempts,
       maxAttempts: maxAttempts ?? this.maxAttempts,
       lastAckedSeq: lastAckedSeq ?? this.lastAckedSeq,
@@ -6334,8 +6387,8 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
     if (submittedBy.present) {
       map['submitted_by'] = Variable<String>(submittedBy.value);
     }
-    if (costCents.present) {
-      map['cost_cents'] = Variable<int>(costCents.value);
+    if (costMicros.present) {
+      map['cost_micros'] = Variable<int>(costMicros.value);
     }
     if (attempts.present) {
       map['attempts'] = Variable<int>(attempts.value);
@@ -6391,7 +6444,7 @@ class JobsTableCompanion extends UpdateCompanion<JobsTableData> {
           ..write('leaseExpiresAt: $leaseExpiresAt, ')
           ..write('priority: $priority, ')
           ..write('submittedBy: $submittedBy, ')
-          ..write('costCents: $costCents, ')
+          ..write('costMicros: $costMicros, ')
           ..write('attempts: $attempts, ')
           ..write('maxAttempts: $maxAttempts, ')
           ..write('lastAckedSeq: $lastAckedSeq, ')
@@ -6434,6 +6487,9 @@ class $PlacementLogTableTable extends PlacementLogTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES workspaces (id) ON DELETE CASCADE',
+    ),
   );
   static const VerificationMeta _jobIdMeta = const VerificationMeta('jobId');
   @override
@@ -6443,6 +6499,9 @@ class $PlacementLogTableTable extends PlacementLogTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES jobs (id) ON DELETE CASCADE',
+    ),
   );
   static const VerificationMeta _workerIdMeta = const VerificationMeta(
     'workerId',
@@ -6454,6 +6513,9 @@ class $PlacementLogTableTable extends PlacementLogTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES workers (id) ON DELETE SET NULL',
+    ),
   );
   static const VerificationMeta _decisionMeta = const VerificationMeta(
     'decision',
@@ -6463,6 +6525,7 @@ class $PlacementLogTableTable extends PlacementLogTable
     'decision',
     aliasedName,
     false,
+    check: () => decision.isIn(PlatformStoredValues.placementCode),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('queued'),
@@ -6610,17 +6673,18 @@ class PlacementLogTableData extends DataClass
   /// Unique row id (UUID v4).
   final String id;
 
-  /// Workspace scope (matches the job).
+  /// Workspace scope (matches the job); goes with its workspace.
   final String workspaceId;
 
-  /// The job this decision is about.
+  /// The job this decision is about; a decision about a job that is gone is
+  /// history of nothing, so it goes with the job.
   final String jobId;
 
   /// The chosen worker id, or null when the decision was "stay queued".
+  /// History: cleared if the worker row goes.
   final String? workerId;
 
-  /// Machine-parseable decision code (`pinned`/`preferred`/`spill`/`queued`/
-  /// `no_capable_worker`/`cache_warming`/`reaped`/`retried`).
+  /// Machine-parseable decision code: a `PlacementCode` wire name.
   final String decision;
 
   /// Human-readable explanation ("ran on mac-studio — required flutter;
@@ -6898,6 +6962,7 @@ class $WorkspaceRoutesTableTable extends WorkspaceRoutesTable
     'kind',
     aliasedName,
     false,
+    check: () => kind.isIn(PlatformStoredValues.workspaceRouteKind),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -6922,6 +6987,9 @@ class $WorkspaceRoutesTableTable extends WorkspaceRoutesTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES workspaces (id) ON DELETE CASCADE',
+    ),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -7021,14 +7089,14 @@ class $WorkspaceRoutesTableTable extends WorkspaceRoutesTable
 
 class WorkspaceRoutesTableData extends DataClass
     implements Insertable<WorkspaceRoutesTableData> {
-  /// The kind of key being routed — see [WorkspaceRouteKind].
+  /// The kind of key being routed: a [WorkspaceRouteKind] wire name.
   final String kind;
 
   /// The key itself: a hash for secrets, the raw id for opaque ids. Never a
   /// plaintext secret.
   final String keyHash;
 
-  /// The workspace that owns the keyed entity.
+  /// The workspace that owns the keyed entity; the route goes with it.
   final String workspaceId;
 
   /// When the route was recorded.
@@ -7211,6 +7279,295 @@ class WorkspaceRoutesTableCompanion
           ..write('keyHash: $keyHash, ')
           ..write('workspaceId: $workspaceId, ')
           ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $InviteSecureRoutesTableTable extends InviteSecureRoutesTable
+    with TableInfo<$InviteSecureRoutesTableTable, InviteSecureRoutesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InviteSecureRoutesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _routeIdMeta = const VerificationMeta(
+    'routeId',
+  );
+  @override
+  late final GeneratedColumn<String> routeId = GeneratedColumn<String>(
+    'route_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codeHashMeta = const VerificationMeta(
+    'codeHash',
+  );
+  @override
+  late final GeneratedColumn<String> codeHash = GeneratedColumn<String>(
+    'code_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
+    'workspaceId',
+  );
+  @override
+  late final GeneratedColumn<String> workspaceId = GeneratedColumn<String>(
+    'workspace_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES workspaces (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [routeId, codeHash, workspaceId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'invite_secure_routes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InviteSecureRoutesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('route_id')) {
+      context.handle(
+        _routeIdMeta,
+        routeId.isAcceptableOrUnknown(data['route_id']!, _routeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_routeIdMeta);
+    }
+    if (data.containsKey('code_hash')) {
+      context.handle(
+        _codeHashMeta,
+        codeHash.isAcceptableOrUnknown(data['code_hash']!, _codeHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeHashMeta);
+    }
+    if (data.containsKey('workspace_id')) {
+      context.handle(
+        _workspaceIdMeta,
+        workspaceId.isAcceptableOrUnknown(
+          data['workspace_id']!,
+          _workspaceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_workspaceIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {routeId};
+  @override
+  InviteSecureRoutesTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InviteSecureRoutesTableData(
+      routeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}route_id'],
+      )!,
+      codeHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code_hash'],
+      )!,
+      workspaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}workspace_id'],
+      )!,
+    );
+  }
+
+  @override
+  $InviteSecureRoutesTableTable createAlias(String alias) {
+    return $InviteSecureRoutesTableTable(attachedDatabase, alias);
+  }
+}
+
+class InviteSecureRoutesTableData extends DataClass
+    implements Insertable<InviteSecureRoutesTableData> {
+  /// The public id a client derives from the invite code.
+  final String routeId;
+
+  /// `SHA-256(code)`: the handshake PSK. Never sent to a caller.
+  final String codeHash;
+
+  /// The workspace the invite belongs to; the route goes with it.
+  final String workspaceId;
+  const InviteSecureRoutesTableData({
+    required this.routeId,
+    required this.codeHash,
+    required this.workspaceId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['route_id'] = Variable<String>(routeId);
+    map['code_hash'] = Variable<String>(codeHash);
+    map['workspace_id'] = Variable<String>(workspaceId);
+    return map;
+  }
+
+  InviteSecureRoutesTableCompanion toCompanion(bool nullToAbsent) {
+    return InviteSecureRoutesTableCompanion(
+      routeId: Value(routeId),
+      codeHash: Value(codeHash),
+      workspaceId: Value(workspaceId),
+    );
+  }
+
+  factory InviteSecureRoutesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InviteSecureRoutesTableData(
+      routeId: serializer.fromJson<String>(json['routeId']),
+      codeHash: serializer.fromJson<String>(json['codeHash']),
+      workspaceId: serializer.fromJson<String>(json['workspaceId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'routeId': serializer.toJson<String>(routeId),
+      'codeHash': serializer.toJson<String>(codeHash),
+      'workspaceId': serializer.toJson<String>(workspaceId),
+    };
+  }
+
+  InviteSecureRoutesTableData copyWith({
+    String? routeId,
+    String? codeHash,
+    String? workspaceId,
+  }) => InviteSecureRoutesTableData(
+    routeId: routeId ?? this.routeId,
+    codeHash: codeHash ?? this.codeHash,
+    workspaceId: workspaceId ?? this.workspaceId,
+  );
+  InviteSecureRoutesTableData copyWithCompanion(
+    InviteSecureRoutesTableCompanion data,
+  ) {
+    return InviteSecureRoutesTableData(
+      routeId: data.routeId.present ? data.routeId.value : this.routeId,
+      codeHash: data.codeHash.present ? data.codeHash.value : this.codeHash,
+      workspaceId: data.workspaceId.present
+          ? data.workspaceId.value
+          : this.workspaceId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InviteSecureRoutesTableData(')
+          ..write('routeId: $routeId, ')
+          ..write('codeHash: $codeHash, ')
+          ..write('workspaceId: $workspaceId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(routeId, codeHash, workspaceId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InviteSecureRoutesTableData &&
+          other.routeId == this.routeId &&
+          other.codeHash == this.codeHash &&
+          other.workspaceId == this.workspaceId);
+}
+
+class InviteSecureRoutesTableCompanion
+    extends UpdateCompanion<InviteSecureRoutesTableData> {
+  final Value<String> routeId;
+  final Value<String> codeHash;
+  final Value<String> workspaceId;
+  final Value<int> rowid;
+  const InviteSecureRoutesTableCompanion({
+    this.routeId = const Value.absent(),
+    this.codeHash = const Value.absent(),
+    this.workspaceId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  InviteSecureRoutesTableCompanion.insert({
+    required String routeId,
+    required String codeHash,
+    required String workspaceId,
+    this.rowid = const Value.absent(),
+  }) : routeId = Value(routeId),
+       codeHash = Value(codeHash),
+       workspaceId = Value(workspaceId);
+  static Insertable<InviteSecureRoutesTableData> custom({
+    Expression<String>? routeId,
+    Expression<String>? codeHash,
+    Expression<String>? workspaceId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (routeId != null) 'route_id': routeId,
+      if (codeHash != null) 'code_hash': codeHash,
+      if (workspaceId != null) 'workspace_id': workspaceId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  InviteSecureRoutesTableCompanion copyWith({
+    Value<String>? routeId,
+    Value<String>? codeHash,
+    Value<String>? workspaceId,
+    Value<int>? rowid,
+  }) {
+    return InviteSecureRoutesTableCompanion(
+      routeId: routeId ?? this.routeId,
+      codeHash: codeHash ?? this.codeHash,
+      workspaceId: workspaceId ?? this.workspaceId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (routeId.present) {
+      map['route_id'] = Variable<String>(routeId.value);
+    }
+    if (codeHash.present) {
+      map['code_hash'] = Variable<String>(codeHash.value);
+    }
+    if (workspaceId.present) {
+      map['workspace_id'] = Variable<String>(workspaceId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InviteSecureRoutesTableCompanion(')
+          ..write('routeId: $routeId, ')
+          ..write('codeHash: $codeHash, ')
+          ..write('workspaceId: $workspaceId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7714,6 +8071,7 @@ class $SsoConnectionsTableTable extends SsoConnectionsTable
     'id',
     aliasedName,
     false,
+    check: () => id.isIn(PlatformStoredValues.ssoProviderKind),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -7723,6 +8081,7 @@ class $SsoConnectionsTableTable extends SsoConnectionsTable
     'kind',
     aliasedName,
     false,
+    check: () => kind.isIn(PlatformStoredValues.ssoProviderKind),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -7843,6 +8202,7 @@ class $SsoConnectionsTableTable extends SsoConnectionsTable
     'default_role',
     aliasedName,
     false,
+    check: () => defaultRole.isIn(PlatformStoredValues.workspaceRole),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('member'),
@@ -7855,6 +8215,7 @@ class $SsoConnectionsTableTable extends SsoConnectionsTable
     'group_role_map',
     aliasedName,
     false,
+    check: () => isJsonObject(groupRoleMap),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('{}'),
@@ -8226,7 +8587,7 @@ class SsoConnectionsTableData extends DataClass
   /// Row id: the kind slug (`saml` / `oidc`).
   final String id;
 
-  /// Protocol kind (`saml` / `oidc`).
+  /// Protocol kind: an `SsoProviderKind` wire name.
   final String kind;
 
   /// Whether logins may use this connection.
@@ -8256,7 +8617,8 @@ class SsoConnectionsTableData extends DataClass
   /// SAML attribute carrying group names.
   final String groupsAttribute;
 
-  /// Role granted when no group maps (WorkspaceRole wire name).
+  /// Role granted when no group maps: a preset `WorkspaceRole` wire name
+  /// (custom roles belong to one workspace; this row serves all of them).
   final String defaultRole;
 
   /// Group value → role, as a JSON object of wire names.
@@ -8850,6 +9212,7 @@ class $ManagedActionPoliciesTableTable extends ManagedActionPoliciesTable
     'action_class',
     aliasedName,
     true,
+    check: () => actionClass.isIn(PlatformStoredValues.actionClass),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
@@ -8872,6 +9235,7 @@ class $ManagedActionPoliciesTableTable extends ManagedActionPoliciesTable
     'decision',
     aliasedName,
     false,
+    check: () => decision.isIn(PlatformStoredValues.actionDecision),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('prompt'),
@@ -8884,6 +9248,7 @@ class $ManagedActionPoliciesTableTable extends ManagedActionPoliciesTable
     'enforcement',
     aliasedName,
     true,
+    check: () => enforcement.isIn(PlatformStoredValues.enforcementLevel),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
@@ -8895,6 +9260,7 @@ class $ManagedActionPoliciesTableTable extends ManagedActionPoliciesTable
     'constraint_json',
     aliasedName,
     true,
+    check: () => isJsonObject(constraintJson),
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
@@ -8908,6 +9274,9 @@ class $ManagedActionPoliciesTableTable extends ManagedActionPoliciesTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id) ON DELETE SET NULL',
+    ),
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -9009,10 +9378,6 @@ class $ManagedActionPoliciesTableTable extends ManagedActionPoliciesTable
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  List<Set<GeneratedColumn>> get uniqueKeys => [
-    {actionClass, commandPrefix},
-  ];
-  @override
   ManagedActionPoliciesTableData map(
     Map<String, dynamic> data, {
     String? tablePrefix,
@@ -9073,16 +9438,19 @@ class ManagedActionPoliciesTableData extends DataClass
   final String? commandPrefix;
 
   /// The decision: `allow` / `prompt` / `deny`. (`allow` is stored but can
-  /// only ever confirm — the merge is most-restrictive.)
+  /// only ever confirm — the merge is most-restrictive.) An `ActionDecision`
+  /// wire name.
   final String decision;
 
-  /// Enforcement level: `advisory` / `soft` / `hard` (null = `hard`).
+  /// Enforcement level: an `EnforcementLevel` wire name (null = `hard`).
   final String? enforcement;
 
-  /// Optional argument constraint JSON (`ActionConstraint` wire shape).
+  /// Optional argument constraint (`ActionConstraint` wire shape): a JSON
+  /// object.
   final String? constraintJson;
 
-  /// The user who last wrote the rule (the server owner).
+  /// The user who last wrote the rule (the server owner). History: cleared
+  /// if the user row goes.
   final String? updatedBy;
 
   /// Last mutation time.
@@ -9441,6 +9809,9 @@ class $EnvironmentSlotLeasesTableTable extends EnvironmentSlotLeasesTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES workspaces (id) ON DELETE CASCADE',
+    ),
   );
   static const VerificationMeta _spaceIdMeta = const VerificationMeta(
     'spaceId',
@@ -9666,13 +10037,15 @@ class EnvironmentSlotLeasesTableData extends DataClass
   /// Ports in the block.
   final int size;
 
-  /// Holding workspace.
+  /// Holding workspace; the block goes back to the pool with it.
   final String workspaceId;
 
-  /// Holding space.
+  /// Holding space. No foreign key: spaces live in the workspace's own
+  /// database.
   final String spaceId;
 
-  /// The definition.
+  /// The definition. No foreign key: definitions live in the workspace's own
+  /// database.
   final String definitionId;
 
   /// A name pool, when the environment uses one.
@@ -10045,6 +10418,7 @@ class $ServerAuditTableTable extends ServerAuditTable
     'arg_names',
     aliasedName,
     false,
+    check: () => isJsonArray(argNames),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -10056,6 +10430,7 @@ class $ServerAuditTableTable extends ServerAuditTable
     'outcome',
     aliasedName,
     false,
+    check: () => outcome.isIn(PlatformStoredValues.auditOutcome),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
@@ -10199,10 +10574,13 @@ class ServerAuditTableData extends DataClass
   /// Unique entry identifier.
   final String id;
 
-  /// The person who made the call.
+  /// The person who made the call. No foreign key: the row is written after
+  /// the call, which may itself have removed the person's row, and the trail
+  /// must keep it either way.
   final String userId;
 
-  /// The device the call came from, when known.
+  /// The device the call came from, when known. No foreign key, for the same
+  /// reason (revoking a device is an audited call).
   final String? deviceId;
 
   /// The client address the session observed, when known.
@@ -10214,7 +10592,7 @@ class ServerAuditTableData extends DataClass
   /// JSON array of the argument names, sorted.
   final String argNames;
 
-  /// `ok`, `denied` or `failed`.
+  /// An `AuditOutcome` name: `ok`, `denied` or `failed`.
   final String outcome;
 
   /// When the call ended.
@@ -10492,13 +10870,671 @@ class ServerAuditTableCompanion extends UpdateCompanion<ServerAuditTableData> {
   }
 }
 
+class $ServerNoticesTableTable extends ServerNoticesTable
+    with TableInfo<$ServerNoticesTableTable, ServerNoticesTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServerNoticesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    check: () => kind.isIn(PlatformStoredValues.serverNoticeKind),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subjectMeta = const VerificationMeta(
+    'subject',
+  );
+  @override
+  late final GeneratedColumn<String> subject = GeneratedColumn<String>(
+    'subject',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _detailMeta = const VerificationMeta('detail');
+  @override
+  late final GeneratedColumn<String> detail = GeneratedColumn<String>(
+    'detail',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [kind, subject, detail, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'server_notices';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ServerNoticesTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('subject')) {
+      context.handle(
+        _subjectMeta,
+        subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectMeta);
+    }
+    if (data.containsKey('detail')) {
+      context.handle(
+        _detailMeta,
+        detail.isAcceptableOrUnknown(data['detail']!, _detailMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_detailMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {kind, subject};
+  @override
+  ServerNoticesTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ServerNoticesTableData(
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      subject: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject'],
+      )!,
+      detail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detail'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ServerNoticesTableTable createAlias(String alias) {
+    return $ServerNoticesTableTable(attachedDatabase, alias);
+  }
+}
+
+class ServerNoticesTableData extends DataClass
+    implements Insertable<ServerNoticesTableData> {
+  /// What it is about: a `ServerNoticeKind` wire name.
+  final String kind;
+
+  /// The thing it names (a workspace id). No foreign key: a notice is kept
+  /// until it is resolved, whatever happened to what it names.
+  final String subject;
+
+  /// The operator-facing finding.
+  final String detail;
+
+  /// When it was first raised.
+  final DateTime createdAt;
+  const ServerNoticesTableData({
+    required this.kind,
+    required this.subject,
+    required this.detail,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['kind'] = Variable<String>(kind);
+    map['subject'] = Variable<String>(subject);
+    map['detail'] = Variable<String>(detail);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ServerNoticesTableCompanion toCompanion(bool nullToAbsent) {
+    return ServerNoticesTableCompanion(
+      kind: Value(kind),
+      subject: Value(subject),
+      detail: Value(detail),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ServerNoticesTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ServerNoticesTableData(
+      kind: serializer.fromJson<String>(json['kind']),
+      subject: serializer.fromJson<String>(json['subject']),
+      detail: serializer.fromJson<String>(json['detail']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'kind': serializer.toJson<String>(kind),
+      'subject': serializer.toJson<String>(subject),
+      'detail': serializer.toJson<String>(detail),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ServerNoticesTableData copyWith({
+    String? kind,
+    String? subject,
+    String? detail,
+    DateTime? createdAt,
+  }) => ServerNoticesTableData(
+    kind: kind ?? this.kind,
+    subject: subject ?? this.subject,
+    detail: detail ?? this.detail,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ServerNoticesTableData copyWithCompanion(ServerNoticesTableCompanion data) {
+    return ServerNoticesTableData(
+      kind: data.kind.present ? data.kind.value : this.kind,
+      subject: data.subject.present ? data.subject.value : this.subject,
+      detail: data.detail.present ? data.detail.value : this.detail,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServerNoticesTableData(')
+          ..write('kind: $kind, ')
+          ..write('subject: $subject, ')
+          ..write('detail: $detail, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(kind, subject, detail, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ServerNoticesTableData &&
+          other.kind == this.kind &&
+          other.subject == this.subject &&
+          other.detail == this.detail &&
+          other.createdAt == this.createdAt);
+}
+
+class ServerNoticesTableCompanion
+    extends UpdateCompanion<ServerNoticesTableData> {
+  final Value<String> kind;
+  final Value<String> subject;
+  final Value<String> detail;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ServerNoticesTableCompanion({
+    this.kind = const Value.absent(),
+    this.subject = const Value.absent(),
+    this.detail = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ServerNoticesTableCompanion.insert({
+    required String kind,
+    required String subject,
+    required String detail,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : kind = Value(kind),
+       subject = Value(subject),
+       detail = Value(detail),
+       createdAt = Value(createdAt);
+  static Insertable<ServerNoticesTableData> custom({
+    Expression<String>? kind,
+    Expression<String>? subject,
+    Expression<String>? detail,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (kind != null) 'kind': kind,
+      if (subject != null) 'subject': subject,
+      if (detail != null) 'detail': detail,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ServerNoticesTableCompanion copyWith({
+    Value<String>? kind,
+    Value<String>? subject,
+    Value<String>? detail,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ServerNoticesTableCompanion(
+      kind: kind ?? this.kind,
+      subject: subject ?? this.subject,
+      detail: detail ?? this.detail,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (subject.present) {
+      map['subject'] = Variable<String>(subject.value);
+    }
+    if (detail.present) {
+      map['detail'] = Variable<String>(detail.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServerNoticesTableCompanion(')
+          ..write('kind: $kind, ')
+          ..write('subject: $subject, ')
+          ..write('detail: $detail, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AgentPullRequestRequestersTableTable
+    extends AgentPullRequestRequestersTable
+    with
+        TableInfo<
+          $AgentPullRequestRequestersTableTable,
+          AgentPullRequestRequestersTableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AgentPullRequestRequestersTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    check: () => state.isIn(PlatformStoredValues.agentPullRequestRecordState),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _prKeyMeta = const VerificationMeta('prKey');
+  @override
+  late final GeneratedColumn<String> prKey = GeneratedColumn<String>(
+    'pr_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [state, prKey, userId, recordedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'agent_pull_request_requesters';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AgentPullRequestRequestersTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('pr_key')) {
+      context.handle(
+        _prKeyMeta,
+        prKey.isAcceptableOrUnknown(data['pr_key']!, _prKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_prKeyMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {state, prKey, userId};
+  @override
+  AgentPullRequestRequestersTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AgentPullRequestRequestersTableData(
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      prKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pr_key'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AgentPullRequestRequestersTableTable createAlias(String alias) {
+    return $AgentPullRequestRequestersTableTable(attachedDatabase, alias);
+  }
+}
+
+class AgentPullRequestRequestersTableData extends DataClass
+    implements Insertable<AgentPullRequestRequestersTableData> {
+  /// `opened` (keyed by number) or `pending` (keyed by head branch): an
+  /// `AgentPullRequestRecordState` wire name.
+  final String state;
+
+  /// The pull request's forge key.
+  final String prKey;
+
+  /// A person who may not approve it; the refusal is theirs and goes with
+  /// them.
+  final String userId;
+
+  /// When this person was last recorded on it.
+  final DateTime recordedAt;
+  const AgentPullRequestRequestersTableData({
+    required this.state,
+    required this.prKey,
+    required this.userId,
+    required this.recordedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['state'] = Variable<String>(state);
+    map['pr_key'] = Variable<String>(prKey);
+    map['user_id'] = Variable<String>(userId);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    return map;
+  }
+
+  AgentPullRequestRequestersTableCompanion toCompanion(bool nullToAbsent) {
+    return AgentPullRequestRequestersTableCompanion(
+      state: Value(state),
+      prKey: Value(prKey),
+      userId: Value(userId),
+      recordedAt: Value(recordedAt),
+    );
+  }
+
+  factory AgentPullRequestRequestersTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AgentPullRequestRequestersTableData(
+      state: serializer.fromJson<String>(json['state']),
+      prKey: serializer.fromJson<String>(json['prKey']),
+      userId: serializer.fromJson<String>(json['userId']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'state': serializer.toJson<String>(state),
+      'prKey': serializer.toJson<String>(prKey),
+      'userId': serializer.toJson<String>(userId),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+    };
+  }
+
+  AgentPullRequestRequestersTableData copyWith({
+    String? state,
+    String? prKey,
+    String? userId,
+    DateTime? recordedAt,
+  }) => AgentPullRequestRequestersTableData(
+    state: state ?? this.state,
+    prKey: prKey ?? this.prKey,
+    userId: userId ?? this.userId,
+    recordedAt: recordedAt ?? this.recordedAt,
+  );
+  AgentPullRequestRequestersTableData copyWithCompanion(
+    AgentPullRequestRequestersTableCompanion data,
+  ) {
+    return AgentPullRequestRequestersTableData(
+      state: data.state.present ? data.state.value : this.state,
+      prKey: data.prKey.present ? data.prKey.value : this.prKey,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgentPullRequestRequestersTableData(')
+          ..write('state: $state, ')
+          ..write('prKey: $prKey, ')
+          ..write('userId: $userId, ')
+          ..write('recordedAt: $recordedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(state, prKey, userId, recordedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AgentPullRequestRequestersTableData &&
+          other.state == this.state &&
+          other.prKey == this.prKey &&
+          other.userId == this.userId &&
+          other.recordedAt == this.recordedAt);
+}
+
+class AgentPullRequestRequestersTableCompanion
+    extends UpdateCompanion<AgentPullRequestRequestersTableData> {
+  final Value<String> state;
+  final Value<String> prKey;
+  final Value<String> userId;
+  final Value<DateTime> recordedAt;
+  final Value<int> rowid;
+  const AgentPullRequestRequestersTableCompanion({
+    this.state = const Value.absent(),
+    this.prKey = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AgentPullRequestRequestersTableCompanion.insert({
+    required String state,
+    required String prKey,
+    required String userId,
+    required DateTime recordedAt,
+    this.rowid = const Value.absent(),
+  }) : state = Value(state),
+       prKey = Value(prKey),
+       userId = Value(userId),
+       recordedAt = Value(recordedAt);
+  static Insertable<AgentPullRequestRequestersTableData> custom({
+    Expression<String>? state,
+    Expression<String>? prKey,
+    Expression<String>? userId,
+    Expression<DateTime>? recordedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (state != null) 'state': state,
+      if (prKey != null) 'pr_key': prKey,
+      if (userId != null) 'user_id': userId,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AgentPullRequestRequestersTableCompanion copyWith({
+    Value<String>? state,
+    Value<String>? prKey,
+    Value<String>? userId,
+    Value<DateTime>? recordedAt,
+    Value<int>? rowid,
+  }) {
+    return AgentPullRequestRequestersTableCompanion(
+      state: state ?? this.state,
+      prKey: prKey ?? this.prKey,
+      userId: userId ?? this.userId,
+      recordedAt: recordedAt ?? this.recordedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (prKey.present) {
+      map['pr_key'] = Variable<String>(prKey.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AgentPullRequestRequestersTableCompanion(')
+          ..write('state: $state, ')
+          ..write('prKey: $prKey, ')
+          ..write('userId: $userId, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$GlobalDatabase extends GeneratedDatabase {
   _$GlobalDatabase(QueryExecutor e) : super(e);
   $GlobalDatabaseManager get managers => $GlobalDatabaseManager(this);
+  late final $UsersTableTable usersTable = $UsersTableTable(this);
   late final $WorkspacesTableTable workspacesTable = $WorkspacesTableTable(
     this,
   );
-  late final $UsersTableTable usersTable = $UsersTableTable(this);
   late final $UserPreferencesTableTable userPreferencesTable =
       $UserPreferencesTableTable(this);
   late final $PairedDevicesTableTable pairedDevicesTable =
@@ -10513,6 +11549,8 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
       $PlacementLogTableTable(this);
   late final $WorkspaceRoutesTableTable workspaceRoutesTable =
       $WorkspaceRoutesTableTable(this);
+  late final $InviteSecureRoutesTableTable inviteSecureRoutesTable =
+      $InviteSecureRoutesTableTable(this);
   late final $ServerMetaTableTable serverMetaTable = $ServerMetaTableTable(
     this,
   );
@@ -10527,17 +11565,53 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
   late final $ServerAuditTableTable serverAuditTable = $ServerAuditTableTable(
     this,
   );
+  late final $ServerNoticesTableTable serverNoticesTable =
+      $ServerNoticesTableTable(this);
+  late final $AgentPullRequestRequestersTableTable
+  agentPullRequestRequestersTable = $AgentPullRequestRequestersTableTable(this);
+  late final Index idxWorkspacesOwner = Index(
+    'idx_workspaces_owner',
+    'CREATE INDEX idx_workspaces_owner ON workspaces (owner_user_id)',
+  );
   late final Index idxUsersHandle = Index(
     'idx_users_handle',
     'CREATE UNIQUE INDEX idx_users_handle ON users (handle)',
+  );
+  late final Index idxUsersSsoSubject = Index(
+    'idx_users_sso_subject',
+    'CREATE UNIQUE INDEX idx_users_sso_subject ON users (sso_issuer, sso_subject) WHERE sso_issuer IS NOT NULL AND sso_subject IS NOT NULL',
+  );
+  late final Index idxPairedDevicesUser = Index(
+    'idx_paired_devices_user',
+    'CREATE INDEX idx_paired_devices_user ON paired_devices (user_id)',
+  );
+  late final Index idxPairedDevicesLandingWorkspace = Index(
+    'idx_paired_devices_landing_workspace',
+    'CREATE INDEX idx_paired_devices_landing_workspace ON paired_devices (landing_workspace_id)',
+  );
+  late final Index uqRssFeedsUserUrl = Index(
+    'uq_rss_feeds_user_url',
+    'CREATE UNIQUE INDEX uq_rss_feeds_user_url ON rss_feeds (user_id, url)',
   );
   late final Index idxRssArticlesFeedIdGuid = Index(
     'idx_rss_articles_feedId_guid',
     'CREATE UNIQUE INDEX idx_rss_articles_feedId_guid ON rss_articles (feed_id, guid)',
   );
+  late final Index idxRssArticlesFeedPublished = Index(
+    'idx_rss_articles_feed_published',
+    'CREATE INDEX idx_rss_articles_feed_published ON rss_articles (feed_id, COALESCE(published_at, created_at) DESC, id DESC)',
+  );
   late final Index idxWorkersStatus = Index(
     'idx_workers_status',
     'CREATE INDEX idx_workers_status ON workers (status)',
+  );
+  late final Index idxWorkersPairedDevice = Index(
+    'idx_workers_paired_device',
+    'CREATE INDEX idx_workers_paired_device ON workers (paired_device_id)',
+  );
+  late final Index idxWorkersRegisteredBy = Index(
+    'idx_workers_registered_by',
+    'CREATE INDEX idx_workers_registered_by ON workers (registered_by)',
   );
   late final Index idxJobsWorkspaceStatus = Index(
     'idx_jobs_workspace_status',
@@ -10551,6 +11625,14 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
     'idx_jobs_lease_expiry',
     'CREATE INDEX idx_jobs_lease_expiry ON jobs (lease_expires_at)',
   );
+  late final Index idxJobsStatusFinished = Index(
+    'idx_jobs_status_finished',
+    'CREATE INDEX idx_jobs_status_finished ON jobs (status, finished_at)',
+  );
+  late final Index idxJobsSubmittedBy = Index(
+    'idx_jobs_submitted_by',
+    'CREATE INDEX idx_jobs_submitted_by ON jobs (submitted_by)',
+  );
   late final Index idxPlacementLogJob = Index(
     'idx_placement_log_job',
     'CREATE INDEX idx_placement_log_job ON placement_log (job_id)',
@@ -10559,9 +11641,41 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
     'idx_placement_log_workspace',
     'CREATE INDEX idx_placement_log_workspace ON placement_log (workspace_id)',
   );
+  late final Index idxPlacementLogWorker = Index(
+    'idx_placement_log_worker',
+    'CREATE INDEX idx_placement_log_worker ON placement_log (worker_id)',
+  );
+  late final Index idxPlacementLogCreated = Index(
+    'idx_placement_log_created',
+    'CREATE INDEX idx_placement_log_created ON placement_log (created_at)',
+  );
+  late final Index idxWorkspaceRoutesWorkspace = Index(
+    'idx_workspace_routes_workspace',
+    'CREATE INDEX idx_workspace_routes_workspace ON workspace_routes (workspace_id)',
+  );
+  late final Index idxInviteSecureRoutesWorkspace = Index(
+    'idx_invite_secure_routes_workspace',
+    'CREATE INDEX idx_invite_secure_routes_workspace ON invite_secure_routes (workspace_id)',
+  );
+  late final Index uqManagedActionPoliciesClass = Index(
+    'uq_managed_action_policies_class',
+    'CREATE UNIQUE INDEX uq_managed_action_policies_class ON managed_action_policies (action_class) WHERE action_class IS NOT NULL',
+  );
+  late final Index uqManagedActionPoliciesCommand = Index(
+    'uq_managed_action_policies_command',
+    'CREATE UNIQUE INDEX uq_managed_action_policies_command ON managed_action_policies (command_prefix) WHERE command_prefix IS NOT NULL',
+  );
+  late final Index idxManagedActionPoliciesUpdatedBy = Index(
+    'idx_managed_action_policies_updated_by',
+    'CREATE INDEX idx_managed_action_policies_updated_by ON managed_action_policies (updated_by)',
+  );
   late final Index idxServerAuditCreated = Index(
     'idx_server_audit_created',
     'CREATE INDEX idx_server_audit_created ON server_audit (created_at)',
+  );
+  late final Index idxAgentPullRequestRequestersUser = Index(
+    'idx_agent_pull_request_requesters_user',
+    'CREATE INDEX idx_agent_pull_request_requesters_user ON agent_pull_request_requesters (user_id)',
   );
   late final WorkspaceRegistryDao workspaceRegistryDao = WorkspaceRegistryDao(
     this as GlobalDatabase,
@@ -10597,8 +11711,8 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    workspacesTable,
     usersTable,
+    workspacesTable,
     userPreferencesTable,
     pairedDevicesTable,
     rssFeedsTable,
@@ -10607,21 +11721,42 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
     jobsTable,
     placementLogTable,
     workspaceRoutesTable,
+    inviteSecureRoutesTable,
     serverMetaTable,
     serverSettingsTable,
     ssoConnectionsTable,
     managedActionPoliciesTable,
     environmentSlotLeasesTable,
     serverAuditTable,
+    serverNoticesTable,
+    agentPullRequestRequestersTable,
+    idxWorkspacesOwner,
     idxUsersHandle,
+    idxUsersSsoSubject,
+    idxPairedDevicesUser,
+    idxPairedDevicesLandingWorkspace,
+    uqRssFeedsUserUrl,
     idxRssArticlesFeedIdGuid,
+    idxRssArticlesFeedPublished,
     idxWorkersStatus,
+    idxWorkersPairedDevice,
+    idxWorkersRegisteredBy,
     idxJobsWorkspaceStatus,
     idxJobsWorkerStatus,
     idxJobsLeaseExpiry,
+    idxJobsStatusFinished,
+    idxJobsSubmittedBy,
     idxPlacementLogJob,
     idxPlacementLogWorkspace,
+    idxPlacementLogWorker,
+    idxPlacementLogCreated,
+    idxWorkspaceRoutesWorkspace,
+    idxInviteSecureRoutesWorkspace,
+    uqManagedActionPoliciesClass,
+    uqManagedActionPoliciesCommand,
+    idxManagedActionPoliciesUpdatedBy,
     idxServerAuditCreated,
+    idxAgentPullRequestRequestersUser,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -10637,6 +11772,20 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
         'users',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('paired_devices', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workspaces',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('paired_devices', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('rss_feeds', kind: UpdateKind.delete)],
     ),
     WritePropagation(
@@ -10646,415 +11795,102 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
       ),
       result: [TableUpdate('rss_articles', kind: UpdateKind.delete)],
     ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'paired_devices',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('workers', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('workers', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workspaces',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('jobs', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workers',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('jobs', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('jobs', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workspaces',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('placement_log', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'jobs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('placement_log', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workers',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('placement_log', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workspaces',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('workspace_routes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workspaces',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('invite_secure_routes', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('managed_action_policies', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'workspaces',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('environment_slot_leases', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'users',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('agent_pull_request_requesters', kind: UpdateKind.delete),
+      ],
+    ),
   ]);
 }
 
-typedef $$WorkspacesTableTableCreateCompanionBuilder =
-    WorkspacesTableCompanion Function({
-      required String id,
-      required String name,
-      Value<String?> logoPath,
-      Value<String?> ownerUserId,
-      Value<String> secretExcludeGlobs,
-      Value<int> reviewConcurrency,
-      Value<bool> autoPublishReview,
-      Value<String> connectMode,
-      Value<String> connectUrl,
-      Value<String> githubAppId,
-      Value<int> position,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<int> rowid,
-    });
-typedef $$WorkspacesTableTableUpdateCompanionBuilder =
-    WorkspacesTableCompanion Function({
-      Value<String> id,
-      Value<String> name,
-      Value<String?> logoPath,
-      Value<String?> ownerUserId,
-      Value<String> secretExcludeGlobs,
-      Value<int> reviewConcurrency,
-      Value<bool> autoPublishReview,
-      Value<String> connectMode,
-      Value<String> connectUrl,
-      Value<String> githubAppId,
-      Value<int> position,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
-      Value<DateTime?> deletedAt,
-      Value<int> rowid,
-    });
-
-class $$WorkspacesTableTableFilterComposer
-    extends Composer<_$GlobalDatabase, $WorkspacesTableTable> {
-  $$WorkspacesTableTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get logoPath => $composableBuilder(
-    column: $table.logoPath,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get ownerUserId => $composableBuilder(
-    column: $table.ownerUserId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get secretExcludeGlobs => $composableBuilder(
-    column: $table.secretExcludeGlobs,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get reviewConcurrency => $composableBuilder(
-    column: $table.reviewConcurrency,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get autoPublishReview => $composableBuilder(
-    column: $table.autoPublishReview,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get connectMode => $composableBuilder(
-    column: $table.connectMode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get connectUrl => $composableBuilder(
-    column: $table.connectUrl,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get githubAppId => $composableBuilder(
-    column: $table.githubAppId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get position => $composableBuilder(
-    column: $table.position,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$WorkspacesTableTableOrderingComposer
-    extends Composer<_$GlobalDatabase, $WorkspacesTableTable> {
-  $$WorkspacesTableTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get logoPath => $composableBuilder(
-    column: $table.logoPath,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get ownerUserId => $composableBuilder(
-    column: $table.ownerUserId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get secretExcludeGlobs => $composableBuilder(
-    column: $table.secretExcludeGlobs,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get reviewConcurrency => $composableBuilder(
-    column: $table.reviewConcurrency,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get autoPublishReview => $composableBuilder(
-    column: $table.autoPublishReview,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get connectMode => $composableBuilder(
-    column: $table.connectMode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get connectUrl => $composableBuilder(
-    column: $table.connectUrl,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get githubAppId => $composableBuilder(
-    column: $table.githubAppId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get position => $composableBuilder(
-    column: $table.position,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
-    column: $table.deletedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$WorkspacesTableTableAnnotationComposer
-    extends Composer<_$GlobalDatabase, $WorkspacesTableTable> {
-  $$WorkspacesTableTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get name =>
-      $composableBuilder(column: $table.name, builder: (column) => column);
-
-  GeneratedColumn<String> get logoPath =>
-      $composableBuilder(column: $table.logoPath, builder: (column) => column);
-
-  GeneratedColumn<String> get ownerUserId => $composableBuilder(
-    column: $table.ownerUserId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get secretExcludeGlobs => $composableBuilder(
-    column: $table.secretExcludeGlobs,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get reviewConcurrency => $composableBuilder(
-    column: $table.reviewConcurrency,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get autoPublishReview => $composableBuilder(
-    column: $table.autoPublishReview,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get connectMode => $composableBuilder(
-    column: $table.connectMode,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get connectUrl => $composableBuilder(
-    column: $table.connectUrl,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get githubAppId => $composableBuilder(
-    column: $table.githubAppId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get position =>
-      $composableBuilder(column: $table.position, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get deletedAt =>
-      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
-}
-
-class $$WorkspacesTableTableTableManager
-    extends
-        RootTableManager<
-          _$GlobalDatabase,
-          $WorkspacesTableTable,
-          WorkspacesTableData,
-          $$WorkspacesTableTableFilterComposer,
-          $$WorkspacesTableTableOrderingComposer,
-          $$WorkspacesTableTableAnnotationComposer,
-          $$WorkspacesTableTableCreateCompanionBuilder,
-          $$WorkspacesTableTableUpdateCompanionBuilder,
-          (
-            WorkspacesTableData,
-            BaseReferences<
-              _$GlobalDatabase,
-              $WorkspacesTableTable,
-              WorkspacesTableData
-            >,
-          ),
-          WorkspacesTableData,
-          PrefetchHooks Function()
-        > {
-  $$WorkspacesTableTableTableManager(
-    _$GlobalDatabase db,
-    $WorkspacesTableTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$WorkspacesTableTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$WorkspacesTableTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$WorkspacesTableTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String?> logoPath = const Value.absent(),
-                Value<String?> ownerUserId = const Value.absent(),
-                Value<String> secretExcludeGlobs = const Value.absent(),
-                Value<int> reviewConcurrency = const Value.absent(),
-                Value<bool> autoPublishReview = const Value.absent(),
-                Value<String> connectMode = const Value.absent(),
-                Value<String> connectUrl = const Value.absent(),
-                Value<String> githubAppId = const Value.absent(),
-                Value<int> position = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => WorkspacesTableCompanion(
-                id: id,
-                name: name,
-                logoPath: logoPath,
-                ownerUserId: ownerUserId,
-                secretExcludeGlobs: secretExcludeGlobs,
-                reviewConcurrency: reviewConcurrency,
-                autoPublishReview: autoPublishReview,
-                connectMode: connectMode,
-                connectUrl: connectUrl,
-                githubAppId: githubAppId,
-                position: position,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String name,
-                Value<String?> logoPath = const Value.absent(),
-                Value<String?> ownerUserId = const Value.absent(),
-                Value<String> secretExcludeGlobs = const Value.absent(),
-                Value<int> reviewConcurrency = const Value.absent(),
-                Value<bool> autoPublishReview = const Value.absent(),
-                Value<String> connectMode = const Value.absent(),
-                Value<String> connectUrl = const Value.absent(),
-                Value<String> githubAppId = const Value.absent(),
-                Value<int> position = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
-                Value<DateTime?> deletedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => WorkspacesTableCompanion.insert(
-                id: id,
-                name: name,
-                logoPath: logoPath,
-                ownerUserId: ownerUserId,
-                secretExcludeGlobs: secretExcludeGlobs,
-                reviewConcurrency: reviewConcurrency,
-                autoPublishReview: autoPublishReview,
-                connectMode: connectMode,
-                connectUrl: connectUrl,
-                githubAppId: githubAppId,
-                position: position,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                deletedAt: deletedAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<$WorkspacesTableTable, WorkspacesTableData>(
-                    table,
-                  ),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $WorkspacesTableTable,
-                    WorkspacesTableData
-                  >(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$WorkspacesTableTableProcessedTableManager =
-    ProcessedTableManager<
-      _$GlobalDatabase,
-      $WorkspacesTableTable,
-      WorkspacesTableData,
-      $$WorkspacesTableTableFilterComposer,
-      $$WorkspacesTableTableOrderingComposer,
-      $$WorkspacesTableTableAnnotationComposer,
-      $$WorkspacesTableTableCreateCompanionBuilder,
-      $$WorkspacesTableTableUpdateCompanionBuilder,
-      (
-        WorkspacesTableData,
-        BaseReferences<
-          _$GlobalDatabase,
-          $WorkspacesTableTable,
-          WorkspacesTableData
-        >,
-      ),
-      WorkspacesTableData,
-      PrefetchHooks Function()
-    >;
 typedef $$UsersTableTableCreateCompanionBuilder =
     UsersTableCompanion Function({
       required String id,
@@ -11094,6 +11930,27 @@ final class $$UsersTableTableReferences
     extends BaseReferences<_$GlobalDatabase, $UsersTableTable, UsersTableData> {
   $$UsersTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
+  static MultiTypedResultKey<$WorkspacesTableTable, List<WorkspacesTableData>>
+  _workspacesTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.workspacesTable,
+        aliasName: 'users__id__workspaces__owner_user_id',
+      );
+
+  $$WorkspacesTableTableProcessedTableManager get workspacesTableRefs {
+    final manager = $$WorkspacesTableTableTableManager(
+      $_db,
+      $_db.workspacesTable,
+    ).filter((f) => f.ownerUserId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _workspacesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<
     $UserPreferencesTableTable,
     List<UserPreferencesTableData>
@@ -11119,6 +11976,30 @@ final class $$UsersTableTableReferences
     );
   }
 
+  static MultiTypedResultKey<
+    $PairedDevicesTableTable,
+    List<PairedDevicesTableData>
+  >
+  _pairedDevicesTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.pairedDevicesTable,
+        aliasName: 'users__id__paired_devices__user_id',
+      );
+
+  $$PairedDevicesTableTableProcessedTableManager get pairedDevicesTableRefs {
+    final manager = $$PairedDevicesTableTableTableManager(
+      $_db,
+      $_db.pairedDevicesTable,
+    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _pairedDevicesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$RssFeedsTableTable, List<RssFeedsTableData>>
   _rssFeedsTableRefsTable(_$GlobalDatabase db) => MultiTypedResultKey.fromTable(
     db.rssFeedsTable,
@@ -11132,6 +12013,92 @@ final class $$UsersTableTableReferences
     ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_rssFeedsTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$WorkersTableTable, List<WorkersTableData>>
+  _workersTableRefsTable(_$GlobalDatabase db) => MultiTypedResultKey.fromTable(
+    db.workersTable,
+    aliasName: 'users__id__workers__registered_by',
+  );
+
+  $$WorkersTableTableProcessedTableManager get workersTableRefs {
+    final manager = $$WorkersTableTableTableManager(
+      $_db,
+      $_db.workersTable,
+    ).filter((f) => f.registeredBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_workersTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$JobsTableTable, List<JobsTableData>>
+  _jobsTableRefsTable(_$GlobalDatabase db) => MultiTypedResultKey.fromTable(
+    db.jobsTable,
+    aliasName: 'users__id__jobs__submitted_by',
+  );
+
+  $$JobsTableTableProcessedTableManager get jobsTableRefs {
+    final manager = $$JobsTableTableTableManager(
+      $_db,
+      $_db.jobsTable,
+    ).filter((f) => f.submittedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_jobsTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ManagedActionPoliciesTableTable,
+    List<ManagedActionPoliciesTableData>
+  >
+  _managedActionPoliciesTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.managedActionPoliciesTable,
+        aliasName: 'users__id__managed_action_policies__updated_by',
+      );
+
+  $$ManagedActionPoliciesTableTableProcessedTableManager
+  get managedActionPoliciesTableRefs {
+    final manager = $$ManagedActionPoliciesTableTableTableManager(
+      $_db,
+      $_db.managedActionPoliciesTable,
+    ).filter((f) => f.updatedBy.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _managedActionPoliciesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $AgentPullRequestRequestersTableTable,
+    List<AgentPullRequestRequestersTableData>
+  >
+  _agentPullRequestRequestersTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.agentPullRequestRequestersTable,
+        aliasName: 'users__id__agent_pull_request_requesters__user_id',
+      );
+
+  $$AgentPullRequestRequestersTableTableProcessedTableManager
+  get agentPullRequestRequestersTableRefs {
+    final manager = $$AgentPullRequestRequestersTableTableTableManager(
+      $_db,
+      $_db.agentPullRequestRequestersTable,
+    ).filter((f) => f.userId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _agentPullRequestRequestersTableRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -11212,6 +12179,31 @@ class $$UsersTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  Expression<bool> workspacesTableRefs(
+    Expression<bool> Function($$WorkspacesTableTableFilterComposer f) f,
+  ) {
+    final $$WorkspacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.ownerUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<bool> userPreferencesTableRefs(
     Expression<bool> Function($$UserPreferencesTableTableFilterComposer f) f,
   ) {
@@ -11228,6 +12220,31 @@ class $$UsersTableTableFilterComposer
           }) => $$UserPreferencesTableTableFilterComposer(
             $db: $db,
             $table: $db.userPreferencesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> pairedDevicesTableRefs(
+    Expression<bool> Function($$PairedDevicesTableTableFilterComposer f) f,
+  ) {
+    final $$PairedDevicesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pairedDevicesTable,
+      getReferencedColumn: (t) => t.userId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PairedDevicesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.pairedDevicesTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -11259,6 +12276,112 @@ class $$UsersTableTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> workersTableRefs(
+    Expression<bool> Function($$WorkersTableTableFilterComposer f) f,
+  ) {
+    final $$WorkersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.registeredBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> jobsTableRefs(
+    Expression<bool> Function($$JobsTableTableFilterComposer f) f,
+  ) {
+    final $$JobsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.submittedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> managedActionPoliciesTableRefs(
+    Expression<bool> Function($$ManagedActionPoliciesTableTableFilterComposer f)
+    f,
+  ) {
+    final $$ManagedActionPoliciesTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.managedActionPoliciesTable,
+          getReferencedColumn: (t) => t.updatedBy,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ManagedActionPoliciesTableTableFilterComposer(
+                $db: $db,
+                $table: $db.managedActionPoliciesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> agentPullRequestRequestersTableRefs(
+    Expression<bool> Function(
+      $$AgentPullRequestRequestersTableTableFilterComposer f,
+    )
+    f,
+  ) {
+    final $$AgentPullRequestRequestersTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.agentPullRequestRequestersTable,
+          getReferencedColumn: (t) => t.userId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AgentPullRequestRequestersTableTableFilterComposer(
+                $db: $db,
+                $table: $db.agentPullRequestRequestersTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -11400,6 +12523,31 @@ class $$UsersTableTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
+  Expression<T> workspacesTableRefs<T extends Object>(
+    Expression<T> Function($$WorkspacesTableTableAnnotationComposer a) f,
+  ) {
+    final $$WorkspacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.ownerUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> userPreferencesTableRefs<T extends Object>(
     Expression<T> Function($$UserPreferencesTableTableAnnotationComposer a) f,
   ) {
@@ -11417,6 +12565,32 @@ class $$UsersTableTableAnnotationComposer
               }) => $$UserPreferencesTableTableAnnotationComposer(
                 $db: $db,
                 $table: $db.userPreferencesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> pairedDevicesTableRefs<T extends Object>(
+    Expression<T> Function($$PairedDevicesTableTableAnnotationComposer a) f,
+  ) {
+    final $$PairedDevicesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.pairedDevicesTable,
+          getReferencedColumn: (t) => t.userId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PairedDevicesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.pairedDevicesTable,
                 $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
                 joinBuilder: joinBuilder,
                 $removeJoinBuilderFromRootComposer:
@@ -11450,6 +12624,114 @@ class $$UsersTableTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> workersTableRefs<T extends Object>(
+    Expression<T> Function($$WorkersTableTableAnnotationComposer a) f,
+  ) {
+    final $$WorkersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.registeredBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> jobsTableRefs<T extends Object>(
+    Expression<T> Function($$JobsTableTableAnnotationComposer a) f,
+  ) {
+    final $$JobsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.submittedBy,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> managedActionPoliciesTableRefs<T extends Object>(
+    Expression<T> Function(
+      $$ManagedActionPoliciesTableTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$ManagedActionPoliciesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.managedActionPoliciesTable,
+          getReferencedColumn: (t) => t.updatedBy,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ManagedActionPoliciesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.managedActionPoliciesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> agentPullRequestRequestersTableRefs<T extends Object>(
+    Expression<T> Function(
+      $$AgentPullRequestRequestersTableTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$AgentPullRequestRequestersTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.agentPullRequestRequestersTable,
+          getReferencedColumn: (t) => t.userId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$AgentPullRequestRequestersTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.agentPullRequestRequestersTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$UsersTableTableTableManager
@@ -11466,8 +12748,14 @@ class $$UsersTableTableTableManager
           (UsersTableData, $$UsersTableTableReferences),
           UsersTableData,
           PrefetchHooks Function({
+            bool workspacesTableRefs,
             bool userPreferencesTableRefs,
+            bool pairedDevicesTableRefs,
             bool rssFeedsTableRefs,
+            bool workersTableRefs,
+            bool jobsTableRefs,
+            bool managedActionPoliciesTableRefs,
+            bool agentPullRequestRequestersTableRefs,
           })
         > {
   $$UsersTableTableTableManager(_$GlobalDatabase db, $UsersTableTable table)
@@ -11554,16 +12842,54 @@ class $$UsersTableTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({userPreferencesTableRefs = false, rssFeedsTableRefs = false}) {
+              ({
+                workspacesTableRefs = false,
+                userPreferencesTableRefs = false,
+                pairedDevicesTableRefs = false,
+                rssFeedsTableRefs = false,
+                workersTableRefs = false,
+                jobsTableRefs = false,
+                managedActionPoliciesTableRefs = false,
+                agentPullRequestRequestersTableRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (workspacesTableRefs) db.workspacesTable,
                     if (userPreferencesTableRefs) db.userPreferencesTable,
+                    if (pairedDevicesTableRefs) db.pairedDevicesTable,
                     if (rssFeedsTableRefs) db.rssFeedsTable,
+                    if (workersTableRefs) db.workersTable,
+                    if (jobsTableRefs) db.jobsTable,
+                    if (managedActionPoliciesTableRefs)
+                      db.managedActionPoliciesTable,
+                    if (agentPullRequestRequestersTableRefs)
+                      db.agentPullRequestRequestersTable,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (workspacesTableRefs)
+                        await $_getPrefetchedData<
+                          UsersTableData,
+                          $UsersTableTable,
+                          WorkspacesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableTableReferences
+                              ._workspacesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).workspacesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.ownerUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (userPreferencesTableRefs)
                         await $_getPrefetchedData<
                           UsersTableData,
@@ -11579,6 +12905,27 @@ class $$UsersTableTableTableManager
                                 table,
                                 p0,
                               ).userPreferencesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.userId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (pairedDevicesTableRefs)
+                        await $_getPrefetchedData<
+                          UsersTableData,
+                          $UsersTableTable,
+                          PairedDevicesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableTableReferences
+                              ._pairedDevicesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pairedDevicesTableRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.userId == item.id,
@@ -11606,6 +12953,90 @@ class $$UsersTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (workersTableRefs)
+                        await $_getPrefetchedData<
+                          UsersTableData,
+                          $UsersTableTable,
+                          WorkersTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableTableReferences
+                              ._workersTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).workersTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.registeredBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (jobsTableRefs)
+                        await $_getPrefetchedData<
+                          UsersTableData,
+                          $UsersTableTable,
+                          JobsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableTableReferences
+                              ._jobsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).jobsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.submittedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (managedActionPoliciesTableRefs)
+                        await $_getPrefetchedData<
+                          UsersTableData,
+                          $UsersTableTable,
+                          ManagedActionPoliciesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableTableReferences
+                              ._managedActionPoliciesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).managedActionPoliciesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.updatedBy == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (agentPullRequestRequestersTableRefs)
+                        await $_getPrefetchedData<
+                          UsersTableData,
+                          $UsersTableTable,
+                          AgentPullRequestRequestersTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableTableReferences
+                              ._agentPullRequestRequestersTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).agentPullRequestRequestersTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.userId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -11627,8 +13058,1145 @@ typedef $$UsersTableTableProcessedTableManager =
       (UsersTableData, $$UsersTableTableReferences),
       UsersTableData,
       PrefetchHooks Function({
+        bool workspacesTableRefs,
         bool userPreferencesTableRefs,
+        bool pairedDevicesTableRefs,
         bool rssFeedsTableRefs,
+        bool workersTableRefs,
+        bool jobsTableRefs,
+        bool managedActionPoliciesTableRefs,
+        bool agentPullRequestRequestersTableRefs,
+      })
+    >;
+typedef $$WorkspacesTableTableCreateCompanionBuilder =
+    WorkspacesTableCompanion Function({
+      required String id,
+      required String name,
+      Value<String?> logoPath,
+      Value<String?> ownerUserId,
+      Value<String> secretExcludeGlobs,
+      Value<int> reviewConcurrency,
+      Value<bool> autoPublishReview,
+      Value<String> connectMode,
+      Value<String> connectUrl,
+      Value<String> githubAppId,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+typedef $$WorkspacesTableTableUpdateCompanionBuilder =
+    WorkspacesTableCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String?> logoPath,
+      Value<String?> ownerUserId,
+      Value<String> secretExcludeGlobs,
+      Value<int> reviewConcurrency,
+      Value<bool> autoPublishReview,
+      Value<String> connectMode,
+      Value<String> connectUrl,
+      Value<String> githubAppId,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+
+final class $$WorkspacesTableTableReferences
+    extends
+        BaseReferences<
+          _$GlobalDatabase,
+          $WorkspacesTableTable,
+          WorkspacesTableData
+        > {
+  $$WorkspacesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTableTable _ownerUserIdTable(_$GlobalDatabase db) =>
+      db.usersTable.createAlias('workspaces__owner_user_id__users__id');
+
+  $$UsersTableTableProcessedTableManager? get ownerUserId {
+    final $_column = $_itemColumn<String>('owner_user_id');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableTableManager(
+      $_db,
+      $_db.usersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ownerUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PairedDevicesTableTable,
+    List<PairedDevicesTableData>
+  >
+  _pairedDevicesTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.pairedDevicesTable,
+        aliasName: 'workspaces__id__paired_devices__landing_workspace_id',
+      );
+
+  $$PairedDevicesTableTableProcessedTableManager get pairedDevicesTableRefs {
+    final manager =
+        $$PairedDevicesTableTableTableManager(
+          $_db,
+          $_db.pairedDevicesTable,
+        ).filter(
+          (f) => f.landingWorkspaceId.id.sqlEquals($_itemColumn<String>('id')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _pairedDevicesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$JobsTableTable, List<JobsTableData>>
+  _jobsTableRefsTable(_$GlobalDatabase db) => MultiTypedResultKey.fromTable(
+    db.jobsTable,
+    aliasName: 'workspaces__id__jobs__workspace_id',
+  );
+
+  $$JobsTableTableProcessedTableManager get jobsTableRefs {
+    final manager = $$JobsTableTableTableManager(
+      $_db,
+      $_db.jobsTable,
+    ).filter((f) => f.workspaceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_jobsTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PlacementLogTableTable,
+    List<PlacementLogTableData>
+  >
+  _placementLogTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.placementLogTable,
+        aliasName: 'workspaces__id__placement_log__workspace_id',
+      );
+
+  $$PlacementLogTableTableProcessedTableManager get placementLogTableRefs {
+    final manager = $$PlacementLogTableTableTableManager(
+      $_db,
+      $_db.placementLogTable,
+    ).filter((f) => f.workspaceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _placementLogTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $WorkspaceRoutesTableTable,
+    List<WorkspaceRoutesTableData>
+  >
+  _workspaceRoutesTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.workspaceRoutesTable,
+        aliasName: 'workspaces__id__workspace_routes__workspace_id',
+      );
+
+  $$WorkspaceRoutesTableTableProcessedTableManager
+  get workspaceRoutesTableRefs {
+    final manager = $$WorkspaceRoutesTableTableTableManager(
+      $_db,
+      $_db.workspaceRoutesTable,
+    ).filter((f) => f.workspaceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _workspaceRoutesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $InviteSecureRoutesTableTable,
+    List<InviteSecureRoutesTableData>
+  >
+  _inviteSecureRoutesTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.inviteSecureRoutesTable,
+        aliasName: 'workspaces__id__invite_secure_routes__workspace_id',
+      );
+
+  $$InviteSecureRoutesTableTableProcessedTableManager
+  get inviteSecureRoutesTableRefs {
+    final manager = $$InviteSecureRoutesTableTableTableManager(
+      $_db,
+      $_db.inviteSecureRoutesTable,
+    ).filter((f) => f.workspaceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _inviteSecureRoutesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $EnvironmentSlotLeasesTableTable,
+    List<EnvironmentSlotLeasesTableData>
+  >
+  _environmentSlotLeasesTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.environmentSlotLeasesTable,
+        aliasName: 'workspaces__id__environment_slot_leases__workspace_id',
+      );
+
+  $$EnvironmentSlotLeasesTableTableProcessedTableManager
+  get environmentSlotLeasesTableRefs {
+    final manager = $$EnvironmentSlotLeasesTableTableTableManager(
+      $_db,
+      $_db.environmentSlotLeasesTable,
+    ).filter((f) => f.workspaceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _environmentSlotLeasesTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$WorkspacesTableTableFilterComposer
+    extends Composer<_$GlobalDatabase, $WorkspacesTableTable> {
+  $$WorkspacesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get logoPath => $composableBuilder(
+    column: $table.logoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get secretExcludeGlobs => $composableBuilder(
+    column: $table.secretExcludeGlobs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reviewConcurrency => $composableBuilder(
+    column: $table.reviewConcurrency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get autoPublishReview => $composableBuilder(
+    column: $table.autoPublishReview,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get connectMode => $composableBuilder(
+    column: $table.connectMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get connectUrl => $composableBuilder(
+    column: $table.connectUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get githubAppId => $composableBuilder(
+    column: $table.githubAppId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableTableFilterComposer get ownerUserId {
+    final $$UsersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> pairedDevicesTableRefs(
+    Expression<bool> Function($$PairedDevicesTableTableFilterComposer f) f,
+  ) {
+    final $$PairedDevicesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pairedDevicesTable,
+      getReferencedColumn: (t) => t.landingWorkspaceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PairedDevicesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.pairedDevicesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> jobsTableRefs(
+    Expression<bool> Function($$JobsTableTableFilterComposer f) f,
+  ) {
+    final $$JobsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.workspaceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> placementLogTableRefs(
+    Expression<bool> Function($$PlacementLogTableTableFilterComposer f) f,
+  ) {
+    final $$PlacementLogTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.placementLogTable,
+      getReferencedColumn: (t) => t.workspaceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlacementLogTableTableFilterComposer(
+            $db: $db,
+            $table: $db.placementLogTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> workspaceRoutesTableRefs(
+    Expression<bool> Function($$WorkspaceRoutesTableTableFilterComposer f) f,
+  ) {
+    final $$WorkspaceRoutesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.workspaceRoutesTable,
+      getReferencedColumn: (t) => t.workspaceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspaceRoutesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspaceRoutesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> inviteSecureRoutesTableRefs(
+    Expression<bool> Function($$InviteSecureRoutesTableTableFilterComposer f) f,
+  ) {
+    final $$InviteSecureRoutesTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.inviteSecureRoutesTable,
+          getReferencedColumn: (t) => t.workspaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$InviteSecureRoutesTableTableFilterComposer(
+                $db: $db,
+                $table: $db.inviteSecureRoutesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> environmentSlotLeasesTableRefs(
+    Expression<bool> Function($$EnvironmentSlotLeasesTableTableFilterComposer f)
+    f,
+  ) {
+    final $$EnvironmentSlotLeasesTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.environmentSlotLeasesTable,
+          getReferencedColumn: (t) => t.workspaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EnvironmentSlotLeasesTableTableFilterComposer(
+                $db: $db,
+                $table: $db.environmentSlotLeasesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$WorkspacesTableTableOrderingComposer
+    extends Composer<_$GlobalDatabase, $WorkspacesTableTable> {
+  $$WorkspacesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get logoPath => $composableBuilder(
+    column: $table.logoPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get secretExcludeGlobs => $composableBuilder(
+    column: $table.secretExcludeGlobs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reviewConcurrency => $composableBuilder(
+    column: $table.reviewConcurrency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get autoPublishReview => $composableBuilder(
+    column: $table.autoPublishReview,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get connectMode => $composableBuilder(
+    column: $table.connectMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get connectUrl => $composableBuilder(
+    column: $table.connectUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get githubAppId => $composableBuilder(
+    column: $table.githubAppId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableTableOrderingComposer get ownerUserId {
+    final $$UsersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WorkspacesTableTableAnnotationComposer
+    extends Composer<_$GlobalDatabase, $WorkspacesTableTable> {
+  $$WorkspacesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get logoPath =>
+      $composableBuilder(column: $table.logoPath, builder: (column) => column);
+
+  GeneratedColumn<String> get secretExcludeGlobs => $composableBuilder(
+    column: $table.secretExcludeGlobs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reviewConcurrency => $composableBuilder(
+    column: $table.reviewConcurrency,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get autoPublishReview => $composableBuilder(
+    column: $table.autoPublishReview,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get connectMode => $composableBuilder(
+    column: $table.connectMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get connectUrl => $composableBuilder(
+    column: $table.connectUrl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get githubAppId => $composableBuilder(
+    column: $table.githubAppId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  $$UsersTableTableAnnotationComposer get ownerUserId {
+    final $$UsersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> pairedDevicesTableRefs<T extends Object>(
+    Expression<T> Function($$PairedDevicesTableTableAnnotationComposer a) f,
+  ) {
+    final $$PairedDevicesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.pairedDevicesTable,
+          getReferencedColumn: (t) => t.landingWorkspaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PairedDevicesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.pairedDevicesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> jobsTableRefs<T extends Object>(
+    Expression<T> Function($$JobsTableTableAnnotationComposer a) f,
+  ) {
+    final $$JobsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.workspaceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> placementLogTableRefs<T extends Object>(
+    Expression<T> Function($$PlacementLogTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlacementLogTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.placementLogTable,
+          getReferencedColumn: (t) => t.workspaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlacementLogTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.placementLogTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> workspaceRoutesTableRefs<T extends Object>(
+    Expression<T> Function($$WorkspaceRoutesTableTableAnnotationComposer a) f,
+  ) {
+    final $$WorkspaceRoutesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.workspaceRoutesTable,
+          getReferencedColumn: (t) => t.workspaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$WorkspaceRoutesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.workspaceRoutesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> inviteSecureRoutesTableRefs<T extends Object>(
+    Expression<T> Function($$InviteSecureRoutesTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$InviteSecureRoutesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.inviteSecureRoutesTable,
+          getReferencedColumn: (t) => t.workspaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$InviteSecureRoutesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.inviteSecureRoutesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> environmentSlotLeasesTableRefs<T extends Object>(
+    Expression<T> Function(
+      $$EnvironmentSlotLeasesTableTableAnnotationComposer a,
+    )
+    f,
+  ) {
+    final $$EnvironmentSlotLeasesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.environmentSlotLeasesTable,
+          getReferencedColumn: (t) => t.workspaceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$EnvironmentSlotLeasesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.environmentSlotLeasesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$WorkspacesTableTableTableManager
+    extends
+        RootTableManager<
+          _$GlobalDatabase,
+          $WorkspacesTableTable,
+          WorkspacesTableData,
+          $$WorkspacesTableTableFilterComposer,
+          $$WorkspacesTableTableOrderingComposer,
+          $$WorkspacesTableTableAnnotationComposer,
+          $$WorkspacesTableTableCreateCompanionBuilder,
+          $$WorkspacesTableTableUpdateCompanionBuilder,
+          (WorkspacesTableData, $$WorkspacesTableTableReferences),
+          WorkspacesTableData,
+          PrefetchHooks Function({
+            bool ownerUserId,
+            bool pairedDevicesTableRefs,
+            bool jobsTableRefs,
+            bool placementLogTableRefs,
+            bool workspaceRoutesTableRefs,
+            bool inviteSecureRoutesTableRefs,
+            bool environmentSlotLeasesTableRefs,
+          })
+        > {
+  $$WorkspacesTableTableTableManager(
+    _$GlobalDatabase db,
+    $WorkspacesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WorkspacesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WorkspacesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WorkspacesTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> logoPath = const Value.absent(),
+                Value<String?> ownerUserId = const Value.absent(),
+                Value<String> secretExcludeGlobs = const Value.absent(),
+                Value<int> reviewConcurrency = const Value.absent(),
+                Value<bool> autoPublishReview = const Value.absent(),
+                Value<String> connectMode = const Value.absent(),
+                Value<String> connectUrl = const Value.absent(),
+                Value<String> githubAppId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkspacesTableCompanion(
+                id: id,
+                name: name,
+                logoPath: logoPath,
+                ownerUserId: ownerUserId,
+                secretExcludeGlobs: secretExcludeGlobs,
+                reviewConcurrency: reviewConcurrency,
+                autoPublishReview: autoPublishReview,
+                connectMode: connectMode,
+                connectUrl: connectUrl,
+                githubAppId: githubAppId,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String?> logoPath = const Value.absent(),
+                Value<String?> ownerUserId = const Value.absent(),
+                Value<String> secretExcludeGlobs = const Value.absent(),
+                Value<int> reviewConcurrency = const Value.absent(),
+                Value<bool> autoPublishReview = const Value.absent(),
+                Value<String> connectMode = const Value.absent(),
+                Value<String> connectUrl = const Value.absent(),
+                Value<String> githubAppId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorkspacesTableCompanion.insert(
+                id: id,
+                name: name,
+                logoPath: logoPath,
+                ownerUserId: ownerUserId,
+                secretExcludeGlobs: secretExcludeGlobs,
+                reviewConcurrency: reviewConcurrency,
+                autoPublishReview: autoPublishReview,
+                connectMode: connectMode,
+                connectUrl: connectUrl,
+                githubAppId: githubAppId,
+                position: position,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$WorkspacesTableTable, WorkspacesTableData>(
+                    table,
+                  ),
+                  $$WorkspacesTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                ownerUserId = false,
+                pairedDevicesTableRefs = false,
+                jobsTableRefs = false,
+                placementLogTableRefs = false,
+                workspaceRoutesTableRefs = false,
+                inviteSecureRoutesTableRefs = false,
+                environmentSlotLeasesTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (pairedDevicesTableRefs) db.pairedDevicesTable,
+                    if (jobsTableRefs) db.jobsTable,
+                    if (placementLogTableRefs) db.placementLogTable,
+                    if (workspaceRoutesTableRefs) db.workspaceRoutesTable,
+                    if (inviteSecureRoutesTableRefs) db.inviteSecureRoutesTable,
+                    if (environmentSlotLeasesTableRefs)
+                      db.environmentSlotLeasesTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (ownerUserId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.ownerUserId,
+                                    referencedTable:
+                                        $$WorkspacesTableTableReferences
+                                            ._ownerUserIdTable(db),
+                                    referencedColumn:
+                                        $$WorkspacesTableTableReferences
+                                            ._ownerUserIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (pairedDevicesTableRefs)
+                        await $_getPrefetchedData<
+                          WorkspacesTableData,
+                          $WorkspacesTableTable,
+                          PairedDevicesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkspacesTableTableReferences
+                              ._pairedDevicesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkspacesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pairedDevicesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.landingWorkspaceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (jobsTableRefs)
+                        await $_getPrefetchedData<
+                          WorkspacesTableData,
+                          $WorkspacesTableTable,
+                          JobsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkspacesTableTableReferences
+                              ._jobsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkspacesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).jobsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.workspaceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (placementLogTableRefs)
+                        await $_getPrefetchedData<
+                          WorkspacesTableData,
+                          $WorkspacesTableTable,
+                          PlacementLogTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkspacesTableTableReferences
+                              ._placementLogTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkspacesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).placementLogTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.workspaceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (workspaceRoutesTableRefs)
+                        await $_getPrefetchedData<
+                          WorkspacesTableData,
+                          $WorkspacesTableTable,
+                          WorkspaceRoutesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkspacesTableTableReferences
+                              ._workspaceRoutesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkspacesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).workspaceRoutesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.workspaceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (inviteSecureRoutesTableRefs)
+                        await $_getPrefetchedData<
+                          WorkspacesTableData,
+                          $WorkspacesTableTable,
+                          InviteSecureRoutesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkspacesTableTableReferences
+                              ._inviteSecureRoutesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkspacesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).inviteSecureRoutesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.workspaceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (environmentSlotLeasesTableRefs)
+                        await $_getPrefetchedData<
+                          WorkspacesTableData,
+                          $WorkspacesTableTable,
+                          EnvironmentSlotLeasesTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkspacesTableTableReferences
+                              ._environmentSlotLeasesTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkspacesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).environmentSlotLeasesTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.workspaceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$WorkspacesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GlobalDatabase,
+      $WorkspacesTableTable,
+      WorkspacesTableData,
+      $$WorkspacesTableTableFilterComposer,
+      $$WorkspacesTableTableOrderingComposer,
+      $$WorkspacesTableTableAnnotationComposer,
+      $$WorkspacesTableTableCreateCompanionBuilder,
+      $$WorkspacesTableTableUpdateCompanionBuilder,
+      (WorkspacesTableData, $$WorkspacesTableTableReferences),
+      WorkspacesTableData,
+      PrefetchHooks Function({
+        bool ownerUserId,
+        bool pairedDevicesTableRefs,
+        bool jobsTableRefs,
+        bool placementLogTableRefs,
+        bool workspaceRoutesTableRefs,
+        bool inviteSecureRoutesTableRefs,
+        bool environmentSlotLeasesTableRefs,
       })
     >;
 typedef $$UserPreferencesTableTableCreateCompanionBuilder =
@@ -11954,8 +14522,8 @@ typedef $$UserPreferencesTableTableProcessedTableManager =
 typedef $$PairedDevicesTableTableCreateCompanionBuilder =
     PairedDevicesTableCompanion Function({
       required String id,
-      Value<String?> userId,
-      Value<String?> workspaceId,
+      required String userId,
+      Value<String?> landingWorkspaceId,
       required String label,
       Value<String> platform,
       required String pskRef,
@@ -11969,8 +14537,8 @@ typedef $$PairedDevicesTableTableCreateCompanionBuilder =
 typedef $$PairedDevicesTableTableUpdateCompanionBuilder =
     PairedDevicesTableCompanion Function({
       Value<String> id,
-      Value<String?> userId,
-      Value<String?> workspaceId,
+      Value<String> userId,
+      Value<String?> landingWorkspaceId,
       Value<String> label,
       Value<String> platform,
       Value<String> pskRef,
@@ -11981,6 +14549,74 @@ typedef $$PairedDevicesTableTableUpdateCompanionBuilder =
       Value<DateTime?> expiresAt,
       Value<int> rowid,
     });
+
+final class $$PairedDevicesTableTableReferences
+    extends
+        BaseReferences<
+          _$GlobalDatabase,
+          $PairedDevicesTableTable,
+          PairedDevicesTableData
+        > {
+  $$PairedDevicesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTableTable _userIdTable(_$GlobalDatabase db) =>
+      db.usersTable.createAlias('paired_devices__user_id__users__id');
+
+  $$UsersTableTableProcessedTableManager get userId {
+    final $_column = $_itemColumn<String>('user_id')!;
+
+    final manager = $$UsersTableTableTableManager(
+      $_db,
+      $_db.usersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $WorkspacesTableTable _landingWorkspaceIdTable(_$GlobalDatabase db) =>
+      db.workspacesTable.createAlias(
+        'paired_devices__landing_workspace_id__workspaces__id',
+      );
+
+  $$WorkspacesTableTableProcessedTableManager? get landingWorkspaceId {
+    final $_column = $_itemColumn<String>('landing_workspace_id');
+    if ($_column == null) return null;
+    final manager = $$WorkspacesTableTableTableManager(
+      $_db,
+      $_db.workspacesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_landingWorkspaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$WorkersTableTable, List<WorkersTableData>>
+  _workersTableRefsTable(_$GlobalDatabase db) => MultiTypedResultKey.fromTable(
+    db.workersTable,
+    aliasName: 'paired_devices__id__workers__paired_device_id',
+  );
+
+  $$WorkersTableTableProcessedTableManager get workersTableRefs {
+    final manager = $$WorkersTableTableTableManager(
+      $_db,
+      $_db.workersTable,
+    ).filter((f) => f.pairedDeviceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_workersTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
 
 class $$PairedDevicesTableTableFilterComposer
     extends Composer<_$GlobalDatabase, $PairedDevicesTableTable> {
@@ -11993,16 +14629,6 @@ class $$PairedDevicesTableTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get userId => $composableBuilder(
-    column: $table.userId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12045,6 +14671,77 @@ class $$PairedDevicesTableTableFilterComposer
     column: $table.expiresAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$UsersTableTableFilterComposer get userId {
+    final $$UsersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkspacesTableTableFilterComposer get landingWorkspaceId {
+    final $$WorkspacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.landingWorkspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> workersTableRefs(
+    Expression<bool> Function($$WorkersTableTableFilterComposer f) f,
+  ) {
+    final $$WorkersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.pairedDeviceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PairedDevicesTableTableOrderingComposer
@@ -12058,16 +14755,6 @@ class $$PairedDevicesTableTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get userId => $composableBuilder(
-    column: $table.userId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -12110,6 +14797,52 @@ class $$PairedDevicesTableTableOrderingComposer
     column: $table.expiresAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$UsersTableTableOrderingComposer get userId {
+    final $$UsersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkspacesTableTableOrderingComposer get landingWorkspaceId {
+    final $$WorkspacesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.landingWorkspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PairedDevicesTableTableAnnotationComposer
@@ -12123,14 +14856,6 @@ class $$PairedDevicesTableTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get userId =>
-      $composableBuilder(column: $table.userId, builder: (column) => column);
-
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get label =>
       $composableBuilder(column: $table.label, builder: (column) => column);
@@ -12159,6 +14884,77 @@ class $$PairedDevicesTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get expiresAt =>
       $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+
+  $$UsersTableTableAnnotationComposer get userId {
+    final $$UsersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkspacesTableTableAnnotationComposer get landingWorkspaceId {
+    final $$WorkspacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.landingWorkspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> workersTableRefs<T extends Object>(
+    Expression<T> Function($$WorkersTableTableAnnotationComposer a) f,
+  ) {
+    final $$WorkersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.pairedDeviceId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$PairedDevicesTableTableTableManager
@@ -12172,16 +14968,13 @@ class $$PairedDevicesTableTableTableManager
           $$PairedDevicesTableTableAnnotationComposer,
           $$PairedDevicesTableTableCreateCompanionBuilder,
           $$PairedDevicesTableTableUpdateCompanionBuilder,
-          (
-            PairedDevicesTableData,
-            BaseReferences<
-              _$GlobalDatabase,
-              $PairedDevicesTableTable,
-              PairedDevicesTableData
-            >,
-          ),
+          (PairedDevicesTableData, $$PairedDevicesTableTableReferences),
           PairedDevicesTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({
+            bool userId,
+            bool landingWorkspaceId,
+            bool workersTableRefs,
+          })
         > {
   $$PairedDevicesTableTableTableManager(
     _$GlobalDatabase db,
@@ -12202,8 +14995,8 @@ class $$PairedDevicesTableTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String?> userId = const Value.absent(),
-                Value<String?> workspaceId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String?> landingWorkspaceId = const Value.absent(),
                 Value<String> label = const Value.absent(),
                 Value<String> platform = const Value.absent(),
                 Value<String> pskRef = const Value.absent(),
@@ -12216,7 +15009,7 @@ class $$PairedDevicesTableTableTableManager
               }) => PairedDevicesTableCompanion(
                 id: id,
                 userId: userId,
-                workspaceId: workspaceId,
+                landingWorkspaceId: landingWorkspaceId,
                 label: label,
                 platform: platform,
                 pskRef: pskRef,
@@ -12230,8 +15023,8 @@ class $$PairedDevicesTableTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                Value<String?> userId = const Value.absent(),
-                Value<String?> workspaceId = const Value.absent(),
+                required String userId,
+                Value<String?> landingWorkspaceId = const Value.absent(),
                 required String label,
                 Value<String> platform = const Value.absent(),
                 required String pskRef,
@@ -12244,7 +15037,7 @@ class $$PairedDevicesTableTableTableManager
               }) => PairedDevicesTableCompanion.insert(
                 id: id,
                 userId: userId,
-                workspaceId: workspaceId,
+                landingWorkspaceId: landingWorkspaceId,
                 label: label,
                 platform: platform,
                 pskRef: pskRef,
@@ -12261,15 +15054,97 @@ class $$PairedDevicesTableTableTableManager
                   e.readTable<$PairedDevicesTableTable, PairedDevicesTableData>(
                     table,
                   ),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $PairedDevicesTableTable,
-                    PairedDevicesTableData
-                  >(db, table, e),
+                  $$PairedDevicesTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback:
+              ({
+                userId = false,
+                landingWorkspaceId = false,
+                workersTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (workersTableRefs) db.workersTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (userId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.userId,
+                                    referencedTable:
+                                        $$PairedDevicesTableTableReferences
+                                            ._userIdTable(db),
+                                    referencedColumn:
+                                        $$PairedDevicesTableTableReferences
+                                            ._userIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (landingWorkspaceId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.landingWorkspaceId,
+                                    referencedTable:
+                                        $$PairedDevicesTableTableReferences
+                                            ._landingWorkspaceIdTable(db),
+                                    referencedColumn:
+                                        $$PairedDevicesTableTableReferences
+                                            ._landingWorkspaceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (workersTableRefs)
+                        await $_getPrefetchedData<
+                          PairedDevicesTableData,
+                          $PairedDevicesTableTable,
+                          WorkersTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PairedDevicesTableTableReferences
+                              ._workersTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PairedDevicesTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).workersTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.pairedDeviceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
         ),
       );
 }
@@ -12284,16 +15159,13 @@ typedef $$PairedDevicesTableTableProcessedTableManager =
       $$PairedDevicesTableTableAnnotationComposer,
       $$PairedDevicesTableTableCreateCompanionBuilder,
       $$PairedDevicesTableTableUpdateCompanionBuilder,
-      (
-        PairedDevicesTableData,
-        BaseReferences<
-          _$GlobalDatabase,
-          $PairedDevicesTableTable,
-          PairedDevicesTableData
-        >,
-      ),
+      (PairedDevicesTableData, $$PairedDevicesTableTableReferences),
       PairedDevicesTableData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({
+        bool userId,
+        bool landingWorkspaceId,
+        bool workersTableRefs,
+      })
     >;
 typedef $$RssFeedsTableTableCreateCompanionBuilder =
     RssFeedsTableCompanion Function({
@@ -13362,6 +16234,90 @@ typedef $$WorkersTableTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
+final class $$WorkersTableTableReferences
+    extends
+        BaseReferences<_$GlobalDatabase, $WorkersTableTable, WorkersTableData> {
+  $$WorkersTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PairedDevicesTableTable _pairedDeviceIdTable(_$GlobalDatabase db) =>
+      db.pairedDevicesTable.createAlias(
+        'workers__paired_device_id__paired_devices__id',
+      );
+
+  $$PairedDevicesTableTableProcessedTableManager? get pairedDeviceId {
+    final $_column = $_itemColumn<String>('paired_device_id');
+    if ($_column == null) return null;
+    final manager = $$PairedDevicesTableTableTableManager(
+      $_db,
+      $_db.pairedDevicesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_pairedDeviceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTableTable _registeredByTable(_$GlobalDatabase db) =>
+      db.usersTable.createAlias('workers__registered_by__users__id');
+
+  $$UsersTableTableProcessedTableManager? get registeredBy {
+    final $_column = $_itemColumn<String>('registered_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableTableManager(
+      $_db,
+      $_db.usersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_registeredByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$JobsTableTable, List<JobsTableData>>
+  _jobsTableRefsTable(_$GlobalDatabase db) => MultiTypedResultKey.fromTable(
+    db.jobsTable,
+    aliasName: 'workers__id__jobs__worker_id',
+  );
+
+  $$JobsTableTableProcessedTableManager get jobsTableRefs {
+    final manager = $$JobsTableTableTableManager(
+      $_db,
+      $_db.jobsTable,
+    ).filter((f) => f.workerId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_jobsTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PlacementLogTableTable,
+    List<PlacementLogTableData>
+  >
+  _placementLogTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.placementLogTable,
+        aliasName: 'workers__id__placement_log__worker_id',
+      );
+
+  $$PlacementLogTableTableProcessedTableManager get placementLogTableRefs {
+    final manager = $$PlacementLogTableTableTableManager(
+      $_db,
+      $_db.placementLogTable,
+    ).filter((f) => f.workerId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _placementLogTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
 class $$WorkersTableTableFilterComposer
     extends Composer<_$GlobalDatabase, $WorkersTableTable> {
   $$WorkersTableTableFilterComposer({
@@ -13396,11 +16352,6 @@ class $$WorkersTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get pairedDeviceId => $composableBuilder(
-    column: $table.pairedDeviceId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<int> get protocolVersion => $composableBuilder(
     column: $table.protocolVersion,
     builder: (column) => ColumnFilters(column),
@@ -13413,11 +16364,6 @@ class $$WorkersTableTableFilterComposer
 
   ColumnFilters<DateTime> get lastHeartbeatAt => $composableBuilder(
     column: $table.lastHeartbeatAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get registeredBy => $composableBuilder(
-    column: $table.registeredBy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13440,6 +16386,102 @@ class $$WorkersTableTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$PairedDevicesTableTableFilterComposer get pairedDeviceId {
+    final $$PairedDevicesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pairedDeviceId,
+      referencedTable: $db.pairedDevicesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PairedDevicesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.pairedDevicesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableTableFilterComposer get registeredBy {
+    final $$UsersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.registeredBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> jobsTableRefs(
+    Expression<bool> Function($$JobsTableTableFilterComposer f) f,
+  ) {
+    final $$JobsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.workerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> placementLogTableRefs(
+    Expression<bool> Function($$PlacementLogTableTableFilterComposer f) f,
+  ) {
+    final $$PlacementLogTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.placementLogTable,
+      getReferencedColumn: (t) => t.workerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlacementLogTableTableFilterComposer(
+            $db: $db,
+            $table: $db.placementLogTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$WorkersTableTableOrderingComposer
@@ -13476,11 +16518,6 @@ class $$WorkersTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get pairedDeviceId => $composableBuilder(
-    column: $table.pairedDeviceId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get protocolVersion => $composableBuilder(
     column: $table.protocolVersion,
     builder: (column) => ColumnOrderings(column),
@@ -13493,11 +16530,6 @@ class $$WorkersTableTableOrderingComposer
 
   ColumnOrderings<DateTime> get lastHeartbeatAt => $composableBuilder(
     column: $table.lastHeartbeatAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get registeredBy => $composableBuilder(
-    column: $table.registeredBy,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13520,6 +16552,52 @@ class $$WorkersTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$PairedDevicesTableTableOrderingComposer get pairedDeviceId {
+    final $$PairedDevicesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.pairedDeviceId,
+      referencedTable: $db.pairedDevicesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PairedDevicesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.pairedDevicesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableTableOrderingComposer get registeredBy {
+    final $$UsersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.registeredBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$WorkersTableTableAnnotationComposer
@@ -13548,11 +16626,6 @@ class $$WorkersTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get pairedDeviceId => $composableBuilder(
-    column: $table.pairedDeviceId,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<int> get protocolVersion => $composableBuilder(
     column: $table.protocolVersion,
     builder: (column) => column,
@@ -13563,11 +16636,6 @@ class $$WorkersTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get lastHeartbeatAt => $composableBuilder(
     column: $table.lastHeartbeatAt,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get registeredBy => $composableBuilder(
-    column: $table.registeredBy,
     builder: (column) => column,
   );
 
@@ -13582,6 +16650,104 @@ class $$WorkersTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$PairedDevicesTableTableAnnotationComposer get pairedDeviceId {
+    final $$PairedDevicesTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.pairedDeviceId,
+          referencedTable: $db.pairedDevicesTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PairedDevicesTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.pairedDevicesTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$UsersTableTableAnnotationComposer get registeredBy {
+    final $$UsersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.registeredBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> jobsTableRefs<T extends Object>(
+    Expression<T> Function($$JobsTableTableAnnotationComposer a) f,
+  ) {
+    final $$JobsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.workerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> placementLogTableRefs<T extends Object>(
+    Expression<T> Function($$PlacementLogTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlacementLogTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.placementLogTable,
+          getReferencedColumn: (t) => t.workerId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlacementLogTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.placementLogTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$WorkersTableTableTableManager
@@ -13595,16 +16761,14 @@ class $$WorkersTableTableTableManager
           $$WorkersTableTableAnnotationComposer,
           $$WorkersTableTableCreateCompanionBuilder,
           $$WorkersTableTableUpdateCompanionBuilder,
-          (
-            WorkersTableData,
-            BaseReferences<
-              _$GlobalDatabase,
-              $WorkersTableTable,
-              WorkersTableData
-            >,
-          ),
+          (WorkersTableData, $$WorkersTableTableReferences),
           WorkersTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({
+            bool pairedDeviceId,
+            bool registeredBy,
+            bool jobsTableRefs,
+            bool placementLogTableRefs,
+          })
         > {
   $$WorkersTableTableTableManager(_$GlobalDatabase db, $WorkersTableTable table)
     : super(
@@ -13689,15 +16853,120 @@ class $$WorkersTableTableTableManager
               .map(
                 (e) => (
                   e.readTable<$WorkersTableTable, WorkersTableData>(table),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $WorkersTableTable,
-                    WorkersTableData
-                  >(db, table, e),
+                  $$WorkersTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback:
+              ({
+                pairedDeviceId = false,
+                registeredBy = false,
+                jobsTableRefs = false,
+                placementLogTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (jobsTableRefs) db.jobsTable,
+                    if (placementLogTableRefs) db.placementLogTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (pairedDeviceId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.pairedDeviceId,
+                                    referencedTable:
+                                        $$WorkersTableTableReferences
+                                            ._pairedDeviceIdTable(db),
+                                    referencedColumn:
+                                        $$WorkersTableTableReferences
+                                            ._pairedDeviceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (registeredBy) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.registeredBy,
+                                    referencedTable:
+                                        $$WorkersTableTableReferences
+                                            ._registeredByTable(db),
+                                    referencedColumn:
+                                        $$WorkersTableTableReferences
+                                            ._registeredByTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (jobsTableRefs)
+                        await $_getPrefetchedData<
+                          WorkersTableData,
+                          $WorkersTableTable,
+                          JobsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkersTableTableReferences
+                              ._jobsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).jobsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.workerId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (placementLogTableRefs)
+                        await $_getPrefetchedData<
+                          WorkersTableData,
+                          $WorkersTableTable,
+                          PlacementLogTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WorkersTableTableReferences
+                              ._placementLogTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WorkersTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).placementLogTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.workerId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
         ),
       );
 }
@@ -13712,12 +16981,14 @@ typedef $$WorkersTableTableProcessedTableManager =
       $$WorkersTableTableAnnotationComposer,
       $$WorkersTableTableCreateCompanionBuilder,
       $$WorkersTableTableUpdateCompanionBuilder,
-      (
-        WorkersTableData,
-        BaseReferences<_$GlobalDatabase, $WorkersTableTable, WorkersTableData>,
-      ),
+      (WorkersTableData, $$WorkersTableTableReferences),
       WorkersTableData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({
+        bool pairedDeviceId,
+        bool registeredBy,
+        bool jobsTableRefs,
+        bool placementLogTableRefs,
+      })
     >;
 typedef $$JobsTableTableCreateCompanionBuilder =
     JobsTableCompanion Function({
@@ -13733,7 +17004,7 @@ typedef $$JobsTableTableCreateCompanionBuilder =
       Value<DateTime?> leaseExpiresAt,
       Value<int> priority,
       Value<String?> submittedBy,
-      Value<int> costCents,
+      Value<int> costMicros,
       Value<int> attempts,
       Value<int> maxAttempts,
       Value<int> lastAckedSeq,
@@ -13761,7 +17032,7 @@ typedef $$JobsTableTableUpdateCompanionBuilder =
       Value<DateTime?> leaseExpiresAt,
       Value<int> priority,
       Value<String?> submittedBy,
-      Value<int> costCents,
+      Value<int> costMicros,
       Value<int> attempts,
       Value<int> maxAttempts,
       Value<int> lastAckedSeq,
@@ -13776,6 +17047,86 @@ typedef $$JobsTableTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
+final class $$JobsTableTableReferences
+    extends BaseReferences<_$GlobalDatabase, $JobsTableTable, JobsTableData> {
+  $$JobsTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $WorkspacesTableTable _workspaceIdTable(_$GlobalDatabase db) =>
+      db.workspacesTable.createAlias('jobs__workspace_id__workspaces__id');
+
+  $$WorkspacesTableTableProcessedTableManager get workspaceId {
+    final $_column = $_itemColumn<String>('workspace_id')!;
+
+    final manager = $$WorkspacesTableTableTableManager(
+      $_db,
+      $_db.workspacesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workspaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $WorkersTableTable _workerIdTable(_$GlobalDatabase db) =>
+      db.workersTable.createAlias('jobs__worker_id__workers__id');
+
+  $$WorkersTableTableProcessedTableManager? get workerId {
+    final $_column = $_itemColumn<String>('worker_id');
+    if ($_column == null) return null;
+    final manager = $$WorkersTableTableTableManager(
+      $_db,
+      $_db.workersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workerIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $UsersTableTable _submittedByTable(_$GlobalDatabase db) =>
+      db.usersTable.createAlias('jobs__submitted_by__users__id');
+
+  $$UsersTableTableProcessedTableManager? get submittedBy {
+    final $_column = $_itemColumn<String>('submitted_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableTableManager(
+      $_db,
+      $_db.usersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_submittedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PlacementLogTableTable,
+    List<PlacementLogTableData>
+  >
+  _placementLogTableRefsTable(_$GlobalDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.placementLogTable,
+        aliasName: 'jobs__id__placement_log__job_id',
+      );
+
+  $$PlacementLogTableTableProcessedTableManager get placementLogTableRefs {
+    final manager = $$PlacementLogTableTableTableManager(
+      $_db,
+      $_db.placementLogTable,
+    ).filter((f) => f.jobId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _placementLogTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
 class $$JobsTableTableFilterComposer
     extends Composer<_$GlobalDatabase, $JobsTableTable> {
   $$JobsTableTableFilterComposer({
@@ -13787,11 +17138,6 @@ class $$JobsTableTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13820,11 +17166,6 @@ class $$JobsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get workerId => $composableBuilder(
-    column: $table.workerId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get pinnedWorkerId => $composableBuilder(
     column: $table.pinnedWorkerId,
     builder: (column) => ColumnFilters(column),
@@ -13840,13 +17181,8 @@ class $$JobsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get submittedBy => $composableBuilder(
-    column: $table.submittedBy,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get costCents => $composableBuilder(
-    column: $table.costCents,
+  ColumnFilters<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13904,6 +17240,100 @@ class $$JobsTableTableFilterComposer
     column: $table.finishedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$WorkspacesTableTableFilterComposer get workspaceId {
+    final $$WorkspacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkersTableTableFilterComposer get workerId {
+    final $$WorkersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workerId,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableTableFilterComposer get submittedBy {
+    final $$UsersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.submittedBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> placementLogTableRefs(
+    Expression<bool> Function($$PlacementLogTableTableFilterComposer f) f,
+  ) {
+    final $$PlacementLogTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.placementLogTable,
+      getReferencedColumn: (t) => t.jobId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlacementLogTableTableFilterComposer(
+            $db: $db,
+            $table: $db.placementLogTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$JobsTableTableOrderingComposer
@@ -13917,11 +17347,6 @@ class $$JobsTableTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13950,11 +17375,6 @@ class $$JobsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get workerId => $composableBuilder(
-    column: $table.workerId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get pinnedWorkerId => $composableBuilder(
     column: $table.pinnedWorkerId,
     builder: (column) => ColumnOrderings(column),
@@ -13970,13 +17390,8 @@ class $$JobsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get submittedBy => $composableBuilder(
-    column: $table.submittedBy,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get costCents => $composableBuilder(
-    column: $table.costCents,
+  ColumnOrderings<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -14034,6 +17449,75 @@ class $$JobsTableTableOrderingComposer
     column: $table.finishedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$WorkspacesTableTableOrderingComposer get workspaceId {
+    final $$WorkspacesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkersTableTableOrderingComposer get workerId {
+    final $$WorkersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workerId,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableTableOrderingComposer get submittedBy {
+    final $$UsersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.submittedBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$JobsTableTableAnnotationComposer
@@ -14047,11 +17531,6 @@ class $$JobsTableTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
@@ -14072,9 +17551,6 @@ class $$JobsTableTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
-  GeneratedColumn<String> get workerId =>
-      $composableBuilder(column: $table.workerId, builder: (column) => column);
-
   GeneratedColumn<String> get pinnedWorkerId => $composableBuilder(
     column: $table.pinnedWorkerId,
     builder: (column) => column,
@@ -14088,13 +17564,10 @@ class $$JobsTableTableAnnotationComposer
   GeneratedColumn<int> get priority =>
       $composableBuilder(column: $table.priority, builder: (column) => column);
 
-  GeneratedColumn<String> get submittedBy => $composableBuilder(
-    column: $table.submittedBy,
+  GeneratedColumn<int> get costMicros => $composableBuilder(
+    column: $table.costMicros,
     builder: (column) => column,
   );
-
-  GeneratedColumn<int> get costCents =>
-      $composableBuilder(column: $table.costCents, builder: (column) => column);
 
   GeneratedColumn<int> get attempts =>
       $composableBuilder(column: $table.attempts, builder: (column) => column);
@@ -14138,6 +17611,101 @@ class $$JobsTableTableAnnotationComposer
     column: $table.finishedAt,
     builder: (column) => column,
   );
+
+  $$WorkspacesTableTableAnnotationComposer get workspaceId {
+    final $$WorkspacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkersTableTableAnnotationComposer get workerId {
+    final $$WorkersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workerId,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$UsersTableTableAnnotationComposer get submittedBy {
+    final $$UsersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.submittedBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> placementLogTableRefs<T extends Object>(
+    Expression<T> Function($$PlacementLogTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlacementLogTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.placementLogTable,
+          getReferencedColumn: (t) => t.jobId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlacementLogTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.placementLogTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$JobsTableTableTableManager
@@ -14151,12 +17719,14 @@ class $$JobsTableTableTableManager
           $$JobsTableTableAnnotationComposer,
           $$JobsTableTableCreateCompanionBuilder,
           $$JobsTableTableUpdateCompanionBuilder,
-          (
-            JobsTableData,
-            BaseReferences<_$GlobalDatabase, $JobsTableTable, JobsTableData>,
-          ),
+          (JobsTableData, $$JobsTableTableReferences),
           JobsTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({
+            bool workspaceId,
+            bool workerId,
+            bool submittedBy,
+            bool placementLogTableRefs,
+          })
         > {
   $$JobsTableTableTableManager(_$GlobalDatabase db, $JobsTableTable table)
     : super(
@@ -14183,7 +17753,7 @@ class $$JobsTableTableTableManager
                 Value<DateTime?> leaseExpiresAt = const Value.absent(),
                 Value<int> priority = const Value.absent(),
                 Value<String?> submittedBy = const Value.absent(),
-                Value<int> costCents = const Value.absent(),
+                Value<int> costMicros = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
                 Value<int> maxAttempts = const Value.absent(),
                 Value<int> lastAckedSeq = const Value.absent(),
@@ -14209,7 +17779,7 @@ class $$JobsTableTableTableManager
                 leaseExpiresAt: leaseExpiresAt,
                 priority: priority,
                 submittedBy: submittedBy,
-                costCents: costCents,
+                costMicros: costMicros,
                 attempts: attempts,
                 maxAttempts: maxAttempts,
                 lastAckedSeq: lastAckedSeq,
@@ -14237,7 +17807,7 @@ class $$JobsTableTableTableManager
                 Value<DateTime?> leaseExpiresAt = const Value.absent(),
                 Value<int> priority = const Value.absent(),
                 Value<String?> submittedBy = const Value.absent(),
-                Value<int> costCents = const Value.absent(),
+                Value<int> costMicros = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
                 Value<int> maxAttempts = const Value.absent(),
                 Value<int> lastAckedSeq = const Value.absent(),
@@ -14263,7 +17833,7 @@ class $$JobsTableTableTableManager
                 leaseExpiresAt: leaseExpiresAt,
                 priority: priority,
                 submittedBy: submittedBy,
-                costCents: costCents,
+                costMicros: costMicros,
                 attempts: attempts,
                 maxAttempts: maxAttempts,
                 lastAckedSeq: lastAckedSeq,
@@ -14281,15 +17851,107 @@ class $$JobsTableTableTableManager
               .map(
                 (e) => (
                   e.readTable<$JobsTableTable, JobsTableData>(table),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $JobsTableTable,
-                    JobsTableData
-                  >(db, table, e),
+                  $$JobsTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback:
+              ({
+                workspaceId = false,
+                workerId = false,
+                submittedBy = false,
+                placementLogTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (placementLogTableRefs) db.placementLogTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (workspaceId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.workspaceId,
+                                    referencedTable: $$JobsTableTableReferences
+                                        ._workspaceIdTable(db),
+                                    referencedColumn: $$JobsTableTableReferences
+                                        ._workspaceIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (workerId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.workerId,
+                                    referencedTable: $$JobsTableTableReferences
+                                        ._workerIdTable(db),
+                                    referencedColumn: $$JobsTableTableReferences
+                                        ._workerIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (submittedBy) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.submittedBy,
+                                    referencedTable: $$JobsTableTableReferences
+                                        ._submittedByTable(db),
+                                    referencedColumn: $$JobsTableTableReferences
+                                        ._submittedByTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (placementLogTableRefs)
+                        await $_getPrefetchedData<
+                          JobsTableData,
+                          $JobsTableTable,
+                          PlacementLogTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$JobsTableTableReferences
+                              ._placementLogTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$JobsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).placementLogTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.jobId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
         ),
       );
 }
@@ -14304,12 +17966,14 @@ typedef $$JobsTableTableProcessedTableManager =
       $$JobsTableTableAnnotationComposer,
       $$JobsTableTableCreateCompanionBuilder,
       $$JobsTableTableUpdateCompanionBuilder,
-      (
-        JobsTableData,
-        BaseReferences<_$GlobalDatabase, $JobsTableTable, JobsTableData>,
-      ),
+      (JobsTableData, $$JobsTableTableReferences),
       JobsTableData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({
+        bool workspaceId,
+        bool workerId,
+        bool submittedBy,
+        bool placementLogTableRefs,
+      })
     >;
 typedef $$PlacementLogTableTableCreateCompanionBuilder =
     PlacementLogTableCompanion Function({
@@ -14334,6 +17998,72 @@ typedef $$PlacementLogTableTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
+final class $$PlacementLogTableTableReferences
+    extends
+        BaseReferences<
+          _$GlobalDatabase,
+          $PlacementLogTableTable,
+          PlacementLogTableData
+        > {
+  $$PlacementLogTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $WorkspacesTableTable _workspaceIdTable(_$GlobalDatabase db) => db
+      .workspacesTable
+      .createAlias('placement_log__workspace_id__workspaces__id');
+
+  $$WorkspacesTableTableProcessedTableManager get workspaceId {
+    final $_column = $_itemColumn<String>('workspace_id')!;
+
+    final manager = $$WorkspacesTableTableTableManager(
+      $_db,
+      $_db.workspacesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workspaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $JobsTableTable _jobIdTable(_$GlobalDatabase db) =>
+      db.jobsTable.createAlias('placement_log__job_id__jobs__id');
+
+  $$JobsTableTableProcessedTableManager get jobId {
+    final $_column = $_itemColumn<String>('job_id')!;
+
+    final manager = $$JobsTableTableTableManager(
+      $_db,
+      $_db.jobsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_jobIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $WorkersTableTable _workerIdTable(_$GlobalDatabase db) =>
+      db.workersTable.createAlias('placement_log__worker_id__workers__id');
+
+  $$WorkersTableTableProcessedTableManager? get workerId {
+    final $_column = $_itemColumn<String>('worker_id');
+    if ($_column == null) return null;
+    final manager = $$WorkersTableTableTableManager(
+      $_db,
+      $_db.workersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workerIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
 class $$PlacementLogTableTableFilterComposer
     extends Composer<_$GlobalDatabase, $PlacementLogTableTable> {
   $$PlacementLogTableTableFilterComposer({
@@ -14345,21 +18075,6 @@ class $$PlacementLogTableTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get jobId => $composableBuilder(
-    column: $table.jobId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get workerId => $composableBuilder(
-    column: $table.workerId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14377,6 +18092,75 @@ class $$PlacementLogTableTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$WorkspacesTableTableFilterComposer get workspaceId {
+    final $$WorkspacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$JobsTableTableFilterComposer get jobId {
+    final $$JobsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.jobId,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkersTableTableFilterComposer get workerId {
+    final $$WorkersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workerId,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PlacementLogTableTableOrderingComposer
@@ -14390,21 +18174,6 @@ class $$PlacementLogTableTableOrderingComposer
   });
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get jobId => $composableBuilder(
-    column: $table.jobId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get workerId => $composableBuilder(
-    column: $table.workerId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -14422,6 +18191,75 @@ class $$PlacementLogTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$WorkspacesTableTableOrderingComposer get workspaceId {
+    final $$WorkspacesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$JobsTableTableOrderingComposer get jobId {
+    final $$JobsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.jobId,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkersTableTableOrderingComposer get workerId {
+    final $$WorkersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workerId,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PlacementLogTableTableAnnotationComposer
@@ -14436,17 +18274,6 @@ class $$PlacementLogTableTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get jobId =>
-      $composableBuilder(column: $table.jobId, builder: (column) => column);
-
-  GeneratedColumn<String> get workerId =>
-      $composableBuilder(column: $table.workerId, builder: (column) => column);
-
   GeneratedColumn<String> get decision =>
       $composableBuilder(column: $table.decision, builder: (column) => column);
 
@@ -14455,6 +18282,75 @@ class $$PlacementLogTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$WorkspacesTableTableAnnotationComposer get workspaceId {
+    final $$WorkspacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$JobsTableTableAnnotationComposer get jobId {
+    final $$JobsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.jobId,
+      referencedTable: $db.jobsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JobsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.jobsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WorkersTableTableAnnotationComposer get workerId {
+    final $$WorkersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workerId,
+      referencedTable: $db.workersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$PlacementLogTableTableTableManager
@@ -14468,16 +18364,9 @@ class $$PlacementLogTableTableTableManager
           $$PlacementLogTableTableAnnotationComposer,
           $$PlacementLogTableTableCreateCompanionBuilder,
           $$PlacementLogTableTableUpdateCompanionBuilder,
-          (
-            PlacementLogTableData,
-            BaseReferences<
-              _$GlobalDatabase,
-              $PlacementLogTableTable,
-              PlacementLogTableData
-            >,
-          ),
+          (PlacementLogTableData, $$PlacementLogTableTableReferences),
           PlacementLogTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool workspaceId, bool jobId, bool workerId})
         > {
   $$PlacementLogTableTableTableManager(
     _$GlobalDatabase db,
@@ -14541,15 +18430,84 @@ class $$PlacementLogTableTableTableManager
                   e.readTable<$PlacementLogTableTable, PlacementLogTableData>(
                     table,
                   ),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $PlacementLogTableTable,
-                    PlacementLogTableData
-                  >(db, table, e),
+                  $$PlacementLogTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback:
+              ({workspaceId = false, jobId = false, workerId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (workspaceId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.workspaceId,
+                                    referencedTable:
+                                        $$PlacementLogTableTableReferences
+                                            ._workspaceIdTable(db),
+                                    referencedColumn:
+                                        $$PlacementLogTableTableReferences
+                                            ._workspaceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (jobId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.jobId,
+                                    referencedTable:
+                                        $$PlacementLogTableTableReferences
+                                            ._jobIdTable(db),
+                                    referencedColumn:
+                                        $$PlacementLogTableTableReferences
+                                            ._jobIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (workerId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.workerId,
+                                    referencedTable:
+                                        $$PlacementLogTableTableReferences
+                                            ._workerIdTable(db),
+                                    referencedColumn:
+                                        $$PlacementLogTableTableReferences
+                                            ._workerIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
         ),
       );
 }
@@ -14564,16 +18522,9 @@ typedef $$PlacementLogTableTableProcessedTableManager =
       $$PlacementLogTableTableAnnotationComposer,
       $$PlacementLogTableTableCreateCompanionBuilder,
       $$PlacementLogTableTableUpdateCompanionBuilder,
-      (
-        PlacementLogTableData,
-        BaseReferences<
-          _$GlobalDatabase,
-          $PlacementLogTableTable,
-          PlacementLogTableData
-        >,
-      ),
+      (PlacementLogTableData, $$PlacementLogTableTableReferences),
       PlacementLogTableData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool workspaceId, bool jobId, bool workerId})
     >;
 typedef $$WorkspaceRoutesTableTableCreateCompanionBuilder =
     WorkspaceRoutesTableCompanion Function({
@@ -14591,6 +18542,38 @@ typedef $$WorkspaceRoutesTableTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
+
+final class $$WorkspaceRoutesTableTableReferences
+    extends
+        BaseReferences<
+          _$GlobalDatabase,
+          $WorkspaceRoutesTableTable,
+          WorkspaceRoutesTableData
+        > {
+  $$WorkspaceRoutesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $WorkspacesTableTable _workspaceIdTable(_$GlobalDatabase db) => db
+      .workspacesTable
+      .createAlias('workspace_routes__workspace_id__workspaces__id');
+
+  $$WorkspacesTableTableProcessedTableManager get workspaceId {
+    final $_column = $_itemColumn<String>('workspace_id')!;
+
+    final manager = $$WorkspacesTableTableTableManager(
+      $_db,
+      $_db.workspacesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workspaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
 
 class $$WorkspaceRoutesTableTableFilterComposer
     extends Composer<_$GlobalDatabase, $WorkspaceRoutesTableTable> {
@@ -14611,15 +18594,33 @@ class $$WorkspaceRoutesTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$WorkspacesTableTableFilterComposer get workspaceId {
+    final $$WorkspacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$WorkspaceRoutesTableTableOrderingComposer
@@ -14641,15 +18642,33 @@ class $$WorkspaceRoutesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$WorkspacesTableTableOrderingComposer get workspaceId {
+    final $$WorkspacesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$WorkspaceRoutesTableTableAnnotationComposer
@@ -14667,13 +18686,31 @@ class $$WorkspaceRoutesTableTableAnnotationComposer
   GeneratedColumn<String> get keyHash =>
       $composableBuilder(column: $table.keyHash, builder: (column) => column);
 
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$WorkspacesTableTableAnnotationComposer get workspaceId {
+    final $$WorkspacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$WorkspaceRoutesTableTableTableManager
@@ -14687,16 +18724,9 @@ class $$WorkspaceRoutesTableTableTableManager
           $$WorkspaceRoutesTableTableAnnotationComposer,
           $$WorkspaceRoutesTableTableCreateCompanionBuilder,
           $$WorkspaceRoutesTableTableUpdateCompanionBuilder,
-          (
-            WorkspaceRoutesTableData,
-            BaseReferences<
-              _$GlobalDatabase,
-              $WorkspaceRoutesTableTable,
-              WorkspaceRoutesTableData
-            >,
-          ),
+          (WorkspaceRoutesTableData, $$WorkspaceRoutesTableTableReferences),
           WorkspaceRoutesTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool workspaceId})
         > {
   $$WorkspaceRoutesTableTableTableManager(
     _$GlobalDatabase db,
@@ -14752,15 +18782,53 @@ class $$WorkspaceRoutesTableTableTableManager
                     $WorkspaceRoutesTableTable,
                     WorkspaceRoutesTableData
                   >(table),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $WorkspaceRoutesTableTable,
-                    WorkspaceRoutesTableData
-                  >(db, table, e),
+                  $$WorkspaceRoutesTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({workspaceId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (workspaceId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.workspaceId,
+                                referencedTable:
+                                    $$WorkspaceRoutesTableTableReferences
+                                        ._workspaceIdTable(db),
+                                referencedColumn:
+                                    $$WorkspaceRoutesTableTableReferences
+                                        ._workspaceIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -14775,16 +18843,317 @@ typedef $$WorkspaceRoutesTableTableProcessedTableManager =
       $$WorkspaceRoutesTableTableAnnotationComposer,
       $$WorkspaceRoutesTableTableCreateCompanionBuilder,
       $$WorkspaceRoutesTableTableUpdateCompanionBuilder,
-      (
-        WorkspaceRoutesTableData,
+      (WorkspaceRoutesTableData, $$WorkspaceRoutesTableTableReferences),
+      WorkspaceRoutesTableData,
+      PrefetchHooks Function({bool workspaceId})
+    >;
+typedef $$InviteSecureRoutesTableTableCreateCompanionBuilder =
+    InviteSecureRoutesTableCompanion Function({
+      required String routeId,
+      required String codeHash,
+      required String workspaceId,
+      Value<int> rowid,
+    });
+typedef $$InviteSecureRoutesTableTableUpdateCompanionBuilder =
+    InviteSecureRoutesTableCompanion Function({
+      Value<String> routeId,
+      Value<String> codeHash,
+      Value<String> workspaceId,
+      Value<int> rowid,
+    });
+
+final class $$InviteSecureRoutesTableTableReferences
+    extends
         BaseReferences<
           _$GlobalDatabase,
-          $WorkspaceRoutesTableTable,
-          WorkspaceRoutesTableData
-        >,
-      ),
-      WorkspaceRoutesTableData,
-      PrefetchHooks Function()
+          $InviteSecureRoutesTableTable,
+          InviteSecureRoutesTableData
+        > {
+  $$InviteSecureRoutesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $WorkspacesTableTable _workspaceIdTable(_$GlobalDatabase db) => db
+      .workspacesTable
+      .createAlias('invite_secure_routes__workspace_id__workspaces__id');
+
+  $$WorkspacesTableTableProcessedTableManager get workspaceId {
+    final $_column = $_itemColumn<String>('workspace_id')!;
+
+    final manager = $$WorkspacesTableTableTableManager(
+      $_db,
+      $_db.workspacesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workspaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$InviteSecureRoutesTableTableFilterComposer
+    extends Composer<_$GlobalDatabase, $InviteSecureRoutesTableTable> {
+  $$InviteSecureRoutesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get routeId => $composableBuilder(
+    column: $table.routeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get codeHash => $composableBuilder(
+    column: $table.codeHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$WorkspacesTableTableFilterComposer get workspaceId {
+    final $$WorkspacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InviteSecureRoutesTableTableOrderingComposer
+    extends Composer<_$GlobalDatabase, $InviteSecureRoutesTableTable> {
+  $$InviteSecureRoutesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get routeId => $composableBuilder(
+    column: $table.routeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get codeHash => $composableBuilder(
+    column: $table.codeHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$WorkspacesTableTableOrderingComposer get workspaceId {
+    final $$WorkspacesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InviteSecureRoutesTableTableAnnotationComposer
+    extends Composer<_$GlobalDatabase, $InviteSecureRoutesTableTable> {
+  $$InviteSecureRoutesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get routeId =>
+      $composableBuilder(column: $table.routeId, builder: (column) => column);
+
+  GeneratedColumn<String> get codeHash =>
+      $composableBuilder(column: $table.codeHash, builder: (column) => column);
+
+  $$WorkspacesTableTableAnnotationComposer get workspaceId {
+    final $$WorkspacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InviteSecureRoutesTableTableTableManager
+    extends
+        RootTableManager<
+          _$GlobalDatabase,
+          $InviteSecureRoutesTableTable,
+          InviteSecureRoutesTableData,
+          $$InviteSecureRoutesTableTableFilterComposer,
+          $$InviteSecureRoutesTableTableOrderingComposer,
+          $$InviteSecureRoutesTableTableAnnotationComposer,
+          $$InviteSecureRoutesTableTableCreateCompanionBuilder,
+          $$InviteSecureRoutesTableTableUpdateCompanionBuilder,
+          (
+            InviteSecureRoutesTableData,
+            $$InviteSecureRoutesTableTableReferences,
+          ),
+          InviteSecureRoutesTableData,
+          PrefetchHooks Function({bool workspaceId})
+        > {
+  $$InviteSecureRoutesTableTableTableManager(
+    _$GlobalDatabase db,
+    $InviteSecureRoutesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InviteSecureRoutesTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$InviteSecureRoutesTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$InviteSecureRoutesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> routeId = const Value.absent(),
+                Value<String> codeHash = const Value.absent(),
+                Value<String> workspaceId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InviteSecureRoutesTableCompanion(
+                routeId: routeId,
+                codeHash: codeHash,
+                workspaceId: workspaceId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String routeId,
+                required String codeHash,
+                required String workspaceId,
+                Value<int> rowid = const Value.absent(),
+              }) => InviteSecureRoutesTableCompanion.insert(
+                routeId: routeId,
+                codeHash: codeHash,
+                workspaceId: workspaceId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $InviteSecureRoutesTableTable,
+                    InviteSecureRoutesTableData
+                  >(table),
+                  $$InviteSecureRoutesTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({workspaceId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (workspaceId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.workspaceId,
+                                referencedTable:
+                                    $$InviteSecureRoutesTableTableReferences
+                                        ._workspaceIdTable(db),
+                                referencedColumn:
+                                    $$InviteSecureRoutesTableTableReferences
+                                        ._workspaceIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$InviteSecureRoutesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GlobalDatabase,
+      $InviteSecureRoutesTableTable,
+      InviteSecureRoutesTableData,
+      $$InviteSecureRoutesTableTableFilterComposer,
+      $$InviteSecureRoutesTableTableOrderingComposer,
+      $$InviteSecureRoutesTableTableAnnotationComposer,
+      $$InviteSecureRoutesTableTableCreateCompanionBuilder,
+      $$InviteSecureRoutesTableTableUpdateCompanionBuilder,
+      (InviteSecureRoutesTableData, $$InviteSecureRoutesTableTableReferences),
+      InviteSecureRoutesTableData,
+      PrefetchHooks Function({bool workspaceId})
     >;
 typedef $$ServerMetaTableTableCreateCompanionBuilder =
     ServerMetaTableCompanion Function({
@@ -15683,6 +20052,37 @@ typedef $$ManagedActionPoliciesTableTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
+final class $$ManagedActionPoliciesTableTableReferences
+    extends
+        BaseReferences<
+          _$GlobalDatabase,
+          $ManagedActionPoliciesTableTable,
+          ManagedActionPoliciesTableData
+        > {
+  $$ManagedActionPoliciesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTableTable _updatedByTable(_$GlobalDatabase db) => db.usersTable
+      .createAlias('managed_action_policies__updated_by__users__id');
+
+  $$UsersTableTableProcessedTableManager? get updatedBy {
+    final $_column = $_itemColumn<String>('updated_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableTableManager(
+      $_db,
+      $_db.usersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_updatedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
 class $$ManagedActionPoliciesTableTableFilterComposer
     extends Composer<_$GlobalDatabase, $ManagedActionPoliciesTableTable> {
   $$ManagedActionPoliciesTableTableFilterComposer({
@@ -15722,15 +20122,33 @@ class $$ManagedActionPoliciesTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get updatedBy => $composableBuilder(
-    column: $table.updatedBy,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$UsersTableTableFilterComposer get updatedBy {
+    final $$UsersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.updatedBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ManagedActionPoliciesTableTableOrderingComposer
@@ -15772,15 +20190,33 @@ class $$ManagedActionPoliciesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get updatedBy => $composableBuilder(
-    column: $table.updatedBy,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$UsersTableTableOrderingComposer get updatedBy {
+    final $$UsersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.updatedBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ManagedActionPoliciesTableTableAnnotationComposer
@@ -15818,11 +20254,31 @@ class $$ManagedActionPoliciesTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get updatedBy =>
-      $composableBuilder(column: $table.updatedBy, builder: (column) => column);
-
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$UsersTableTableAnnotationComposer get updatedBy {
+    final $$UsersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.updatedBy,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ManagedActionPoliciesTableTableTableManager
@@ -15838,14 +20294,10 @@ class $$ManagedActionPoliciesTableTableTableManager
           $$ManagedActionPoliciesTableTableUpdateCompanionBuilder,
           (
             ManagedActionPoliciesTableData,
-            BaseReferences<
-              _$GlobalDatabase,
-              $ManagedActionPoliciesTableTable,
-              ManagedActionPoliciesTableData
-            >,
+            $$ManagedActionPoliciesTableTableReferences,
           ),
           ManagedActionPoliciesTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool updatedBy})
         > {
   $$ManagedActionPoliciesTableTableTableManager(
     _$GlobalDatabase db,
@@ -15920,15 +20372,53 @@ class $$ManagedActionPoliciesTableTableTableManager
                     $ManagedActionPoliciesTableTable,
                     ManagedActionPoliciesTableData
                   >(table),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $ManagedActionPoliciesTableTable,
-                    ManagedActionPoliciesTableData
-                  >(db, table, e),
+                  $$ManagedActionPoliciesTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({updatedBy = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (updatedBy) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.updatedBy,
+                                referencedTable:
+                                    $$ManagedActionPoliciesTableTableReferences
+                                        ._updatedByTable(db),
+                                referencedColumn:
+                                    $$ManagedActionPoliciesTableTableReferences
+                                        ._updatedByTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -15945,14 +20435,10 @@ typedef $$ManagedActionPoliciesTableTableProcessedTableManager =
       $$ManagedActionPoliciesTableTableUpdateCompanionBuilder,
       (
         ManagedActionPoliciesTableData,
-        BaseReferences<
-          _$GlobalDatabase,
-          $ManagedActionPoliciesTableTable,
-          ManagedActionPoliciesTableData
-        >,
+        $$ManagedActionPoliciesTableTableReferences,
       ),
       ManagedActionPoliciesTableData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool updatedBy})
     >;
 typedef $$EnvironmentSlotLeasesTableTableCreateCompanionBuilder =
     EnvironmentSlotLeasesTableCompanion Function({
@@ -15979,6 +20465,38 @@ typedef $$EnvironmentSlotLeasesTableTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
     });
 
+final class $$EnvironmentSlotLeasesTableTableReferences
+    extends
+        BaseReferences<
+          _$GlobalDatabase,
+          $EnvironmentSlotLeasesTableTable,
+          EnvironmentSlotLeasesTableData
+        > {
+  $$EnvironmentSlotLeasesTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $WorkspacesTableTable _workspaceIdTable(_$GlobalDatabase db) => db
+      .workspacesTable
+      .createAlias('environment_slot_leases__workspace_id__workspaces__id');
+
+  $$WorkspacesTableTableProcessedTableManager get workspaceId {
+    final $_column = $_itemColumn<String>('workspace_id')!;
+
+    final manager = $$WorkspacesTableTableTableManager(
+      $_db,
+      $_db.workspacesTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_workspaceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
 class $$EnvironmentSlotLeasesTableTableFilterComposer
     extends Composer<_$GlobalDatabase, $EnvironmentSlotLeasesTableTable> {
   $$EnvironmentSlotLeasesTableTableFilterComposer({
@@ -16000,11 +20518,6 @@ class $$EnvironmentSlotLeasesTableTableFilterComposer
 
   ColumnFilters<int> get size => $composableBuilder(
     column: $table.size,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16032,6 +20545,29 @@ class $$EnvironmentSlotLeasesTableTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$WorkspacesTableTableFilterComposer get workspaceId {
+    final $$WorkspacesTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableFilterComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$EnvironmentSlotLeasesTableTableOrderingComposer
@@ -16055,11 +20591,6 @@ class $$EnvironmentSlotLeasesTableTableOrderingComposer
 
   ColumnOrderings<int> get size => $composableBuilder(
     column: $table.size,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -16087,6 +20618,29 @@ class $$EnvironmentSlotLeasesTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$WorkspacesTableTableOrderingComposer get workspaceId {
+    final $$WorkspacesTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$EnvironmentSlotLeasesTableTableAnnotationComposer
@@ -16107,11 +20661,6 @@ class $$EnvironmentSlotLeasesTableTableAnnotationComposer
   GeneratedColumn<int> get size =>
       $composableBuilder(column: $table.size, builder: (column) => column);
 
-  GeneratedColumn<String> get workspaceId => $composableBuilder(
-    column: $table.workspaceId,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get spaceId =>
       $composableBuilder(column: $table.spaceId, builder: (column) => column);
 
@@ -16128,6 +20677,29 @@ class $$EnvironmentSlotLeasesTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$WorkspacesTableTableAnnotationComposer get workspaceId {
+    final $$WorkspacesTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.workspaceId,
+      referencedTable: $db.workspacesTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorkspacesTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.workspacesTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$EnvironmentSlotLeasesTableTableTableManager
@@ -16143,14 +20715,10 @@ class $$EnvironmentSlotLeasesTableTableTableManager
           $$EnvironmentSlotLeasesTableTableUpdateCompanionBuilder,
           (
             EnvironmentSlotLeasesTableData,
-            BaseReferences<
-              _$GlobalDatabase,
-              $EnvironmentSlotLeasesTableTable,
-              EnvironmentSlotLeasesTableData
-            >,
+            $$EnvironmentSlotLeasesTableTableReferences,
           ),
           EnvironmentSlotLeasesTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool workspaceId})
         > {
   $$EnvironmentSlotLeasesTableTableTableManager(
     _$GlobalDatabase db,
@@ -16225,15 +20793,53 @@ class $$EnvironmentSlotLeasesTableTableTableManager
                     $EnvironmentSlotLeasesTableTable,
                     EnvironmentSlotLeasesTableData
                   >(table),
-                  BaseReferences<
-                    _$GlobalDatabase,
-                    $EnvironmentSlotLeasesTableTable,
-                    EnvironmentSlotLeasesTableData
-                  >(db, table, e),
+                  $$EnvironmentSlotLeasesTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({workspaceId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (workspaceId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.workspaceId,
+                                referencedTable:
+                                    $$EnvironmentSlotLeasesTableTableReferences
+                                        ._workspaceIdTable(db),
+                                referencedColumn:
+                                    $$EnvironmentSlotLeasesTableTableReferences
+                                        ._workspaceIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -16250,14 +20856,10 @@ typedef $$EnvironmentSlotLeasesTableTableProcessedTableManager =
       $$EnvironmentSlotLeasesTableTableUpdateCompanionBuilder,
       (
         EnvironmentSlotLeasesTableData,
-        BaseReferences<
-          _$GlobalDatabase,
-          $EnvironmentSlotLeasesTableTable,
-          EnvironmentSlotLeasesTableData
-        >,
+        $$EnvironmentSlotLeasesTableTableReferences,
       ),
       EnvironmentSlotLeasesTableData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool workspaceId})
     >;
 typedef $$ServerAuditTableTableCreateCompanionBuilder =
     ServerAuditTableCompanion Function({
@@ -16537,14 +21139,554 @@ typedef $$ServerAuditTableTableProcessedTableManager =
       ServerAuditTableData,
       PrefetchHooks Function()
     >;
+typedef $$ServerNoticesTableTableCreateCompanionBuilder =
+    ServerNoticesTableCompanion Function({
+      required String kind,
+      required String subject,
+      required String detail,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$ServerNoticesTableTableUpdateCompanionBuilder =
+    ServerNoticesTableCompanion Function({
+      Value<String> kind,
+      Value<String> subject,
+      Value<String> detail,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ServerNoticesTableTableFilterComposer
+    extends Composer<_$GlobalDatabase, $ServerNoticesTableTable> {
+  $$ServerNoticesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detail => $composableBuilder(
+    column: $table.detail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ServerNoticesTableTableOrderingComposer
+    extends Composer<_$GlobalDatabase, $ServerNoticesTableTable> {
+  $$ServerNoticesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detail => $composableBuilder(
+    column: $table.detail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ServerNoticesTableTableAnnotationComposer
+    extends Composer<_$GlobalDatabase, $ServerNoticesTableTable> {
+  $$ServerNoticesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => column);
+
+  GeneratedColumn<String> get detail =>
+      $composableBuilder(column: $table.detail, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ServerNoticesTableTableTableManager
+    extends
+        RootTableManager<
+          _$GlobalDatabase,
+          $ServerNoticesTableTable,
+          ServerNoticesTableData,
+          $$ServerNoticesTableTableFilterComposer,
+          $$ServerNoticesTableTableOrderingComposer,
+          $$ServerNoticesTableTableAnnotationComposer,
+          $$ServerNoticesTableTableCreateCompanionBuilder,
+          $$ServerNoticesTableTableUpdateCompanionBuilder,
+          (
+            ServerNoticesTableData,
+            BaseReferences<
+              _$GlobalDatabase,
+              $ServerNoticesTableTable,
+              ServerNoticesTableData
+            >,
+          ),
+          ServerNoticesTableData,
+          PrefetchHooks Function()
+        > {
+  $$ServerNoticesTableTableTableManager(
+    _$GlobalDatabase db,
+    $ServerNoticesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServerNoticesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServerNoticesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServerNoticesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> kind = const Value.absent(),
+                Value<String> subject = const Value.absent(),
+                Value<String> detail = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ServerNoticesTableCompanion(
+                kind: kind,
+                subject: subject,
+                detail: detail,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String kind,
+                required String subject,
+                required String detail,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ServerNoticesTableCompanion.insert(
+                kind: kind,
+                subject: subject,
+                detail: detail,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ServerNoticesTableTable, ServerNoticesTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$GlobalDatabase,
+                    $ServerNoticesTableTable,
+                    ServerNoticesTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ServerNoticesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GlobalDatabase,
+      $ServerNoticesTableTable,
+      ServerNoticesTableData,
+      $$ServerNoticesTableTableFilterComposer,
+      $$ServerNoticesTableTableOrderingComposer,
+      $$ServerNoticesTableTableAnnotationComposer,
+      $$ServerNoticesTableTableCreateCompanionBuilder,
+      $$ServerNoticesTableTableUpdateCompanionBuilder,
+      (
+        ServerNoticesTableData,
+        BaseReferences<
+          _$GlobalDatabase,
+          $ServerNoticesTableTable,
+          ServerNoticesTableData
+        >,
+      ),
+      ServerNoticesTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$AgentPullRequestRequestersTableTableCreateCompanionBuilder =
+    AgentPullRequestRequestersTableCompanion Function({
+      required String state,
+      required String prKey,
+      required String userId,
+      required DateTime recordedAt,
+      Value<int> rowid,
+    });
+typedef $$AgentPullRequestRequestersTableTableUpdateCompanionBuilder =
+    AgentPullRequestRequestersTableCompanion Function({
+      Value<String> state,
+      Value<String> prKey,
+      Value<String> userId,
+      Value<DateTime> recordedAt,
+      Value<int> rowid,
+    });
+
+final class $$AgentPullRequestRequestersTableTableReferences
+    extends
+        BaseReferences<
+          _$GlobalDatabase,
+          $AgentPullRequestRequestersTableTable,
+          AgentPullRequestRequestersTableData
+        > {
+  $$AgentPullRequestRequestersTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTableTable _userIdTable(_$GlobalDatabase db) => db.usersTable
+      .createAlias('agent_pull_request_requesters__user_id__users__id');
+
+  $$UsersTableTableProcessedTableManager get userId {
+    final $_column = $_itemColumn<String>('user_id')!;
+
+    final manager = $$UsersTableTableTableManager(
+      $_db,
+      $_db.usersTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_userIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AgentPullRequestRequestersTableTableFilterComposer
+    extends Composer<_$GlobalDatabase, $AgentPullRequestRequestersTableTable> {
+  $$AgentPullRequestRequestersTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prKey => $composableBuilder(
+    column: $table.prKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableTableFilterComposer get userId {
+    final $$UsersTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableFilterComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentPullRequestRequestersTableTableOrderingComposer
+    extends Composer<_$GlobalDatabase, $AgentPullRequestRequestersTableTable> {
+  $$AgentPullRequestRequestersTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get prKey => $composableBuilder(
+    column: $table.prKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableTableOrderingComposer get userId {
+    final $$UsersTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentPullRequestRequestersTableTableAnnotationComposer
+    extends Composer<_$GlobalDatabase, $AgentPullRequestRequestersTableTable> {
+  $$AgentPullRequestRequestersTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<String> get prKey =>
+      $composableBuilder(column: $table.prKey, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+
+  $$UsersTableTableAnnotationComposer get userId {
+    final $$UsersTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.userId,
+      referencedTable: $db.usersTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.usersTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AgentPullRequestRequestersTableTableTableManager
+    extends
+        RootTableManager<
+          _$GlobalDatabase,
+          $AgentPullRequestRequestersTableTable,
+          AgentPullRequestRequestersTableData,
+          $$AgentPullRequestRequestersTableTableFilterComposer,
+          $$AgentPullRequestRequestersTableTableOrderingComposer,
+          $$AgentPullRequestRequestersTableTableAnnotationComposer,
+          $$AgentPullRequestRequestersTableTableCreateCompanionBuilder,
+          $$AgentPullRequestRequestersTableTableUpdateCompanionBuilder,
+          (
+            AgentPullRequestRequestersTableData,
+            $$AgentPullRequestRequestersTableTableReferences,
+          ),
+          AgentPullRequestRequestersTableData,
+          PrefetchHooks Function({bool userId})
+        > {
+  $$AgentPullRequestRequestersTableTableTableManager(
+    _$GlobalDatabase db,
+    $AgentPullRequestRequestersTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AgentPullRequestRequestersTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$AgentPullRequestRequestersTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$AgentPullRequestRequestersTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> state = const Value.absent(),
+                Value<String> prKey = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<DateTime> recordedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AgentPullRequestRequestersTableCompanion(
+                state: state,
+                prKey: prKey,
+                userId: userId,
+                recordedAt: recordedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String state,
+                required String prKey,
+                required String userId,
+                required DateTime recordedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => AgentPullRequestRequestersTableCompanion.insert(
+                state: state,
+                prKey: prKey,
+                userId: userId,
+                recordedAt: recordedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $AgentPullRequestRequestersTableTable,
+                    AgentPullRequestRequestersTableData
+                  >(table),
+                  $$AgentPullRequestRequestersTableTableReferences(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({userId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (userId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.userId,
+                                referencedTable:
+                                    $$AgentPullRequestRequestersTableTableReferences
+                                        ._userIdTable(db),
+                                referencedColumn:
+                                    $$AgentPullRequestRequestersTableTableReferences
+                                        ._userIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AgentPullRequestRequestersTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GlobalDatabase,
+      $AgentPullRequestRequestersTableTable,
+      AgentPullRequestRequestersTableData,
+      $$AgentPullRequestRequestersTableTableFilterComposer,
+      $$AgentPullRequestRequestersTableTableOrderingComposer,
+      $$AgentPullRequestRequestersTableTableAnnotationComposer,
+      $$AgentPullRequestRequestersTableTableCreateCompanionBuilder,
+      $$AgentPullRequestRequestersTableTableUpdateCompanionBuilder,
+      (
+        AgentPullRequestRequestersTableData,
+        $$AgentPullRequestRequestersTableTableReferences,
+      ),
+      AgentPullRequestRequestersTableData,
+      PrefetchHooks Function({bool userId})
+    >;
 
 class $GlobalDatabaseManager {
   final _$GlobalDatabase _db;
   $GlobalDatabaseManager(this._db);
-  $$WorkspacesTableTableTableManager get workspacesTable =>
-      $$WorkspacesTableTableTableManager(_db, _db.workspacesTable);
   $$UsersTableTableTableManager get usersTable =>
       $$UsersTableTableTableManager(_db, _db.usersTable);
+  $$WorkspacesTableTableTableManager get workspacesTable =>
+      $$WorkspacesTableTableTableManager(_db, _db.workspacesTable);
   $$UserPreferencesTableTableTableManager get userPreferencesTable =>
       $$UserPreferencesTableTableTableManager(_db, _db.userPreferencesTable);
   $$PairedDevicesTableTableTableManager get pairedDevicesTable =>
@@ -16561,6 +21703,11 @@ class $GlobalDatabaseManager {
       $$PlacementLogTableTableTableManager(_db, _db.placementLogTable);
   $$WorkspaceRoutesTableTableTableManager get workspaceRoutesTable =>
       $$WorkspaceRoutesTableTableTableManager(_db, _db.workspaceRoutesTable);
+  $$InviteSecureRoutesTableTableTableManager get inviteSecureRoutesTable =>
+      $$InviteSecureRoutesTableTableTableManager(
+        _db,
+        _db.inviteSecureRoutesTable,
+      );
   $$ServerMetaTableTableTableManager get serverMetaTable =>
       $$ServerMetaTableTableTableManager(_db, _db.serverMetaTable);
   $$ServerSettingsTableTableTableManager get serverSettingsTable =>
@@ -16581,4 +21728,12 @@ class $GlobalDatabaseManager {
       );
   $$ServerAuditTableTableTableManager get serverAuditTable =>
       $$ServerAuditTableTableTableManager(_db, _db.serverAuditTable);
+  $$ServerNoticesTableTableTableManager get serverNoticesTable =>
+      $$ServerNoticesTableTableTableManager(_db, _db.serverNoticesTable);
+  $$AgentPullRequestRequestersTableTableTableManager
+  get agentPullRequestRequestersTable =>
+      $$AgentPullRequestRequestersTableTableTableManager(
+        _db,
+        _db.agentPullRequestRequestersTable,
+      );
 }

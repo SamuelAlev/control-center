@@ -2,7 +2,7 @@
 title: Konfigurasi ejen
 description: Setiap medan pada entiti ejen dan enum yang digunakannya.
 slug: ms-MY/manual-pengguna/rujukan/konfigurasi-ejen
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Rujukan ini menyenaraikan setiap medan pada entiti ejen, beserta enum dan bendera yang digunakannya. Untuk panduan langkah demi langkah mencipta atau mengedit ejen dalam aplikasi, lihat [Cipta dan konfigurasikan ejen](/ms-MY/manual-pengguna/panduan-cara/cipta-ejen/).
@@ -26,17 +26,17 @@ Rujukan ini menyenaraikan setiap medan pada entiti ejen, beserta enum dan bender
 | `effort`                | `String?`              | Tidak | Id tahap penaakulan (cth. `'low'`, `'xhigh'`), bersumber daripada `thinkingLevels` model yang dipilih                                                                                               |
 | `contextSize`           | `int?`                 | Tidak | Saiz maksimum tetingkap konteks                                                                                                                                                                     |
 | `role`                  | `AgentRole?`           | Tidak | Peranan ejen                                                                                                                                                                                        |
-| `monthlyBudgetCents`    | `int`                  | Tidak | Had perbelanjaan bulanan dalam sen (lalai `0`, tanpa had)                                                                                                                                           |
+| `monthlyBudgetMicros`    | `int`                  | Tidak | Had perbelanjaan bulanan dalam mikrodolar (lalai `0`, tanpa had)                                                                                                                                           |
 | `silenceTimeoutMinutes` | `int?`                 | Tidak | Pengatasan tamat masa senyap dalam minit; mesti null atau dalam 1–240 (disahkan oleh pembina)                                                                                                       |
 | `maxConcurrentTasks`    | `int`                  | Tidak | Lalai `1`. Angka kapasiti yang dilaporkan oleh model kehadiran (kiraan sedang berjalan dan beratur dibandingkan dengannya)                                                                          |
 | `visibility`            | `AgentVisibility`      | Tidak | Lalai `workspace`                                                                                                                                                                                   |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Tidak | Status tadbir urus (lalai `active`). Ditulis oleh hentian keras belanjawan dan dipaparkan pada carta organisasi serta senarai kehadiran. Penghantaran masih menerima kerja daripada ejen `paused`     |
-| `budgetPolicyId`        | `String?`              | Tidak | Id polisi belanjawan bersama; apabila null, `monthlyBudgetCents` terpakai secara langsung                                                                                                            |
+| `budgetPolicyId`        | `String?`              | Tidak | Id polisi belanjawan bersama; apabila null, `monthlyBudgetMicros` terpakai secara langsung                                                                                                            |
 | `runtimeProfileId`      | `String?`              | Tidak | Id profil masa jalan tersuai                                                                                                                                                                        |
 | `createdAt`             | `DateTime`             | Ya    | Cap masa penciptaan                                                                                                                                                                                 |
 
 `name` dan `title` kedua-duanya mesti tidak kosong (disahkan oleh pembina). Lalai
-`monthlyBudgetCents` bernilai `0` bermakna tanpa had. Tetapkan siling dengan `agents.upsert`.
+`monthlyBudgetMicros` bernilai `0` bermakna tanpa had. Tetapkan siling dengan `agents.upsert`.
 
 ## Enum AgentRole
 

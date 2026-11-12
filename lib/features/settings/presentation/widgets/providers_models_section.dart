@@ -11,6 +11,7 @@ import 'package:control_center/features/settings/providers/model_catalog_provide
 import 'package:control_center/features/settings/providers/provider_policy_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -106,7 +107,7 @@ class _ProvidersModelsSectionState
             AppSpacing.lg,
           ),
           child: CcAlert(
-            title: l10n.failedWithError('$e'),
+            title: failureMessage(l10n, e),
             variant: CcAlertVariant.danger,
           ),
         ),

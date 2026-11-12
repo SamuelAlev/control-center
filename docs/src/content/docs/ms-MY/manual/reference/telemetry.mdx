@@ -2,7 +2,7 @@
 title: Analitik penggunaan
 description: Perkara yang direkodkan oleh Control Center apabila analitik penggunaan dihidupkan, siapa yang membuat keputusan, dan perkara yang tidak pernah dihantar.
 slug: ms-MY/manual-pengguna/rujukan/analitik-penggunaan
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center boleh menghantar **peristiwa penggunaan berpseudonim** ke tika [Umami](https://umami.is). Analitik penggunaan **dimatikan sehingga pengendali pelayan menghidupkannya**. Tetapan ini milik pelayan dan terpakai kepada setiap klien yang bersambung dengannya: apl desktop, apl web, telefon dan pelayan itu sendiri.
@@ -109,7 +109,7 @@ Direkodkan oleh apl desktop, apl web dan telefon bagi perkara yang dilakukan ole
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Kemahiran ruang kerja diubah |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Cadangan orkestrasi telah dijawab |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Pelan diluluskan atau ditolak (telefon) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Matlamat atau gelung yang diselia dimulakan (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | Matlamat atau gelung yang diselia dimulakan (telefon) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Perbualan dicipta atau dicabangkan |
 | `conversation_rewound` | `conversation_id` | Perbualan diteruskan daripada mesej terdahulu |
 | `space_archived` | `workspace_id`, `space_id` | Ruang diarkibkan |
@@ -128,7 +128,7 @@ Direkodkan oleh `cc_server` bagi fakta yang tidak dilihat tepat sekali oleh mana
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Larian ejen selesai |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Ejen berhenti untuk menunggu seseorang |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Dasar tindakan menolak tindakan ejen |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Larian pipeline berakhir. `trigger` ialah `manual`, jenis peristiwa yang memulakannya, atau hanya jenis bagi pencetus bernama (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | Larian pipeline berakhir. `trigger` ialah `manual`, jenis peristiwa yang memulakannya, atau hanya jenis bagi pencetus bernama (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | Pull request diterbitkan daripada ruang |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Pull request yang dibuka oleh ejen telah digabungkan |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Rakaman mesyuarat disimpan |
@@ -142,7 +142,7 @@ Direkodkan oleh `cc_server` bagi fakta yang tidak dilihat tepat sekali oleh mana
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Kemahiran ruang kerja dipasang, dikemas kini atau berubah pada cakera |
 | `calendar_auth_expired` | `workspace_id` | Sambungan kalendar perlu log masuk semula |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Acara kalendar akan bermula tidak lama lagi |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Perbelanjaan melepasi ambang belanjawan |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | Perbelanjaan melepasi ambang belanjawan |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | Semakan diminta pada PR yang dijejaki |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Keputusan semakan PR yang dijejaki berubah |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | PR yang tidak dibuka oleh ejen digabungkan dalam repositori yang dipautkan |

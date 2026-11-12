@@ -55,7 +55,7 @@ class EvalRunView {
     required this.batchSize,
     required this.passRate,
     required this.status,
-    required this.costCents,
+    required this.costMicros,
     required this.triggeredBy,
     this.createdAt,
     this.scorecardJson,
@@ -69,7 +69,7 @@ class EvalRunView {
     batchSize: (w['batchSize'] as num?)?.toInt() ?? 0,
     passRate: (w['passRate'] as num?)?.toDouble() ?? 0,
     status: w['status'] as String? ?? 'queued',
-    costCents: (w['costCents'] as num?)?.toInt() ?? 0,
+    costMicros: (w['costMicros'] as num?)?.toInt() ?? 0,
     triggeredBy: w['triggeredBy'] as String? ?? 'manual',
     createdAt: _date(w['createdAt']),
     scorecardJson: w['scorecardJson'] as String?,
@@ -93,8 +93,8 @@ class EvalRunView {
   /// Status.
   final String status;
 
-  /// Metered cost in cents.
-  final int costCents;
+  /// Metered cost in micro-dollars.
+  final int costMicros;
 
   /// What triggered it.
   final String triggeredBy;

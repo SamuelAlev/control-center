@@ -6,6 +6,7 @@ import 'package:control_center/features/settings/presentation/widgets/skills_set
 import 'package:control_center/features/settings/providers/skill_source_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -85,7 +86,7 @@ class _SkillSourcesPanelState extends ConsumerState<SkillSourcesPanel> {
                 loading: () => const Center(child: CcSpinner()),
                 error: (e, _) => _SourcesEmptyMessage(
                   icon: AppIcons.alertTriangle,
-                  text: l10n.failedWithError('$e'),
+                  text: failureMessage(l10n, e),
                 ),
                 data: (sources) {
                   // Auto-select the first source so the pane opens on a
@@ -439,7 +440,7 @@ class _SourceBrowsePaneState extends ConsumerState<_SourceBrowsePane> {
               loading: () => const Center(child: CcSpinner()),
               error: (e, _) => _SourcesEmptyMessage(
                 icon: AppIcons.alertTriangle,
-                text: l10n.failedWithError('$e'),
+                text: failureMessage(l10n, e),
               ),
               data: (listings) {
                 if (listings.isEmpty) {
@@ -793,7 +794,7 @@ class _SkillDetailViewState extends ConsumerState<_SkillDetailView> {
               ),
               error: (e, _) => _SourcesEmptyMessage(
                 icon: AppIcons.alertTriangle,
-                text: l10n.failedWithError('$e'),
+                text: failureMessage(l10n, e),
               ),
               data: (detail) => _buildBody(context, l10n, detail),
             ),

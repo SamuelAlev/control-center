@@ -1,5 +1,7 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/observability/domain/observability_metrics.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/insights_providers.dart';
@@ -166,7 +168,7 @@ class ObsCostChart extends StatelessWidget {
     final labels = _bucketLabels(buckets, kind);
     var peak = 0.0;
     for (final bucket in buckets) {
-      final dollars = bucket.costCents / 100.0;
+      final dollars = bucket.costMicros / microsPerDollar;
       if (dollars > peak) {
         peak = dollars;
       }
@@ -185,10 +187,12 @@ class ObsCostChart extends StatelessWidget {
               pointCount: buckets.length,
               maxY: maxY,
               seriesColors: [lineColor],
-              seriesValuesAt: (index) => [buckets[index].costCents / 100.0],
+              seriesValuesAt: (index) => [
+                buckets[index].costMicros / microsPerDollar,
+              ],
               flyoutBuilder: (index) => Text(
                 '${labels[index]}\n'
-                '${fmtCents(buckets[index].costCents)}',
+                '${fmtMicros(buckets[index].costMicros)}',
               ),
               child: LineChart(
                 duration: Duration.zero,
@@ -211,7 +215,10 @@ class ObsCostChart extends StatelessWidget {
                       ),
                       spots: [
                         for (var i = 0; i < buckets.length; i++)
-                          FlSpot(i.toDouble(), buckets[i].costCents / 100.0),
+                          FlSpot(
+                            i.toDouble(),
+                            buckets[i].costMicros / microsPerDollar,
+                          ),
                       ],
                     ),
                   ],
@@ -231,7 +238,7 @@ class ObsCostChart extends StatelessWidget {
   String _costSummary(AppLocalizations l10n, List<String> labels) {
     final parts = <String>['${l10n.obsChartCost} chart'];
     for (var i = 0; i < buckets.length; i++) {
-      parts.add('${labels[i]}: ${fmtCents(buckets[i].costCents)}');
+      parts.add('${labels[i]}: ${fmtMicros(buckets[i].costMicros)}');
     }
     return parts.join('. ');
   }

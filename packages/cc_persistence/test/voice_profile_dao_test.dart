@@ -8,8 +8,6 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
-    // Scope this test to DAO query logic, not FK enforcement.
-    await db.customStatement('PRAGMA foreign_keys = OFF');
   });
 
   tearDown(() async {
@@ -46,12 +44,12 @@ void main() {
       },
     );
 
-    test('the same name can coexist across two workspaces', () async {
+    test('a name is unique in the file, which holds one workspace', () async {
       await db.voiceProfileDao.upsertProfile(profile('a', 'w1', 'Alex'));
-      await db.voiceProfileDao.upsertProfile(profile('b', 'w2', 'Alex'));
-
-      expect(await db.voiceProfileDao.getByName('w1', 'Alex'), isNotNull);
-      expect(await db.voiceProfileDao.getByName('w2', 'Alex'), isNotNull);
+      await expectLater(
+        db.voiceProfileDao.upsertProfile(profile('b', 'w2', 'Alex')),
+        throwsA(anything),
+      );
     });
 
     test('the same name cannot exist twice within one workspace', () async {

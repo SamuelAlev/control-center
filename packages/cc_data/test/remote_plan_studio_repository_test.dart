@@ -164,11 +164,11 @@ void main() {
   group('RemotePlanStudioRepository estimate + drift', () {
     test('estimateOrchestration returns the estimate payload', () async {
       host.callResults['plan.estimate'] = {
-        'estimate': {'nodes': [], 'total_cents': 100},
+        'estimate': {'nodes': [], 'total_micros': 100},
       };
       final repo = RemotePlanStudioRepository(client);
       final estimate = await repo.estimateOrchestration('o-1');
-      expect(estimate['total_cents'], 100);
+      expect(estimate['total_micros'], 100);
       final call = host.lastCall('plan.estimate')!;
       expect(call.args['orchestration_id'], 'o-1');
     });
@@ -181,11 +181,11 @@ void main() {
 
     test('estimatePlan forwards the plan_id + returns estimate', () async {
       host.callResults['plan.estimate'] = {
-        'estimate': {'total_cents': 50},
+        'estimate': {'total_micros': 50},
       };
       final repo = RemotePlanStudioRepository(client);
       final estimate = await repo.estimatePlan('p-1');
-      expect(estimate['total_cents'], 50);
+      expect(estimate['total_micros'], 50);
       final call = host.lastCall('plan.estimate')!;
       expect(call.args['plan_id'], 'p-1');
     });
@@ -321,20 +321,20 @@ void main() {
       final call = host.lastCall('plan.approve')!;
       expect(call.args['plan_id'], 'p-1');
       expect(call.args.containsKey('approved_node_keys'), isFalse);
-      expect(call.args.containsKey('max_cost_cents'), isFalse);
+      expect(call.args.containsKey('max_cost_micros'), isFalse);
     });
 
-    test('approvePlan forwards approved_node_keys + max_cost_cents', () async {
+    test('approvePlan forwards approved_node_keys + max_cost_micros', () async {
       host.callResults['plan.approve'] = {'orchestration_id': 'o-9'};
       final repo = RemotePlanStudioRepository(client);
       await repo.approvePlan(
         'p-1',
         approvedNodeKeys: {'n-1'},
-        maxCostCents: 500,
+        maxCostMicros: 500,
       );
       final call = host.lastCall('plan.approve')!;
       expect(call.args['approved_node_keys'], ['n-1']);
-      expect(call.args['max_cost_cents'], 500);
+      expect(call.args['max_cost_micros'], 500);
     });
 
     test('approvePlan returns empty when no orchestration_id', () async {

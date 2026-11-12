@@ -54,7 +54,7 @@ class RpcPipelineRunRepository implements PipelineRunReader {
     parentStepId: d.parentStepId,
     templateVersion: d.templateVersion,
     templateSnapshot: _snapshotFromWire(d.templateSnapshot),
-    totalCostCents: d.totalCostCents,
+    totalCostMicros: d.totalCostMicros,
     totalTokens: d.totalTokens,
     dryRun: d.dryRun,
   );

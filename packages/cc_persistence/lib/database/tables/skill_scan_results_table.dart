@@ -1,3 +1,5 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
 /// Cached skill scan results, keyed by content hash (PRD 23 §2, §3).
@@ -7,8 +9,7 @@ import 'package:drift/drift.dart';
 /// the same rules are never re-scanned. This table is the scan cache + audit
 /// trail; `skills-lock.json` stays the file-based source of truth for what is
 /// installed. Workspace-scoped.
-@TableIndex(name: 'idx_skill_scan_results_workspace', columns: {#workspaceId})
-@TableIndex(name: 'idx_skill_scan_results_hash', columns: {#contentHash})
+@TableIndex(name: 'idx_skill_scan_results_scanned', columns: {#scannedAt})
 class SkillScanResultsTable extends Table {
   @override
   String get tableName => 'skill_scan_results';
@@ -27,13 +28,22 @@ class SkillScanResultsTable extends Table {
   IntColumn get rulesVersion => integer().withDefault(const Constant(1))();
 
   /// Aggregate verdict: `pass` / `warn` / `quarantine`.
-  TextColumn get verdict => text().withDefault(const Constant('quarantine'))();
+  TextColumn get verdict => text()
+      // ignore: recursive_getters
+      .check(verdict.isIn(AgentsStoredValues.skillScanVerdict))
+      .withDefault(const Constant('quarantine'))();
 
   /// JSON array of `SkillScanFinding`s (per-pattern, with file + line).
-  TextColumn get findingsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get findingsJson => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(findingsJson))
+      .withDefault(const Constant('[]'))();
 
   /// JSON-encoded `SkillCapabilityManifest` (union across bundle files).
-  TextColumn get manifestJson => text().withDefault(const Constant('{}'))();
+  TextColumn get manifestJson => text()
+      // ignore: recursive_getters
+      .check(isJsonObject(manifestJson))
+      .withDefault(const Constant('{}'))();
 
   /// Whether the Layer 3 LLM review completed (`false` ⇒ `llmReview: skipped`).
   BoolColumn get llmReviewed => boolean().withDefault(const Constant(false))();
@@ -49,6 +59,6 @@ class SkillScanResultsTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, contentHash, rulesVersion},
+    {contentHash, rulesVersion},
   ];
 }

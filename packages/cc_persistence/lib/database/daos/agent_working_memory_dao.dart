@@ -40,7 +40,14 @@ class AgentWorkingMemoryDao extends DatabaseAccessor<WorkspaceDatabase>
     agentWorkingMemoryTable,
   )..where((t) => t.workspaceId.equals(workspaceId))).watch();
 
-  /// Inserts or updates a working memory entry.
+  /// Inserts or updates the agent's working memory entry; an agent that
+  /// already has one keeps its row id.
   Future<void> upsert(AgentWorkingMemoryTableCompanion entry) =>
-      into(agentWorkingMemoryTable).insertOnConflictUpdate(entry);
+      into(agentWorkingMemoryTable).insert(
+        entry,
+        onConflict: DoUpdate(
+          (_) => entry.copyWith(id: const Value.absent()),
+          target: [agentWorkingMemoryTable.agentId],
+        ),
+      );
 }

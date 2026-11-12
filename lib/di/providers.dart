@@ -14,10 +14,12 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/activity_entry.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/core/domain/ports/audit_log_port.dart';
+import 'package:cc_domain/core/domain/ports/import_hold_review.dart';
 import 'package:cc_domain/core/domain/ports/notification_preferences_port.dart';
 import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
 import 'package:cc_domain/core/domain/ports/run_transcript_relay_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
+import 'package:cc_domain/core/domain/ports/server_notice_feed.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -380,6 +382,18 @@ final sandboxDetectorPortProvider = Provider<SandboxDetectorPort>(
 /// trail the caller administers, as one live table.
 final auditLogPortProvider = Provider<AuditLogPort>(
   (ref) => RemoteAuditLog(ref.watch(rpcClientProvider)),
+);
+
+/// The server owner's open notices (`server.notices`). Owner-only on the
+/// server, so only an owner's surface reads it.
+final serverNoticeFeedProvider = Provider<ServerNoticeFeed>(
+  (ref) => RemoteServerNotices(ref.watch(rpcClientProvider)),
+);
+
+/// The grants a restored workspace file carried, held for the server owner
+/// (`workspace.importHolds.*`).
+final importHoldReviewProvider = Provider<ImportHoldReview>(
+  (ref) => RemoteImportHolds(ref.watch(rpcClientProvider)),
 );
 
 /// Watches the audit trail for one entity, mapped to domain [ActivityEntry]s

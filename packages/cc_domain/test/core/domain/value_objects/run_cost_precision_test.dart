@@ -33,13 +33,11 @@ void main() {
     test('estimated spend cannot be relabeled as reported or subscribed', () {
       const estimated = RunCost(costMicros: 3200);
       const reported = RunCost(
-        estimatedCostCents: 2,
         costMicros: 20000,
         costBasis: CostBasis.providerReported,
       );
       final combined = estimated + reported;
       expect(combined.costMicros, 23200);
-      expect(combined.estimatedCostCents, 2);
       expect(combined.costBasis, CostBasis.mixed);
       expect((RunCost.zero + reported).costBasis, CostBasis.providerReported);
       expect((reported + RunCost.zero).costBasis, CostBasis.providerReported);
@@ -48,13 +46,9 @@ void main() {
         costMicros: 3200,
         costBasis: CostBasis.subscription,
       );
-      const estimatedUsage = RunUsage(
-        estimatedCostCents: 2,
-        costMicros: 20000,
-      );
+      const estimatedUsage = RunUsage(costMicros: 20000);
       final usage = subscribed + estimatedUsage;
       expect(usage.costMicros, 23200);
-      expect(usage.estimatedCostCents, 2);
       expect(usage.costBasis, CostBasis.mixed);
       expect((RunUsage.zero + subscribed).costBasis, CostBasis.subscription);
     });
@@ -183,7 +177,6 @@ void main() {
       thoughtTokens: 3,
       cachedReadTokens: 4,
       cachedWriteTokens: 5,
-      estimatedCostCents: 6,
       costMicros: 7,
       costBasis: CostBasis.providerReported,
       durationMs: 120,
@@ -194,7 +187,6 @@ void main() {
     test('keeps every unset field', () {
       final patched = base.copyWith(costMicros: 42);
       expect(patched.costMicros, 42);
-      expect(patched.estimatedCostCents, 6);
       expect(patched.inputTokens, 1);
       expect(patched.outputTokens, 2);
       expect(patched.thoughtTokens, 3);

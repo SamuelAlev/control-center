@@ -2,7 +2,7 @@
 title: 使用情況分析
 description: 開啟使用情況分析後 Control Center 會記錄甚麼、由誰決定，以及哪些內容永遠不會傳送。
 slug: zh-HK/手冊/參考/使用情況分析
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center 可以把**假名化的使用事件**傳送到一個 [Umami](https://umami.is) 實例。使用情況分析**預設關閉，直至伺服器營運者把它開啟**。這項設定屬於伺服器，並套用於連線到它的每一個用戶端：桌面應用程式、Web 應用程式、手機，以及伺服器本身。
@@ -109,7 +109,7 @@ ID 會被傳送，但只以假名的形式。每一個工作區、空間、對�
 | `skill_action` | `action`（`install`、`update`、`uninstall`、`source_added`、`source_removed`）、`skill_id`、`blocked` | 工作區技能有所更改 |
 | `orchestration_decided` | `decision`（`approved`、`cancelled`）、`workspace_id`、`orchestration_id` | 回覆了一個編排提案 |
 | `plan_decided` | `decision`（`approved`、`rejected`）、`plan_id`、`workspace_id`、`partial`、`node_count` | 批准或拒絕了一個計劃（手機） |
-| `goal_started` | `kind`（`goal`、`loop`）、`workspace_id`、`space_id`、`conversation_id`、`agent_id`、`budget_cents`、`accepted` | 啟動了一個受監督的目標或循環（手機） |
+| `goal_started` | `kind`（`goal`、`loop`）、`workspace_id`、`space_id`、`conversation_id`、`agent_id`、`budget_micros`、`accepted` | 啟動了一個受監督的目標或循環（手機） |
 | `conversation_created` | `workspace_id`、`space_id`、`conversation_id`、`source`（`new`、`fork`） | 建立或分岔了一個對話 |
 | `conversation_rewound` | `conversation_id` | 從較早的一則訊息繼續了對話 |
 | `space_archived` | `workspace_id`、`space_id` | 封存了一個空間 |
@@ -128,7 +128,7 @@ ID 會被傳送，但只以假名的形式。每一個工作區、空間、對�
 | `agent_run_completed` | `agent_id`、`workspace_id`、`conversation_id`、`run_id`、`status`、`error_family`、`role`、`adapter`、`model`、`effort`、`task_family`、`subagent`、`pipeline`、`resumed_native_session`、`duration_ms`、`time_to_first_token_ms`、`input_tokens`、`output_tokens`、`thought_tokens`、`cache_read_tokens`、`cache_write_tokens`、`output_rejections`、`cost_usd` | 代理執行結束 |
 | `agent_awaiting_input` | `kind`（`approval`、`question`、`credential`）、`workspace_id`、`agent_id`、`conversation_id` | 代理停下來等候有人處理 |
 | `agent_action_blocked` | `workspace_id`、`agent_id`、`space_id`、`source` | 動作政策拒絕了代理的某個動作 |
-| `pipeline_run_finished` | `outcome`（`completed`、`failed`、`cancelled`）、`workspace_id`、`pipeline_run_id`、`template_id`、`trigger`、`duration_ms`、`active_ms`、`attempt_count`、`template_version`、`cost_cents`、`tokens`、`dry_run`、`sub_pipeline` | 一次管線執行結束。`trigger` 是 `manual`、啟動該執行的事件類型，或只是具名觸發條件的類別（`webhook`） |
+| `pipeline_run_finished` | `outcome`（`completed`、`failed`、`cancelled`）、`workspace_id`、`pipeline_run_id`、`template_id`、`trigger`、`duration_ms`、`active_ms`、`attempt_count`、`template_version`、`cost_micros`、`tokens`、`dry_run`、`sub_pipeline` | 一次管線執行結束。`trigger` 是 `manual`、啟動該執行的事件類型，或只是具名觸發條件的類別（`webhook`） |
 | `pull_request_published` | `workspace_id`、`pr_id` | 從空間發佈了一個 pull request |
 | `pull_request_merged` | `workspace_id`、`pr_id`、`agent_id` | 代理開啟的 pull request 已合併 |
 | `meeting_recorded` | `workspace_id`、`meeting_id`、`transcript_chars` | 儲存了一段會議錄製 |
@@ -142,7 +142,7 @@ ID 會被傳送，但只以假名的形式。每一個工作區、空間、對�
 | `skill_updated` | `workspace_id`、`skill_id`、`origin`、`scan_verdict` | 工作區技能已安裝、更新或在磁碟上更改 |
 | `calendar_auth_expired` | `workspace_id` | 日曆連線需要重新登入 |
 | `calendar_meeting_starting_soon` | `workspace_id`、`calendar_event_id`、`has_meeting_link`、`lead_s` | 日曆活動即將開始 |
-| `budget_threshold_crossed` | `scope_type`、`scope_id`、`spent_cents`、`budget_cents`、`hard_stop` | 支出超越了預算門檻 |
+| `budget_threshold_crossed` | `scope_type`、`scope_id`、`spent_micros`、`budget_micros`、`hard_stop` | 支出超越了預算門檻 |
 | `pull_request_review_requested` | `workspace_id`、`repo_id` | 在追蹤中的 PR 上請求了審查 |
 | `pull_request_review_decision_changed` | `workspace_id`、`repo_id`、`decision`、`reviewers_remaining` | 追蹤中 PR 的審查決定更改 |
 | `external_pull_request_merged` | `workspace_id`、`repo_id` | 已連結程式庫中一個並非由代理開啟的 PR 已合併 |

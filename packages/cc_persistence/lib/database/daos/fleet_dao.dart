@@ -161,17 +161,20 @@ class FleetDao extends DatabaseAccessor<GlobalDatabase> with _$FleetDaoMixin {
     return updated > 0;
   }
 
-  /// Renews the lease on a running/leased job (cheap, frequent — see spec:
-  /// short TTLs + cheap renewal). No-op if the job is no longer active.
-  Future<void> renewLease(
+  /// Renews the lease [workerId] holds on a leased/running job (cheap,
+  /// frequent — see spec: short TTLs + cheap renewal). Returns false when the
+  /// job is no longer active or is now leased to another worker.
+  Future<bool> renewLease(
     String jobId,
+    String workerId,
     DateTime leaseExpiresAt, {
     int? lastAckedSeq,
-  }) =>
-      (update(jobsTable)..where(
+  }) async =>
+      await (update(jobsTable)..where(
             (t) =>
                 t.id.equals(jobId) &
-                (t.status.equals('leased') | t.status.equals('running')),
+                t.workerId.equals(workerId) &
+                t.status.isIn(const ['leased', 'running']),
           ))
           .write(
             JobsTableCompanion(
@@ -180,47 +183,95 @@ class FleetDao extends DatabaseAccessor<GlobalDatabase> with _$FleetDaoMixin {
                   ? const Value.absent()
                   : Value(lastAckedSeq),
             ),
-          );
+          ) !=
+      0;
 
-  /// Marks a job running (worker reported start).
-  Future<void> markJobRunning(String jobId, DateTime now) =>
-      (update(jobsTable)..where((t) => t.id.equals(jobId))).write(
-        JobsTableCompanion(
-          status: const Value('running'),
-          startedAt: Value(now),
-        ),
-      );
+  /// Marks a job running (worker reported start), only while it is still
+  /// `leased` to [workerId]. Returns whether it applied.
+  Future<bool> markJobRunning(
+    String jobId,
+    String workerId,
+    DateTime now,
+  ) async =>
+      await (update(jobsTable)..where(
+            (t) =>
+                t.id.equals(jobId) &
+                t.workerId.equals(workerId) &
+                t.status.equals('leased'),
+          ))
+          .write(
+            JobsTableCompanion(
+              status: const Value('running'),
+              startedAt: Value(now),
+            ),
+          ) !=
+      0;
 
-  /// Marks a job terminal (`done`/`failed`/`cancelled`).
-  Future<void> markJobTerminal(
+  /// Marks a job terminal (`done`/`failed`/`cancelled`), only while its status
+  /// is one of [from] and, when [leasedTo] is given, it is leased to that
+  /// worker. Returns whether it applied: false means another path (a cancel, a
+  /// reap, the other end of a race) moved the job first and owns its outcome.
+  Future<bool> markJobTerminal(
     String jobId,
     String status,
     DateTime now, {
+    required List<String> from,
+    String? leasedTo,
     String? resultJson,
     String? error,
-    int? costCents,
-  }) => (update(jobsTable)..where((t) => t.id.equals(jobId))).write(
-    JobsTableCompanion(
-      status: Value(status),
-      finishedAt: Value(now),
-      workerId: const Value.absent(),
-      leaseExpiresAt: const Value(null),
-      resultJson: resultJson == null ? const Value.absent() : Value(resultJson),
-      error: error == null ? const Value.absent() : Value(error),
-      costCents: costCents == null ? const Value.absent() : Value(costCents),
-    ),
-  );
+    int? costMicros,
+  }) async =>
+      await (update(jobsTable)..where(
+            (t) =>
+                t.id.equals(jobId) &
+                t.status.isIn(from) &
+                (leasedTo == null
+                    ? const Constant(true)
+                    : t.workerId.equals(leasedTo)),
+          ))
+          .write(
+            JobsTableCompanion(
+              status: Value(status),
+              finishedAt: Value(now),
+              workerId: const Value.absent(),
+              leaseExpiresAt: const Value(null),
+              resultJson: resultJson == null
+                  ? const Value.absent()
+                  : Value(resultJson),
+              error: error == null ? const Value.absent() : Value(error),
+              costMicros: costMicros == null
+                  ? const Value.absent()
+                  : Value(costMicros),
+            ),
+          ) !=
+      0;
 
-  /// Requeues a reaped job for retry (increments attempts, clears the lease).
-  Future<void> requeueJob(String jobId, int attempts) =>
-      (update(jobsTable)..where((t) => t.id.equals(jobId))).write(
-        JobsTableCompanion(
-          status: const Value('queued'),
-          workerId: const Value(null),
-          leaseExpiresAt: const Value(null),
-          attempts: Value(attempts),
-        ),
-      );
+  /// Requeues a reaped job for retry (sets [attempts], clears the lease), only
+  /// while it is still in [from] and leased to [leasedTo] (null: not leased).
+  /// Returns whether it applied, so one failure is retried exactly once.
+  Future<bool> requeueJob(
+    String jobId,
+    int attempts, {
+    required String from,
+    required String? leasedTo,
+  }) async =>
+      await (update(jobsTable)..where(
+            (t) =>
+                t.id.equals(jobId) &
+                t.status.equals(from) &
+                (leasedTo == null
+                    ? t.workerId.isNull()
+                    : t.workerId.equals(leasedTo)),
+          ))
+          .write(
+            JobsTableCompanion(
+              status: const Value('queued'),
+              workerId: const Value(null),
+              leaseExpiresAt: const Value(null),
+              attempts: Value(attempts),
+            ),
+          ) !=
+      0;
 
   // ── Placement log (workspace-scoped) ──
 

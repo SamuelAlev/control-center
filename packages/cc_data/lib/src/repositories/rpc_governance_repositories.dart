@@ -214,6 +214,12 @@ class RpcApprovalRepository implements ApprovalRepository {
       throw UnsupportedError('Approvals are managed on the server host.');
 
   @override
+  Future<bool> recordDecision(
+    Approval decided, {
+    required ApprovalStatus expected,
+  }) => throw UnsupportedError('Approvals are managed on the server host.');
+
+  @override
   Future<void> delete(String workspaceId, String id) =>
       throw UnsupportedError('Approvals are managed on the server host.');
 

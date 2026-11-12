@@ -2,7 +2,7 @@
 title: Bruksanalyse
 description: Hva Control Center registrerer når bruksanalyse er slått på, hvem som bestemmer, og hva som aldri sendes.
 slug: nb-NO/handbok/referanse/bruksanalyse
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center kan sende **pseudonyme brukshendelser** til en [Umami](https://umami.is)-instans. Bruksanalyse er **av til serveroperatøren slår den på**. Innstillingen hører til serveren og gjelder for alle klienter som er koblet til den: skrivebordsappen, nettappen, telefonen og selve serveren.
@@ -109,7 +109,7 @@ Registreres av skrivebordsappen, nettappen og telefonen for ting en person gjør
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Arbeidsområdets skills ble endret |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Et orkestreringsforslag ble besvart |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | En plan ble godkjent eller avvist (telefon) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Et overvåket mål eller en overvåket løkke ble startet (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | Et overvåket mål eller en overvåket løkke ble startet (telefon) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | En samtale ble opprettet eller forgrenet |
 | `conversation_rewound` | `conversation_id` | En samtale ble videreført fra en tidligere melding |
 | `space_archived` | `workspace_id`, `space_id` | Et rom ble arkivert |
@@ -128,7 +128,7 @@ Registreres av `cc_server` for hendelser som ingen enkelt klient ser nøyaktig �
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | En agentkjøring ble avsluttet |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | En agent stoppet for å vente på en person |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Handlingspolicyen avviste en handling fra en agent |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | En pipelinekjøring ble avsluttet. `trigger` er `manual`, hendelsestypen som startet den, eller bare typen til en navngitt utløser (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | En pipelinekjøring ble avsluttet. `trigger` er `manual`, hendelsestypen som startet den, eller bare typen til en navngitt utløser (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | En pull request ble publisert fra et rom |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | En pull request som en agent åpnet, ble flettet |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Et møteopptak ble lagret |
@@ -142,7 +142,7 @@ Registreres av `cc_server` for hendelser som ingen enkelt klient ser nøyaktig �
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | En skill i arbeidsområdet ble installert, oppdatert eller endret på disk |
 | `calendar_auth_expired` | `workspace_id` | En kalendertilkobling krever ny pålogging |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | En kalenderhendelse er i ferd med å starte |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Forbruket passerte en budsjettgrense |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | Forbruket passerte en budsjettgrense |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | En gjennomgang ble bedt om på en fulgt PR |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Gjennomgangsbeslutningen for en fulgt PR endret seg |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | En PR som ikke ble åpnet av en agent, ble flettet i et tilkoblet repository |

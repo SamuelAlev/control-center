@@ -1,3 +1,6 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
+import 'package:cc_persistence/database/tables/users_table.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table definition for workspaces.
@@ -11,6 +14,7 @@ import 'package:drift/drift.dart';
 /// content — repos, agents, spaces, tickets, everything — lives in
 /// `workspaces/<id>.db`, keyed by [id]. Deleting a workspace soft-deletes this
 /// row and unlinks that file.
+@TableIndex(name: 'idx_workspaces_owner', columns: {#ownerUserId})
 class WorkspacesTable extends Table {
   /// Unique workspace identifier.
   TextColumn get id => text()();
@@ -23,13 +27,16 @@ class WorkspacesTable extends Table {
 
   /// The user who owns this workspace (holds the `owner` membership role).
   /// Nullable in SQL only until the identity bootstrap backfills it on first
-  /// boot; treated as required everywhere else.
-  TextColumn get ownerUserId => text().nullable()();
+  /// boot; treated as required everywhere else. A user is never deleted
+  /// (attribution is permanent), and must not be while they own a workspace.
+  TextColumn get ownerUserId => text().nullable().references(UsersTable, #id)();
 
   /// JSON array of glob patterns whose matching paths are hard-blocked from
   /// guest/viewer visibility on code-bearing surfaces (secret exclusion).
-  TextColumn get secretExcludeGlobs =>
-      text().withDefault(const Constant('[]'))();
+  TextColumn get secretExcludeGlobs => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(secretExcludeGlobs))
+      .withDefault(const Constant('[]'))();
 
   /// Default fan-out for parallel reviewer dispatch on this workspace.
   /// `dispatch_reviewers` MCP tool uses this when no explicit `concurrency`
@@ -45,8 +52,12 @@ class WorkspacesTable extends Table {
   /// Whose provider apps this workspace uses (`inherit` / `hosted` /
   /// `custom` / `own`): the server's choice, a Connect of its own, or its own
   /// apps. Typed because the server reads it on every credential path — not
-  /// an opaque `workspace_settings` string.
-  TextColumn get connectMode => text().withDefault(const Constant('inherit'))();
+  /// an opaque `workspace_settings` string. A `WorkspaceConnectMode` wire
+  /// name.
+  TextColumn get connectMode => text()
+      // ignore: recursive_getters
+      .check(connectMode.isIn(PlatformStoredValues.workspaceConnectMode))
+      .withDefault(const Constant('inherit'))();
 
   /// The canonical Connect base URL when [connectMode] is `custom`. Empty
   /// otherwise.

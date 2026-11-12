@@ -80,7 +80,7 @@ class EvalRunner {
     try {
       for (var i = 0; i < size; i++) {
         final outcome = await _executor(task, i);
-        totalCost += outcome.costCents;
+        totalCost += outcome.costMicros;
         final grades = await _gradeOutcome(graderSpecs, outcome);
         reps.add(EvalRepetitionResult(outcome: outcome, grades: grades));
       }
@@ -93,7 +93,7 @@ class EvalRunner {
         status: 'failed',
         scorecardJson: jsonEncode({...partial.toJson(), 'error': e.toString()}),
         passRate: partial.passRate,
-        costCents: totalCost,
+        costMicros: totalCost,
         finishedAt: _now(),
       );
       rethrow;
@@ -106,7 +106,7 @@ class EvalRunner {
       status: 'done',
       scorecardJson: scorecard.toJsonString(),
       passRate: scorecard.passRate,
-      costCents: totalCost,
+      costMicros: totalCost,
       finishedAt: _now(),
     );
     return scorecard;

@@ -33,7 +33,7 @@ class PlanDocumentCompiler {
   static OrchestrationProposal toProposal(
     PlanDocument doc, {
     required String agentId,
-    int? maxCostCents,
+    int? maxCostMicros,
   }) => OrchestrationProposal(
     goal: doc.goal,
     roles: [
@@ -68,6 +68,6 @@ class PlanDocumentCompiler {
         'required': ['summary', 'gaps'],
       },
     ),
-    budget: BudgetSpec(maxCostCents: maxCostCents),
+    budget: BudgetSpec(maxCostMicros: maxCostMicros),
   );
 }

@@ -60,7 +60,7 @@ void main() {
         'priority': 5,
         'attempts': 2,
         'maxAttempts': 3,
-        'costCents': 42,
+        'costMicros': 42,
         'error': 'retry',
         'createdAt': '2026-01-01T00:00:00.000',
       });
@@ -73,7 +73,7 @@ void main() {
       expect(j.priority, 5);
       expect(j.attempts, 2);
       expect(j.maxAttempts, 3);
-      expect(j.costCents, 42);
+      expect(j.costMicros, 42);
     });
 
     test('tolerates missing fields with defaults', () {
@@ -83,7 +83,7 @@ void main() {
       expect(j.status, 'queued');
       expect(j.priority, 0);
       expect(j.maxAttempts, 1);
-      expect(j.costCents, 0);
+      expect(j.costMicros, 0);
     });
   });
 

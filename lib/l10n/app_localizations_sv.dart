@@ -14380,13 +14380,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backupSnapshotComplete => 'Komplett';
 
   @override
-  String get backupSnapshotIncomplete => 'Ofullständig';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Manifestet saknas eller namnger filer som inte finns, så den här ögonblicksbilden kan inte återställa hela installationen. Arbetsytefilerna den har kan fortfarande antas en i taget.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Radera ögonblicksbild';
 
   @override
@@ -18533,4 +18526,235 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Du kan titta på den här maskinen. Den använder inloggningarna för personen den öppnades för, så bara den personen kan styra den, vidarebefordra dess portar, klistra in i den eller släppa filer på den.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Serverns databas är upptagen just nu. Försök igen om en stund.';
+
+  @override
+  String get refusalStorageFull =>
+      'Servern har slut på diskutrymme, så inget kan sparas. Serverägaren måste frigöra lite utrymme.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Den här arbetsytans data är skadad. Serverägaren måste återställa den från en säkerhetskopia.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Den här arbetsytan är skrivskyddad tills serverägaren återställer den från en säkerhetskopia, så ändringar kan inte sparas.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Den här datan skrevs av en nyare version av servern. Uppdatera servern och försök sedan igen.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Servern hittade en databasfil som den inte skrev. Serverägaren måste kontrollera serverns datamapp.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Den här arbetsytan togs bort.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Den här begäran behandlas fortfarande. Vänta tills den är klar och kontrollera sedan resultatet.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Det finns ingen fil på den sökvägen på servern. Inget ersattes.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Filen är skadad och kan inte återställas. Inget ersattes.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Filen stämmer inte med kontrollsumman som säkerhetskopian registrerade, så den kan ha ändrats eller skadats. Inget ersattes.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Filen skrevs av en nyare version av servern. Uppdatera servern för att återställa den. Inget ersattes.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Filen är inte en arbetsytedatabas. Inget ersattes.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Filen kunde inte konverteras till den här serverns format. Inget ersattes.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Filen innehåller länkar som hör till en annan arbetsyta på den här servern, och en återställning skulle ta över dem. Inget ersattes.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Den här arbetsytan är skrivskyddad';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Dess data klarade inte en integritetskontroll, så ändringar kan inte sparas. Allt går fortfarande att läsa. Serverägaren kan återställa den från en säkerhetskopia.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Dess data klarade inte en integritetskontroll, så ändringar kan inte sparas. Allt går fortfarande att läsa. Återställ den från en säkerhetskopia för att göra den skrivbar igen.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Öppna säkerhetskopior';
+
+  @override
+  String get serverNoticesLabel => 'Kräver din uppmärksamhet';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Skrivskyddad';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Sedan $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Dess databas klarade inte en integritetskontroll, så den går att läsa men nekar alla ändringar. Återställ den från en säkerhetskopia i listorna nedan; dess senaste fungerande kopia behålls tills dess.';
+
+  @override
+  String get serverNoticeDetails => 'Detaljer';
+
+  @override
+  String get backupSnapshotUnverified => 'Overifierad';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Den här ögonblicksbilden går inte att verifiera. Den blev aldrig klar, eller togs innan ögonblicksbilder registrerade kontrollsummor, så den kan inte återställa hela installationen. Arbetsytefilerna i den kan fortfarande återställas en i taget.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Senaste fungerande kopia';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Behålls eftersom den innehåller den senaste fungerande kopian av en skadad arbetsyta. Rensningen lämnar den orörd tills arbetsytan har återställts.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Det här är den senaste fungerande kopian av en skadad arbetsyta. Tar du bort den finns inget kvar att återställa arbetsytan från.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count behörigheter hölls tillbaka för din granskning. De visas överst på sidan.',
+      one:
+          '1 behörighet hölls tillbaka för din granskning. Den visas överst på sidan.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Tillbakahållna från återställda kopior';
+
+  @override
+  String get importHoldsExplainer =>
+      'En återställd kopia kan inte ge någon behörighet på den här servern på egen hand. Dessa behörigheter fanns i den: godkänn en för att ge den igen, eller avvisa den för att ta bort den.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agenter får göra detta utan godkännande: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agenter får göra detta när en person har godkänt det: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Kör kommandon som börjar med $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Överallt i den här arbetsytan';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'I ytan $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'För agenten $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandlådor får köra $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person får ändra $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person får granska pull requests i $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person får $level-åtkomst till $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person får rollen $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'En öppen inbjudan med rollen $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'En öppen inbjudan med rollen $role och granska- eller skrivåtkomst till $count arkiv',
+      one:
+          'En öppen inbjudan med rollen $role och granska- eller skrivåtkomst till 1 arkiv',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'En behörighet som den här versionen av appen inte kan beskriva';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Återställd $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Godkänn';
+
+  @override
+  String get importHoldDismiss => 'Avvisa';
+
+  @override
+  String get importHoldAcceptTitle => 'Ge den här behörigheten?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nOm du godkänner ges den direkt på servern.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Behörigheten gavs.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Ingenting gavs: den det gällde finns inte längre i den här arbetsytan.';
 }

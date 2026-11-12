@@ -77,6 +77,10 @@ void main() {
   final workspaceSrc = pkgFile(
     'lib/database/workspace/workspace_database.dart',
   ).readAsStringSync();
+  // One workspace's code index, in a file of its own beside its database.
+  final codeIndexSrc = pkgFile(
+    'lib/database/code_index/code_index_database.dart',
+  ).readAsStringSync();
 
   /// The `tables: [...]` / `daos: [...]` members of a `@DriftDatabase`.
   Set<String> members(String src, String key) {
@@ -94,6 +98,11 @@ void main() {
   final workspaceTables = members(workspaceSrc, 'tables');
   final globalDaos = members(globalSrc, 'daos');
   final workspaceDaos = members(workspaceSrc, 'daos');
+  final codeIndexTables = members(codeIndexSrc, 'tables');
+  final codeIndexDaos = members(codeIndexSrc, 'daos');
+
+  /// DAOs bound to one workspace's files: a field holding one pins it.
+  final perWorkspaceDaos = {...workspaceDaos, ...codeIndexDaos};
 
   // ── Every declared table class in the schema ──────────────────────────────
   final allTableClasses = <String, String>{}; // class -> file
@@ -113,29 +122,42 @@ void main() {
     expect(allTableClasses.length, greaterThan(90));
     expect(globalTables, isNotEmpty);
     expect(workspaceTables.length, greaterThan(80));
+    expect(codeIndexTables, {
+      'CodeSymbolsTable',
+      'CodeSymbolEmbeddingsTable',
+      'CodeEdgesTable',
+      'CodeFilesTable',
+      'CodeIndexCheckpointsTable',
+    });
+    expect(codeIndexDaos, {'CodeGraphDao'});
   });
 
   test('every table belongs to exactly one database', () {
-    final both = globalTables.intersection(workspaceTables);
+    final both = {
+      ...globalTables.intersection(workspaceTables),
+      ...globalTables.intersection(codeIndexTables),
+      ...workspaceTables.intersection(codeIndexTables),
+    };
     expect(
       both,
       isEmpty,
       reason:
-          'These tables are declared in BOTH databases, so their rows would '
+          'These tables are declared in TWO databases, so their rows would '
           'live in two files at once and neither would be authoritative: '
           '${both.join(', ')}',
     );
 
-    final routed = {...globalTables, ...workspaceTables};
+    final routed = {...globalTables, ...workspaceTables, ...codeIndexTables};
     final unrouted = allTableClasses.keys.toSet().difference(routed);
     expect(
       unrouted,
       isEmpty,
       reason:
-          'These table classes exist but are declared in NEITHER database, so '
+          'These table classes exist but are declared in NO database, so '
           'nothing creates them and every query against them fails at runtime. '
-          'Add each to GlobalDatabase (server-wide state) or WorkspaceDatabase '
-          "(a workspace's own data):\n  "
+          'Add each to GlobalDatabase (server-wide state), WorkspaceDatabase '
+          "(a workspace's own data) or CodeIndexDatabase (its derived code "
+          'index):\n  '
           '${unrouted.map((t) => '$t (${allTableClasses[t]})').join('\n  ')}',
     );
 
@@ -176,6 +198,12 @@ void main() {
         'PlacementLogTable',
         // Pre-auth routing + install identity.
         'WorkspaceRoutesTable',
+        // The other half of an invite's route: the public route id of the
+        // pre-auth handshake, resolved before any workspace is known. It was
+        // already in this file as a table created by hand; it is a declared
+        // table now so its rows are written with the route in one
+        // transaction and the schema has no object nobody declares.
+        'InviteSecureRoutesTable',
         'ServerMetaTable',
         // Install-wide settings that bound what any process on this HOST may
         // do (sandbox posture, per-adapter launch argv/env). One host serves
@@ -206,6 +234,18 @@ void main() {
         // and it holds argument names, never values. See ServerAuditTable's
         // doc comment.
         'ServerAuditTable',
+        // What the server owner has to act on, such as a workspace whose
+        // database turned read-only. It cannot live in the workspace it is
+        // about, and only the owner reads it (`server.notices`). See
+        // ServerNoticesTable's doc comment.
+        'ServerNoticesTable',
+        // Who asked an agent for a pull request, so they cannot approve it.
+        // A pull request belongs to the forge, not a workspace: the same
+        // repository linked in two workspaces is one pull request, and the
+        // record must outlive deleting or restoring the workspace it was
+        // written through. Rows carry forge keys and user ids only. See
+        // AgentPullRequestRequestersTable's doc comment.
+        'AgentPullRequestRequestersTable',
       }),
       reason:
           'The global table set changed. A table here is visible to EVERY '
@@ -216,8 +256,12 @@ void main() {
   });
 
   test('every DAO is declared in exactly one database', () {
-    final both = globalDaos.intersection(workspaceDaos);
-    expect(both, isEmpty, reason: 'DAOs in both databases: ${both.join(', ')}');
+    final both = {
+      ...globalDaos.intersection(workspaceDaos),
+      ...globalDaos.intersection(codeIndexDaos),
+      ...workspaceDaos.intersection(codeIndexDaos),
+    };
+    expect(both, isEmpty, reason: 'DAOs in two databases: ${both.join(', ')}');
   });
 
   test('no DAO reaches across the database boundary', () {
@@ -243,23 +287,28 @@ void main() {
         for (final t in accessor.group(1)!.split(','))
           if (t.trim().isNotEmpty) t.trim(),
       };
-      final isWorkspaceDao = src.contains(
-        'DatabaseAccessor<WorkspaceDatabase>',
-      );
-      final isGlobalDao = src.contains('DatabaseAccessor<GlobalDatabase>');
-      if (!isWorkspaceDao && !isGlobalDao) {
-        offenders.add(
-          '$name is neither a WorkspaceDatabase nor a GlobalDatabase accessor',
-        );
+      final side = switch (src) {
+        _ when src.contains('DatabaseAccessor<WorkspaceDatabase>') =>
+          'workspace',
+        _ when src.contains('DatabaseAccessor<GlobalDatabase>') => 'global',
+        _ when src.contains('DatabaseAccessor<CodeIndexDatabase>') =>
+          'code index',
+        _ => null,
+      };
+      if (side == null) {
+        offenders.add('$name is not an accessor of any of the databases');
         continue;
       }
-      final wrongSide = isWorkspaceDao
-          ? declared.intersection(globalTables)
-          : declared.intersection(workspaceTables);
+      final own = switch (side) {
+        'workspace' => workspaceTables,
+        'global' => globalTables,
+        _ => codeIndexTables,
+      };
+      final wrongSide = declared.difference(own);
       if (wrongSide.isNotEmpty) {
         offenders.add(
-          '$name (${isWorkspaceDao ? 'workspace' : 'global'} DAO) declares '
-          '${wrongSide.join(', ')} from the other database',
+          '$name ($side DAO) declares ${wrongSide.join(', ')} from another '
+          'database',
         );
       }
     }
@@ -267,7 +316,7 @@ void main() {
       offenders,
       isEmpty,
       reason:
-          'A DAO reaches across the global/per-workspace boundary. Drift would '
+          'A DAO reaches across a database boundary. Drift would '
           'create the foreign table inside the wrong file and shadow the real '
           'one, silently:\n  ${offenders.join('\n  ')}',
     );
@@ -277,8 +326,7 @@ void main() {
     // Cached per-workspace DAO fields reintroduce leaks: `final AgentDao _dao`
     // (also `late final`, nullable, or `Map<…, XDao>`) pins the first workspace.
     // Resolve per call: `_dbs.of(workspaceId).agentDao`.
-    final workspaceDaoNames = workspaceDaos.toSet();
-    final daoAlternation = workspaceDaoNames.join('|');
+    final daoAlternation = perWorkspaceDaos.join('|');
     // A FIELD, not a local: class-body indentation (two spaces), and never
     // inside a method — which is why `final dao = _dbs.of(workspaceId).xDao;`
     // (the CORRECT per-call shape, always more deeply indented) is not a hit.

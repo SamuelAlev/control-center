@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/services/cache_kind_registry.dart';
 import 'package:cc_persistence/database/tables/caches.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
@@ -5,6 +6,10 @@ import 'package:drift/drift.dart';
 part 'cache_dao.g.dart';
 
 /// Data access object for the generic [CachesTable].
+///
+/// Holds only kinds declared in [CacheKindRegistry]: the table's `CHECK` on
+/// `kind` refuses any other, so state whose loss would change behaviour
+/// cannot be parked in a table the retention sweep empties.
 @DriftAccessor(tables: [CachesTable])
 class CacheDao extends DatabaseAccessor<WorkspaceDatabase>
     with _$CacheDaoMixin {
@@ -50,7 +55,10 @@ class CacheDao extends DatabaseAccessor<WorkspaceDatabase>
     return row?.payload;
   }
 
-  /// Upserts the payload for `(workspaceId, kind, key)`.
+  /// Upserts the payload for `(workspaceId, kind, key)`. Throws when [kind]
+  /// is not declared in [CacheKindRegistry]: declare it beside its owner if a
+  /// deleted row only costs a refetch; give it a table of its own if losing
+  /// it changes what the server does.
   Future<void> put(
     String workspaceId,
     String kind,
@@ -67,42 +75,6 @@ class CacheDao extends DatabaseAccessor<WorkspaceDatabase>
       ),
     );
   }
-
-  /// Writes [payload] only when `(workspaceId, kind, key)` holds nothing yet,
-  /// returning whether this call wrote it. The read and the insert share one
-  /// transaction, so two concurrent claims cannot both succeed.
-  Future<bool> putIfAbsent(
-    String workspaceId,
-    String kind,
-    String key,
-    String payload,
-  ) => transaction(() async {
-    if (await read(workspaceId, kind, key) != null) {
-      return false;
-    }
-    await into(cachesTable).insert(
-      CachesTableCompanion(
-        workspaceId: Value(workspaceId),
-        kind: Value(kind),
-        key: Value(key),
-        payload: Value(payload),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-    return true;
-  });
-
-  /// Every entry of `(workspaceId, kind)` with when it was last written.
-  /// For kinds that hold a handful of durable rows, not for SWR payloads.
-  Future<List<({String key, String payload, DateTime updatedAt})>>
-  entriesOfKind(String workspaceId, String kind) async => [
-    for (final row
-        in await (select(cachesTable)..where(
-              (t) => t.workspaceId.equals(workspaceId) & t.kind.equals(kind),
-            ))
-            .get())
-      (key: row.key, payload: row.payload, updatedAt: row.updatedAt),
-  ];
 
   /// Deletes a single entry. No-op when absent.
   Future<void> deleteEntry(String workspaceId, String kind, String key) async {
@@ -124,25 +96,13 @@ class CacheDao extends DatabaseAccessor<WorkspaceDatabase>
         .go();
   }
 
-  /// Deletes every cache entry not touched since [cutoff], across all
-  /// workspaces and kinds.
+  /// Deletes every row of [kind] not written since [cutoff].
   ///
-  /// Retention maintenance for this workspace, not a read path.
-  ///
-  /// The caches table is an SWR staleness buffer (PR diffs/files/HTML blobs can
-  /// run to megabytes per row); entries that haven't been refreshed in weeks are
-  /// dead weight on disk. The nightly sweep runs this once per workspace.
-  ///
-  /// [exceptKinds] are spared: rows that are durable state rather than a
-  /// staleness buffer (a person's editor layouts), which nothing refetches.
-  Future<int> deleteOlderThan(
-    DateTime cutoff, {
-    Set<String> exceptKinds = const {},
-  }) =>
+  /// Retention maintenance for this file, not a read path: the sweep calls it
+  /// once per declared kind with that kind's own window.
+  Future<int> deleteKindOlderThan(String kind, DateTime cutoff) =>
       (delete(cachesTable)..where(
-            (t) =>
-                t.updatedAt.isSmallerThanValue(cutoff) &
-                t.kind.isNotIn(exceptKinds),
+            (t) => t.kind.equals(kind) & t.updatedAt.isSmallerThanValue(cutoff),
           ))
           .go();
 

@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
@@ -80,8 +81,8 @@ void main() {
           kind: AgentGoalKind.loop,
           status: AgentGoalStatus.budgetExhausted,
           deadlineAt: DateTime(2026, 8, 1, 12),
-          costCapCents: 5000,
-          costCents: 125,
+          costCapMicros: 50000000,
+          costMicros: 1250000,
           maxRuns: 100,
           runCount: 3,
           consecutiveFailures: 1,
@@ -101,8 +102,8 @@ void main() {
       expect(w['kind'], 'loop');
       expect(w['status'], 'budget_exhausted');
       expect(w['deadline_at'], '2026-08-01T12:00:00.000');
-      expect(w['cost_cap_cents'], 5000);
-      expect(w['cost_cents'], 125);
+      expect(w['cost_cap_micros'], 50000000);
+      expect(w['cost_micros'], 1250000);
       expect(w['max_runs'], 100);
       expect(w['run_count'], 3);
       expect(w['consecutive_failures'], 1);
@@ -124,7 +125,7 @@ void main() {
           userText: 'finish the migration',
           kind: AgentGoalKind.goal,
           deadlineAt: DateTime(2026, 8, 1),
-          costCapCents: 5000,
+          costCapMicros: 50000000,
           maxRuns: 100,
           createdAt: DateTime(2026, 7, 1, 9),
           updatedAt: DateTime(2026, 7, 1, 10),
@@ -132,7 +133,7 @@ void main() {
       );
       expect(w['kind'], 'goal');
       expect(w['status'], 'active');
-      expect(w['cost_cents'], 0);
+      expect(w['cost_micros'], 0);
       expect(w['run_count'], 0);
       expect(w.containsKey('active_run_id'), isFalse);
       expect(w.containsKey('requested_by_user_id'), isFalse);
@@ -214,24 +215,32 @@ void main() {
       expect(dto.forge, 'github');
     });
 
-    test('a wire payload with no forge reads as GitHub, not as unconfigured',
-        () {
-      final restored = repoFromWire({
-        'id': 'r-1',
-        'name': 'acme/web',
-        'path': '/repo',
-        'remote_owner': 'acme',
-        'remote_name': 'web',
-      });
-      expect(restored.forge, ForgeHost.github);
-      expect(restored.hasForgeRemote, isTrue);
-    });
+    test(
+      'a wire payload with no forge reads as GitHub, not as unconfigured',
+      () {
+        final restored = repoFromWire({
+          'id': 'r-1',
+          'name': 'acme/web',
+          'path': '/repo',
+          'remote_owner': 'acme',
+          'remote_name': 'web',
+        });
+        expect(restored.forge, ForgeHost.github);
+        expect(restored.hasForgeRemote, isTrue);
+      },
+    );
 
-    test('spaceReadToWire includes last_read_at only when set', () {
+    test('spaceReadToWire includes last_read only when set', () {
       expect(spaceReadToWire('c-1', null), {'space_id': 'c-1'});
-      final withRead = spaceReadToWire('c-1', DateTime(2026, 7, 1, 9));
+      final withRead = spaceReadToWire(
+        'c-1',
+        FeedPosition(at: DateTime.utc(2026, 7, 1, 9), seq: 12),
+      );
       expect(withRead['space_id'], 'c-1');
-      expect(withRead['last_read_at'], '2026-07-01T09:00:00.000');
+      expect(withRead['last_read'], {
+        'at': '2026-07-01T09:00:00.000Z',
+        'seq': 12,
+      });
     });
 
     test('agentRunLogToWire flattens cost into token columns', () {
@@ -249,7 +258,7 @@ void main() {
           cost: const RunCost(
             inputTokens: 100,
             outputTokens: 50,
-            estimatedCostCents: 7,
+            costMicros: 70000,
           ),
         ),
       );
@@ -258,7 +267,8 @@ void main() {
       expect(w['status'], 'completed');
       expect(w['input_tokens'], 100);
       expect(w['output_tokens'], 50);
-      expect(w['estimated_cost_cents'], 7);
+      expect(w['cost_micros'], 70000);
+      expect(w.containsKey('estimated_cost_cents'), isFalse);
       expect(w['agent_role'], 'main');
       expect(w['output_contract_mode'], 'strict');
     });
@@ -268,18 +278,14 @@ void main() {
         CommitStatus(
           context: 'netlify/test-shop-ui/deploy-preview',
           state: CommitStatusState.success,
-          targetUrl:
-              'https://deploy-preview-2803.usectrl.dev',
+          targetUrl: 'https://deploy-preview-2803.usectrl.dev',
           description: 'Deploy preview ready!',
           updatedAt: DateTime.utc(2026, 7, 20, 12, 30),
         ),
       );
       expect(wire['context'], 'netlify/test-shop-ui/deploy-preview');
       expect(wire['state'], 'success');
-      expect(
-        wire['target_url'],
-        'https://deploy-preview-2803.usectrl.dev',
-      );
+      expect(wire['target_url'], 'https://deploy-preview-2803.usectrl.dev');
       expect(wire['description'], 'Deploy preview ready!');
       expect(wire['updated_at'], '2026-07-20T12:30:00.000Z');
     });
@@ -540,19 +546,25 @@ void main() {
       expect(w['patch'], '');
     });
 
-    test('prCodeReviewCommentToWire omits the hunk when includeHunk is false', () {
-      final c = PrCodeReviewComment(
-        id: 9,
-        body: 'nits',
-        user: const PrUser(login: 'octocat', avatarUrl: ''),
-        path: 'lib/a.dart',
-        position: 1,
-        createdAt: DateTime(2026, 7, 1, 9),
-        diffHunk: '@@ -1,1 +1,1 @@\n-a\n+b\n',
-      );
-      expect(prCodeReviewCommentToWire(c)['diff_hunk'], c.diffHunk);
-      expect(prCodeReviewCommentToWire(c, includeHunk: false)['diff_hunk'], '');
-    });
+    test(
+      'prCodeReviewCommentToWire omits the hunk when includeHunk is false',
+      () {
+        final c = PrCodeReviewComment(
+          id: 9,
+          body: 'nits',
+          user: const PrUser(login: 'octocat', avatarUrl: ''),
+          path: 'lib/a.dart',
+          position: 1,
+          createdAt: DateTime(2026, 7, 1, 9),
+          diffHunk: '@@ -1,1 +1,1 @@\n-a\n+b\n',
+        );
+        expect(prCodeReviewCommentToWire(c)['diff_hunk'], c.diffHunk);
+        expect(
+          prCodeReviewCommentToWire(c, includeHunk: false)['diff_hunk'],
+          '',
+        );
+      },
+    );
   });
 
   group('prCountsTowardNeedsMyReview', () {
@@ -566,7 +578,9 @@ void main() {
       'is_draft': isDraft,
       'author': {'login': authorLogin},
       'repo_full_name': repoFullName,
-      'requested_reviewers': [for (final r in reviewers) {'login': r}],
+      'requested_reviewers': [
+        for (final r in reviewers) {'login': r},
+      ],
       'requested_team_slugs': teamSlugs,
     };
 
@@ -585,7 +599,10 @@ void main() {
       // The inbox classifier files drafts by others in NO section ("drafts
       // are not reviewable yet") — the badge must not count rows the page
       // can never show.
-      expect(prCountsTowardNeedsMyReview(pr(isDraft: true), 'octocat'), isFalse);
+      expect(
+        prCountsTowardNeedsMyReview(pr(isDraft: true), 'octocat'),
+        isFalse,
+      );
     });
 
     test("excludes the operator's own PRs", () {
@@ -606,10 +623,10 @@ void main() {
 
     test('tolerates a missing author and empty reviewer list', () {
       expect(
-        prCountsTowardNeedsMyReview(
-          {'is_draft': false, 'requested_reviewers': const []},
-          'octocat',
-        ),
+        prCountsTowardNeedsMyReview({
+          'is_draft': false,
+          'requested_reviewers': const [],
+        }, 'octocat'),
         isFalse,
       );
     });

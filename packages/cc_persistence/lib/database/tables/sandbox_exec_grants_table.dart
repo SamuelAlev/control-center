@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
 /// Operator decisions about executing binaries from inside a writable
@@ -13,7 +14,7 @@ import 'package:drift/drift.dart';
 /// Workspace-scoped: the same checkout registered in two workspaces is two
 /// independent decisions. `path` is stored symlink-resolved, because that is
 /// the spelling the kernel matches an exec rule against.
-@TableIndex(name: 'idx_sandbox_exec_grants_workspace', columns: {#workspaceId})
+@TableIndex(name: 'idx_sandbox_exec_grants_created', columns: {#createdAt})
 class SandboxExecGrantsTable extends Table {
   @override
   String get tableName => 'sandbox_exec_grants';
@@ -28,7 +29,10 @@ class SandboxExecGrantsTable extends Table {
   TextColumn get path => text()();
 
   /// The decision: `allow` / `deny`.
-  TextColumn get decision => text().withDefault(const Constant('deny'))();
+  TextColumn get decision => text()
+      // ignore: recursive_getters
+      .check(decision.isIn(AgentsStoredValues.sandboxExecGrantDecision))
+      .withDefault(const Constant('deny'))();
 
   /// Principal that made the decision.
   TextColumn get createdBy => text().nullable()();
@@ -43,6 +47,6 @@ class SandboxExecGrantsTable extends Table {
   /// rather than accumulating rows the resolver would have to disambiguate.
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, path},
+    {path},
   ];
 }

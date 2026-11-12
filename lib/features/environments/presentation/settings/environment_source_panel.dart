@@ -10,6 +10,7 @@ import 'package:control_center/features/environments/presentation/settings/envir
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/inline_diff_view.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -113,7 +114,7 @@ class _EnvironmentSourcePanelState
         loading: () => const Center(child: CcSpinner()),
         error: (error, _) => CcAlert(
           variant: CcAlertVariant.danger,
-          title: environmentFailureMessage(error),
+          title: failureMessage(l10n, error),
         ),
         data: (source) {
           final caption = CcTypography.caption.copyWith(color: t.textTertiary);

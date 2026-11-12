@@ -2,7 +2,7 @@
 title: Barandillas — una política para cada acción mutadora
 description: Por qué Control Center canaliza cada efecto secundario de un agente a través de un único motor de permitir, preguntar o denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia de verdad el dial de autonomía.
 slug: es-ES/manual/conceptos/barandillas
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Los agentes de Control Center pueden eliminar archivos, enviar ramas, publicar
@@ -112,7 +112,7 @@ Una restricción puede nombrar:
 - **hosts** — destinos de red, con comodines de subdominio (`*.internal`)
 - **comandos** — prefijos de comando, que coinciden en un límite de palabra
 - **herramientas** — la herramienta exacta que nombra una llamada, para que una aprobación pueda cubrir una sola herramienta en lugar de todas las que tienen el mismo efecto
-- **topes** — `maxCount` / `maxCents`, de modo que «eliminar hasta 50 archivos»
+- **topes** — `maxCount` / `maxMicros`, de modo que «eliminar hasta 50 archivos»
   es expresable
 
 Tres propiedades se derivan de mantener la gramática cerrada y sin bucles, y

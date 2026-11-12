@@ -2,7 +2,7 @@
 title: Mentés, exportálás és importálás
 description: A pillanatkép felépítése, a manifest, minden mentési művelet és átviteli útvonal, valamint pontosan azok a fájlok, amelyeket egy biztonsági mentés tartalmaz, és amelyeket nem.
 slug: hu-HU/kezikonyv/referencia/mentes
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Minden, amit a Control Center másolni, átadni vagy átvenni képes, és az egyes
@@ -49,11 +49,11 @@ egyszerű szövegként is kronologikusan rendeződik.
 
 Az ütemezett munkaterület-mentések külön helyen élnek:
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Nem tartalmaznak manifestet és `global.db`-t, és nem telepítési pillanatképek.
+Mindegyikben van egy `manifest.json`, amely csak ezt az egy fájlt írja le, és nincs bennük `global.db`; nem telepítési pillanatképek. A visszaállítás a lecserélt adatbázist ugyanitt megtartja, `<timestamp>-pre-restore` néven.
 A heti pipeline megőrzési lépése csak a saját munkaterületének a beállított életkornál
 (alapértelmezésben 30 napnál) régebbi mentéseit törli; a kézzel készített telepítési
 pillanatképeket ez a lépés soha nem törli. A `server.listBackups` csak telepítési
-pillanatképeket listáz, a hiányosakat is beleértve; a `workspace.listBackups` egy
+pillanatképeket listáz, a nem ellenőrzötteket is beleértve; a `workspace.listBackups` egy
 munkaterület ütemezett mentéseit listázza.
 
 Egy munkaterület törlése a helyén hagyja ezt a könyvtárat. A munkaterület ütemezése vele
@@ -66,34 +66,40 @@ maradnak, amíg a telepítés tulajdonosa el nem távolítja őket. A
 
 | Mező                        | Típus                 | Jelentés                                                                             |
 | --------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
-| `version`                   | egész szám            | A manifest formátumverziója. Jelenleg `1`                                            |
+| `format`                   | egész szám            | A manifest formátuma. Jelenleg `2`                                            |
 | `created_at`                | ISO-8601 UTC          | A pillanatkép készítésének időpontja                                                 |
-| `global.file`               | karakterlánc          | Mindig `global.db`                                                                   |
-| `global.schema_version`     | egész szám            | A `GlobalDatabase` sémaváltozata a rögzítés pillanatában                             |
-| `global.bytes`              | egész szám            | A kiírt `global.db` mérete                                                           |
-| `workspace_schema_version`  | egész szám            | A `WorkspaceDatabase` sémaváltozata, amelyet minden munkaterület-fájl közösen használ |
-| `workspaces[]`              | tömb                  | Egy bejegyzés minden rögzített munkaterülethez                                       |
+| `global` | objektum | A `global.db` bejegyzése. Az ütemezett munkaterület-mentésekből hiányzik |
+| `workspaces[]`              | tömb                  | Egy rekord minden rögzített munkaterülethez                                       |
 | `workspaces[].workspace_id` | karakterlánc          | Az a munkaterület, amelyet ez a fájl tartalmaz                                       |
-| `workspaces[].file`         | karakterlánc          | A pillanatkép gyökeréhez viszonyított útvonal, `<workspaceId>/workspace.db`         |
-| `workspaces[].bytes`        | egész szám            | Az adott fájl mérete                                                                 |
-| `skipped_workspaces[]`      | karakterláncok tömbje | Munkaterületek, amelyeket a mentés **nem** tudott rögzíteni                          |
+| `skipped_workspaces[]` | tömb | Munkaterületek, amelyeket a mentés **nem** tudott rögzíteni |
+| `skipped_workspaces[].workspace_id` | karakterlánc | A kihagyott munkaterület |
+| `skipped_workspaces[].reason` | karakterlánc | `no_file`, `damaged` vagy `failed` |
 
-Egy munkaterület akkor marad ki, ha regisztrálva van, de soha nem írtak bele (így még
-nincs fájlja), vagy ha a `VACUUM INTO` művelete meghiúsult. Mindkét esetben a pillanatkép
-elkészül, és a manifest megnevezi, mi hiányzik.
+A `global` és a `workspaces[]` minden bejegyzése egy-egy másolt fájlt ír le, amelyet az írása után, magán a másolaton mérnek:
+
+| Mező | Típus | Jelentés |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`         | karakterlánc          | A pillanatkép gyökeréhez viszonyított útvonal: `global.db` vagy `<workspaceId>/workspace.db`         |
+| `bytes`        | egész szám            | A másolat mérete                                                                 |
+| `sha256` | karakterlánc | A másolat SHA-256 értéke, kisbetűs hexadecimálisan |
+| `quick_check` | karakterlánc | Az SQLite `quick_check` ellenőrzésének eredménye a másolatra: `ok`, vagy a talált probléma |
+| `user_version` | egész szám | A másolat sémaverziója |
+| `application_id` | egész szám | A másolat SQLite `application_id` értéke |
+
+Egy munkaterület kimarad, ha regisztrálva van, de soha nem írtak bele (`no_file`), ha az adatbázisa nem ment át az integritásellenőrzésen (`damaged`; sérült másolat soha nem készül), vagy ha a másolása vagy annak ellenőrzése meghiúsult (`failed`). Mindkét esetben a pillanatkép elkészül, a manifest pedig megnevezi, mi hiányzik. A manifestet utoljára írják ki.
 
 ### Teljesség
 
-A `server.listBackups` pillanatképenként egy `complete` jelzőt ad vissza. Ez hamis, ha a
-manifest hiányzik vagy nem értelmezhető, ha a `global.db` hiányzik, vagy ha a manifest
-olyan munkaterület-fájlt nevez meg, amely nincs a lemezen.
+A `server.listBackups` pillanatképenként egy `complete` jelzőt ad vissza. Ez hamis, ha a manifest hiányzik, nem értelmezhető vagy másik formátumú, ha a benne megnevezett fájl hiányzik vagy más a mérete, vagy ha egy másolat nem ment át az ellenőrzésen. Az alkalmazás az ilyen pillanatképet **Nem ellenőrzött** állapotban mutatja. A `2`-es formátum előtt készült pillanatképek ebben az állapotban vannak.
 
-Egy hiányos pillanatkép is szerepel a listán, mert az a pillanatkép, amelyet az
+Egy nem ellenőrzött pillanatkép is szerepel a listán, mert az a pillanatkép, amelyet az
 üzemeltető nem lát, olyan, amelyről azt hiszi, hogy megvan. Ha a manifest olvashatatlan,
 a listázás magára a felépítésre esik vissza, és minden megtalált
 `<workspaceId>/workspace.db` fájlt jelenti — ezek egyenként továbbra is átvehetők a
 `workspace.import` művelettel, még ha a pillanatkép egésze nem is tud visszaállítani egy
 telepítést.
+
+Egy listázott pillanatkép vagy ütemezett mentés `pinned_reason: "last_good_copy"` jelzést visel, amíg a munkaterület élő adatbázisa sérült, és ő tartja a legfrissebb ellenőrzött másolatot. A megőrzési lépés addig nem törli, amíg a munkaterület vissza nem áll.
 
 ## Mit nem tartalmaz egy biztonsági mentés
 
@@ -104,6 +110,7 @@ az adatbázisánál, és a többi semmi nem utazik vele:
 | --------------------------------- | ---------------------------- | ------------------------------------ |
 | `global.db`                       | Igen                         | Nem                                  |
 | `<workspaceId>/workspace.db`      | Igen                         | Igen (ez *maga* a fájl)              |
+| `<workspaceId>/code_index.db` | Nem | Nem |
 | `<workspaceId>/blobs/`            | Nem                          | Nem                                  |
 | `<workspaceId>/skills/`           | Nem                          | Nem                                  |
 | `<workspaceId>/agents/`           | Nem                          | Nem                                  |
@@ -116,17 +123,9 @@ az adatbázisánál, és a többi semmi nem utazik vele:
 | `rigs/`                           | Nem                          | Nem                                  |
 | `_agent_hooks/`                   | Nem                          | Nem                                  |
 
-Ennek egy része eldobható — a `spaces/` másolás-írás munkakönyvtárakat tartalmaz, amelyek
-a repókból újra előállnak, a `pr_clones/` gyorsítótár, a `models/` újra letöltődik, a
-`rigs/` gépállapot. Egy másik része viszont nem az: a `blobs/` azokat a beillesztett
-képeket tartalmazza, amelyekre az adatbázis sorai hivatkoznak, a `skills/` és az
-`agents/` azokat a fájlokat, amelyekkel egy ügynök fut, a `secrets.json` pedig a
-telepítés minden párosítási kulcsát, szolgáltatói hitelesítő adatát és SSO-beállítását. A
-többi lefedéséről a
-[Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/#biztonsági-mentések-másolása-a-gépen-kívülre)
-oldal szól.
-:::caution[A munkaterület-adatbázis webhook-titkokat tartalmaz]
-A `workspace.db` a teljes munkaterület: beszélgetések, futtatási naplók, a kódindex, tárolókapcsolatok, környezetdefiníciók és tagok. Olvasható formában tartalmazza a munkaterület pipeline-webhook-tokenjeit és a ticket-szinkronizálási webhook-titkait is, ezért a letöltött exportot vagy mentést titokként kezelje. Nem tartalmaz szolgáltatói bejelentkezést, eszközkulcsot vagy felhasználói titkot; ezek a `global.db`-ben és a `secrets.json`-ban vannak.
+Ennek egy része eldobható — a `spaces/` másolás-írás munkakönyvtárakat tartalmaz, amelyek a repókból újra előállnak, a `pr_clones/` gyorsítótár, a `code_index.db` újjáépül, a `models/` újra letöltődik, a `rigs/` gépállapot. Egy másik része viszont nem az: a `blobs/` azokat a beillesztett képeket tartalmazza, amelyekre az adatbázis sorai hivatkoznak, a `skills/` és az `agents/` azokat a fájlokat, amelyekkel egy ügynök fut, a `secrets.json` pedig a telepítés minden párosítási kulcsát, szolgáltatói hitelesítő adatát és SSO-beállítását. A többi lefedéséről a [Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/#biztonsági-mentések-másolása-a-gépen-kívülre) oldal szól.
+:::note[A titkok nincsenek az adatbázisokban]
+A `workspace.db` a teljes munkaterület: beszélgetések, futtatási naplók, tárolókapcsolatok, környezetdefiníciók és tagok. A pipeline-webhook-tokenek és a ticket-szinkronizálási webhook-titkok a `secrets.json`-ban vannak: az adatbázis mindegyikre hivatkozást tartalmaz, az útvonalindex pedig minden token kulcsolt hash-ét. Egy másik telepítésen visszaállított munkaterület ezért addig nem kap webhookokat, amíg a triggereit ott újra el nem mentik. A szolgáltatói bejelentkezések, az eszközkulcsok és a felhasználói titkok a `global.db`-ben és a `secrets.json`-ban vannak.
 :::
 
 :::note[A csevegőtokenek szándékosan kimaradnak]
@@ -154,6 +153,8 @@ nincsenek ott.
 | `workspace.deleteBackup` | Írás | Munkaterület | `owner` | `name` | `{ok}` |
 | `workspace.export`    | Olvasás | Munkaterület | `admin`                     | nincs         | `{ok, path}`                                           |
 | `workspace.import`    | Írás    | Munkaterület | `owner`, és a szerver tulajdonosa | `source_path` | `{ok, workspace_id}`                                   |
+| `workspace.importHolds.list` | Olvasás | Munkaterület | `owner`, és a szerver tulajdonosa | nincs | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | Írás | Munkaterület | `owner`, és a szerver tulajdonosa | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`    | Írás    | Telepítés*   | `owner`                     | `id`          | a nyilvántartási sor töröltként megjelölve             |
 
 * A `workspace.delete` azért hatókör nélküli, mert a sor, amelyet megjelöl, a globális
@@ -170,18 +171,20 @@ elutasít egy élő munkaterületet, amelynek mentései a `workspace.deleteBacku
 munkaterület saját szerepkörei mögött maradnak. Mindkét törlő művelet csak listázott
 időbélyeg-könyvtárnevet fogad el, útvonalat nem.
 
+A `workspace.importHolds.list` azt adja vissza, amit egy import visszatartott. Minden visszatartásnak van `id`-je, `kind`-ja (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` vagy `invite`), a `payload`, amelyet visszatenne, az `imported_at` és a `source_install_id`. A `workspace.importHolds.resolve` az `accept: true` értékkel újra megadja, a `false` értékkel eldobja. Az `applied` értéke hamis, ha az a személy vagy dolog, akinek a jogosultság szólt, már nincs a munkaterületen.
+
 :::note[A teljes telepítésről készült pillanatkép mindkét útvonalon tulajdonosi kapu mögött van]
 A `server.backupNow`, a `server.listBackups` és a `server.deleteBackup` a telepítés
 **tulajdonosát** igényli (`ServerAuthority.serverOwner`) — ugyanazt a kaput, mint a
 `GET /backup/snapshot`. Egy pillanatkép minden munkaterület adatbázisát rögzíti, így
 önmagában attól, hogy valaki egy munkaterület adminja, még nem kezelheti a többit. A
 törlés kizárólag a listázott időbélyeg-könyvtárnevet fogadja el, nem tetszőleges
-szerverútvonalat, és a teljes pillanatképet eltávolítja (a hiányosakat is). A
+szerverútvonalat, és a teljes pillanatképet eltávolítja (a nem ellenőrzötteket is). A
 munkaterületenkénti exportálás és az ütemezett mentések letöltése továbbra is a munkaterület adminjánál marad.
 :::
 
 :::note[A visszaállítás a szerver tulajdonosáé]
-A `workspace.import` és a `POST /backup/restore` olyan adatbázisfájlt fogad be a szerverbe, amelynek sorait a szerver a sajátjaként kezeli: a tárolókapcsolatokat és azok létrehozóit, a gépen futó környezetdefiníciókat, valamint a munkakönyvtár- és naplóútvonalakat. Ezért mindkettőhöz a szerver tulajdonosa kell (`ServerAuthority.serverOwner`), aki egyben a munkaterület tulajdonosa is. Bárki mást, és minden hívót olyan gépen, ahol nincs rögzített tulajdonos, `server_owner_required` hibával elutasít. A fájl által hozott triggert vagy nézetet nem veszi át.
+A `workspace.import` és a `POST /backup/restore` olyan adatbázisfájlt fogad be a szerverbe, amelynek sorait a szerver a sajátjaként kezeli: a tárolókapcsolatokat és azok létrehozóit, a gépen futó környezetdefiníciókat, valamint a munkakönyvtár- és naplóútvonalakat. Ezért mindkettőhöz a szerver tulajdonosa kell (`ServerAuthority.serverOwner`), aki egyben a munkaterület tulajdonosa is. Bárki mást, és minden hívót olyan gépen, ahol nincs rögzített tulajdonos, `server_owner_required` hibával elutasít. A fájl által hozott triggert, nézetet, oszlopot vagy megkötést nem veszi át.
 :::
 
 ### A `server.listBackups` válasza
@@ -223,21 +226,21 @@ fájlt másképp kezelje.
 
 ### A `workspace.import` érvényesítése
 
-Mielőtt bármi lecserélődne, a jelölt fájl csak olvasható módban nyílik meg egy rövid
-életű nyers SQLite-kapcsolattal, és beolvasásra kerül a `workspace_meta` sora.
+Mielőtt bármi lecserélődne, a jelölt fájlt átmásolják a cél mellett lévő átmeneti fájlba, és ott ellenőrzik. Az elutasítás semmihez nem nyúl, a típusát a `data.kind` hordozza.
 
 | Feltétel                                                    | Eredmény                                                                                                              |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Nem olvasható SQLite-adatbázis, vagy nincs `workspace_meta` | Elutasítva. Semmi nem változik                                                                                        |
-| A rögzített munkaterület-azonosító ≠ a cél                  | **Engedélyezve**, naplózva. Így duplikálódik vagy áll vissza egy munkaterület új azonosító alatt                       |
-| A rögzített telepítés-azonosító ≠ ez a telepítés            | **Engedélyezve**, naplózva. A párosított eszközei és felhasználóazonosítói ahhoz a telepítéshez tartoznak, és itt nem oldódnak fel |
-| Érvénytelen munkaterület-azonosító, vagy a fájl nem létezik | Elutasítva                                                                                                            |
+| A fájl nem létezik | Elutasítva, `import.missing_source` |
+| Nem olvasható SQLite-adatbázis, vagy nem megy át a `quick_check` ellenőrzésen | Elutasítva, `import.damaged` |
+| Pillanatképből származik, és SHA-256 értéke eltér a manifestben szereplőtől | Elutasítva, `import.checksum_mismatch` |
+| A szerver egy újabb verziója írta | Elutasítva, `import.newer_schema` |
+| Másik `application_id`, vagy nincs `workspace_meta` | Elutasítva, `import.foreign_file` |
+| Nem hozható a szerver sémájára | Elutasítva, `import.schema_mismatch` |
+| Webhookjai vagy meghívói már egy másik munkaterületre irányítanak | Elutasítva, `import.route_conflict` |
+| A rögzített munkaterület-azonosító ≠ a cél                  | **Engedélyezve**. Sorai a célhoz kulcsolódnak újra. Így duplikálódik vagy áll vissza egy munkaterület új azonosító alatt                       |
+| A rögzített telepítés-azonosító ≠ ez a telepítés            | **Engedélyezve**. A felhasználóazonosítói ahhoz a telepítéshez tartoznak, és itt nem oldódnak fel |
 
-Elfogadás esetén a cél-munkaterület adatbázisa bezárul, és a kezelő elengedi, mielőtt a
-fájl rákerül (egy nyitott drift-kapcsolat fogva tartja a fájlt és annak `-wal`
-állományát), majd újra megnyílik, hogy a `beforeOpen` újratelepítse az FTS- és
-szinkronizációs triggereket, és az FTS-indexek újraépüljenek — egy importált fájl
-tartalomtáblái feltöltöttek, de az indexe elavult lehet.
+A jóváhagyáskor az átmeneti fájlt hozzák ennek a szervernek a sémájára, és utána pontosan meg kell egyeznie vele. A fájl azokat a jogosultságokat, amelyeket magának nem adhat meg, kikerül belőle: a gépen futó környezetdefiníciók jóváhagyásai törlődnek, az engedélyező vagy megerősítést kérő műveletszabályok, a sandbox-végrehajtási jogosultságok, az olvasásnál magasabb tárolójogosultságok, a tagnál magasabb szerepkörök és az ezekre szóló meghívók pedig a szerver tulajdonosa által átnézendő visszatartásokká válnak. Az importáló megtartja vagy megkapja a tulajdonosi szerepkört. A lecserélt adatbázis `<timestamp>-pre-restore` nevű ütemezett mentésként marad meg, az átmeneti fájl a munkaterület kapcsolatainak lezárása után a helyére kerül, a `code_index.db` törlődik, hogy újra épüljön, és az FTS-indexek újjáépülnek.
 
 ## Átviteli útvonalak
 
@@ -269,7 +272,7 @@ belül.
 
 | Állapot | Ok                                                                                                                     |
 | ------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `400`   | Hiányzik egy kötelező lekérdezési paraméter, érvénytelen egy mentésnév, vagy üres a feltöltés törzse                   |
+| `400` | Hiányzik egy kötelező lekérdezési paraméter, érvénytelen egy mentésnév, üres a feltöltés törzse, vagy a feltöltött fájlt elutasították (a törzs `{error, kind}` alakú, `import.*` típussal) |
 | `403`   | Ismeretlen vagy visszavont eszköz, hibás aláírás, vagy a hívónak nincs meg a szerepköre                                |
 | `404`   | Nincs mentési port ezen a gazdagépen, vagy a megnevezett pillanatkép-, mentés- vagy munkaterület-fájl nem létezik      |
 | `405`   | A `/backup/restore` hívása `POST`-on kívül bármi mással                                                                 |
@@ -311,6 +314,8 @@ fájlokat.
 | Pillanatképek                   | `<dataDir>/backups/<timestamp>/`                                                      |
 | Ütemezett munkaterület-mentések | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`          |
 | Munkaterület-exportok           | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`                              |
+| A visszaállítás által lecserélt adatbázis | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Adatbázisok a formátumuk frissítés általi megváltozása előtt | `<dataDir>/pre_upgrade/` és `<dataDir>/<workspaceId>/pre_upgrade/`, mindkettőből a legfrissebb kettő |
 | Átviteli előkészítés            | `<dataDir>/backups/transfer/` — egy munkapad, amelyet az őt író útvonal söpör ki      |
 | A pillanatkép-archívum neve     | `<snapshot directory name>.zip`                                                       |
 | Feltöltési felső korlát         | 8 GiB titkosított `/backup/restore`-feltöltésenként                                    |

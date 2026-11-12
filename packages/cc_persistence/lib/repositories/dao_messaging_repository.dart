@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/ports/embedding_port.dart';
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
@@ -23,6 +25,8 @@ import 'package:cc_harness/context.dart' show TokenEstimator;
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
 import 'package:cc_persistence/database/daos/conversation_dao.dart';
 import 'package:cc_persistence/database/daos/messaging_dao.dart';
+import 'package:cc_persistence/database/daos/run_transcript_dao.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/messaging_mapper.dart';
@@ -47,6 +51,8 @@ class DaoMessagingRepository implements MessagingRepository {
   final _uuid = const Uuid();
 
   MessagingDao _dao(String workspaceId) => _dbs.of(workspaceId).messagingDao;
+  RunTranscriptDao _transcripts(String workspaceId) =>
+      _dbs.of(workspaceId).runTranscriptDao;
   ConversationDao _conversations(String workspaceId) =>
       _dbs.of(workspaceId).conversationDao;
 
@@ -111,7 +117,7 @@ class DaoMessagingRepository implements MessagingRepository {
     String conversationId,
   ) => _distinctRows(
     _dao(workspaceId).watchMessages(conversationId),
-  ).map(_mapper.messagesToDomain).distinct(_sameMessages);
+  ).map(_mapper.listedMessagesToDomain).distinct(_sameMessages);
 
   @override
   Stream<({List<Message> messages, bool hasMore})> watchMessagesWindow(
@@ -121,20 +127,24 @@ class DaoMessagingRepository implements MessagingRepository {
     required int limit,
   }) =>
       _distinctRows(
-        _dao(workspaceId).watchMessagesWindow(conversationId, limit: limit),
-      ).map((rows) {
-        final hasMore = rows.length > limit;
-        // Rows are ascending (oldest-first); the extra hasMore row is the
-        // oldest, so trim from the front to keep the newest `limit`.
-        final windowRows = hasMore ? rows.sublist(rows.length - limit) : rows;
-        return (
-          messages: _mapper.messagesToDomain(windowRows),
-          hasMore: hasMore,
-        );
-      }).distinct(
-        (a, b) =>
-            a.hasMore == b.hasMore && _sameMessages(a.messages, b.messages),
-      );
+            _dao(workspaceId).watchMessagesWindow(conversationId, limit: limit),
+          )
+          .map((rows) {
+            final hasMore = rows.length > limit;
+            // Rows are ascending (oldest-first); the extra hasMore row is the
+            // oldest, so trim from the front to keep the newest `limit`.
+            final windowRows = hasMore
+                ? rows.sublist(rows.length - limit)
+                : rows;
+            return (
+              messages: _mapper.listedMessagesToDomain(windowRows),
+              hasMore: hasMore,
+            );
+          })
+          .distinct(
+            (a, b) =>
+                a.hasMore == b.hasMore && _sameMessages(a.messages, b.messages),
+          );
 
   /// The size of a conversation's live region, computed in SQL. NOT part of
   /// [MessagingRepository] — like [watchSpaceActivity] it is a server-only
@@ -214,9 +224,9 @@ class DaoMessagingRepository implements MessagingRepository {
         .map((rows) => collapsePromptHistory(rows.reversed)),
   );
 
-  /// Per-space activity signals for [workspaceId], computed in SQL. NOT
-  /// part of [MessagingRepository]: server-only projection behind
-  /// `messaging.watchSpaceActivity`.
+  /// Per-space activity signals for [workspaceId], read from the stored
+  /// per-conversation activity rows. NOT part of [MessagingRepository]:
+  /// server-only projection behind `messaging.watchSpaceActivity`.
   ///
   /// The DAO emits one row per conversation; we fold those into one
   /// [SpaceActivity] per space so the wire stays one list the sidebar already
@@ -229,16 +239,16 @@ class DaoMessagingRepository implements MessagingRepository {
         ).watchSpaceActivity(workspaceId).map(_foldSpaceActivity),
       );
 
-  /// Folds per-conversation SQL rows into one [SpaceActivity] per space:
-  /// space-level maxima/sums plus the conversation → last-agent-message map
-  /// the sidebar uses to place the unread dot.
+  /// Folds per-conversation rows into one [SpaceActivity] per space:
+  /// space-level maxima/sums plus the conversation → newest agent message
+  /// map the sidebar uses to place the unread dot.
   static List<SpaceActivity> _foldSpaceActivity(
     List<
       ({
         String spaceId,
         String conversationId,
-        DateTime? lastMessageAt,
-        DateTime? lastAgentMessageAt,
+        DateTime lastMessageAt,
+        FeedPosition? lastAgentMessage,
         int openQuestionCount,
       })
     >
@@ -248,14 +258,17 @@ class DaoMessagingRepository implements MessagingRepository {
     for (final row in rows) {
       final acc = bySpace.putIfAbsent(row.spaceId, _SpaceActivityAcc.new);
       acc.openQuestionCount += row.openQuestionCount;
-      acc.lastMessageAt = _later(acc.lastMessageAt, row.lastMessageAt);
-      acc.lastAgentMessageAt = _later(
-        acc.lastAgentMessageAt,
-        row.lastAgentMessageAt,
-      );
-      final agentAt = row.lastAgentMessageAt;
-      if (agentAt != null) {
-        acc.lastAgentMessageAtByConversation[row.conversationId] = agentAt;
+      final lastAt = acc.lastMessageAt;
+      if (lastAt == null || row.lastMessageAt.isAfter(lastAt)) {
+        acc.lastMessageAt = row.lastMessageAt;
+      }
+      final agent = row.lastAgentMessage;
+      if (agent != null) {
+        final newest = acc.lastAgentMessage;
+        if (newest == null || agent.isAfter(newest)) {
+          acc.lastAgentMessage = agent;
+        }
+        acc.lastAgentMessageByConversation[row.conversationId] = agent;
       }
     }
     return [
@@ -263,33 +276,39 @@ class DaoMessagingRepository implements MessagingRepository {
         SpaceActivity(
           spaceId: e.key,
           lastMessageAt: e.value.lastMessageAt,
-          lastAgentMessageAt: e.value.lastAgentMessageAt,
-          lastAgentMessageAtByConversation: Map.unmodifiable(
-            e.value.lastAgentMessageAtByConversation,
+          lastAgentMessage: e.value.lastAgentMessage,
+          lastAgentMessageByConversation: Map.unmodifiable(
+            e.value.lastAgentMessageByConversation,
           ),
           openQuestionCount: e.value.openQuestionCount,
         ),
     ];
   }
 
-  static DateTime? _later(DateTime? a, DateTime? b) {
-    if (a == null) {
-      return b;
-    }
-    if (b == null) {
-      return a;
-    }
-    return b.isAfter(a) ? b : a;
-  }
-
+  /// A one-shot read of a single message, with its transcript as
+  /// `metadata['segments']` when it has one.
   @override
   Future<Message?> getMessageById(String workspaceId, String messageId) async {
     final row = await _dao(workspaceId).getMessageById(messageId);
     if (row == null) {
       return null;
     }
-    return _mapper.messageToDomain(row);
+    final segments = await _transcripts(
+      workspaceId,
+    ).segmentBodiesForMessages([messageId]);
+    return _mapper.messageToDomain(row, segmentBodies: segments[messageId]);
   }
+
+  /// [rows] as domain messages, each carrying its transcript.
+  Future<List<Message>> _withTranscripts(
+    String workspaceId,
+    List<ConversationMessagesTableData> rows,
+  ) async => _mapper.messagesToDomain(
+    rows,
+    segmentBodies: await _transcripts(
+      workspaceId,
+    ).segmentBodiesForMessages(rows.map((row) => row.id)),
+  );
 
   @override
   Future<Space?> getSpaceById(String workspaceId, String spaceId) async {
@@ -435,6 +454,14 @@ class DaoMessagingRepository implements MessagingRepository {
     Map<String, dynamic>? metadata,
     String? id,
   }) async {
+    // The columns' checks refuse these too, but as a storage failure; a
+    // caller passing a client's value gets an input refusal instead.
+    if (!SpacesStoredValues.messageType.contains(messageType)) {
+      throw ValidationException('Unknown message type "$messageType".');
+    }
+    if (!SpacesStoredValues.senderType.contains(senderType)) {
+      throw ValidationException('Unknown sender type "$senderType".');
+    }
     final messageId = id ?? _uuid.v4();
     final dao = _dao(workspaceId);
     // Default to the space's standing conversation (oldest active; minted
@@ -541,22 +568,32 @@ class DaoMessagingRepository implements MessagingRepository {
     messageType: messageType,
   );
 
-  /// Mid-turn transcript flush.
+  /// One flush of a streaming agent turn: see
+  /// [MessagingDao.flushStreamingTurn].
   ///
-  /// [projectList] is false when the visible text did not change. The full
-  /// transcript and the meter counter are still written; the list projection
-  /// the feed watches is not, so a tool-only flush does not rebuild the chat.
+  /// [changedSegments] holds only the segments that are new or changed since
+  /// the previous flush (position → encoded segment), and only those rows are
+  /// written. [writeMetadata] is false when the visible state of the turn did
+  /// not change: the meter's counts are still written, but not the metadata
+  /// the message list shows, so a tool-only flush does not rebuild the chat.
   Future<void> flushStreamingMessage(
     String workspaceId,
     String messageId, {
     String? content,
     required Map<String, dynamic> metadata,
-    required bool projectList,
-  }) => _dao(workspaceId).updateMessage(
+    required Map<int, Map<String, dynamic>> changedSegments,
+    required int segmentCount,
+    required bool writeMetadata,
+  }) => _dao(workspaceId).flushStreamingTurn(
     messageId,
     content: content,
     metadata: metadata,
-    writeListMetadata: projectList,
+    writeMetadata: writeMetadata,
+    changedSegments: {
+      for (final MapEntry(:key, :value) in changedSegments.entries)
+        key: jsonEncode(value),
+    },
+    segmentCount: segmentCount,
   );
 
   /// Idempotently resolves (minting when absent) the space's standing
@@ -581,8 +618,10 @@ class DaoMessagingRepository implements MessagingRepository {
           workspaceId: workspaceId,
           spaceId: spaceId,
         );
-    final rows = await _dao(workspaceId).getMessages(convId);
-    return _mapper.messagesToDomain(rows);
+    return _withTranscripts(
+      workspaceId,
+      await _dao(workspaceId).getMessages(convId),
+    );
   }
 
   /// [DispatchReplyHints] for a send, without reading message bodies.
@@ -720,10 +759,9 @@ class DaoMessagingRepository implements MessagingRepository {
     required String spaceId,
     required String conversationId,
   }) async {
-    final rows = await _dao(workspaceId).queuedSteeringMessages(
-      conversationId,
-      spaceId,
-    );
+    final rows = await _dao(
+      workspaceId,
+    ).queuedSteeringMessages(conversationId, spaceId);
     final queued = _mapper.messagesToDomain(rows)
       ..sort((a, b) => a.steerOrder.compareTo(b.steerOrder));
     return queued;
@@ -787,7 +825,7 @@ class DaoMessagingRepository implements MessagingRepository {
   /// [sideChannelLine] crosses [maxChars]. The crossing row is included so
   /// the renderer still emits its omission marker. An agent turn with empty
   /// content is loaded in full (its transcript is the body); every other row
-  /// stays on the list select, so older `segments` blobs are not read.
+  /// keeps no transcript, so older turns' segments are not read.
   Future<List<Message>> sideChannelMessages({
     required String workspaceId,
     required String spaceId,
@@ -821,12 +859,20 @@ class DaoMessagingRepository implements MessagingRepository {
       ];
       final upgradeIds = <String>[
         for (final message in litePage)
-          if (message.isAgentTurn && message.content.trim().isEmpty)
-            message.id,
+          if (message.isAgentTurn && message.content.trim().isEmpty) message.id,
       ];
+      final transcripts = upgradeIds.isEmpty
+          ? const <String, List<String>>{}
+          : await _transcripts(
+              workspaceId,
+            ).segmentBodiesForMessages(upgradeIds);
       final fullById = {
-        for (final row in await dao.messagesByIds(upgradeIds))
-          row.id: _mapper.messageToDomain(row),
+        for (final row in page)
+          if (transcripts[row.data.id] case final bodies?)
+            row.data.id: _mapper.messageToDomain(
+              row.data,
+              segmentBodies: bodies,
+            ),
       };
       var crossed = false;
       for (final lite in litePage) {
@@ -857,8 +903,10 @@ class DaoMessagingRepository implements MessagingRepository {
     String workspaceId,
     String spaceId,
   ) async {
-    final rows = await _dao(workspaceId).getMessagesForSpace(spaceId);
-    return _mapper.messagesToDomain(rows);
+    return _withTranscripts(
+      workspaceId,
+      await _dao(workspaceId).getMessagesForSpace(spaceId),
+    );
   }
 
   @override
@@ -867,7 +915,7 @@ class DaoMessagingRepository implements MessagingRepository {
     String spaceId,
   ) => _distinctRows(
     _dao(workspaceId).watchMessagesForSpace(spaceId),
-  ).map(_mapper.messagesToDomain).distinct(_sameMessages);
+  ).map(_mapper.listedMessagesToDomain).distinct(_sameMessages);
 
   @override
   Future<List<Message>> searchInSpace(
@@ -879,7 +927,7 @@ class DaoMessagingRepository implements MessagingRepository {
     final rows = await _dao(
       workspaceId,
     ).searchInSpace(spaceId, query, limit: limit);
-    return _mapper.messagesToDomain(rows);
+    return _mapper.listedMessagesToDomain(rows);
   }
 
   /// Max extra messages pulled to back the page up to a user-message boundary,
@@ -913,20 +961,22 @@ class DaoMessagingRepository implements MessagingRepository {
 
     // Backfill: if the oldest row in the page is an agent message, pull older
     // rows until we reach a user message (turn start) or the cap.
-    if (hasMore && page.isNotEmpty && page.last.data.senderType != 'user') {
+    if (hasMore &&
+        page.isNotEmpty &&
+        page.last.listed.data.senderType != 'user') {
       final oldest = page.last;
       final extra = await dao.getMessagePageRows(
         spaceId,
         conversationId,
         limit: _backfillCap + 1,
         beforeCreatedAtSeconds:
-            oldest.data.createdAt.millisecondsSinceEpoch ~/ 1000,
+            oldest.listed.data.createdAt.millisecondsSinceEpoch ~/ 1000,
         beforeRowid: oldest.rowid,
       );
-      final taken = <({ConversationMessagesTableData data, int rowid})>[];
+      final taken = <({ListedMessageRow listed, int rowid})>[];
       for (final r in extra.take(_backfillCap)) {
         taken.add(r);
-        if (r.data.senderType == 'user') {
+        if (r.listed.data.senderType == 'user') {
           break;
         }
       }
@@ -939,14 +989,14 @@ class DaoMessagingRepository implements MessagingRepository {
     if (hasMore && page.isNotEmpty) {
       final boundary = page.last;
       nextCursor = MessageCursor(
-        createdAtMs: boundary.data.createdAt.millisecondsSinceEpoch,
+        createdAtMs: boundary.listed.data.createdAt.millisecondsSinceEpoch,
         rowid: boundary.rowid,
       ).encode();
     }
 
     // Rows are newest-first; reverse for oldest-first display.
     final messages = page.reversed
-        .map((r) => _mapper.messageToDomain(r.data))
+        .map((r) => _mapper.listedMessageToDomain(r.listed))
         .toList(growable: false);
     return MessagePage(
       messages: messages,
@@ -967,33 +1017,38 @@ class DaoMessagingRepository implements MessagingRepository {
     bool inclusive = false,
   }) async {
     final dao = _dao(workspaceId);
-    // Resolve the space's standing conversation — no main-id aliasing.
-    final convId = await _conversations(
-      workspaceId,
-    ).ensureStandingConversation(workspaceId: workspaceId, spaceId: spaceId);
-    // getMessages already returns only live (non-reverted) messages in order.
-    final live = await dao.getMessages(convId);
-    final targetIndex = live.indexWhere((m) => m.id == messageId);
-    if (targetIndex < 0) {
-      return const [];
-    }
-    final from = inclusive ? targetIndex : targetIndex + 1;
-    final toRevert = live.sublist(from).map((m) => m.id).toList();
-    if (toRevert.isEmpty) {
-      return const [];
-    }
-    await dao.revertMessages(toRevert, DateTime.now().millisecondsSinceEpoch);
-    // The branch tip moves with the revert. Without this the next message
-    // would still take the reverted tail as its parent, so the tree would
-    // record a lineage the conversation no longer shows — and `/tree` would
-    // draw a branch nobody made.
-    await dao.setLeaf(
-      convId,
-      inclusive
-          ? (targetIndex > 0 ? live[targetIndex - 1].id : null)
-          : messageId,
-    );
-    return toRevert;
+    // ONE transaction: reading the live tail, hiding it and moving the
+    // branch tip used to auto-commit separately, so a message landing in
+    // between was hidden without being read, or took the reverted tail as
+    // its parent.
+    return dao.transaction(() async {
+      // Resolve the space's standing conversation — no main-id aliasing.
+      final convId = await _conversations(
+        workspaceId,
+      ).ensureStandingConversation(workspaceId: workspaceId, spaceId: spaceId);
+      final live = await dao.liveMessageIds(convId);
+      final targetIndex = live.indexOf(messageId);
+      if (targetIndex < 0) {
+        return const <String>[];
+      }
+      final from = inclusive ? targetIndex : targetIndex + 1;
+      final toRevert = live.sublist(from);
+      if (toRevert.isEmpty) {
+        return const <String>[];
+      }
+      await dao.revertMessages(toRevert, DateTime.now().millisecondsSinceEpoch);
+      // The branch tip moves with the revert. Without this the next message
+      // would still take the reverted tail as its parent, so the tree would
+      // record a lineage the conversation no longer shows — and `/tree` would
+      // draw a branch nobody made.
+      await dao.setLeaf(
+        convId,
+        inclusive
+            ? (targetIndex > 0 ? live[targetIndex - 1] : null)
+            : messageId,
+      );
+      return toRevert;
+    });
   }
 
   @override
@@ -1017,7 +1072,9 @@ class DaoMessagingRepository implements MessagingRepository {
     required String conversationId,
   }) async {
     final dao = _dao(workspaceId);
-    final rows = await dao.allMessagesForTree(conversationId);
+    // Projected: the navigator needs lineage, sender, time and a preview, so
+    // neither transcripts nor embeddings leave the disk.
+    final rows = await dao.treeNodes(conversationId);
     final leaf = await dao.currentLeaf(conversationId);
 
     final childCounts = <String, int>{};
@@ -1031,9 +1088,7 @@ class DaoMessagingRepository implements MessagingRepository {
     }
     final onBranch = <String>{};
     if (leaf != null) {
-      for (final row in await dao.branchFrom(conversationId, leaf)) {
-        onBranch.add(row.id);
-      }
+      onBranch.addAll(await dao.branchIds(conversationId, leaf));
     }
     // A leaf is a message nothing continues from. Counting them is how many
     // distinct paths the conversation holds, which is the one number a
@@ -1048,7 +1103,7 @@ class DaoMessagingRepository implements MessagingRepository {
             parentMessageId: row.parentMessageId,
             senderType: row.senderType,
             senderId: row.senderId,
-            preview: _previewOf(row.content),
+            preview: _previewOf(row.contentHead),
             createdAt: row.createdAt,
             onCurrentBranch: onBranch.contains(row.id),
             childCount: childCounts[row.id] ?? 0,
@@ -1105,16 +1160,27 @@ class DaoMessagingRepository implements MessagingRepository {
             senderType: drift.Value(row.senderType),
             content: drift.Value(row.content),
             messageType: drift.Value(row.messageType),
-            metadata: drift.Value(row.metadata),
+            metadata: drift.Value(_withPromotedKeys(row)),
             parentMessageId: drift.Value(parent),
             createdAt: drift.Value(row.createdAt),
           ),
         );
+        await _transcripts(workspaceId).copyMessageTranscript(row.id, copyId);
         parent = copyId;
       }
       await dao.setLeaf(forkId, parent);
     });
     return forkId;
+  }
+
+  /// [row]'s metadata JSON with its promoted columns folded back in, so a
+  /// copied row stores them the way `insertMessage` lifts them out.
+  String? _withPromotedKeys(ConversationMessagesTableData row) {
+    if (!row.answered && row.planStatus == null && row.steerState == null) {
+      return row.metadata;
+    }
+    final metadata = _mapper.messageToDomain(row).metadata;
+    return metadata == null ? null : jsonEncode(metadata);
   }
 
   /// A one-line preview for the tree navigator.
@@ -1236,22 +1302,51 @@ class DaoMessagingRepository implements MessagingRepository {
     return _mapper.embeddedMessagesToDomain(rows);
   }
 
-  @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
+  /// Embeds the messages of [workspaceId] that have no vector yet with
+  /// [embedder], [batchSize] at a time, and returns how many vectors were
+  /// stored.
+  ///
+  /// A message is embedded when it is written, but only while the on-device
+  /// model is ready; this covers the ones written without it, and every
+  /// message after a schema change dropped the stored vectors. Zero when the
+  /// model is not ready. The messages are walked once, oldest first; one that
+  /// was edited or embedded by its own writer while its batch was being
+  /// embedded is skipped.
+  Future<int> backfillEmbeddings(
+    String workspaceId,
+    EmbeddingPort embedder, {
+    int batchSize = 64,
   }) async {
-    final rows = await _dao(
-      workspaceId,
-    ).getMessagesWithoutEmbedding(limit: limit);
-    return _mapper.messagesToDomain(rows);
+    var stored = 0;
+    var position = 0;
+    while (embedder.isReady) {
+      final pending = await _dao(
+        workspaceId,
+      ).messagesToEmbed(after: position, limit: batchSize);
+      if (pending.isEmpty) {
+        break;
+      }
+      position = pending.last.position;
+      final vectors = await embedder.embedAll([
+        for (final message in pending) message.content,
+      ]);
+      stored += await _dao(workspaceId).putBackfilledEmbeddings([
+        for (final (i, message) in pending.indexed)
+          (
+            messageId: message.id,
+            content: message.content,
+            embedding: Uint8List.view(vectors[i].buffer),
+          ),
+      ]);
+    }
+    return stored;
   }
 }
 
 /// Mutable fold of one space's per-conversation activity rows.
 class _SpaceActivityAcc {
   DateTime? lastMessageAt;
-  DateTime? lastAgentMessageAt;
+  FeedPosition? lastAgentMessage;
   int openQuestionCount = 0;
-  final Map<String, DateTime> lastAgentMessageAtByConversation = {};
+  final Map<String, FeedPosition> lastAgentMessageByConversation = {};
 }

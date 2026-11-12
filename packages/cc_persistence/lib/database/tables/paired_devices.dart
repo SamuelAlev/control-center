@@ -1,19 +1,34 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
+import 'package:cc_persistence/database/tables/users_table.dart';
+import 'package:cc_persistence/database/tables/workspaces.dart';
 import 'package:drift/drift.dart';
 
 /// Paired remote-control device metadata (PSK never stored here — only [pskRef]).
 ///
-/// Global across workspaces: [workspaceId] is pairing-time only, not a cascade
-/// FK. Each device belongs to one [userId] (device registry + principal binding).
+/// Global across workspaces: a device belongs to one [userId] (device registry
+/// and principal binding); [landingWorkspaceId] is only where it landed when
+/// it was paired, never a grant.
+@TableIndex(name: 'idx_paired_devices_user', columns: {#userId})
+@TableIndex(
+  name: 'idx_paired_devices_landing_workspace',
+  columns: {#landingWorkspaceId},
+)
 class PairedDevicesTable extends Table {
   /// Unique device id (generated at pairing).
   TextColumn get id => text()();
 
-  /// The user this device authenticates as. Every writer sets it; a row
-  /// without one is refused at authentication.
-  TextColumn get userId => text().nullable()();
+  /// The user this device authenticates as; the device goes with them.
+  TextColumn get userId =>
+      text().references(UsersTable, #id, onDelete: KeyAction.cascade)();
 
-  /// Workspace active at pairing time (seed for the session binding).
-  TextColumn get workspaceId => text().nullable()();
+  /// The workspace active at pairing time (seed for the session binding), or
+  /// null when it was paired outside one (the local desktop, a web sign-in).
+  /// History, not ownership: cleared if the workspace row ever goes.
+  TextColumn get landingWorkspaceId => text().nullable().references(
+    WorkspacesTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// User-editable label (e.g. "iPhone").
   TextColumn get label => text()();
@@ -28,9 +43,11 @@ class PairedDevicesTable extends Table {
   /// Pinned remote DTLS fingerprint (TOFU on first connect).
   TextColumn get remoteFingerprint => text().nullable()();
 
-  /// Pairing status: `pendingConfirm`, `active`, or `revoked`.
-  TextColumn get status =>
-      text().withDefault(const Constant('pendingConfirm'))();
+  /// Pairing status: a [PlatformStoredValues.pairedDeviceStatus] value.
+  TextColumn get status => text()
+      // ignore: recursive_getters
+      .check(status.isIn(PlatformStoredValues.pairedDeviceStatus))
+      .withDefault(const Constant('pendingConfirm'))();
 
   /// When the device was paired.
   DateTimeColumn get pairedAt => dateTime().withDefault(currentDateAndTime)();

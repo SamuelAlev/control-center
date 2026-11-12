@@ -13143,14 +13143,6 @@
   "@backupSnapshotComplete": {
     "description": "Status of a snapshot whose manifest and files are all present"
   },
-  "backupSnapshotIncomplete": "Incomplete",
-  "@backupSnapshotIncomplete": {
-    "description": "Status of a snapshot that died halfway"
-  },
-  "backupSnapshotIncompleteNote": "The manifest is missing or names files that are not there, so this snapshot cannot restore the whole install. The workspace files it does have can still be adopted one by one.",
-  "@backupSnapshotIncompleteNote": {
-    "description": "What an incomplete snapshot can and cannot restore"
-  },
   "backupDeleteSnapshotLabel": "Delete snapshot",
   "@backupDeleteSnapshotLabel": {
     "description": "Heading of the destructive action inside an expanded install snapshot"
@@ -17334,5 +17326,315 @@
   "rigHolderOnlyHint": "You can watch this machine. It uses the sign-ins of the person it was opened for, so only they can drive it, forward its ports, paste into it or drop files on it.",
   "@rigHolderOnlyHint": {
     "description": "One quiet line beside the watch-only badge above a rig that carries another person's own sign-ins, saying what is off and why"
+  },
+  "refusalStorageBusy": "The server's database is busy right now. Try again in a moment.",
+  "@refusalStorageBusy": {
+    "description": "A request the server refused because its database stayed locked by other work; retrying shortly works"
+  },
+  "refusalStorageFull": "The server is out of disk space, so nothing can be saved. The server owner has to free some up.",
+  "@refusalStorageFull": {
+    "description": "A request the server refused because its disk is full"
+  },
+  "refusalStorageDamaged": "This workspace's data is damaged. The server owner has to restore it from a backup.",
+  "@refusalStorageDamaged": {
+    "description": "A request that hit damage in the workspace's database file on the server"
+  },
+  "refusalStorageReadOnly": "This workspace is read-only until the server owner restores it from a backup, so changes can't be saved.",
+  "@refusalStorageReadOnly": {
+    "description": "A change refused because the workspace's database failed an integrity check; it serves reads until the server owner restores it"
+  },
+  "refusalStorageNewerSchema": "This data was written by a newer version of the server. Update the server, then try again.",
+  "@refusalStorageNewerSchema": {
+    "description": "A request for data the server cannot open because a newer server version wrote it"
+  },
+  "refusalStorageForeignFile": "The server found a database file it didn't write. The server owner has to check the server's data folder.",
+  "@refusalStorageForeignFile": {
+    "description": "A request the server refused because a database file on its disk is not one it wrote"
+  },
+  "refusalWorkspaceDeleted": "This workspace was deleted.",
+  "@refusalWorkspaceDeleted": {
+    "description": "A request that named a workspace which was deleted"
+  },
+  "refusalIdempotencyInProgress": "This request is still being processed. Wait for it to finish, then check the result.",
+  "@refusalIdempotencyInProgress": {
+    "description": "The same request was sent again while the first one is still running on the server"
+  },
+  "refusalImportMissingSource": "There's no file at that path on the server. Nothing was replaced.",
+  "@refusalImportMissingSource": {
+    "description": "A restore or import refused because no file exists at the given path on the server"
+  },
+  "refusalImportDamaged": "That file is damaged, so it can't be restored. Nothing was replaced.",
+  "@refusalImportDamaged": {
+    "description": "A restore or import refused because the file failed its integrity check"
+  },
+  "refusalImportChecksumMismatch": "That file doesn't match the checksum its backup recorded, so it may have been changed or damaged. Nothing was replaced.",
+  "@refusalImportChecksumMismatch": {
+    "description": "A restore refused because the file differs from the checksum its snapshot recorded"
+  },
+  "refusalImportNewerSchema": "That file was written by a newer version of the server. Update the server to restore it. Nothing was replaced.",
+  "@refusalImportNewerSchema": {
+    "description": "A restore or import refused because a newer server version wrote the file"
+  },
+  "refusalImportForeignFile": "That file isn't a workspace database. Nothing was replaced.",
+  "@refusalImportForeignFile": {
+    "description": "A restore or import refused because the file is not a workspace database"
+  },
+  "refusalImportSchemaMismatch": "That file couldn't be brought up to this server's format. Nothing was replaced.",
+  "@refusalImportSchemaMismatch": {
+    "description": "A restore or import refused because the file could not be converted to the server's database schema"
+  },
+  "refusalImportRouteConflict": "That file holds links that belong to another workspace on this server, and restoring it would take them over. Nothing was replaced.",
+  "@refusalImportRouteConflict": {
+    "description": "A restore or import refused because webhooks, invites or other links in the file already belong to another workspace"
+  },
+  "workspaceReadOnlyBannerTitle": "This workspace is read-only",
+  "@workspaceReadOnlyBannerTitle": {
+    "description": "Title of the notice in the workspace shell while the workspace's database failed its integrity check"
+  },
+  "workspaceReadOnlyBannerBody": "Its data failed an integrity check, so changes can't be saved. Everything is still readable. The server owner can restore it from a backup.",
+  "@workspaceReadOnlyBannerBody": {
+    "description": "Body of the read-only workspace notice for a member who is not the server owner"
+  },
+  "workspaceReadOnlyBannerOwnerBody": "Its data failed an integrity check, so changes can't be saved. Everything is still readable. Restore it from a backup to make it writable again.",
+  "@workspaceReadOnlyBannerOwnerBody": {
+    "description": "Body of the read-only workspace notice for the server owner, who can restore it"
+  },
+  "workspaceReadOnlyBannerAction": "Open backups",
+  "@workspaceReadOnlyBannerAction": {
+    "description": "Button on the read-only workspace notice that opens Settings, Backup and restore"
+  },
+  "serverNoticesLabel": "Needs your attention",
+  "@serverNoticesLabel": {
+    "description": "Card label at the top of Backup and restore listing problems only the server owner can fix"
+  },
+  "serverNoticeReadOnlyStatus": "Read-only",
+  "@serverNoticeReadOnlyStatus": {
+    "description": "Status tag of a workspace whose database failed its integrity check"
+  },
+  "serverNoticeSince": "Since {time}",
+  "@serverNoticeSince": {
+    "description": "When a server notice was first raised; time is a relative phrase such as '5 minutes ago'",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "serverNoticeReadOnlyBody": "Its database failed an integrity check, so it serves reads and refuses every change. Restore it from a backup in the lists below; its last good copy is kept until you do.",
+  "@serverNoticeReadOnlyBody": {
+    "description": "What a read-only workspace notice means and what the server owner does about it"
+  },
+  "serverNoticeDetails": "Details",
+  "@serverNoticeDetails": {
+    "description": "Disclosure that reveals the database's own technical finding behind a server notice"
+  },
+  "backupSnapshotUnverified": "Unverified",
+  "@backupSnapshotUnverified": {
+    "description": "Status of a backup that cannot be verified: it never finished, or it was taken before backups recorded checksums"
+  },
+  "backupSnapshotUnverifiedNote": "This snapshot can't be verified. It never finished, or it was taken before snapshots recorded checksums, so it can't restore the whole install. The workspace files it holds can still be restored one by one.",
+  "@backupSnapshotUnverifiedNote": {
+    "description": "Note inside an unverified install snapshot"
+  },
+  "backupSnapshotLastGoodCopy": "Last good copy",
+  "@backupSnapshotLastGoodCopy": {
+    "description": "Tag on a backup kept because it holds the last good copy of a damaged workspace"
+  },
+  "backupSnapshotLastGoodCopyNote": "Kept because it holds the last good copy of a damaged workspace. Cleanup leaves it alone until that workspace is restored.",
+  "@backupSnapshotLastGoodCopyNote": {
+    "description": "Why a backup is kept whatever its age"
+  },
+  "backupDeleteLastGoodCopyDescription": "This is the last good copy of a damaged workspace. Delete it and there is nothing left to restore that workspace from.",
+  "@backupDeleteLastGoodCopyDescription": {
+    "description": "Warning in the delete callout of a backup that holds the last good copy of a damaged workspace"
+  },
+  "backupRestoreHeldBack": "{count, plural, =1{1 permission was held back for your review. It's listed at the top of this page.} other{{count} permissions were held back for your review. They're listed at the top of this page.}}",
+  "@backupRestoreHeldBack": {
+    "description": "Toast after a restore whose file carried grants the server held for the server owner",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importHoldsLabel": "Held back from restored copies",
+  "@importHoldsLabel": {
+    "description": "Card label on Backup and restore listing grants a restored workspace file carried, waiting for the server owner"
+  },
+  "importHoldsExplainer": "A restored copy can't grant anything on this server by itself. These permissions were in it: accept one to grant it again, or dismiss it to drop it.",
+  "@importHoldsExplainer": {
+    "description": "Explainer under the held-back permissions card"
+  },
+  "importHoldPolicyAllow": "Agents may do this without approval: {action}",
+  "@importHoldPolicyAllow": {
+    "description": "A held action policy that allows an agent action without a person's approval; action is a sentence-case action such as 'Push to a remote'",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldPolicyPrompt": "Agents may do this once a person approves: {action}",
+  "@importHoldPolicyPrompt": {
+    "description": "A held action policy that lets an agent action run after a person approves it; action is a sentence-case action such as 'Push to a remote'",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldCommand": "Run commands starting with {command}",
+  "@importHoldCommand": {
+    "description": "The action of a held policy that governs a command prefix such as 'git push'",
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldScopeWorkspace": "Everywhere in this workspace",
+  "@importHoldScopeWorkspace": {
+    "description": "Where a held action policy applies: the whole workspace"
+  },
+  "importHoldScopeSpace": "In space {space}",
+  "@importHoldScopeSpace": {
+    "description": "Where a held action policy applies: one space, by name or id",
+    "placeholders": {
+      "space": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldScopeAgent": "For agent {agent}",
+  "@importHoldScopeAgent": {
+    "description": "Where a held action policy applies: one agent, by name or id",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldSandboxExec": "Sandboxes may run {path}",
+  "@importHoldSandboxExec": {
+    "description": "A held grant that lets sandboxes execute a program at a path",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldRepoWrite": "{person} may change {repo}",
+  "@importHoldRepoWrite": {
+    "description": "A held repository grant at write level",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldRepoReview": "{person} may review pull requests in {repo}",
+  "@importHoldRepoReview": {
+    "description": "A held repository grant at review level",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldRepoOther": "{person} gets {level} access to {repo}",
+  "@importHoldRepoOther": {
+    "description": "A held repository grant at a level this app does not name; level is the raw level",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "repo": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldMemberRole": "{person} gets the {role} role",
+  "@importHoldMemberRole": {
+    "description": "A held membership role above member; role is a role name such as 'Admin'",
+    "placeholders": {
+      "person": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldInvite": "An open invite to join with the {role} role",
+  "@importHoldInvite": {
+    "description": "A held unredeemed invite to a role above member",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldInviteWithRepos": "{count, plural, =1{An open invite to join with the {role} role and review or write access to 1 repository} other{An open invite to join with the {role} role and review or write access to {count} repositories}}",
+  "@importHoldInviteWithRepos": {
+    "description": "A held unredeemed invite that also grants repositories above read",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldUnknown": "A permission this version of the app can't describe",
+  "@importHoldUnknown": {
+    "description": "A held grant of a kind this app does not know; it can only be dismissed"
+  },
+  "importHoldRestoredAt": "Restored {time}",
+  "@importHoldRestoredAt": {
+    "description": "When the restore that held a grant ran; time is a relative phrase such as '5 minutes ago'",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldAccept": "Accept",
+  "@importHoldAccept": {
+    "description": "Button that applies a held grant"
+  },
+  "importHoldDismiss": "Dismiss",
+  "@importHoldDismiss": {
+    "description": "Button that drops a held grant without applying it. A verb for refusing or discarding it, not for closing a panel"
+  },
+  "importHoldAcceptTitle": "Grant this permission?",
+  "@importHoldAcceptTitle": {
+    "description": "Title of the confirmation before accepting a held grant that lets something run"
+  },
+  "importHoldAcceptBody": "{permission}\n\nAccepting grants this on the server right away.",
+  "@importHoldAcceptBody": {
+    "description": "Body of the confirmation before accepting a held grant; permission repeats exactly what it allows",
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "importHoldAccepted": "Permission granted.",
+  "@importHoldAccepted": {
+    "description": "Toast after a held grant was accepted and applied"
+  },
+  "importHoldNotApplied": "Nothing was granted: who or what it was for is no longer in this workspace.",
+  "@importHoldNotApplied": {
+    "description": "Toast after accepting a held grant whose subject (a member or repository) is gone"
   }
 }

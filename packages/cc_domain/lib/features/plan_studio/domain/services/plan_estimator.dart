@@ -19,11 +19,11 @@ class PlanEstimate {
   /// Creates an estimate.
   const PlanEstimate({
     required this.byNodeKey,
-    this.totalCostCentsLow,
-    this.totalCostCentsHigh,
+    this.totalCostMicrosLow,
+    this.totalCostMicrosHigh,
     this.totalDurationMsLow,
     this.totalDurationMsHigh,
-    this.budgetCeilingCents,
+    this.budgetCeilingMicros,
     this.isPartial = false,
   });
 
@@ -33,10 +33,10 @@ class PlanEstimate {
 
   /// Plan-total cost range (sum of node ranges). Null when NO node has
   /// history.
-  final int? totalCostCentsLow;
+  final int? totalCostMicrosLow;
 
   /// Upper bound of plan-total cost.
-  final int? totalCostCentsHigh;
+  final int? totalCostMicrosHigh;
 
   /// Plan-total duration range — the critical path through the DAG, not the
   /// sum (parallel branches overlap).
@@ -45,8 +45,8 @@ class PlanEstimate {
   /// Upper bound of the critical-path duration.
   final int? totalDurationMsHigh;
 
-  /// The proposal's `BudgetSpec.maxCostCents`, when set.
-  final int? budgetCeilingCents;
+  /// The proposal's `BudgetSpec.maxCostMicros`, when set.
+  final int? budgetCeilingMicros;
 
   /// True when some nodes have history and some don't: the totals cover only
   /// the estimable subset and the UI must say so.
@@ -54,9 +54,9 @@ class PlanEstimate {
 
   /// Whether the estimated total may exceed the budget ceiling.
   bool get exceedsBudget =>
-      budgetCeilingCents != null &&
-      totalCostCentsHigh != null &&
-      totalCostCentsHigh! > budgetCeilingCents!;
+      budgetCeilingMicros != null &&
+      totalCostMicrosHigh != null &&
+      totalCostMicrosHigh! > budgetCeilingMicros!;
 }
 
 /// Pure per-node cost/time/risk estimator (PRD 17 §3).
@@ -85,20 +85,20 @@ class PlanEstimator {
     required PlanGraph graph,
     required Map<String, List<RunCost>> historyByRoleKey,
     Map<String, NodeImpact> impactByNodeKey = const {},
-    int? budgetCeilingCents,
+    int? budgetCeilingMicros,
   }) {
     final byNode = <String, PlanNodeEstimate>{};
     for (final node in graph.nodes) {
       final samples = historyByRoleKey[node.roleKey] ?? const <RunCost>[];
-      final costs = [for (final s in samples) s.estimatedCostCents]..sort();
+      final costs = [for (final s in samples) s.costMicros]..sort();
       final durations = [
         for (final s in samples)
           if (s.durationMs != null) s.durationMs!,
       ]..sort();
       final impact = impactByNodeKey[node.key];
       byNode[node.key] = PlanNodeEstimate(
-        costCentsLow: costs.isEmpty ? null : _percentile(costs, 0.25),
-        costCentsHigh: costs.isEmpty ? null : _percentile(costs, 0.75),
+        costMicrosLow: costs.isEmpty ? null : _percentile(costs, 0.25),
+        costMicrosHigh: costs.isEmpty ? null : _percentile(costs, 0.75),
         durationMsLow: durations.isEmpty ? null : _percentile(durations, 0.25),
         durationMsHigh: durations.isEmpty ? null : _percentile(durations, 0.75),
         sampleSize: samples.length,
@@ -117,19 +117,19 @@ class PlanEstimator {
       totalCostLow = 0;
       totalCostHigh = 0;
       for (final e in withHistory) {
-        totalCostLow = totalCostLow! + (e.costCentsLow ?? 0);
-        totalCostHigh = totalCostHigh! + (e.costCentsHigh ?? 0);
+        totalCostLow = totalCostLow! + (e.costMicrosLow ?? 0);
+        totalCostHigh = totalCostHigh! + (e.costMicrosHigh ?? 0);
       }
     }
     final (durationLow, durationHigh) = _criticalPath(graph, byNode);
 
     return PlanEstimate(
       byNodeKey: byNode,
-      totalCostCentsLow: totalCostLow,
-      totalCostCentsHigh: totalCostHigh,
+      totalCostMicrosLow: totalCostLow,
+      totalCostMicrosHigh: totalCostHigh,
       totalDurationMsLow: durationLow,
       totalDurationMsHigh: durationHigh,
-      budgetCeilingCents: budgetCeilingCents,
+      budgetCeilingMicros: budgetCeilingMicros,
       isPartial: withHistory.isNotEmpty && withHistory.length < byNode.length,
     );
   }

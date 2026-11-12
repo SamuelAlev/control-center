@@ -54,7 +54,7 @@ void main() {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': 'Test observation',
+        'content': 'Test observation',
       });
 
       expect(result.isError, isFalse);
@@ -75,7 +75,7 @@ void main() {
       await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': 'New observation',
+        'content': 'New observation',
       });
 
       final content = fakeRepo._store['ws-1:a-1']!.content;
@@ -84,19 +84,19 @@ void main() {
     });
 
     test('returns error for missing workspace_id', () async {
-      final result = await tool.run({'agent_id': 'a-1', 'observation': 'test'});
+      final result = await tool.run({'agent_id': 'a-1', 'content': 'test'});
       expect(result.isError, isTrue);
     });
 
     test('returns error for missing agent_id', () async {
       final result = await tool.run({
         'workspace_id': 'ws-1',
-        'observation': 'test',
+        'content': 'test',
       });
       expect(result.isError, isTrue);
     });
 
-    test('returns error for missing observation', () async {
+    test('returns error for missing content', () async {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
@@ -111,7 +111,7 @@ void main() {
       expect(schema['type'], 'object');
       expect(
         schema['required'],
-        containsAll(['workspace_id', 'agent_id', 'observation']),
+        containsAll(['workspace_id', 'agent_id', 'content']),
       );
     });
 
@@ -124,7 +124,7 @@ void main() {
       final result = await tool.run({
         'workspace_id': 42,
         'agent_id': 'a-1',
-        'observation': 'test',
+        'content': 'test',
       });
       expect(result.isError, isTrue);
       expect(result.content.first.text, contains('workspace_id'));
@@ -134,27 +134,27 @@ void main() {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 99,
-        'observation': 'test',
+        'content': 'test',
       });
       expect(result.isError, isTrue);
       expect(result.content.first.text, contains('agent_id'));
     });
 
-    test('observation as int returns error', () async {
+    test('content as int returns error', () async {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': 123,
+        'content': 123,
       });
       expect(result.isError, isTrue);
-      expect(result.content.first.text, contains('observation'));
+      expect(result.content.first.text, contains('content'));
     });
 
     test('workspace_id as null returns error', () async {
       final result = await tool.run({
         'workspace_id': null,
         'agent_id': 'a-1',
-        'observation': 'test',
+        'content': 'test',
       });
       expect(result.isError, isTrue);
     });
@@ -163,16 +163,16 @@ void main() {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': null,
-        'observation': 'test',
+        'content': 'test',
       });
       expect(result.isError, isTrue);
     });
 
-    test('observation as null returns error', () async {
+    test('content as null returns error', () async {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': null,
+        'content': null,
       });
       expect(result.isError, isTrue);
     });
@@ -181,7 +181,7 @@ void main() {
       await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': 'First observation',
+        'content': 'First observation',
       });
 
       final content = fakeRepo._store['ws-1:a-1']!.content;
@@ -193,7 +193,7 @@ void main() {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': '',
+        'content': '',
       });
 
       expect(result.isError, isFalse);
@@ -207,7 +207,7 @@ void main() {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': longText,
+        'content': longText,
       });
 
       expect(result.isError, isFalse);
@@ -220,17 +220,17 @@ void main() {
       await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': 'first',
+        'content': 'first',
       });
       await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': 'second',
+        'content': 'second',
       });
       await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': 'third',
+        'content': 'third',
       });
 
       final content = fakeRepo._store['ws-1:a-1']!.content;
@@ -241,12 +241,12 @@ void main() {
       await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'agent-alpha',
-        'observation': 'Alpha observation',
+        'content': 'Alpha observation',
       });
       await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'agent-beta',
-        'observation': 'Beta observation',
+        'content': 'Beta observation',
       });
 
       final alphaContent = fakeRepo._store['ws-1:agent-alpha']!.content;
@@ -263,7 +263,7 @@ void main() {
         final result = await tool.run({
           'workspace_id': 'ws-1',
           'agent_id': 'a-1',
-          'observation': 'Hello world',
+          'content': 'Hello world',
         });
 
         expect(result.isError, isFalse);
@@ -282,7 +282,7 @@ void main() {
       final result = await tool.run({
         'workspace_id': 'ws-1',
         'agent_id': 'a-1',
-        'observation': observation,
+        'content': observation,
       });
 
       final json =

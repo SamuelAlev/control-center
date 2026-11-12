@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Exercises the generated `TableData` data-class methods (`toJson`,
@@ -66,6 +67,7 @@ void main() {
 
   group('WebhookDeliveriesTableData generated methods', () {
     test('serialization + equality + copyWith run', () async {
+      await seedPipelineTrigger(db, 'trg-1');
       await db
           .into(db.webhookDeliveriesTable)
           .insert(
@@ -73,8 +75,8 @@ void main() {
               id: 'wd-1',
               workspaceId: 'ws',
               triggerId: 'trg-1',
-              status: 'delivered',
-              signatureStatus: 'verified',
+              status: 'dispatched',
+              signatureStatus: 'valid',
             ),
           );
       final row = await (db.select(
@@ -91,21 +93,13 @@ void main() {
 
   group('CodeSymbolsTableData generated methods', () {
     test('serialization + equality + copyWith run', () async {
-      await db
-          .into(db.reposTable)
-          .insert(
-            ReposTableCompanion.insert(
-              id: 'repo-1',
-              name: 'repo-1',
-              path: '/repo-1',
-            ),
-          );
+      final db = createTestCodeIndexDatabase();
+      addTearDown(db.close);
       await db
           .into(db.codeSymbolsTable)
           .insert(
             CodeSymbolsTableCompanion.insert(
               id: 'sym-1',
-              workspaceId: 'ws',
               repoId: 'repo-1',
               kind: 'function',
               name: 'bar',

@@ -4,6 +4,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_run.d
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_label.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -38,7 +39,7 @@ class PipelineRunWaterfall extends StatefulWidget {
   /// frozen there so it can't keep growing off a step row left open.
   final DateTime now;
 
-  /// Per-step cost in US cents, keyed by template step id. Empty when no
+  /// Per-step cost in micro-dollars, keyed by template step id. Empty when no
   /// agent runs were dispatched (or cost has not rolled up yet).
   final Map<String, int> costByStepId;
 
@@ -120,7 +121,7 @@ class _PipelineRunWaterfallState extends State<PipelineRunWaterfall> {
             runStartMs: runStart.millisecondsSinceEpoch,
             totalMs: totalMs,
             clock: clock,
-            costCents: widget.costByStepId[s.stepId],
+            costMicros: widget.costByStepId[s.stepId],
             tokens: t,
           ),
       ],
@@ -225,7 +226,7 @@ class _WaterfallRow extends StatelessWidget {
     required this.runStartMs,
     required this.totalMs,
     required this.clock,
-    required this.costCents,
+    required this.costMicros,
     required this.tokens,
   });
 
@@ -237,7 +238,7 @@ class _WaterfallRow extends StatelessWidget {
   /// End of the timeline for rows that have no `finishedAt`: `now` while the
   /// run is live, the run's own `finishedAt` once it is not.
   final DateTime clock;
-  final int? costCents;
+  final int? costMicros;
   final DesignSystemTokens tokens;
 
   @override
@@ -368,8 +369,8 @@ class _WaterfallRow extends StatelessWidget {
               SizedBox(
                 width: 52,
                 child: Text(
-                  (costCents != null && costCents! > 0)
-                      ? _fmtCost(costCents!)
+                  (costMicros != null && costMicros! > 0)
+                      ? fmtMicros(costMicros!, decimals: 2)
                       : '',
                   textAlign: TextAlign.end,
                   style: CcTypography.caption.copyWith(
@@ -406,14 +407,6 @@ class _WaterfallRow extends StatelessWidget {
     PipelineStepStatus.pending => tokens.borderSecondary,
     _ => tokens.textQuaternary,
   };
-
-  String _fmtCost(int cents) {
-    final dollars = cents / 100;
-    if (dollars < 0.01) {
-      return '<\$0.01';
-    }
-    return '\$${dollars.toStringAsFixed(2)}';
-  }
 
   String _fmtDuration(int ms) {
     if (ms < 1000) {

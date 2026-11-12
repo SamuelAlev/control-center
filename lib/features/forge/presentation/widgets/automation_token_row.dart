@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/value_objects/forge_automation_token.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/forge/presentation/widgets/automation_token_dialog.dart';
 import 'package:control_center/features/forge/providers/automation_token_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -141,10 +141,9 @@ class AutomationTokenRow extends ConsumerWidget {
       );
     } on Object catch (e) {
       if (context.mounted) {
-        CcToastScope.maybeOf(context)?.show(
-          e is RemoteRpcException ? e.message : l10n.failedWithError('$e'),
-          variant: CcToastVariant.danger,
-        );
+        CcToastScope.maybeOf(
+          context,
+        )?.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }

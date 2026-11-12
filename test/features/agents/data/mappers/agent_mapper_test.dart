@@ -18,9 +18,8 @@ AgentsTableData _makeRow({
   bool strictMode = false,
   String? effort,
   int? contextSize,
-  String commandPolicyJson = '',
   String? role,
-  int monthlyBudgetCents = 0,
+  int monthlyBudgetMicros = 0,
   int maxConcurrentTasks = 1,
   String visibility = 'workspace',
   String lifecycleStatus = 'active',
@@ -42,9 +41,8 @@ AgentsTableData _makeRow({
   strictMode: strictMode,
   effort: effort,
   contextSize: contextSize,
-  commandPolicyJson: commandPolicyJson,
   role: role,
-  monthlyBudgetCents: monthlyBudgetCents,
+  monthlyBudgetMicros: monthlyBudgetMicros,
   maxConcurrentTasks: maxConcurrentTasks,
   visibility: visibility,
   lifecycleStatus: lifecycleStatus,
@@ -74,7 +72,7 @@ void main() {
         effort: 'high',
         contextSize: 128000,
         role: 'coder',
-        monthlyBudgetCents: 5000,
+        monthlyBudgetMicros: 50000000,
       );
 
       final agent = mapper.toDomain(row);
@@ -93,7 +91,7 @@ void main() {
       expect(agent.effort, 'high');
       expect(agent.contextSize, 128000);
       expect(agent.role, AgentRole.coder);
-      expect(agent.monthlyBudgetCents, 5000);
+      expect(agent.monthlyBudgetMicros, 50000000);
     });
 
     test(

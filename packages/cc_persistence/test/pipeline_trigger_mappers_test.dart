@@ -24,7 +24,7 @@ void main() {
         createdAt: now,
       );
 
-      final companion = triggerToCompanion(trigger);
+      final companion = triggerToCompanion(trigger, webhookTokenRef: null);
 
       expect(companion.id, const Value('t-1'));
       expect(companion.eventType, const Value('pr_merged'));
@@ -39,6 +39,20 @@ void main() {
       expect(companion.createdAt, Value(now));
     });
 
+    test('the row keeps the secrets reference, never the token', () {
+      final trigger = PipelineTrigger(
+        id: 't-w',
+        eventType: PipelineTrigger.webhookEventType,
+        templateId: 'tmpl-w',
+        workspaceId: 'ws-1',
+        webhookToken: 'the-token',
+      );
+
+      final companion = triggerToCompanion(trigger, webhookTokenRef: 'ref-1');
+
+      expect(companion.webhookTokenRef, const Value('ref-1'));
+    });
+
     test('empty match map serializes correctly', () {
       final trigger = PipelineTrigger(
         id: 't-2',
@@ -48,7 +62,7 @@ void main() {
         match: const {},
       );
 
-      final companion = triggerToCompanion(trigger);
+      final companion = triggerToCompanion(trigger, webhookTokenRef: null);
 
       expect(companion.matchJson, const Value('{}'));
     });
@@ -62,7 +76,7 @@ void main() {
         enabled: false,
       );
 
-      final companion = triggerToCompanion(trigger);
+      final companion = triggerToCompanion(trigger, webhookTokenRef: null);
 
       expect(companion.enabled, const Value(false));
       expect(companion.cronExpression, const Value(null));
@@ -89,7 +103,7 @@ void main() {
         createdAt: now,
       );
 
-      final trigger = triggerFromRow(row);
+      final trigger = triggerFromRow(row, webhookToken: null);
 
       expect(trigger.id, 't-1');
       expect(trigger.eventType, 'pr_merged');
@@ -120,7 +134,7 @@ void main() {
         createdAt: DateTime(2025, 1, 1),
       );
 
-      final trigger = triggerFromRow(row);
+      final trigger = triggerFromRow(row, webhookToken: null);
 
       expect(trigger.match, isEmpty);
       expect(trigger.armedByUserIds, isEmpty);
@@ -142,7 +156,7 @@ void main() {
         createdAt: DateTime(2025, 1, 1),
       );
 
-      final trigger = triggerFromRow(row);
+      final trigger = triggerFromRow(row, webhookToken: null);
 
       expect(trigger.match, isEmpty);
     });
@@ -166,7 +180,7 @@ void main() {
         createdAt: DateTime(2025, 6, 1),
       );
 
-      final companion = triggerToCompanion(original);
+      final companion = triggerToCompanion(original, webhookTokenRef: null);
       // Simulate Drift: build a row-like object with the companion values
       final roundtripped = triggerFromRow(
         PipelineTriggersTableData(
@@ -183,6 +197,7 @@ void main() {
           armedByUserIdsJson: companion.armedByUserIdsJson.value,
           createdAt: companion.createdAt.value,
         ),
+        webhookToken: null,
       );
 
       expect(roundtripped, original);

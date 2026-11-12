@@ -2,7 +2,7 @@
 title: Agentkonfiguration
 description: Alla fält på agententiteten och de uppräkningar den använder.
 slug: sv-SE/handbok/referens/agentkonfiguration
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Den här referensen listar alla fält på agententiteten, plus de uppräkningar och flaggor den använder. En steg-för-steg-genomgång av att skapa eller redigera en agent i appen finns i [Skapa och konfigurera en agent](/sv-SE/handbok/how-to-guider/skapa-agent/).
@@ -26,17 +26,17 @@ Den här referensen listar alla fält på agententiteten, plus de uppräkningar 
 | `effort` | `String?` | Nej | Id för resonemangsnivå (t.ex. `'low'`, `'xhigh'`), hämtat från den valda modellens `thinkingLevels` |
 | `contextSize` | `int?` | Nej | Maximal storlek på kontextfönstret |
 | `role` | `AgentRole?` | Nej | Agentens roll |
-| `monthlyBudgetCents` | `int` | Nej | Månatligt utgiftstak i cent (standard `0`, obegränsat) |
+| `monthlyBudgetMicros` | `int` | Nej | Månatligt utgiftstak i mikrodollar (standard `0`, obegränsat) |
 | `silenceTimeoutMinutes` | `int?` | Nej | Överstyrning av tystnadsövervakningen i minuter; måste vara null eller mellan 1 och 240 (kontrolleras i konstruktorn) |
 | `maxConcurrentTasks` | `int` | Nej | Standard `1`. Kapacitetssiffran som närvaromodellen rapporterar (antalet körande och köade jämförs mot den) |
 | `visibility` | `AgentVisibility` | Nej | Standard `workspace` |
 | `lifecycleStatus` | `AgentLifecycleStatus` | Nej | Styrningsstatus (standard `active`). Skrivs av budgetens hårda stopp och visas i organisationsschemat och närvarolistan. Dispatch tar fortfarande emot arbete från en agent med statusen `paused` |
-| `budgetPolicyId` | `String?` | Nej | Id för delad budgetpolicy; när den är null gäller `monthlyBudgetCents` direkt |
+| `budgetPolicyId` | `String?` | Nej | Id för delad budgetpolicy; när den är null gäller `monthlyBudgetMicros` direkt |
 | `runtimeProfileId` | `String?` | Nej | Id för anpassad runtime-profil |
 | `createdAt` | `DateTime` | Ja | Tidsstämpel för skapandet |
 
 Både `name` och `title` måste vara icke-tomma (kontrolleras i konstruktorn). Standardvärdet `0` för
-`monthlyBudgetCents` betyder obegränsat. Sätt ett tak med `agents.upsert`.
+`monthlyBudgetMicros` betyder obegränsat. Sätt ett tak med `agents.upsert`.
 
 ## AgentRole-uppräkningen
 

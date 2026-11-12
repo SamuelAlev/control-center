@@ -35,7 +35,7 @@ const _proposal = OrchestrationProposal(
       'required': ['summary'],
     },
   ),
-  budget: BudgetSpec(maxCostCents: 1000),
+  budget: BudgetSpec(maxCostMicros: 1000),
 );
 
 void main() {
@@ -162,8 +162,8 @@ void main() {
               title: 'Do the work',
               roleKey: 'coder',
               estimate: PlanNodeEstimate(
-                costCentsLow: 100,
-                costCentsHigh: 300,
+                costMicrosLow: 100,
+                costMicrosHigh: 300,
                 durationMsLow: 1000,
                 durationMsHigh: 3000,
                 sampleSize: 4,
@@ -195,8 +195,8 @@ void main() {
 
         final ticket = restored.subTickets.single;
         expect(ticket.estimate, isNotNull);
-        expect(ticket.estimate!.costCentsLow, 100);
-        expect(ticket.estimate!.costCentsHigh, 300);
+        expect(ticket.estimate!.costMicrosLow, 100);
+        expect(ticket.estimate!.costMicrosHigh, 300);
         expect(ticket.estimate!.durationMsLow, 1000);
         expect(ticket.estimate!.durationMsHigh, 3000);
         expect(ticket.estimate!.sampleSize, 4);

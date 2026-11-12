@@ -269,7 +269,10 @@ void main() {
       for (final rel in implSources) {
         implBlob.writeln(File('$projectRoot/$rel').readAsStringSync());
       }
-      final allImpls = implBlob.toString();
+      // One space for every run of whitespace: the formatter puts each name
+      // of a three-interface `implements` clause on its own line, and the
+      // checks below look for `, Name`.
+      final allImpls = implBlob.toString().replaceAll(RegExp(r'\s+'), ' ');
 
       final allow = _readAllowlist(
         projectRoot,

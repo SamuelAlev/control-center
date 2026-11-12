@@ -3,7 +3,7 @@ title: 架構
 description: Control Center 如何以精簡用戶端的伺服器模型、功能優先的整潔架構，以及埠與配接器組成。
 dateModified: 2026-09-19
 slug: zh-HK/手冊/概念/架構
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## 概覽
@@ -100,9 +100,9 @@ Control Center 是多使用者系統：人類與代理是由 `Principal` 統一�
 **Drift**（SQLite），分為兩個資料庫，兩者都在 `cc_persistence` 中：
 
 - **`GlobalDatabase`**（`<dataDir>/global.db`）——一份簡短清單，只包含真正屬於整個伺服器的資料表：工作區註冊表、使用者／偏好設定／已配對裝置、SSO 連線、全安裝層級的伺服器設定、受管理動作政策（一個全安裝層級的限制，只能收緊工作區護欄）、每位使用者的資訊動態、機群佇列（工作節點／工作／放置紀錄）、驗證前的 `workspace_routes` 索引，以及安裝中繼資料。開機時只會開啟這個檔案，所以無論工作區累積多少歷史，啟動成本都維持平穩。在此加入資料表是一項隔離決定，棘輪測試會強迫你為此提出理據。
-- **`WorkspaceDatabase`**（`<dataDir>/<workspaceId>/workspace.db`）——每個工作區一個_目錄_，內含一個 SQLite 檔案，以及所有其他只屬於該工作區的東西，因此對話的 worktree 與代理檔案就放在資料庫旁邊，並隨它一併刪除。幾乎所有東西都住在這裏：代理、空間、工單、記憶、管線、會議、程式碼圖、審查、儲存庫。檔案會在首次存取時經由 `WorkspaceDatabaseManager.of(workspaceId)` 延後開啟，並在當時支付自己的 `quick_check`、FTS／觸發器安裝與 `vector_init`。
+- **`WorkspaceDatabase`**（`<dataDir>/<workspaceId>/workspace.db`）——每個工作區一個_目錄_，內含一個 SQLite 檔案，以及所有其他只屬於該工作區的東西，因此對話的 worktree 與代理檔案就放在資料庫旁邊，並隨它一併刪除。幾乎所有東西都住在這裏：代理、空間、工單、記憶、管線、會議、審查、儲存庫。程式碼圖是同一目錄中的第二個檔案 `code_index.db`，它會被重建而非備份。檔案會在首次存取時經由 `WorkspaceDatabaseManager.of(workspaceId)` 延後開啟，並在當時支付自己的 `quick_check`、FTS／觸發器安裝與 `vector_init`。
 
-兩半都是從一個壓平的 v1 基線開始——`onCreate` 會建立目前的結構描述——只有在已部署的資料庫必須沿用下去時，才會附加遷移步驟。
+兩半都沒有遷移步驟。新檔案會依資料表定義建立。較舊版本的檔案會先被複製到一旁（`pre_upgrade/`），然後在開啟時套用到相同的定義，因此新安裝與已更新的安裝會得到相同的結構描述。較新版本寫入的檔案會被拒絕。
 
 由於一個工作區就是一個檔案，匯出工作區只需一句 `VACUUM INTO`（`workspace.export`），而不是逐表傾印；`workspace.import` 會接收這樣的檔案，並利用內嵌的 `workspace_meta`，分辨「同一個檔案被重新接收」與「來自另一個安裝的檔案」。
 

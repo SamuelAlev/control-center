@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
@@ -198,7 +199,7 @@ class _AgentRow extends StatelessWidget {
                 const SizedBox(width: AppSpacing.lg),
                 _stat(
                   context,
-                  fmtCents(cost?.estimatedCostCents ?? 0),
+                  fmtMicros(cost?.costMicros ?? 0),
                   l10n.obsStatCost,
                 ),
                 const SizedBox(width: AppSpacing.sm),

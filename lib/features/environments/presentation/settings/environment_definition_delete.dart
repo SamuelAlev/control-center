@@ -1,9 +1,9 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_controls.dart';
-import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,10 +33,7 @@ Future<bool> deleteEnvironmentDefinition(
     ref.invalidate(environmentDefinitionsProvider(workspaceId));
     return true;
   } on Object catch (error) {
-    toasts?.show(
-      environmentFailureMessage(error),
-      variant: CcToastVariant.danger,
-    );
+    toasts?.show(failureMessage(l10n, error), variant: CcToastVariant.danger);
     return false;
   }
 }

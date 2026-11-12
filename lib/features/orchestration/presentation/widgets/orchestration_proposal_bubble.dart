@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -169,13 +170,12 @@ class _Card extends ConsumerWidget {
                 context,
                 l10n.orchestrationSubTicketsSummary(p.subTickets.length),
               ),
-              if (orchestration.estimatedCostCents != null)
+              if (orchestration.estimatedCostMicros != null)
                 _metaRow(
                   context,
                   l10n.orchestrationEstimatedCost(
-                    (orchestration.estimatedCostCents! / 100).toStringAsFixed(
-                      2,
-                    ),
+                    (orchestration.estimatedCostMicros! / microsPerDollar)
+                        .toStringAsFixed(2),
                   ),
                 ),
               if (status == OrchestrationStatus.executing ||

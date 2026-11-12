@@ -1,5 +1,4 @@
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
-import 'package:cc_domain/features/memory/domain/services/binary_vectors.dart';
 import 'package:cc_domain/features/memory/domain/services/conflict_detector.dart';
 import 'package:cc_domain/features/memory/domain/services/episodic_graph.dart';
 import 'package:cc_domain/features/memory/domain/services/fact_extraction.dart';
@@ -196,29 +195,6 @@ void main() {
       final ranked = mmrRerank(items, topK: 2);
       // The near-duplicate 'b' should be passed over for the diverse 'c'.
       expect(ranked, ['a', 'c']);
-    });
-  });
-
-  group('Binary vectors + Hamming (phase 4.7 / feature #8)', () {
-    test('identical vectors have zero Hamming distance and score 1.0', () {
-      final v = [0.5, -0.2, 0.9, -0.1, 0.3, 0.7, -0.8, 0.2];
-      final a = binarizeEmbedding(v);
-      final b = binarizeEmbedding(v);
-      expect(hammingDistance(a, b), 0);
-      expect(hammingScore(0, v.length), 1.0);
-    });
-
-    test('opposite-sign vectors are maximally distant', () {
-      final v = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
-      final inv = [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5];
-      final a = binarizeEmbedding(v);
-      final b = binarizeEmbedding(inv);
-      expect(hammingDistance(a, b), 8);
-    });
-
-    test('cosine similarity is 1.0 for identical, -1.0 for opposite', () {
-      expect(cosineSimilarity([1, 2, 3], [1, 2, 3]), closeTo(1.0, 0.0001));
-      expect(cosineSimilarity([1, 2, 3], [-1, -2, -3]), closeTo(-1.0, 0.0001));
     });
   });
 

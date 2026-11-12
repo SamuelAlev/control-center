@@ -4,6 +4,7 @@ import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/mappers/budget_mapper.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Exercises [DaoBudgetPolicyRepository] and [BudgetMapper] end-to-end against
@@ -34,10 +35,10 @@ void main() {
     String workspaceId = 'w-1',
     String scopeType = 'agent',
     String scopeId = 'a-1',
-    int monthlyBudgetCents = 10_000,
+    int monthlyBudgetMicros = 10_000,
     int softThresholdPercent = 80,
     bool hardStopEnabled = true,
-    int spentCents = 0,
+    int spentMicros = 0,
     String status = 'active',
     DateTime? periodStart,
     DateTime? periodEnd,
@@ -47,10 +48,10 @@ void main() {
     workspaceId: workspaceId,
     scopeType: scopeType,
     scopeId: scopeId,
-    monthlyBudgetCents: monthlyBudgetCents,
+    monthlyBudgetMicros: monthlyBudgetMicros,
     softThresholdPercent: softThresholdPercent,
     hardStopEnabled: hardStopEnabled,
-    spentCents: spentCents,
+    spentMicros: spentMicros,
     status: status,
     periodStart: periodStart,
     periodEnd: periodEnd,
@@ -62,8 +63,8 @@ void main() {
     String workspaceId = 'w-1',
     String scopeType = 'agent',
     String scopeId = 'a-1',
-    int spentCents = 12_000,
-    int budgetCents = 10_000,
+    int spentMicros = 12_000,
+    int budgetMicros = 10_000,
     bool isHardStop = true,
     String reason = 'budget_exhausted',
     String? policyId = 'bp-1',
@@ -73,8 +74,8 @@ void main() {
     policyId: policyId,
     scopeType: scopeType,
     scopeId: scopeId,
-    spentCents: spentCents,
-    budgetCents: budgetCents,
+    spentMicros: spentMicros,
+    budgetMicros: budgetMicros,
     isHardStop: isHardStop,
     reason: reason,
     triggeredAt: DateTime(2026, 1, 1),
@@ -108,7 +109,7 @@ void main() {
       final policies = await repo.listPolicies('w-1');
       expect(policies, hasLength(1));
       expect(policies.first.scopeId, 'a-1');
-      expect(policies.first.monthlyBudgetCents, 10_000);
+      expect(policies.first.monthlyBudgetMicros, 10_000);
     });
 
     test('getPolicyById is workspace-scoped', () async {
@@ -136,10 +137,10 @@ void main() {
     });
 
     test('upsertPolicy replaces on conflict (same id PK)', () async {
-      await repo.upsertPolicy(policy(spentCents: 1));
-      await repo.upsertPolicy(policy(spentCents: 99));
+      await repo.upsertPolicy(policy(spentMicros: 1));
+      await repo.upsertPolicy(policy(spentMicros: 99));
       final loaded = await repo.getPolicyById('w-1', 'bp-1');
-      expect(loaded?.spentCents, 99);
+      expect(loaded?.spentMicros, 99);
     });
 
     test('deletePolicy is workspace-scoped', () async {
@@ -152,6 +153,12 @@ void main() {
   });
 
   group('DaoBudgetPolicyRepository incidents', () {
+    setUp(() async {
+      for (final ws in ['w-1', 'w-2']) {
+        await seedBudgetPolicy(dbs.of(ws), 'bp-1');
+      }
+    });
+
     test('recordIncident + incidentsForScope round-trips', () async {
       await repo.recordIncident(incident());
       final incidents = await repo.incidentsForScope('w-1', 'agent', 'a-1');

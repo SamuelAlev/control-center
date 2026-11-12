@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Varje flagga, miljövariabel, underkommando och datakatalogsökväg hos headless-servern.
 slug: sv-SE/handbok/referens/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Varje processflagga styrs av en CLI-flagga eller en miljövariabel; flaggan vinner,
@@ -237,12 +237,16 @@ Standarddatakatalogen är `~/Library/Application Support/control-center` på mac
 `~/.local/share/control-center`) på andra plattformar. En `.cc_server` relativ till
 cwd används bara när ingen hem- eller appdatakatalog kan lösas upp.
 
+Servern håller datakatalogen privat för sitt eget konto (`0700`). Den vägrar starta (avslutningskod `78`) när den inte kan det, när `global.db` är skadad eller skriven av en nyare version, eller när dess identitetsfil inte kan läsas.
+
 | Sökväg                            | Innehåll                                                                         |
 | --------------------------------- | -------------------------------------------------------------------------------- |
 | `global.db`                       | Arbetsyteregistret, användare, parkopplade enheter, nyhetsflödet och fleet-kön   |
-| `<workspaceId>/workspace.db`      | En databas per arbetsyta – agenter, ytor, ärenden, minnet, kodgrafen             |
+| `<workspaceId>/workspace.db`      | En databas per arbetsyta – agenter, ytor, ärenden, minnet             |
+| `<workspaceId>/code_index.db`     | Arbetsytans kodgraf. Byggs om när den saknas, och säkerhetskopieras aldrig |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | De två senaste kopiorna av en databas från innan en uppdatering ändrade dess format |
 | `<workspaceId>/chat_credentials/` | Chattbottokens, som ren JSON, så att de följer med arbetsytan                    |
-| `secrets.json`                    | Parkopplingsnycklar, Connects installationsnyckel, leverantörsappar, personers inloggningar (förseglade när de görs via Connect), SSO (`0600`) |
+| `secrets.json`                    | Parkopplingsnycklar, Connects installationsnyckel, leverantörsappar, personers inloggningar (förseglade när de görs via Connect), webhook-hemligheter, SSO (`0600`) |
 | `backups/<timestamp>/`            | En ögonblicksbild av installationen – `manifest.json`, `global.db` och en kopia av varje arbetsyta |
 | `backups/exports/`                | Exporter av enstaka arbetsytor, `<workspaceId>-<timestamp>.db`                   |
 | `backups/transfer/`               | Mellanlagring för ned- och uppladdning av säkerhetskopior; städas av rutten som skriver den |

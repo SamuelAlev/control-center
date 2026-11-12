@@ -2,7 +2,7 @@
 title: Kopia zapasowa i przywracanie
 description: Wykonaj migawkę instalacji, przenieś obszar roboczy między maszynami, przywróć jeden obszar roboczy lub wszystkie i zachowaj kopie w innym miejscu.
 slug: pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Ten poradnik obejmuje pięć rzeczy, które faktycznie robi się z kopiami zapasowymi:
@@ -44,10 +44,10 @@ Oba artefakty to **wyłącznie bazy danych**:
 - **Migawka instalacji** to katalog ze znacznikiem czasu: `manifest.json`, `global.db` oraz po jednym pliku `<workspaceId>/workspace.db` na każdy obszar roboczy.
 - **Eksport obszaru roboczego** to właśnie ten pojedynczy plik `workspace.db`.
 
-Baza danych obszaru roboczego to cały obszar roboczy: jego rozmowy, dzienniki uruchomień, indeks kodu, powiązania z repozytoriami, definicje środowisk i członkowie. Zawiera też tokeny webhooków potoków i sekrety webhooków synchronizacji zgłoszeń, w postaci czytelnej. Przechowuj pobraną kopię zapasową obszaru roboczego albo jego eksport tak, jak przechowujesz sekret. Nie ma w niej logowań do dostawców, kluczy urządzeń ani sekretów użytkowników; te znajdują się w globalnej bazie danych i w magazynie sekretów serwera.
+Baza danych obszaru roboczego to cały obszar roboczy: jego rozmowy, dzienniki uruchomień, powiązania z repozytoriami, definicje środowisk i członkowie. Nie zawiera sekretów: tokeny webhooków potoków, sekrety webhooków synchronizacji zgłoszeń, logowania do dostawców, klucze urządzeń i sekrety użytkowników znajdują się w globalnej bazie danych i w magazynie sekretów serwera. Nadal jednak zawiera wszystko, co obszar roboczy powiedział i zrobił, więc pobraną kopię zapasową lub eksport przechowuj tak samo prywatnie jak sam obszar roboczy. Indeks kodu to osobny plik obok bazy danych, `code_index.db`. Żadna kopia zapasowa go nie obejmuje; serwer odbuduje go sam.
 
 Żaden z nich nie przenosi reszty katalogu danych: `secrets.json` (klucze parowania,
-poświadczenia dostawców, SSO), katalogu `blobs/` obszaru roboczego (obrazy wklejane do
+poświadczenia dostawców, sekrety webhooków, SSO), katalogu `blobs/` obszaru roboczego (obrazy wklejane do
 wiadomości), `skills/`, `agents/`, `chat_credentials/`, nagranego dźwięku ze spotkań ani
 obrazów rigów. Część z tego jest zbędna, a część nie — [pełna tabela znajduje się
 w dokumentacji
@@ -65,17 +65,13 @@ Serwer działa przez cały czas. Każdy plik jest zapisywany przez `VACUUM INTO`
 spójny obraz działającej bazy danych, więc nie ma okna konserwacyjnego ani potrzeby
 zatrzymywania agentów.
 
-Każdy wiersz listy pokazuje znacznik czasu, rozmiar na dysku, liczbę przechwyconych
-obszarów roboczych oraz to, czy migawka jest **Kompletna**, czy **Niekompletna**.
-Niekompletna oznacza, że brakuje manifestu albo wymienia on pliki, których nie ma — kopia
-przerwana przez awarię lub zapełnienie dysku. Takie migawki są celowo nadal na liście:
-migawka, której nie widzisz, jest migawką, o której myślisz, że ją masz. Niekompletna
-migawka nie przywróci całej instalacji, ale zawarte w niej pliki obszarów roboczych można
-wciąż adoptować pojedynczo.
+Każdy wiersz listy pokazuje znacznik czasu, rozmiar na dysku, liczbę przechwyconych obszarów roboczych oraz to, czy migawka jest **Kompletna**, czy **Niezweryfikowana**. Każda kopia jest sprawdzana po zapisaniu, a manifest zapisuje jej rozmiar i sumę kontrolną. Niezweryfikowana oznacza, że serwer nie może poręczyć za migawkę: brakuje manifestu albo nie da się go odczytać, albo plik, który wymienia, nie istnieje lub zmienił rozmiar. Tak jest w przypadku kopii przerwanej przez awarię lub zapełnienie dysku albo kopii wykonanej, zanim migawki zaczęły zapisywać sumy kontrolne. Takie migawki są celowo nadal na liście: migawka, której nie widzisz, jest migawką, o której myślisz, że ją masz. Niezweryfikowana migawka nie przywróci całej instalacji, ale zawarte w niej pliki obszarów roboczych można nadal przejąć pojedynczo.
 
 Wiersz może też zawierać informację **Nie uwzględniono _n_ obszarów roboczych**. To
 obszar roboczy zarejestrowany, ale nigdy niezapisany (nie ma jeszcze pliku) albo taki,
-którego kopiowanie się nie powiodło — sprawdź dziennik serwera.
+którego baza danych jest uszkodzona (uszkodzonej kopii nigdy się nie wykonuje), albo taki, którego kopiowanie się nie powiodło — sprawdź dziennik serwera.
+
+Migawka lub zaplanowana kopia zapasowa oznaczona **Ostatnia dobra kopia** zawiera najnowszą dobrą kopię obszaru roboczego, którego baza danych się od tego czasu uszkodziła. Zaplanowane czyszczenie jej nie rusza, a jej usunięcie wymaga potwierdzenia, dopóki ten obszar roboczy nie zostanie przywrócony.
 
 ## Planowanie kopii zapasowych obszarów roboczych i retencji
 
@@ -104,7 +100,7 @@ zapasowe.
 
 Rozwiń wiersz, aby zobaczyć każdą kopię zapasową, od najnowszej:
 
-- **Przywróć** zastępuje bieżącą bazę danych obszaru roboczego tą kopią zapasową. Najpierw wyeksportuj obszar roboczy, jeśli może to wymagać cofnięcia. Wymaga właściciela serwera, który musi też być właścicielem obszaru roboczego.
+- **Przywróć** zastępuje bieżącą bazę danych obszaru roboczego tą kopią zapasową. Baza danych, którą zastąpi, pozostanie na tej liście pod nazwą kończącą się na `-pre-restore`, dzięki czemu można się cofnąć. Wymaga właściciela serwera, który musi też być właścicielem obszaru roboczego.
 - **Pobierz** zapisuje plik na maszynie, której używasz. Kopia zapasowa pozostaje na serwerze.
 - **Kopiuj ścieżkę** kopiuje jej lokalizację na serwerze.
 - **Usuń** trwale usuwa tę kopię zapasową po wpisaniu nazwy obszaru roboczego. Wymaga roli **właściciela**.
@@ -124,7 +120,7 @@ sekcji
 
 ## Usuwanie migawki instalacji
 
-W sekcji **Migawki instalacji** rozwiń migawkę, także niekompletną, i użyj pozycji
+W sekcji **Migawki instalacji** rozwiń migawkę, także niezweryfikowaną, i użyj pozycji
 **Usuń migawkę** w strefie niebezpieczeństwa. Potwierdź jej nazwę. Cały katalog migawki
 zostaje trwale usunięty z serwera; jeśli potrzebujesz kopii, najpierw ją pobierz. Potok
 kopii obszaru roboczego nigdy nie usuwa tych migawek.
@@ -164,20 +160,14 @@ Krok 3 to przywrócenie, więc wymaga właściciela serwera docelowego, który m
 Jeśli oba serwery to ta sama maszyna, przy której siedzisz, **Zapisz na serwerze** na źródle, a potem ścieżkę pliku w polu **Plik bazy danych obszaru roboczego** i **Importuj** na docelowym daje ten sam efekt bez dodatkowego obiegu; ta ścieżka jest rozwiązywana na hoście serwera.
 
 :::caution[Import zastępuje wszystko]
-Import nadpisuje wszystko, co docelowy obszar roboczy obecnie zawiera, i nie można tego
-cofnąć. Jeśli docelowy obszar roboczy zawiera coś, co może ci się przydać, najpierw go
-wyeksportuj.
+Import zastępuje wszystko, co docelowy obszar roboczy obecnie zawiera. Baza danych, którą zastąpi, zostaje zachowana w **Zaplanowane kopie zapasowe** pod nazwą kończącą się na `-pre-restore`; przywróć ją, aby się cofnąć.
 :::
 
-Dwie rzeczy są dozwolone i rejestrowane w dzienniku, a nie odrzucane: import pliku,
-którego zapisany identyfikator obszaru roboczego różni się od docelowego (tak duplikujesz
-obszar roboczy albo przywracasz go pod nowym identyfikatorem) oraz import pliku z **innej
-instalacji**. W tym drugim przypadku sparowane urządzenia i identyfikatory użytkowników
-z pliku należą do instalacji, z której pochodzi, i nie zostaną rozwiązane w tej instalacji
-— dane samego obszaru roboczego są nienaruszone, ale po jego adopcji ponownie sprawdź
-członkostwo.
+Plik z innego obszaru roboczego lub z **innej instalacji** zostaje przyjęty: w ten sposób duplikujesz obszar roboczy, przywracasz go pod nowym identyfikatorem albo przekazujesz komuś innemu. Identyfikatory użytkowników z innej instalacji nie zostaną rozwiązane w tej instalacji — dane samego obszaru roboczego są nienaruszone, ale po przejęciu go sprawdź ponownie członkostwo.
 
-Tokeny botów czatu i logowania do dostawców leżą poza bazą danych, więc przyjmująca instalacja podłącza własne. Plik zawiera jednak tokeny webhooków potoków i sekrety webhooków synchronizacji zgłoszeń, więc obszar roboczy przekazany komuś innemu przekazuje im także te. Jeśli odbiorca nie powinien ich mieć, wymień je potem.
+Przywrócony plik sam z siebie niczego nie przyznaje na tym serwerze. Uprawnienia, które niósł ponad zwykłe członkostwo, zostają usunięte i wypisane pod nagłówkiem **Wstrzymane w przywróconych kopiach** u góry strony: reguły akcji pozwalające agentom działać bez zatwierdzenia lub po nim, ścieżki, które może uruchamiać sandbox, dostęp do repozytoriów wyższy niż odczyt, role wyższe niż członek oraz otwarte zaproszenia do tych ról. **Zaakceptuj** przyznaje je ponownie; **Odrzuć** je usuwa. Zatwierdzenia uruchamiania definicji środowiska na hoście są czyszczone, więc zatwierdź te definicje ponownie. Kto przywraca, zachowuje rolę właściciela albo ją uzyskuje.
+
+Tokeny botów czatu, logowania do dostawców i sekrety webhooków leżą poza bazą danych, więc przyjmująca instalacja podłącza własne. Wyzwalacze webhooków i webhooki synchronizacji zgłoszeń docierają bez swoich sekretów i na innym serwerze nic nie odbierają, dopóki ich tam ponownie nie zapiszesz; dzięki temu każdy wyzwalacz dostaje nowy URL.
 
 ## Przywracanie jednego obszaru roboczego z migawki
 
@@ -189,7 +179,7 @@ Musisz być właścicielem serwera i właścicielem tego obszaru roboczego.
 
 To ta sama operacja co import, wskazująca na kopię pliku tego obszaru roboczego
 w migawce — celowo, aby nie istniał drugi mechanizm, który mógłby potraktować ten sam
-plik inaczej.
+plik inaczej. Kopia jest najpierw sprawdzana względem sumy kontrolnej, którą zapisała migawka.
 
 Wiersz może mówić **Nie ma go już na tym serwerze**, a pozycja **Przywróć** jest
 wyłączona: migawka zawiera obszar roboczy, którego ta instalacja już nie ma. Przywróć go
@@ -198,6 +188,10 @@ wpisz ścieżkę
 `<snapshot path>/<old workspace id>/workspace.db` w jego polu **Plik bazy danych obszaru roboczego** i naciśnij **Importuj**. Rozwinięta migawka pokazuje własną
 **Ścieżkę na serwerze** w polu do skopiowania, a tytuł wiersza to stary identyfikator
 obszaru roboczego, więc masz przed sobą obie połówki tej ścieżki.
+
+## Przywracanie uszkodzonego obszaru roboczego
+
+Obszar roboczy, którego baza danych nie przechodzi kontroli integralności, przechodzi w tryb tylko do odczytu: wszystko pozostaje czytelne, a każda zmiana jest odrzucana. Członkowie widzą u góry obszaru roboczego **Ten obszar roboczy jest tylko do odczytu**, właściciel serwera widzi to na tej stronie pod **Wymaga uwagi**, a najnowsza kopia zapasowa zawierająca dobrą kopię zostaje zachowana jako **Ostatnia dobra kopia**. Przywróć obszar roboczy z tej kopii, tak jak opisano wyżej, aby znów był zapisywalny. Uszkodzona baza danych zostaje zachowana jako kopia zapasowa `-pre-restore`.
 
 ## Przywracanie całej instalacji
 
@@ -325,7 +319,7 @@ timera systemd, a po zakończeniu zsynchronizuj `DEST` poza host. `VACUUM INTO` 
 SQLite 3.27 lub nowszego.
 
 Zapisuj go **poza** `<dataDir>/backups/`. Wykonany ręcznie katalog w tym miejscu nie ma
-`manifest.json`, więc aplikacja wymieniłaby go jako niekompletną migawkę, a lista
+`manifest.json`, więc aplikacja wymieniłaby go jako niezweryfikowaną migawkę, a lista
 przestałaby być rzetelnym zapisem tego, co wyprodukował sam serwer.
 
 ### Usuwanie starych migawek całej instalacji
@@ -371,9 +365,11 @@ miejsce ich przechowywania.
 | „Tylko właściciel serwera może przywracać kopie zapasowe. Nadal możesz je pobrać.” | Przywracanie zastępuje bazę danych obszaru roboczego na hoście serwera, więc przywraca ją tylko właściciel serwera. Pobierz kopię zapasową i poproś go o przywrócenie |
 | „Ten serwer nie ma powierzchni kopii zapasowych.” | Na hoście nie podłączono portu kopii zapasowych — to serwer demonstracyjny. Operacje są nieobecne, a nie odrzucane |
 | „Plik jest większy, niż serwer akceptuje.” | Wysyłanie jest ograniczone do 8 GiB. Umieść plik na hoście serwera i wpisz jego ścieżkę w polu **Plik bazy danych obszaru roboczego** |
-| Import odrzucony: to nie jest baza danych obszaru roboczego Control Center | Plik nie ma wiersza `workspace_meta` — to nie eksport obszaru roboczego albo jest obcięty. Nic nie zostało zastąpione |
-| Migawka jest oznaczona jako **Niekompletna** | Brakuje jej manifestu albo wymienia nieistniejące pliki. Wykonaj nową; w międzyczasie adoptuj z niej pojedyncze pliki obszarów roboczych |
-| Migawka informuje, że nie uwzględniono obszarów roboczych | Te obszary robocze nigdy nie były zapisywane albo ich kopiowanie się nie powiodło. Sprawdź dziennik serwera |
+| Przywracanie zostaje odrzucone i nic nie zostaje zastąpione | Plik nie przeszedł sprawdzenia, a komunikat podaje, które: to nie jest baza danych obszaru roboczego, jest uszkodzony, nie zgadza się z sumą kontrolną zapisaną przez jego migawkę, zapisała go nowsza wersja serwera albo jego webhooki lub zaproszenia już należą do innego obszaru roboczego na tym serwerze. Użyj innej kopii albo najpierw zaktualizuj serwer |
+| Migawka jest oznaczona jako **Niezweryfikowana** | Nigdy się nie dokończyła albo powstała, zanim migawki zaczęły zapisywać sumy kontrolne. Wykonaj nową; w międzyczasie przywracaj z niej pojedyncze pliki obszarów roboczych |
+| Migawka informuje, że nie uwzględniono obszarów roboczych | Te obszary robocze nigdy nie były zapisywane, są uszkodzone albo ich kopiowanie się nie powiodło. Sprawdź dziennik serwera |
+| Obszar roboczy pokazuje **Ten obszar roboczy jest tylko do odczytu** | Jego baza danych nie przeszła kontroli integralności. Nic w niej nie można zmienić, dopóki właściciel serwera nie przywróci jej z kopii zapasowej |
+| Webhooki przestają docierać po przeniesieniu obszaru roboczego na inny serwer | Sekrety webhooków nie podróżują z bazą danych. Zapisz ponownie każdy wyzwalacz webhooka i połączenie synchronizacji zgłoszeń na nowym serwerze, a potem podaj nadawcy nowy URL |
 | Przywrócona instalacja nie ma poświadczeń hosta kodu ani SSO | `secrets.json` nie wchodzi w skład migawki. Przywróć go z miejsca, w którym go przechowujesz, albo podłącz dostawców ponownie |
 | W przywróconym obszarze roboczym brakuje wklejonych obrazów | Bloby leżą obok bazy danych, a nie w niej. Skopiuj także `<workspaceId>/blobs/` |
 

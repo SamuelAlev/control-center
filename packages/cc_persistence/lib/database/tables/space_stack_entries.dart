@@ -11,7 +11,10 @@ import 'package:drift/drift.dart';
 /// these branch names AFTER the space row is gone, so it can delete every
 /// recorded branch from a Windows `git worktree` checkout. A cascade would
 /// erase the names before that read.
-@TableIndex(name: 'idx_space_stack_space', columns: {#workspaceId, #spaceId})
+///
+/// The unique keys `(spaceId, repoId, position)` and `(spaceId, repoId,
+/// branch)` serve every per-space read.
+@TableIndex(name: 'idx_space_stack_repo', columns: {#repoId})
 class SpaceStackEntriesTable extends Table {
   @override
   String get tableName => 'space_stack_entries';
@@ -25,7 +28,7 @@ class SpaceStackEntriesTable extends Table {
   /// The space this stack belongs to. Not a foreign key: see the class doc.
   TextColumn get spaceId => text()();
 
-  /// The repo whose checkout holds the stack.
+  /// The repo whose checkout holds the stack; its layers go with it.
   TextColumn get repoId => text().customConstraint(
     'NOT NULL REFERENCES repos (id) ON DELETE CASCADE',
   )();
@@ -42,7 +45,8 @@ class SpaceStackEntriesTable extends Table {
   /// Forge pull-request number, filled at publish.
   IntColumn get prNumber => integer().nullable()();
 
-  /// Forge-neutral pull-request id, filled at publish.
+  /// Forge-neutral pull-request id, filled at publish. No foreign key: a
+  /// forge id, not a row.
   TextColumn get prExternalId => text().nullable()();
 
   /// A split rewrote this branch after it was pushed.
@@ -56,7 +60,7 @@ class SpaceStackEntriesTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, spaceId, repoId, position},
-    {workspaceId, spaceId, repoId, branch},
+    {spaceId, repoId, position},
+    {spaceId, repoId, branch},
   ];
 }

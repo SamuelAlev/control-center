@@ -2,6 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_data_row.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,7 +51,7 @@ class _WorkspaceDataSectionState extends ConsumerState<WorkspaceDataSection> {
           const SizedBox(height: AppSpacing.md),
           switch (workspaces) {
             AsyncError(:final error) => Text(
-              l10n.failedWithError('$error'),
+              failureMessage(l10n, error),
               style: CcTypography.bodySm.copyWith(
                 color: tokens.textErrorPrimary,
               ),

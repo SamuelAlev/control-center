@@ -2,7 +2,7 @@
 title: Słownik
 description: Definicje kluczowych pojęć używanych w Control Center.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/slownik
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (odizolowana maszyna wirtualna — jedyny backend z granicą jądra, stosowany do terminali interaktywnych), native (natywny dla systemu Seatbelt w macOS, bubblewrap w Linuksie i WSL2) lub none. Sondowany raz przy starcie; native otacza uruchomienie agenta, gdy jest dostępny. Windows nie ma natywnego backendu, a Linux wymaga bwrap i socat; na takim hoście startują tylko uruchomienia właściciela serwera, nieotoczone, a pozostałe są odrzucane. --sandbox off uruchamia agentów wszystkich członków nieotoczonych.'],
 ['Rig', 'Jednorazowa maszyna, którą agent steruje w czasie rzeczywistym: odizolowana przeglądarka lub pulpit Linuksa, zarządzany przez hosta emulator Androida lub Symulator iOS, albo odizolowany terminal. Obserwowana na żywo przez własny tor w pełnej rozdzielczości, z przejmowaniem wymuszanym po stronie serwera. Przypisana do rozmowy, dzięki czemu karta człowieka i narzędzie agenta kierują do jednej maszyny.'],
 ['Izolacja', 'Silniejsza właściwość izolacji dostępna dla rigów opartych na maszynach wirtualnych: granica jądra, jednorazowy dysk nakładkowy, brama sieciowa domyślnie odmawiająca i broker poświadczeń. Rigi Android i iOS są jednorazowe, ale korzystają z sieci zarządzanej przez hosta, więc nie roszczą sobie tej granicy. Sterowanie dowolnym rigiem używa klasy guardrail enclosureControl.'],
-['RunCost', 'Zestawienie tokenów i kosztów (tokeny wejściowe, tokeny wyjściowe, szacowany koszt w centach) dla jednego uruchomienia agenta.'],
+['RunCost', 'Zestawienie tokenów i kosztów (tokeny wejściowe, tokeny wyjściowe, szacowany koszt w mikrodolarach) dla jednego uruchomienia agenta.'],
 ['WakeReason', 'Powód uruchomienia agenta. Sześć wartości: wiadomość użytkownika, przypisanie zgłoszenia, ponowne uruchomienie naprawcze po awarii, ukończenie zgłoszenia podrzędnego, zaplanowany heartbeat kontynuacji i krok potoku.'],
 ['SandboxPort', 'Zarządza cyklem życia sandboxa (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Wystawia ograniczone poświadczenia na potrzeby uruchomienia sandboxa (token dla jednego repozytorium dla środowiska agenta, z prawem zapisu tylko dla ścieżki push po stronie serwera) i zwalnia je przy zamykaniu.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Izolacja**: Silniejsza granica riga oparta na VM — granica jądra, jednorazowy dysk nakładkowy, brama sieciowa domyślnie odmawiająca i broker poświadczeń. Rigi Android i iOS są jednorazowe, ale korzystają z sieci zarządzanej przez hosta i nie roszczą sobie tej granicy. Sterowanie dowolnym rigiem używa klasy guardrail `enclosureControl`.
 
-**RunCost**: Zestawienie tokenów i kosztów (tokeny wejściowe, tokeny wyjściowe, szacowany koszt w centach) dla jednego uruchomienia agenta.
+**RunCost**: Zestawienie tokenów i kosztów (tokeny wejściowe, tokeny wyjściowe, szacowany koszt w mikrodolarach) dla jednego uruchomienia agenta.
 
 **WakeReason**: Powód uruchomienia agenta. Sześć wartości: wiadomość użytkownika, przypisanie zgłoszenia, ponowne uruchomienie naprawcze po awarii, ukończenie zgłoszenia podrzędnego, zaplanowany heartbeat kontynuacji i krok potoku.
 

@@ -363,23 +363,21 @@ void main() {
         client,
       ).watchSpaceActivity(_ws).first;
       expect(list.single.spaceId, 'c1');
-      expect(list.single.lastAgentMessageAtByConversation, isEmpty);
+      expect(list.single.lastAgentMessageByConversation, isEmpty);
       // The typed activity watch is workspace-keyed: it pins the caller's id
       // rather than following the client's ambient active workspace.
       expect(host.lastSubscribe!.args['workspace_id'], _ws);
     });
 
-    test('watchSpaceActivity maps per-conversation last agent times', () async {
+    test('watchSpaceActivity maps per-conversation agent positions', () async {
+      final position = {'at': '2026-01-02T00:00:00.000Z', 'seq': 41};
       host.snapshotFor('messaging.watchSpaceActivity', {
         'spaces': [
           {
             'space_id': 'c1',
-            'last_agent_message_at': '2026-01-02T00:00:00.000',
+            'last_agent_message': position,
             'conversations': [
-              {
-                'conversation_id': 'conv-a',
-                'last_agent_message_at': '2026-01-02T00:00:00.000',
-              },
+              {'conversation_id': 'conv-a', 'last_agent_message': position},
               {'conversation_id': 'conv-b'},
             ],
           },
@@ -388,7 +386,21 @@ void main() {
       final list = await RpcMessagingRepository(
         client,
       ).watchSpaceActivity(_ws).first;
-      expect(list.single.lastAgentMessageAtByConversation.keys, ['conv-a']);
+      final activity = list.single;
+      expect(activity.lastAgentMessageByConversation.keys, ['conv-a']);
+      expect(
+        activity.lastAgentMessage,
+        FeedPosition(at: DateTime.utc(2026, 1, 2), seq: 41),
+      );
+      // A read cursor in the same second but before the message leaves it
+      // unread; one at the message itself does not.
+      expect(
+        activity.unreadAfter(
+          FeedPosition(at: DateTime.utc(2026, 1, 2), seq: 40),
+        ),
+        isTrue,
+      );
+      expect(activity.unreadAfter(activity.lastAgentMessage), isFalse);
     });
 
     test('getMessagePage delegates the window to the server', () async {
@@ -554,10 +566,44 @@ void main() {
         () => repo.getMessagesWithEmbedding(_ws, 'c1'),
         throwsUnsupportedError,
       );
+    });
+  });
+
+  group('RpcNotificationFeedRepository read positions', () {
+    test('items carry their sequence and marks their positions', () async {
+      host.snapshotFor('notifications.watch', {
+        'items': [
+          {
+            'id': 'n2',
+            'workspace_id': _ws,
+            'method': 'notifications/pr_merged',
+            'params': const <String, dynamic>{},
+            'created_at': '2026-01-02T00:00:00.000Z',
+            'seq': 12,
+          },
+        ],
+      });
+      host.snapshotFor('notifications.watchReadMark', {
+        'mark': {
+          'workspace_id': _ws,
+          'user_id': 'u1',
+          'last_seen': {'at': '2026-01-02T00:00:00.000Z', 'seq': 11},
+          'cleared': {'at': '2026-01-01T00:00:00.000Z', 'seq': 3},
+        },
+      });
+      final repo = RpcNotificationFeedRepository(client);
+
+      final item = (await repo.watchFeed(_ws).first).single;
+      expect(item.seq, 12);
+      final mark = (await repo.watchReadMark(_ws, 'u1').first)!;
       expect(
-        () => repo.getMessagesWithoutEmbedding(_ws),
-        throwsUnsupportedError,
+        mark.lastSeen,
+        FeedPosition(at: DateTime.utc(2026, 1, 2), seq: 11),
       );
+      expect(mark.cleared, FeedPosition(at: DateTime.utc(2026), seq: 3));
+      // Same second as the last-seen mark, recorded after it: still unread.
+      expect(mark.hasSeen(item), isFalse);
+      expect(mark.hides(item), isFalse);
     });
   });
 }

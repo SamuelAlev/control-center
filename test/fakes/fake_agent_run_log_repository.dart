@@ -82,15 +82,39 @@ class FakeAgentRunLogRepository implements AgentRunLogRepository {
     yield _logs.values.where((l) => l.agentId == agentId).toList();
   }
 
+  List<AgentRunLog> _newestFirst(Iterable<AgentRunLog> logs) =>
+      logs.toList()..sort((a, b) {
+        final byStart = b.startedAt.compareTo(a.startedAt);
+        return byStart != 0 ? byStart : b.id.compareTo(a.id);
+      });
+
   @override
-  Stream<List<AgentRunLog>> watchAll() async* {
-    yield _logs.values.toList();
+  Future<List<AgentRunLog>> nonTerminal() async =>
+      _newestFirst(_logs.values.where((l) => l.isActive));
+
+  @override
+  Stream<List<AgentRunLog>> watchNonTerminalForWorkspace(
+    String workspaceId,
+  ) async* {
+    yield _newestFirst(
+      _logs.values.where((l) => l.isActive && l.workspaceId == workspaceId),
+    );
   }
 
   @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  Future<AgentRunLog?> latestForTicket(
+    String workspaceId,
+    String ticketId,
+  ) async => _newestFirst(
+    _logs.values.where(
+      (l) => l.workspaceId == workspaceId && l.ticketId == ticketId,
+    ),
+  ).firstOrNull;
+
+  @override
+  Stream<List<AgentRunLog>> watchRecent(int limit) async* {
+    yield _newestFirst(_logs.values).take(limit).toList();
+  }
 
   @override
   Stream<List<AgentRunLog>> watchActiveByConversation(
@@ -264,7 +288,6 @@ class FakeAgentRunLogRepository implements AgentRunLogRepository {
             : current.cost.copyWith(durationMs: completed.cost.durationMs),
         liveness: completed.liveness,
         errorFamily: completed.errorFamily,
-        continuationSummary: completed.continuationSummary,
         outputJson: completed.outputJson,
         outputRejections: completed.outputRejections,
         verification: completed.verification,

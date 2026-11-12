@@ -65,9 +65,12 @@ void main() {
       expect(pin['maxCallMicros'], 10970800);
       expect(pin['budgetEnforcement'], 'reserved_call');
       final observed = skillEvaluationModelCostFromPin(pin);
-      expect(observed.estimate(inputTokens: 1000, outputTokens: 100), 0.0032);
-      expect(observed.estimate(inputTokens: 220000), 0.44);
-      expect(observed.estimate(inputTokens: 272001), 1.088004);
+      expect(
+        observed.estimateMicros(inputTokens: 1000, outputTokens: 100),
+        3200,
+      );
+      expect(observed.estimateMicros(inputTokens: 220000), 440000);
+      expect(observed.estimateMicros(inputTokens: 272001), 1088004);
       expect(
         () => skillEvaluationModelCostFromPin(
           {...pin}..remove('pricingPolicyVersion'),
@@ -91,8 +94,8 @@ void main() {
     expect(
       skillEvaluationModelCostFromPin(
         pin,
-      ).estimate(inputTokens: 1000, outputTokens: 100),
-      0.0032,
+      ).estimateMicros(inputTokens: 1000, outputTokens: 100),
+      3200,
     );
   });
 

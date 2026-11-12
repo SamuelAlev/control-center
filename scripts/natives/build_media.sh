@@ -246,12 +246,12 @@ if [ -n "$svg_source" ]; then
   svg_count=$((svg_count + 1))
 fi
 [ "$svg_count" -gt 1 ] || die "SVG Cargo.lock has no dependency notices"
-cp -f "$DEST/svg-licenses/resvg-0.49.0/LICENSE-MIT" "$DEST/resvg-LICENSE-MIT.txt"
-cp -f "$DEST/svg-licenses/resvg-0.49.0/LICENSE-APACHE" "$DEST/resvg-LICENSE-APACHE.txt"
+cp -f "$DEST/svg-licenses/resvg-0.50.0/LICENSE-MIT" "$DEST/resvg-LICENSE-MIT.txt"
+cp -f "$DEST/svg-licenses/resvg-0.50.0/LICENSE-APACHE" "$DEST/resvg-LICENSE-APACHE.txt"
 cp -f "$SVG_CRATE/Cargo.lock" "$DEST/resvg-Cargo.lock"
 {
   printf 'cc_svg_render: application-owned wrapper, source packages/cc_natives/native/media/svg/src/main.rs\n'
-  printf 'resvg/usvg 0.49.0: https://github.com/linebender/resvg/tree/v0.49.0\n'
+  printf 'resvg/usvg 0.50.0: https://github.com/linebender/resvg/tree/v0.50.0\n'
   printf 'Exact Rust dependency versions and registry checksums: resvg-Cargo.lock (packages/cc_natives/native/media/svg/Cargo.lock)\n'
   printf 'Dual license: Apache-2.0 OR MIT; upstream texts resvg-LICENSE-APACHE.txt and resvg-LICENSE-MIT.txt.\n'
   printf 'All %s locked registry crates have Cargo.toml metadata and actual upstream LICENSE/COPYING/NOTICE/COPYRIGHT files in svg-licenses/<crate-version>/.\n' "$svg_count"

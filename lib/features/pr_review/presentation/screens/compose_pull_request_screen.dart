@@ -19,6 +19,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -636,7 +637,7 @@ class _BodyState extends ConsumerState<_Body>
         ),
       ),
       error: (e, _) => SliverToBoxAdapter(
-        child: ComposeCenteredHint(message: l10n.failedWithError('$e')),
+        child: ComposeCenteredHint(message: failureMessage(l10n, e)),
       ),
       data: (diff) {
         if (diff == null || (diff.files.isEmpty && diff.commits.isEmpty)) {

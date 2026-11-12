@@ -1,16 +1,18 @@
 /// Read cursors and unread signals for spaces and conversations.
 library;
 
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The user participant's read cursor for a space (when they last opened
-/// it), or null when the space has never been opened under the user. A server
-/// subscription that emits immediately.
+/// The user participant's read cursor for a space (the position of the
+/// newest message they had seen when they last opened it), or null when the
+/// space has never been opened under the user. A server subscription that
+/// emits immediately.
 final spaceUserLastReadAtProvider = StreamProvider.autoDispose
-    .family<DateTime?, String>((ref, spaceId) {
+    .family<FeedPosition?, String>((ref, spaceId) {
       // Only open the read-cursor subscription for a space that actually
       // belongs to the active workspace, and subscribe AGAINST that same
       // workspace id — never a foreign, deleted or not-yet-loaded space. See
@@ -18,7 +20,7 @@ final spaceUserLastReadAtProvider = StreamProvider.autoDispose
       // rather than assembled from the ambient workspace at call time.
       final workspaceId = workspaceOwningSpace(ref, spaceId);
       if (workspaceId == null) {
-        return Stream<DateTime?>.value(null);
+        return Stream<FeedPosition?>.value(null);
       }
       return ref
           .watch(spaceReadRepositoryProvider)
@@ -44,12 +46,8 @@ final spaceUnreadProvider = Provider.autoDispose.family<bool, String>((
   ref,
   spaceId,
 ) {
-  final lastReadAt = ref.watch(spaceUserLastReadAtProvider(spaceId)).value;
-  if (lastReadAt == null) {
-    return false;
-  }
-  final lastAgentAt = spaceActivityOf(ref, spaceId)?.lastAgentMessageAt;
-  return lastAgentAt != null && lastAgentAt.isAfter(lastReadAt);
+  final lastRead = ref.watch(spaceUserLastReadAtProvider(spaceId)).value;
+  return spaceActivityOf(ref, spaceId)?.unreadAfter(lastRead) ?? false;
 });
 
 /// Whether one conversation has agent messages the user hasn't seen yet.
@@ -60,17 +58,17 @@ final spaceUnreadProvider = Provider.autoDispose.family<bool, String>((
 /// row that has the unseen work instead of on the parent space.
 final conversationUnreadProvider = Provider.autoDispose
     .family<bool, ConversationRef>((ref, key) {
-      final lastReadAt = ref
+      final lastRead = ref
           .watch(spaceUserLastReadAtProvider(key.spaceId))
           .value;
-      if (lastReadAt == null) {
+      if (lastRead == null) {
         return false;
       }
-      final lastAgentAt = spaceActivityOf(
+      final lastAgent = spaceActivityOf(
         ref,
         key.spaceId,
-      )?.lastAgentMessageAtByConversation[key.conversationId];
-      return lastAgentAt != null && lastAgentAt.isAfter(lastReadAt);
+      )?.lastAgentMessageByConversation[key.conversationId];
+      return lastAgent != null && lastAgent.isAfter(lastRead);
     });
 
 /// Number of distinct conversations with agent mail after the space's read
@@ -78,8 +76,8 @@ final conversationUnreadProvider = Provider.autoDispose
 /// Never-opened spaces follow the existing unread policy and stay quiet.
 final spaceUnreadConversationCountProvider = Provider.autoDispose
     .family<int, String>((ref, spaceId) {
-      final lastReadAt = ref.watch(spaceUserLastReadAtProvider(spaceId)).value;
-      if (lastReadAt == null) {
+      final lastRead = ref.watch(spaceUserLastReadAtProvider(spaceId)).value;
+      if (lastRead == null) {
         return 0;
       }
       final activity = spaceActivityOf(ref, spaceId);
@@ -87,8 +85,8 @@ final spaceUnreadConversationCountProvider = Provider.autoDispose
         return 0;
       }
       var count = 0;
-      for (final at in activity.lastAgentMessageAtByConversation.values) {
-        if (at.isAfter(lastReadAt)) {
+      for (final agent in activity.lastAgentMessageByConversation.values) {
+        if (agent.isAfter(lastRead)) {
           count++;
         }
       }

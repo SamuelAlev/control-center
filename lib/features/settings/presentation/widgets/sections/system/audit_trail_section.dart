@@ -3,6 +3,7 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/settings/providers/governance_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -44,7 +45,7 @@ class _AuditTrailSectionState extends ConsumerState<AuditTrailSection> {
     } on Object catch (e) {
       if (mounted) {
         CcToastScope.of(context).show(
-          AppLocalizations.of(context).failedWithError('$e'),
+          failureMessage(AppLocalizations.of(context), e),
           variant: CcToastVariant.danger,
         );
       }

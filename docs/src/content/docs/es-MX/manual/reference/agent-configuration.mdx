@@ -2,7 +2,7 @@
 title: Configuración de agentes
 description: Todos los campos de la entidad de agente y las enumeraciones que usa.
 slug: es-MX/manual/referencia/configuracion-de-agentes
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Esta referencia enumera todos los campos de la entidad de agente, además de las enumeraciones y los indicadores que usa. Para ver un recorrido paso a paso de cómo crear o editar un agente en la aplicación, consulta [Crear y configurar un agente](/es-MX/manual/guias/crear-agente/).
@@ -26,17 +26,17 @@ Esta referencia enumera todos los campos de la entidad de agente, además de las
 | `effort`                | `String?`              | No            | Id del nivel de razonamiento (p. ej. `'low'`, `'xhigh'`), tomado de los `thinkingLevels` del modelo seleccionado                                                                                    |
 | `contextSize`           | `int?`                 | No            | Tamaño máximo de la ventana de contexto                                                                                                                                                            |
 | `role`                  | `AgentRole?`           | No            | Rol del agente                                                                                                                                                                                     |
-| `monthlyBudgetCents`    | `int`                  | No            | Tope de gasto mensual en centavos (predeterminado `0`, ilimitado)                                                                                                                                  |
+| `monthlyBudgetMicros`    | `int`                  | No            | Tope de gasto mensual en microdólares (predeterminado `0`, ilimitado)                                                                                                                                  |
 | `silenceTimeoutMinutes` | `int?`                 | No            | Anulación del vigilante de silencio en minutos; debe ser nulo o estar entre 1 y 240 (validado en el constructor)                                                                                   |
 | `maxConcurrentTasks`    | `int`                  | No            | Predeterminado `1`. Cifra de capacidad que informa el modelo de presencia (los recuentos de ejecuciones en curso y en cola se comparan con ella)                                                   |
 | `visibility`            | `AgentVisibility`      | No            | Predeterminado `workspace`                                                                                                                                                                         |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | No            | Estado de gobernanza (predeterminado `active`). Lo escribe la parada forzosa del presupuesto y se muestra en el organigrama y en la lista de presencia. El despacho aún acepta trabajo de un agente `paused` |
-| `budgetPolicyId`        | `String?`              | No            | Id de la política de presupuesto compartida; cuando es nulo, `monthlyBudgetCents` se aplica directamente                                                                                            |
+| `budgetPolicyId`        | `String?`              | No            | Id de la política de presupuesto compartida; cuando es nulo, `monthlyBudgetMicros` se aplica directamente                                                                                            |
 | `runtimeProfileId`      | `String?`              | No            | Id del perfil de tiempo de ejecución personalizado                                                                                                                                                 |
 | `createdAt`             | `DateTime`             | Sí            | Marca de tiempo de creación                                                                                                                                                                        |
 
 `name` y `title` deben ser ambos no vacíos (validado en el constructor). El valor
-predeterminado de `monthlyBudgetCents` de `0` significa ilimitado. Escribe un techo con `agents.upsert`.
+predeterminado de `monthlyBudgetMicros` de `0` significa ilimitado. Escribe un techo con `agents.upsert`.
 
 ## Enumeración AgentRole
 

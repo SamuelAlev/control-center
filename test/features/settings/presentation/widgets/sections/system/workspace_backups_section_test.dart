@@ -357,7 +357,7 @@ void main() {
     await tester.tap(find.text('Acme'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Incomplete'), findsNWidgets(2));
+    expect(find.text('Unverified'), findsNWidgets(2));
     final restore = tester.widget<CcButton>(
       find.ancestor(of: find.text('Restore'), matching: find.byType(CcButton)),
     );

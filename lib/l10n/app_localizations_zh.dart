@@ -13908,13 +13908,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupSnapshotComplete => '完成';
 
   @override
-  String get backupSnapshotIncomplete => '未完成';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      '清单缺失或引用了不存在的文件，因此此快照无法恢复整个安装。其中包含的工作区文件仍可逐个采用。';
-
-  @override
   String get backupDeleteSnapshotLabel => '删除快照';
 
   @override
@@ -17843,6 +17836,219 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       '你可以观看此机器。它是为某个人开启的，并使用此人的登录信息，因此只有此人可以操作机器、转发端口、粘贴内容或向机器拖入文件。';
+
+  @override
+  String get refusalStorageBusy => '服务器的数据库目前繁忙，请稍后再试。';
+
+  @override
+  String get refusalStorageFull => '服务器磁盘已满，无法保存任何内容。服务器所有者需要先释放一些空间。';
+
+  @override
+  String get refusalStorageDamaged => '此工作区的数据已损坏。服务器所有者需要从备份中恢复。';
+
+  @override
+  String get refusalStorageReadOnly => '在服务器所有者从备份中恢复之前，此工作区为只读，无法保存更改。';
+
+  @override
+  String get refusalStorageNewerSchema => '这些数据由更新版本的服务器写入。请更新服务器后再试。';
+
+  @override
+  String get refusalStorageForeignFile =>
+      '服务器发现了一个不是它写入的数据库文件。服务器所有者需要检查服务器的数据文件夹。';
+
+  @override
+  String get refusalWorkspaceDeleted => '此工作区已被删除。';
+
+  @override
+  String get refusalIdempotencyInProgress => '此请求仍在处理中。请等待其完成后再查看结果。';
+
+  @override
+  String get refusalImportMissingSource => '服务器上该路径没有文件。未替换任何内容。';
+
+  @override
+  String get refusalImportDamaged => '该文件已损坏，无法恢复。未替换任何内容。';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      '该文件与备份记录的校验和不一致，可能已被更改或损坏。未替换任何内容。';
+
+  @override
+  String get refusalImportNewerSchema => '该文件由更新版本的服务器写入。请更新服务器后再恢复。未替换任何内容。';
+
+  @override
+  String get refusalImportForeignFile => '该文件不是工作区数据库。未替换任何内容。';
+
+  @override
+  String get refusalImportSchemaMismatch => '该文件无法升级到此服务器的格式。未替换任何内容。';
+
+  @override
+  String get refusalImportRouteConflict =>
+      '该文件中的链接属于本服务器上的其他工作区，恢复会接管这些链接。未替换任何内容。';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => '此工作区为只读';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      '其数据未通过完整性检查，因此无法保存更改。所有内容仍可读取。服务器所有者可以从备份中恢复它。';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      '其数据未通过完整性检查，因此无法保存更改。所有内容仍可读取。从备份中恢复即可让它重新可写。';
+
+  @override
+  String get workspaceReadOnlyBannerAction => '打开备份';
+
+  @override
+  String get serverNoticesLabel => '需要你处理';
+
+  @override
+  String get serverNoticeReadOnlyStatus => '只读';
+
+  @override
+  String serverNoticeSince(String time) {
+    return '始于 $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      '其数据库未通过完整性检查，因此只能读取，并拒绝所有更改。请从下方列表中的备份将其恢复；在你恢复之前，会保留它最近的可用副本。';
+
+  @override
+  String get serverNoticeDetails => '详情';
+
+  @override
+  String get backupSnapshotUnverified => '未验证';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      '此快照无法验证。它未完成，或是在快照开始记录校验和之前创建的，因此无法恢复整个安装。其中包含的工作区文件仍可逐个恢复。';
+
+  @override
+  String get backupSnapshotLastGoodCopy => '最近可用副本';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      '因为它保存了某个已损坏工作区的最近可用副本，所以会被保留。在该工作区恢复之前，清理不会处理它。';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      '这是某个已损坏工作区的最近可用副本。删除后，将没有任何可用于恢复该工作区的内容。';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 项权限已被暂存，等待你审核。它们列在本页顶部。',
+      one: '有 1 项权限已被暂存，等待你审核。它列在本页顶部。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => '从恢复的副本中暂存的权限';
+
+  @override
+  String get importHoldsExplainer =>
+      '恢复的副本本身无法在此服务器上授予任何权限。其中包含以下权限：接受其中一项即可重新授予，拒绝则将其丢弃。';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return '智能体无需审批即可执行此操作：$action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return '智能体在有人批准后即可执行此操作：$action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return '运行以 $command 开头的命令';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => '此工作区中的所有位置';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return '在空间 $space 中';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return '适用于智能体 $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return '沙箱可以运行 $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person 可以更改 $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person 可以审查 $repo 中的 Pull request';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person 获得 $repo 的 $level 访问权限';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person 获得 $role 角色';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return '一个待接受的邀请，将以 $role 角色加入';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '一个待接受的邀请，将以 $role 角色加入，并可审查或写入 $count 个仓库',
+      one: '一个待接受的邀请，将以 $role 角色加入，并可审查或写入 1 个仓库',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown => '此版本的应用无法描述的权限';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return '恢复于 $time';
+  }
+
+  @override
+  String get importHoldAccept => '接受';
+
+  @override
+  String get importHoldDismiss => '拒绝';
+
+  @override
+  String get importHoldAcceptTitle => '授予此权限？';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\n接受后将立即在服务器上授予此权限。';
+  }
+
+  @override
+  String get importHoldAccepted => '权限已授予。';
+
+  @override
+  String get importHoldNotApplied => '未授予任何权限：其对应的成员或仓库已不在此工作区中。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -31753,13 +31959,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get backupSnapshotComplete => '完整';
 
   @override
-  String get backupSnapshotIncomplete => '不完整';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      '信息清單遺失，或指到了不存在的檔案，因此此快照無法還原整個安裝。它確實擁有的工作區檔案仍可逐一採用。';
-
-  @override
   String get backupDeleteSnapshotLabel => '刪除快照';
 
   @override
@@ -35688,6 +35887,219 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String get rigHolderOnlyHint =>
       '你可以觀看此機器。它是為某個人開啟的，並使用此人的登入資料，因此只有此人可以操作、轉送連接埠、貼上內容或將檔案拖放到機器上。';
+
+  @override
+  String get refusalStorageBusy => '伺服器的資料庫而家忙碌中，請稍後再試。';
+
+  @override
+  String get refusalStorageFull => '伺服器的磁碟已滿，無法儲存任何內容。伺服器擁有者需要先釋放一些空間。';
+
+  @override
+  String get refusalStorageDamaged => '此工作區的資料已損壞。伺服器擁有者需要從備份還原。';
+
+  @override
+  String get refusalStorageReadOnly => '在伺服器擁有者從備份還原之前，此工作區為唯讀，無法儲存變更。';
+
+  @override
+  String get refusalStorageNewerSchema => '這份資料是由較新版本的伺服器寫入。請更新伺服器後再試一次。';
+
+  @override
+  String get refusalStorageForeignFile =>
+      '伺服器發現一個並非它寫入的資料庫檔案。伺服器擁有者需要檢查伺服器的資料夾。';
+
+  @override
+  String get refusalWorkspaceDeleted => '此工作區已被刪除。';
+
+  @override
+  String get refusalIdempotencyInProgress => '此要求仍在處理中。請等它完成後再查看結果。';
+
+  @override
+  String get refusalImportMissingSource => '伺服器上該路徑沒有檔案。未取代任何內容。';
+
+  @override
+  String get refusalImportDamaged => '該檔案已損壞，無法還原。未取代任何內容。';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      '該檔案與備份記錄的檢查碼不符，可能已被更改或損壞。未取代任何內容。';
+
+  @override
+  String get refusalImportNewerSchema => '該檔案是由較新版本的伺服器寫入。請更新伺服器後再還原。未取代任何內容。';
+
+  @override
+  String get refusalImportForeignFile => '該檔案不是工作區資料庫。未取代任何內容。';
+
+  @override
+  String get refusalImportSchemaMismatch => '該檔案無法升級為此伺服器的格式。未取代任何內容。';
+
+  @override
+  String get refusalImportRouteConflict =>
+      '該檔案包含屬於本伺服器上其他工作區的連結，還原會接管這些連結。未取代任何內容。';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => '此工作區為唯讀';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      '其資料未通過完整性檢查，因此無法儲存變更。所有內容仍可讀取。伺服器擁有者可以從備份還原它。';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      '其資料未通過完整性檢查，因此無法儲存變更。所有內容仍可讀取。從備份還原即可讓它再次可寫入。';
+
+  @override
+  String get workspaceReadOnlyBannerAction => '開啟備份';
+
+  @override
+  String get serverNoticesLabel => '需要你處理';
+
+  @override
+  String get serverNoticeReadOnlyStatus => '唯讀';
+
+  @override
+  String serverNoticeSince(String time) {
+    return '始於 $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      '其資料庫未通過完整性檢查，因此只能讀取，並拒絕所有更改。請從下方清單中的備份將其還原；在你還原之前，會保留它最近的可用副本。';
+
+  @override
+  String get serverNoticeDetails => '詳細資料';
+
+  @override
+  String get backupSnapshotUnverified => '未驗證';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      '此快照無法驗證。它未完成，或者是在快照開始記錄檢查碼之前建立的，因此無法還原整個安裝。其中包含的工作區檔案仍可逐一還原。';
+
+  @override
+  String get backupSnapshotLastGoodCopy => '最近可用副本';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      '因為它保存了某個已損壞工作區的最近可用副本，所以會被保留。在該工作區還原之前，清理作業不會處理它。';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      '這是某個已損壞工作區的最近可用副本。刪除後，將沒有任何可用來還原該工作區的內容。';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 項權限已被暫存，等你審核。它們列於本頁頂部。',
+      one: '有 1 項權限已被暫存，等你審核。它列於本頁頂部。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => '從還原的副本中暫存的權限';
+
+  @override
+  String get importHoldsExplainer =>
+      '還原的副本本身無法在此伺服器上授予任何權限。其中包含以下權限：接受其中一項即可重新授予，或拒絕以移除它。';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return '代理無需批准即可執行此操作：$action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return '人員批准後，代理即可執行此操作：$action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return '執行以 $command 開頭的指令';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => '此工作區中的所有地方';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return '在空間 $space 中';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return '適用於代理 $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return '沙盒可以執行 $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person 可以更改 $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person 可以審閱 $repo 中的 pull request';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person 獲得 $repo 的 $level 存取權限';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person 獲得 $role 角色';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return '一個待接受的邀請，將以 $role 角色加入';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '一個待接受的邀請，將以 $role 角色加入，並可審閱或寫入 $count 個儲存庫',
+      one: '一個待接受的邀請，將以 $role 角色加入，並可審閱或寫入 1 個儲存庫',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown => '此版本的應用程式無法描述的權限';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return '還原於 $time';
+  }
+
+  @override
+  String get importHoldAccept => '接受';
+
+  @override
+  String get importHoldDismiss => '拒絕';
+
+  @override
+  String get importHoldAcceptTitle => '授予此權限？';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\n接受後會即時在伺服器上授予此權限。';
+  }
+
+  @override
+  String get importHoldAccepted => '已授予權限。';
+
+  @override
+  String get importHoldNotApplied => '未授予任何權限：其對應的成員或儲存庫已不在此工作區中。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -49598,13 +50010,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get backupSnapshotComplete => '完整';
 
   @override
-  String get backupSnapshotIncomplete => '不完整';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      '資訊清單遺失，或指到了不存在的檔案，因此此快照無法還原整個安裝。它確實擁有的工作區檔案仍可逐一採用。';
-
-  @override
   String get backupDeleteSnapshotLabel => '刪除快照';
 
   @override
@@ -53535,4 +53940,217 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get rigHolderOnlyHint =>
       '你可以檢視此機器。它是為某個人開啟的，並使用此人的登入資訊，因此只有此人可以操作、轉送連接埠、貼上內容或將檔案拖放到機器上。';
+
+  @override
+  String get refusalStorageBusy => '伺服器的資料庫目前忙碌中，請稍後再試。';
+
+  @override
+  String get refusalStorageFull => '伺服器的磁碟已滿，無法儲存任何內容。伺服器擁有者需要先釋放一些空間。';
+
+  @override
+  String get refusalStorageDamaged => '此工作區的資料已損毀。伺服器擁有者需要從備份還原。';
+
+  @override
+  String get refusalStorageReadOnly => '在伺服器擁有者從備份還原之前，此工作區為唯讀，無法儲存變更。';
+
+  @override
+  String get refusalStorageNewerSchema => '這份資料是由較新版本的伺服器寫入。請更新伺服器後再試一次。';
+
+  @override
+  String get refusalStorageForeignFile =>
+      '伺服器發現一個並非它寫入的資料庫檔案。伺服器擁有者需要檢查伺服器的資料夾。';
+
+  @override
+  String get refusalWorkspaceDeleted => '此工作區已被刪除。';
+
+  @override
+  String get refusalIdempotencyInProgress => '此要求仍在處理中。請等它完成後再查看結果。';
+
+  @override
+  String get refusalImportMissingSource => '伺服器上該路徑沒有檔案。未取代任何內容。';
+
+  @override
+  String get refusalImportDamaged => '該檔案已損毀，無法還原。未取代任何內容。';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      '該檔案與備份記錄的檢查碼不符，可能已遭更動或損毀。未取代任何內容。';
+
+  @override
+  String get refusalImportNewerSchema => '該檔案是由較新版本的伺服器寫入。請更新伺服器後再還原。未取代任何內容。';
+
+  @override
+  String get refusalImportForeignFile => '該檔案不是工作區資料庫。未取代任何內容。';
+
+  @override
+  String get refusalImportSchemaMismatch => '該檔案無法升級為此伺服器的格式。未取代任何內容。';
+
+  @override
+  String get refusalImportRouteConflict =>
+      '該檔案包含屬於本伺服器上其他工作區的連結，還原將會接管這些連結。未取代任何內容。';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => '此工作區為唯讀';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      '其資料未通過完整性檢查，因此無法儲存變更。所有內容仍可讀取。伺服器擁有者可以從備份還原它。';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      '其資料未通過完整性檢查，因此無法儲存變更。所有內容仍可讀取。從備份還原即可讓它再次可寫入。';
+
+  @override
+  String get workspaceReadOnlyBannerAction => '開啟備份';
+
+  @override
+  String get serverNoticesLabel => '需要你處理';
+
+  @override
+  String get serverNoticeReadOnlyStatus => '唯讀';
+
+  @override
+  String serverNoticeSince(String time) {
+    return '始於 $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      '其資料庫未通過完整性檢查，因此只能讀取，並拒絕所有變更。請從下方清單中的備份將其還原；在你還原之前，會保留它最近的可用副本。';
+
+  @override
+  String get serverNoticeDetails => '詳細資料';
+
+  @override
+  String get backupSnapshotUnverified => '未驗證';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      '此快照無法驗證。它未完成，或是在快照開始記錄檢查碼之前建立的，因此無法還原整個安裝。其中包含的工作區檔案仍可逐一還原。';
+
+  @override
+  String get backupSnapshotLastGoodCopy => '最近可用副本';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      '因為它保存了某個已損毀工作區的最近可用副本，所以會被保留。在該工作區還原之前，清理作業不會處理它。';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      '這是某個已損毀工作區的最近可用副本。刪除後，將沒有任何可用來還原該工作區的內容。';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 項權限已被暫存，等待你審閱。它們列於本頁頂端。',
+      one: '有 1 項權限已被暫存，等待你審閱。它列於本頁頂端。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => '從還原的副本中暫存的權限';
+
+  @override
+  String get importHoldsExplainer =>
+      '還原的副本本身無法在此伺服器上授予任何權限。其中包含以下權限：接受其中一項即可重新授予，或拒絕以移除它。';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return '代理無需核准即可執行此操作：$action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return '人員核准後，代理即可執行此操作：$action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return '執行以 $command 開頭的指令';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => '此工作區中的所有地方';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return '在空間 $space 中';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return '適用於代理 $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return '沙盒可以執行 $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person 可以變更 $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person 可以審閱 $repo 中的 pull request';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person 獲得 $repo 的 $level 存取權限';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person 獲得 $role 角色';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return '一個待接受的邀請，將以 $role 角色加入';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '一個待接受的邀請，將以 $role 角色加入，並可審閱或寫入 $count 個儲存庫',
+      one: '一個待接受的邀請，將以 $role 角色加入，並可審閱或寫入 1 個儲存庫',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown => '本版應用程式無法描述的權限';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return '還原於 $time';
+  }
+
+  @override
+  String get importHoldAccept => '接受';
+
+  @override
+  String get importHoldDismiss => '拒絕';
+
+  @override
+  String get importHoldAcceptTitle => '授予此權限？';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\n接受後會立即在伺服器上授予此權限。';
+  }
+
+  @override
+  String get importHoldAccepted => '已授予權限。';
+
+  @override
+  String get importHoldNotApplied => '未授予任何權限：其對應的成員或儲存庫已不在此工作區中。';
 }

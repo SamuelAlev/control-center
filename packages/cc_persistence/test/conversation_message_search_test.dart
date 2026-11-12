@@ -66,7 +66,7 @@ void main() {
     await insertMsg('m3', 'c2', 'another deployment note'); // other space
 
     final hits = await db.messagingDao.searchInSpace('c1', 'deployment');
-    expect(hits.map((m) => m.id), ['m1']);
+    expect(hits.map((m) => m.data.id), ['m1']);
   });
 
   test('does not leak results from another space', () async {
@@ -74,9 +74,9 @@ void main() {
     await insertMsg('m2', 'c2', 'shared keyword apples');
 
     final c1 = await db.messagingDao.searchInSpace('c1', 'apples');
-    expect(c1.map((m) => m.id), ['m1']);
+    expect(c1.map((m) => m.data.id), ['m1']);
     final c2 = await db.messagingDao.searchInSpace('c2', 'apples');
-    expect(c2.map((m) => m.id), ['m2']);
+    expect(c2.map((m) => m.data.id), ['m2']);
   });
 
   test('excludes reverted messages', () async {
@@ -84,7 +84,7 @@ void main() {
     await insertMsg('m2', 'c1', 'live secret note');
 
     final hits = await db.messagingDao.searchInSpace('c1', 'secret');
-    expect(hits.map((m) => m.id), ['m2']);
+    expect(hits.map((m) => m.data.id), ['m2']);
   });
 
   test('tracks edits via the update trigger', () async {
@@ -93,7 +93,7 @@ void main() {
     expect(await db.messagingDao.searchInSpace('c1', 'rewritten'), isEmpty);
     await db.messagingDao.updateMessage('m1', content: 'rewritten wording');
     final hits = await db.messagingDao.searchInSpace('c1', 'rewritten');
-    expect(hits.map((m) => m.id), ['m1']);
+    expect(hits.map((m) => m.data.id), ['m1']);
     // The old term no longer matches.
     expect(await db.messagingDao.searchInSpace('c1', 'original'), isEmpty);
   });
@@ -125,6 +125,6 @@ void main() {
       "INSERT INTO conversation_messages_fts(conversation_messages_fts) VALUES('rebuild')",
     );
     final hits = await db.messagingDao.searchInSpace('c1', 'indexable');
-    expect(hits.map((m) => m.id), ['m1']);
+    expect(hits.map((m) => m.data.id), ['m1']);
   });
 }

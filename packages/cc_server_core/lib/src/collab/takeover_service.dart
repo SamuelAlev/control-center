@@ -1,11 +1,9 @@
-import 'dart:convert';
-
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space_takeover.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/space_takeover_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
-import 'package:cc_persistence/database/daos/cache_dao.dart';
-import 'package:cc_persistence/database/workspace_database_manager.dart';
 
 /// Take-over / hand-back (PRD 16 §8): a human holds mutating control; the agent may still observe.
 ///
@@ -13,7 +11,7 @@ import 'package:cc_persistence/database/workspace_database_manager.dart';
 class TakeoverService {
   /// Creates the service.
   TakeoverService({
-    required WorkspaceDatabaseManager workspaceDbs,
+    required this._takeovers,
     required this._runLogs,
     required this._messaging,
     required this._pauseRun,
@@ -21,12 +19,12 @@ class TakeoverService {
     required this._stopRun,
     required this._steerRun,
     required this._conversationChanges,
-  }) : _dbs = workspaceDbs;
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
 
-  /// The Caches kind holding take-over markers (key = space id).
-  static const String cacheKind = 'takeover';
-
-  final WorkspaceDatabaseManager _dbs;
+  /// The durable markers, one per space, in the space's own workspace.
+  final SpaceTakeoverRepository _takeovers;
+  final DateTime Function() _now;
   final AgentRunLogRepository _runLogs;
   final MessagingRepository _messaging;
   final Future<bool> Function(String runLogId) _pauseRun;
@@ -36,53 +34,28 @@ class TakeoverService {
   final Future<List<PrFile>> Function(String workspaceId, String spaceId)
   _conversationChanges;
 
-  /// Take-over markers live in the workspace's own database file, so the marker
-  /// is always read and written in the workspace that owns the space.
-  CacheDao _cache(String workspaceId) => _dbs.of(workspaceId).cacheDao;
-
-  /// The active take-over marker for a space, or null.
+  /// The active take-over marker for a space (its wire form), or null.
   Future<Map<String, dynamic>?> status(
     String workspaceId,
     String spaceId,
-  ) async {
-    final raw = await _cache(workspaceId).read(workspaceId, cacheKind, spaceId);
-    if (raw == null) {
-      return null;
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      return decoded is Map<String, dynamic> ? decoded : null;
-    } on FormatException {
-      return null;
-    }
-  }
+  ) async => (await _takeovers.get(workspaceId, spaceId))?.toWire();
 
   /// Whether a take-over stands on [spaceId] (dispatch gating).
   Future<bool> isActive(String workspaceId, String spaceId) async =>
-      await status(workspaceId, spaceId) != null;
+      await _takeovers.get(workspaceId, spaceId) != null;
 
   /// The take-over marker for [spaceId] as it changes (null when none
   /// stands). Backs `takeover.watch`, so clients follow the marker instead of
   /// polling `takeover.status`.
   Stream<Map<String, dynamic>?> watch(String workspaceId, String spaceId) =>
-      _cache(workspaceId).watch(workspaceId, cacheKind, spaceId).map((raw) {
-        if (raw == null) {
-          return null;
-        }
-        try {
-          final decoded = jsonDecode(raw);
-          return decoded is Map<String, dynamic> ? decoded : null;
-        } on FormatException {
-          return null;
-        }
-      });
+      _takeovers.watch(workspaceId, spaceId).map((t) => t?.toWire());
 
   /// Begins a take-over: claims the durable marker, then pauses/stops the
   /// space's active runs. Throws [StateError] when someone already holds it
   /// (one live editor per worktree — refuse loudly, never silently share).
   ///
-  /// The claim is one conditional write ([CacheDao.putIfAbsent]), so two
-  /// people starting a take-over at once cannot both pass. Claiming before
+  /// The claim is one conditional write ([SpaceTakeoverRepository.claim]), so
+  /// two people starting a take-over at once cannot both pass. Claiming before
   /// pausing also means no run can start in the space mid-pause: dispatch is
   /// already gated on the marker. A failure while pausing releases the claim.
   Future<Map<String, dynamic>> begin({
@@ -91,24 +64,17 @@ class TakeoverService {
     required String userId,
     required String displayName,
   }) async {
-    final marker = <String, dynamic>{
-      'user_id': userId,
-      'display_name': displayName,
-      'since': DateTime.now().toIso8601String(),
-      'paused_run_ids': <String>[],
-      'stopped_run_ids': <String>[],
-    };
-    final cache = _cache(workspaceId);
-    if (!await cache.putIfAbsent(
-      workspaceId,
-      cacheKind,
-      spaceId,
-      jsonEncode(marker),
-    )) {
-      final existing = await status(workspaceId, spaceId);
+    final takeover = SpaceTakeover(
+      spaceId: spaceId,
+      userId: userId,
+      displayName: displayName,
+      since: _now(),
+    );
+    if (!await _takeovers.claim(workspaceId, takeover)) {
+      final existing = await _takeovers.get(workspaceId, spaceId);
       throw StateError(
         'This conversation is already taken over by '
-        '${existing?['display_name'] ?? existing?['user_id'] ?? 'someone else'}.',
+        '${existing?.displayName ?? existing?.userId ?? 'someone else'}.',
       );
     }
     final paused = <String>[];
@@ -131,16 +97,19 @@ class TakeoverService {
           stopped.add(run.id);
         }
       }
-      marker['paused_run_ids'] = paused;
-      marker['stopped_run_ids'] = stopped;
-      await cache.put(workspaceId, cacheKind, spaceId, jsonEncode(marker));
+      await _takeovers.recordHeldRuns(
+        workspaceId,
+        spaceId,
+        paused: paused,
+        stopped: stopped,
+      );
     } catch (_) {
       // Runs already paused stay listed nowhere, so resume them rather than
       // strand them behind a released claim.
       for (final runId in paused) {
         await _resumeRun(runId).catchError((Object _) => false);
       }
-      await cache.deleteEntry(workspaceId, cacheKind, spaceId);
+      await _takeovers.release(workspaceId, spaceId);
       rethrow;
     }
     await _messaging.sendMessage(
@@ -154,7 +123,14 @@ class TakeoverService {
       senderType: 'system',
       messageType: 'system',
     );
-    return marker;
+    return SpaceTakeover(
+      spaceId: spaceId,
+      userId: userId,
+      displayName: displayName,
+      since: takeover.since,
+      pausedRunIds: paused,
+      stoppedRunIds: stopped,
+    ).toWire();
   }
 
   /// Hands control back: clears the marker, posts the diff summary, then
@@ -173,19 +149,18 @@ class TakeoverService {
     bool asAdmin = false,
     String note = '',
   }) async {
-    final marker = await status(workspaceId, spaceId);
+    final marker = await _takeovers.get(workspaceId, spaceId);
     if (marker == null) {
       throw StateError('No take-over stands on this conversation.');
     }
-    final holder = marker['user_id'];
-    if (holder != userId && !asAdmin) {
+    if (marker.userId != userId && !asAdmin) {
       throw StateError(
-        'Only ${marker['display_name'] ?? holder} or a workspace admin can '
+        'Only ${marker.displayName} or a workspace admin can '
         'hand this conversation back.',
       );
     }
     final summary = await _diffSummary(workspaceId, spaceId);
-    await _cache(workspaceId).deleteEntry(workspaceId, cacheKind, spaceId);
+    await _takeovers.release(workspaceId, spaceId);
 
     final message = StringBuffer()
       ..write('$displayName handed the worktree back. ')
@@ -193,7 +168,7 @@ class TakeoverService {
     if (note.trim().isNotEmpty) {
       message.write('\nNote from $displayName: ${note.trim()}');
     }
-    final paused = (marker['paused_run_ids'] as List?)?.cast<String>() ?? [];
+    final paused = marker.pausedRunIds;
     final resumed = <String>[];
     Object? firstError;
     try {

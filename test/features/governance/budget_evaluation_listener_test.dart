@@ -17,8 +17,8 @@ class _SpyGovernance implements BudgetGovernanceService {
     calls.add((workspaceId: workspaceId, agentId: agentId));
     return const BudgetDecision(
       outcome: BudgetOutcome.ok,
-      spentCents: 0,
-      budgetCents: 0,
+      spentMicros: 0,
+      budgetMicros: 0,
     );
   }
 }

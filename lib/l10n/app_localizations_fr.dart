@@ -14494,13 +14494,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backupSnapshotComplete => 'Complet';
 
   @override
-  String get backupSnapshotIncomplete => 'Incomplet';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Le manifeste est absent ou désigne des fichiers manquants : cet instantané ne peut pas restaurer toute l\'installation. Les fichiers d\'espace de travail qu\'il contient restent adoptables un par un.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Supprimer l\'instantané';
 
   @override
@@ -18685,6 +18678,237 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Vous pouvez observer cette machine. Elle utilise les connexions de la personne pour qui elle a été ouverte : seule cette personne peut la piloter, rediriger ses ports, y coller du contenu ou y déposer des fichiers.';
+
+  @override
+  String get refusalStorageBusy =>
+      'La base de données du serveur est occupée pour le moment. Réessayez dans un instant.';
+
+  @override
+  String get refusalStorageFull =>
+      'Le serveur n\'a plus d\'espace disque, rien ne peut donc être enregistré. Le propriétaire du serveur doit libérer de la place.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Les données de cet espace de travail sont endommagées. Le propriétaire du serveur doit les restaurer à partir d\'une sauvegarde.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Cet espace de travail est en lecture seule tant que le propriétaire du serveur ne le restaure pas à partir d\'une sauvegarde, donc les modifications ne peuvent pas être enregistrées.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Ces données ont été écrites par une version plus récente du serveur. Mettez le serveur à jour, puis réessayez.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Le serveur a trouvé un fichier de base de données qu\'il n\'a pas écrit. Le propriétaire du serveur doit vérifier le dossier de données du serveur.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Cet espace de travail a été supprimé.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Cette demande est toujours en cours de traitement. Attendez qu\'elle se termine, puis vérifiez le résultat.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Aucun fichier ne se trouve à ce chemin sur le serveur. Rien n\'a été remplacé.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Ce fichier est endommagé et ne peut pas être restauré. Rien n\'a été remplacé.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Ce fichier ne correspond pas à la somme de contrôle enregistrée dans sa sauvegarde : il a peut-être été modifié ou endommagé. Rien n\'a été remplacé.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Ce fichier a été écrit par une version plus récente du serveur. Mettez le serveur à jour pour le restaurer. Rien n\'a été remplacé.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Ce fichier n\'est pas une base de données d\'espace de travail. Rien n\'a été remplacé.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Ce fichier n\'a pas pu être mis au format de ce serveur. Rien n\'a été remplacé.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Ce fichier contient des liens qui appartiennent à un autre espace de travail de ce serveur, et le restaurer les lui retirerait. Rien n\'a été remplacé.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Cet espace de travail est en lecture seule';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Ses données n\'ont pas passé un contrôle d\'intégrité, donc les modifications ne peuvent pas être enregistrées. Tout reste lisible. Le propriétaire du serveur peut le restaurer à partir d\'une sauvegarde.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Ses données n\'ont pas passé un contrôle d\'intégrité, donc les modifications ne peuvent pas être enregistrées. Tout reste lisible. Restaurez-le à partir d\'une sauvegarde pour le rendre à nouveau modifiable.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Ouvrir les sauvegardes';
+
+  @override
+  String get serverNoticesLabel => 'Nécessite votre attention';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Lecture seule';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Depuis $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Sa base de données n\'a pas passé un contrôle d\'intégrité : elle reste lisible et refuse toute modification. Restaurez-la à partir d\'une sauvegarde dans les listes ci-dessous ; sa dernière copie valide est conservée jusque-là.';
+
+  @override
+  String get serverNoticeDetails => 'Détails';
+
+  @override
+  String get backupSnapshotUnverified => 'Non vérifié';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Cet instantané ne peut pas être vérifié. Il ne s\'est jamais terminé, ou il a été pris avant que les instantanés n\'enregistrent des sommes de contrôle, donc il ne peut pas restaurer toute l\'installation. Les fichiers d\'espace de travail qu\'il contient peuvent encore être restaurés un par un.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Dernière copie valide';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Conservé car il contient la dernière copie valide d\'un espace de travail endommagé. Le nettoyage le laisse intact tant que cet espace de travail n\'est pas restauré.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'C\'est la dernière copie valide d\'un espace de travail endommagé. Si vous la supprimez, il ne reste plus rien pour restaurer cet espace de travail.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count autorisations ont été mises en attente pour votre examen. Elles figurent en haut de cette page.',
+      one:
+          '1 autorisation a été mise en attente pour votre examen. Elle figure en haut de cette page.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Mis en attente lors de la restauration';
+
+  @override
+  String get importHoldsExplainer =>
+      'Une copie restaurée ne peut rien autoriser par elle-même sur ce serveur. Ces autorisations y figuraient : acceptez-en une pour l\'accorder à nouveau, ou rejetez-la pour la supprimer.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Les agents peuvent faire cela sans approbation : $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Les agents peuvent faire cela une fois qu\'une personne l\'a approuvé : $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Exécuter les commandes commençant par $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Partout dans cet espace de travail';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'Dans l\'espace $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Pour l\'agent $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Les bacs à sable peuvent exécuter $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person peut modifier $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person peut relire les pull requests dans $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person obtient un accès $level à $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person obtient le rôle $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Une invitation ouverte à rejoindre avec le rôle $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Une invitation ouverte à rejoindre avec le rôle $role et un accès en relecture ou en écriture à $count dépôts',
+      one:
+          'Une invitation ouverte à rejoindre avec le rôle $role et un accès en relecture ou en écriture à 1 dépôt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Une autorisation que cette version de l\'application ne sait pas décrire';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Restaurée $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Accepter';
+
+  @override
+  String get importHoldDismiss => 'Rejeter';
+
+  @override
+  String get importHoldAcceptTitle => 'Accorder cette autorisation ?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nL\'accepter l\'accorde immédiatement sur le serveur.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Autorisation accordée.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Rien n\'a été accordé : la personne ou l\'élément concerné n\'existe plus dans cet espace de travail.';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).
@@ -18887,4 +19111,9 @@ class AppLocalizationsFrCa extends AppLocalizationsFr {
   @override
   String get mcpExternalServersOwnerRunsOnly =>
       'Les serveurs trouvés dans les paramètres d’outils propres à cette machine ne sont disponibles que dans les exécutions que vous lancez ou dont vous êtes responsable. Les exécutions des autres ne les voient jamais, et ils ne sont pas proposés par le point de terminaison MCP de Control Center.';
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person peut relire les demandes de tirage dans $repo';
+  }
 }

@@ -1,3 +1,5 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
 /// Tamper-evident authorization audit (one row per guard verdict, allow and deny).
@@ -5,11 +7,13 @@ import 'package:drift/drift.dart';
 /// Attribution: actor, on-behalf-of user, rule/source scope, optional delegation
 /// chain. Hash-chained per workspace (`entryHash`/`prevHash`/`seq`); never
 /// age-pruned — retention is export-then-truncate with a checkpoint hash.
-@TableIndex(name: 'idx_guard_decisions_workspace', columns: {#workspaceId})
-@TableIndex(
-  name: 'idx_guard_decisions_time',
-  columns: {#workspaceId, #occurredAt},
-)
+///
+/// Every read walks the chain in [seq] order, so the unique `seq` key is the
+/// only index the table needs.
+///
+/// No foreign keys on [spaceId], [runId] or [ruleId]: they are part of the
+/// hashed row, and a `SET NULL` on a parent delete would rewrite a hashed
+/// field and break the chain. An audit row must outlive what it names.
 class GuardDecisionsTable extends Table {
   @override
   String get tableName => 'guard_decisions';
@@ -27,10 +31,14 @@ class GuardDecisionsTable extends Table {
   /// When the decision was made.
   DateTimeColumn get occurredAt => dateTime()();
 
-  /// `user` | `agent` | `system` — who initiated the action.
-  TextColumn get actorType => text()();
+  /// Who initiated the action: an `ActorKind` wire name.
+  TextColumn get actorType => text().check(
+    // ignore: recursive_getters
+    actorType.isIn(AgentsStoredValues.actorKind),
+  )();
 
-  /// The initiating principal's id (user id / agent id).
+  /// The initiating principal's id (user id / agent id). No foreign key: a
+  /// user id lives in `global.db`.
   TextColumn get actorId => text()();
 
   /// The human the action is attributed to when [actorType] is `agent` (the
@@ -56,16 +64,21 @@ class GuardDecisionsTable extends Table {
   /// The server's view of the client IP (human surfaces).
   TextColumn get ip => text().nullable()();
 
-  /// Which chokepoint decided: `repo_rpc` | `harness` | `mcp` |
-  /// `skill_install` | `sandbox` | `subscription`.
-  TextColumn get surface => text()();
+  /// Which chokepoint decided: a `GuardSurface` wire name.
+  TextColumn get surface => text().check(
+    // ignore: recursive_getters
+    surface.isIn(AgentsStoredValues.guardSurface),
+  )();
 
   /// The op/tool name that was gated.
   TextColumn get actionName => text()();
 
   /// The ActionClass wire names involved, as a JSON array (empty for pure
   /// role-gate decisions).
-  TextColumn get actionClasses => text().withDefault(const Constant('[]'))();
+  TextColumn get actionClasses => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(actionClasses))
+      .withDefault(const Constant('[]'))();
 
   /// The derived permission (`domain:tier`) for human-lane decisions.
   TextColumn get permission => text().nullable()();
@@ -79,15 +92,22 @@ class GuardDecisionsTable extends Table {
   /// `refs=!main`), for rendering without re-resolving.
   TextColumn get constraintSummary => text().nullable()();
 
-  /// `allow` | `prompt` | `deny` — the resolved verdict.
-  TextColumn get decision => text()();
+  /// The resolved verdict: an `ActionDecision` wire name.
+  TextColumn get decision => text().check(
+    // ignore: recursive_getters
+    decision.isIn(AgentsStoredValues.actionDecision),
+  )();
 
-  /// `advisory` | `soft` | `hard` — the enforcement level of the deciding
-  /// rule (null = hard, the default).
-  TextColumn get enforcement => text().nullable()();
+  /// The enforcement level of the deciding rule: an `EnforcementLevel` wire
+  /// name (null = hard, the default).
+  TextColumn get enforcement =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(enforcement.isIn(AgentsStoredValues.enforcementLevel))();
 
   /// Which scope decided: `space` | `agent` | `workspace` | `managed` |
-  /// `preset` | `default` | `role` | `grant`.
+  /// `preset` | `default` | `role` | `grant` | `forge` | ... Open set: each
+  /// gate names its own source.
   TextColumn get sourceScope => text().nullable()();
 
   /// The deciding `action_policies` row id, when a stored rule decided.
@@ -116,13 +136,17 @@ class GuardDecisionsTable extends Table {
   /// Row kind: `decision` (normal) or `checkpoint` (written by
   /// export-then-truncate, carrying the removed segment's terminal hash in
   /// [prevHash] so the surviving chain still verifies back to genesis).
-  TextColumn get kind => text().withDefault(const Constant('decision'))();
+  TextColumn get kind => text()
+      // ignore: recursive_getters
+      .check(kind.isIn(AgentsStoredValues.guardDecisionKind))
+      .withDefault(const Constant('decision'))();
 
   @override
   Set<Column> get primaryKey => {id};
 
+  /// The chain order is unique within the file (one workspace per file).
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, seq},
+    {seq},
   ];
 }

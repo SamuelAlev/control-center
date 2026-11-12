@@ -14530,13 +14530,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backupSnapshotComplete => 'Complet';
 
   @override
-  String get backupSnapshotIncomplete => 'Incomplet';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Manifestul lipsește sau numește fișiere care nu sunt acolo, deci acest snapshot nu poate restaura întreaga instalare. Fișierele de spațiu de lucru pe care le are pot fi totuși adoptate unul câte unul.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Șterge snapshotul';
 
   @override
@@ -18715,4 +18708,239 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Poți urmări această mașină. Folosește conectările persoanei pentru care a fost deschisă, așa că doar ea poate controla mașina, redirecționa porturile ei, lipi conținut în ea sau plasa fișiere pe ea.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Baza de date a serverului este ocupată acum. Încearcă din nou peste puțin timp.';
+
+  @override
+  String get refusalStorageFull =>
+      'Serverul nu mai are spațiu pe disc, așa că nimic nu poate fi salvat. Proprietarul serverului trebuie să elibereze spațiu.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Datele acestui spațiu de lucru sunt deteriorate. Proprietarul serverului trebuie să le restaureze dintr-o copie de rezervă.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Acest spațiu de lucru este doar pentru citire până când proprietarul serverului îl restaurează dintr-o copie de rezervă, așa că modificările nu pot fi salvate.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Aceste date au fost scrise de o versiune mai nouă a serverului. Actualizează serverul, apoi încearcă din nou.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Serverul a găsit un fișier de bază de date pe care nu l-a scris el. Proprietarul serverului trebuie să verifice folderul de date al serverului.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Acest spațiu de lucru a fost șters.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Această cerere este încă procesată. Așteaptă să se termine, apoi verifică rezultatul.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Nu există niciun fișier la această cale pe server. Nimic nu a fost înlocuit.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Fișierul este deteriorat, așa că nu poate fi restaurat. Nimic nu a fost înlocuit.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Fișierul nu corespunde sumei de control înregistrate în copia de rezervă, așa că poate fi modificat sau deteriorat. Nimic nu a fost înlocuit.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Fișierul a fost scris de o versiune mai nouă a serverului. Actualizează serverul ca să-l restaurezi. Nimic nu a fost înlocuit.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Fișierul nu este o bază de date de spațiu de lucru. Nimic nu a fost înlocuit.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Fișierul nu a putut fi adus la formatul acestui server. Nimic nu a fost înlocuit.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Fișierul conține linkuri care aparțin altui spațiu de lucru de pe acest server, iar restaurarea lui le-ar prelua. Nimic nu a fost înlocuit.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Acest spațiu de lucru este doar pentru citire';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Datele sale au eșuat la o verificare de integritate, așa că modificările nu pot fi salvate. Totul rămâne lizibil. Proprietarul serverului îl poate restaura dintr-o copie de rezervă.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Datele sale au eșuat la o verificare de integritate, așa că modificările nu pot fi salvate. Totul rămâne lizibil. Restaurează-l dintr-o copie de rezervă ca să poată fi din nou modificat.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Deschide copiile de rezervă';
+
+  @override
+  String get serverNoticesLabel => 'Necesită atenția ta';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Doar citire';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Din $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Baza sa de date a eșuat la o verificare de integritate, așa că permite doar citirea și refuză orice modificare. Restaureaz-o dintr-o copie de rezervă din listele de mai jos; ultima copie bună este păstrată până o faci.';
+
+  @override
+  String get serverNoticeDetails => 'Detalii';
+
+  @override
+  String get backupSnapshotUnverified => 'Neverificat';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Acest snapshot nu poate fi verificat. Nu s-a încheiat niciodată sau a fost făcut înainte ca snapshot-urile să înregistreze sume de control, așa că nu poate restaura întreaga instalare. Fișierele spațiilor de lucru pe care le conține pot fi totuși restaurate unul câte unul.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Ultima copie bună';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Păstrat pentru că conține ultima copie bună a unui spațiu de lucru deteriorat. Curățarea nu-l atinge până când spațiul de lucru respectiv este restaurat.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Aceasta este ultima copie bună a unui spațiu de lucru deteriorat. Dacă o ștergi, nu mai rămâne nimic din care să restaurezi spațiul de lucru respectiv.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de permisiuni au fost reținute pentru verificarea ta. Sunt listate în partea de sus a paginii.',
+      few:
+          '$count permisiuni au fost reținute pentru verificarea ta. Sunt listate în partea de sus a paginii.',
+      one:
+          '1 permisiune a fost reținută pentru verificarea ta. Este listată în partea de sus a paginii.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Reținute din copiile restaurate';
+
+  @override
+  String get importHoldsExplainer =>
+      'O copie restaurată nu poate acorda nimic pe acest server de una singură. Aceste permisiuni erau în ea: acceptă una ca să o acorzi din nou sau respinge-o ca s-o elimini.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agenții pot face asta fără aprobare: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agenții pot face asta după ce o persoană aprobă: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Rulează comenzi care încep cu $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Peste tot în acest spațiu de lucru';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'În spațiul $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Pentru agentul $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandbox-urile pot rula $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person poate modifica $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person poate revizui pull request-urile din $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person are acces $level la $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person primește rolul $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'O invitație deschisă pentru a intra cu rolul $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'O invitație deschisă pentru a intra cu rolul $role și acces de revizuire sau scriere la $count de depozite',
+      few:
+          'O invitație deschisă pentru a intra cu rolul $role și acces de revizuire sau scriere la $count depozite',
+      one:
+          'O invitație deschisă pentru a intra cu rolul $role și acces de revizuire sau scriere la 1 depozit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'O permisiune pe care această versiune a aplicației nu o poate descrie';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Restaurat $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Acceptă';
+
+  @override
+  String get importHoldDismiss => 'Respinge';
+
+  @override
+  String get importHoldAcceptTitle => 'Acorzi această permisiune?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nAcceptarea acordă asta imediat pe server.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Permisiune acordată.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Nimic nu a fost acordat: cel pentru care era nu mai există în acest spațiu de lucru.';
 }

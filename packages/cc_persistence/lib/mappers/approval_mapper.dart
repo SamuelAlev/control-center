@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/actor_kind.dart';
 import 'package:cc_domain/features/governance/domain/entities/approval.dart';
 import 'package:cc_domain/features/governance/domain/entities/approval_comment.dart';
 import 'package:cc_domain/features/governance/domain/value_objects/approval_kind.dart';
@@ -38,6 +39,10 @@ class ApprovalMapper {
   List<Approval> toDomainList(List<ApprovalsTableData> rows) =>
       rows.map(toDomain).toList(growable: false);
 
+  /// [value] checked against [ActorKind], or null for no decider yet.
+  static String? _actorKind(String? value) =>
+      value == null ? null : ActorKind.parse(value).wire;
+
   /// Approval to companion.
   ApprovalsTableCompanion toCompanion(Approval a) => ApprovalsTableCompanion(
     id: Value(a.id),
@@ -46,12 +51,12 @@ class ApprovalMapper {
     description: Value(a.description),
     kind: Value(a.kind.storage),
     status: Value(a.status.storage),
-    requestedByActorType: Value(a.requestedByActorType),
+    requestedByActorType: Value(ActorKind.parse(a.requestedByActorType).wire),
     requestedById: Value(a.requestedById),
     linkedTicketIds: Value(jsonEncode(a.linkedTicketIds)),
     linkedEntityType: Value(a.linkedEntityType),
     linkedEntityId: Value(a.linkedEntityId),
-    decidedByActorType: Value(a.decidedByActorType),
+    decidedByActorType: Value(_actorKind(a.decidedByActorType)),
     decidedById: Value(a.decidedById),
     decisionReason: Value(a.decisionReason),
     createdAt: Value(a.createdAt),
@@ -82,7 +87,7 @@ class ApprovalMapper {
         id: Value(c.id),
         approvalId: Value(c.approvalId),
         workspaceId: Value(c.workspaceId),
-        authorType: Value(c.authorType),
+        authorType: Value(ActorKind.parse(c.authorType).wire),
         authorId: Value(c.authorId),
         body: Value(c.body),
         createdAt: Value(c.createdAt),

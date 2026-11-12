@@ -6,6 +6,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/chat_bridges/providers/chat_link_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,7 +81,7 @@ class ChatLinkClaimPanel extends ConsumerWidget {
           if (answer.hasError) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              l10n.failedWithError('${answer.error}'),
+              failureMessage(l10n, answer.error!),
               style: CcTypography.caption.copyWith(color: t.bgErrorSolid),
             ),
           ],

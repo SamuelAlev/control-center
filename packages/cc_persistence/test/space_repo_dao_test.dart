@@ -20,7 +20,13 @@ void main() {
         );
     await db
         .into(db.spacesTable)
-        .insert(SpacesTableCompanion.insert(id: 'ch-1', name: 'PR #1'));
+        .insert(
+          SpacesTableCompanion.insert(
+            workspaceId: 'test-workspace',
+            id: 'ch-1',
+            name: 'PR #1',
+          ),
+        );
   });
 
   tearDown(() async {

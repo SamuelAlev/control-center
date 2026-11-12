@@ -1,3 +1,4 @@
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/insights_providers.dart';
@@ -33,7 +34,7 @@ class InsightsKpiStrip extends ConsumerWidget {
     }
 
     final runs = delta(metrics.totalRuns, previous.totalRuns);
-    final cost = delta(metrics.totalCostCents, previous.totalCostCents);
+    final cost = delta(metrics.totalCostMicros, previous.totalCostMicros);
     final errorRate = delta(
       metrics.errorRate,
       previous.errorRate,
@@ -58,7 +59,7 @@ class InsightsKpiStrip extends ConsumerWidget {
         ),
         ObsStatStripEntry(
           label: l10n.obsKpiTotalCost,
-          value: fmtCents(metrics.totalCostCents),
+          value: fmtMicros(metrics.totalCostMicros),
           tone: ObsTone.brand,
           detail: cost.text,
           detailTone: cost.tone,

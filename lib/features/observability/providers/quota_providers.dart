@@ -40,8 +40,8 @@ const List<QuotaLimit> _demoQuotaLimits = [
   QuotaLimit(
     provider: 'all',
     window: QuotaWindow.weekly,
-    unit: QuotaUnit.costCents,
-    limit: 2500,
+    unit: QuotaUnit.costMicros,
+    limit: 25000000,
   ),
 ];
 

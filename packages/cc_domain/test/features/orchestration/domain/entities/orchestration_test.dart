@@ -34,8 +34,8 @@ void main() {
       expect(o.pipelineRunId, isNull);
       expect(o.teamId, isNull);
       expect(o.projectId, isNull);
-      expect(o.estimatedCostCents, isNull);
-      expect(o.maxCostCents, isNull);
+      expect(o.estimatedCostMicros, isNull);
+      expect(o.maxCostMicros, isNull);
       expect(o.hiredAgentIds, isEmpty);
       expect(o.approvedNodeKeys, isNull);
       expect(o.errorMessage, isNull);
@@ -62,8 +62,8 @@ void main() {
         pipelineRunId: 'run',
         teamId: 'team',
         projectId: 'proj',
-        estimatedCostCents: 100,
-        maxCostCents: 500,
+        estimatedCostMicros: 100,
+        maxCostMicros: 500,
         hiredAgentIds: const ['h1', 'h2'],
         approvedNodeKeys: const ['k1'],
         errorMessage: 'boom',
@@ -79,8 +79,8 @@ void main() {
       expect(o.pipelineRunId, 'run');
       expect(o.teamId, 'team');
       expect(o.projectId, 'proj');
-      expect(o.estimatedCostCents, 100);
-      expect(o.maxCostCents, 500);
+      expect(o.estimatedCostMicros, 100);
+      expect(o.maxCostMicros, 500);
       expect(o.hiredAgentIds, ['h1', 'h2']);
       expect(o.approvedNodeKeys, ['k1']);
       expect(o.errorMessage, 'boom');
@@ -167,8 +167,8 @@ void main() {
         pipelineRunId: 'run',
         teamId: 'team',
         projectId: 'proj',
-        estimatedCostCents: 7,
-        maxCostCents: 9,
+        estimatedCostMicros: 7,
+        maxCostMicros: 9,
         hiredAgentIds: const ['h1'],
         approvedNodeKeys: const ['k1', 'k2'],
         errorMessage: 'err',
@@ -186,8 +186,8 @@ void main() {
       expect(next.pipelineRunId, 'run');
       expect(next.teamId, 'team');
       expect(next.projectId, 'proj');
-      expect(next.estimatedCostCents, 7);
-      expect(next.maxCostCents, 9);
+      expect(next.estimatedCostMicros, 7);
+      expect(next.maxCostMicros, 9);
       expect(next.hiredAgentIds, ['h1']);
       expect(next.approvedNodeKeys, ['k1', 'k2']);
       expect(next.errorMessage, 'err');

@@ -43,11 +43,11 @@ class AgentGoalRun {
     required this.agentId,
     required this.userText,
     required this.kind,
-    required this.costCapCents,
+    required this.costCapMicros,
     this.deadlineAt,
     this.maxRuns,
     this.status = AgentGoalStatus.active,
-    this.costCents = 0,
+    this.costMicros = 0,
     this.runCount = 0,
     this.activeRunId,
     this.consecutiveFailures = 0,
@@ -65,15 +65,15 @@ class AgentGoalRun {
     if (userText.isEmpty) {
       throw ArgumentError('Goal text must not be empty');
     }
-    if (costCapCents <= 0) {
-      throw ArgumentError('costCapCents must be positive');
+    if (costCapMicros <= 0) {
+      throw ArgumentError('costCapMicros must be positive');
     }
     final runs = maxRuns;
     if (runs != null && runs <= 0) {
       throw ArgumentError('maxRuns must be positive');
     }
-    if (costCents < 0) {
-      throw ArgumentError('costCents must not be negative');
+    if (costMicros < 0) {
+      throw ArgumentError('costMicros must not be negative');
     }
     if (runCount < 0) {
       throw ArgumentError('runCount must not be negative');
@@ -112,11 +112,11 @@ class AgentGoalRun {
   /// stopped, or its cost cap bites. Set via the `/goal --days N` flag.
   final DateTime? deadlineAt;
 
-  /// Hard cost cap for the whole goal, in cents (priced models only).
-  final int costCapCents;
+  /// Hard cost cap for the whole goal, in micro-dollars (priced models only).
+  final int costCapMicros;
 
-  /// Cost accumulated across all runs so far, in cents.
-  final int costCents;
+  /// Cost accumulated across all runs so far, in micro-dollars.
+  final int costMicros;
 
   /// Run budget: no more than this many runs are dispatched for the goal.
   /// Null (the default) means NO iteration cap — a hard run count kills
@@ -154,7 +154,7 @@ class AgentGoalRun {
   }
 
   /// Whether the cost cap has been reached.
-  bool get costCapReached => costCents >= costCapCents;
+  bool get costCapReached => costMicros >= costCapMicros;
 
   /// Whether the run budget has been exhausted. No cap → never exhausted.
   bool get runBudgetExhausted {
@@ -174,8 +174,8 @@ class AgentGoalRun {
     AgentGoalStatus? status,
     DateTime? deadlineAt,
     bool removeDeadlineAt = false,
-    int? costCapCents,
-    int? costCents,
+    int? costCapMicros,
+    int? costMicros,
     int? maxRuns,
     bool removeMaxRuns = false,
     int? runCount,
@@ -199,8 +199,8 @@ class AgentGoalRun {
       kind: kind ?? this.kind,
       status: status ?? this.status,
       deadlineAt: removeDeadlineAt ? null : (deadlineAt ?? this.deadlineAt),
-      costCapCents: costCapCents ?? this.costCapCents,
-      costCents: costCents ?? this.costCents,
+      costCapMicros: costCapMicros ?? this.costCapMicros,
+      costMicros: costMicros ?? this.costMicros,
       maxRuns: removeMaxRuns ? null : (maxRuns ?? this.maxRuns),
       runCount: runCount ?? this.runCount,
       activeRunId: removeActiveRunId ? null : (activeRunId ?? this.activeRunId),
@@ -228,8 +228,8 @@ class AgentGoalRun {
           kind == other.kind &&
           status == other.status &&
           deadlineAt == other.deadlineAt &&
-          costCapCents == other.costCapCents &&
-          costCents == other.costCents &&
+          costCapMicros == other.costCapMicros &&
+          costMicros == other.costMicros &&
           maxRuns == other.maxRuns &&
           runCount == other.runCount &&
           activeRunId == other.activeRunId &&
@@ -250,8 +250,8 @@ class AgentGoalRun {
     kind,
     status,
     deadlineAt,
-    costCapCents,
-    costCents,
+    costCapMicros,
+    costMicros,
     maxRuns,
     runCount,
     activeRunId,

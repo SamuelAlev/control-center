@@ -1,9 +1,13 @@
+import 'package:cc_domain/core/domain/value_objects/actor_kind.dart';
 import 'package:cc_domain/features/governance/domain/entities/approval.dart';
 import 'package:cc_domain/features/governance/domain/entities/approval_comment.dart';
 import 'package:cc_domain/features/governance/domain/repositories/approval_repository.dart';
+import 'package:cc_domain/features/governance/domain/value_objects/approval_status.dart';
 import 'package:cc_persistence/database/daos/approval_dao.dart';
+import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/approval_mapper.dart';
+import 'package:drift/drift.dart' show Value;
 
 /// Drift-backed [ApprovalRepository].
 ///
@@ -41,6 +45,31 @@ class DaoApprovalRepository implements ApprovalRepository {
       // The approval carries its own workspace, so the file is picked from the
       // entity rather than from a parameter that could disagree with it.
       _dao(approval.workspaceId).upsert(_mapper.toCompanion(approval));
+
+  @override
+  Future<bool> recordDecision(
+    Approval decided, {
+    required ApprovalStatus expected,
+  }) async =>
+      await _dao(decided.workspaceId).updateIfStatus(
+        decided.workspaceId,
+        decided.id,
+        expected.storage,
+        // Only the decision columns: a decision never rewrites the request.
+        ApprovalsTableCompanion(
+          status: Value(decided.status.storage),
+          decidedByActorType: Value(
+            decided.decidedByActorType == null
+                ? null
+                : ActorKind.parse(decided.decidedByActorType!).wire,
+          ),
+          decidedById: Value(decided.decidedById),
+          decisionReason: Value(decided.decisionReason),
+          decidedAt: Value(decided.decidedAt),
+          updatedAt: Value(decided.updatedAt),
+        ),
+      ) !=
+      0;
 
   @override
   Future<void> delete(String workspaceId, String id) =>

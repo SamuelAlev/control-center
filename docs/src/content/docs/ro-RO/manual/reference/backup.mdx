@@ -2,7 +2,7 @@
 title: Backup, export și import
 description: Structura snapshot-urilor, manifestul, fiecare operațiune de backup și rută de transfer și exact ce fișiere conține și ce fișiere nu conține un backup.
 slug: ro-RO/manual/referinta/backup
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Tot ce poate Control Center să copieze, să predea sau să adopte, și forma exactă a fiecărui
@@ -48,12 +48,12 @@ Windows și se sortează cronologic ca un șir simplu.
 
 Backup-urile programate de spațiu de lucru se află separat la
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Ele nu includ un manifest sau `global.db` și nu sunt snapshot-uri de instalare.
+Fiecare are un `manifest.json` pentru acel singur fișier și nu are `global.db`; nu sunt snapshot-uri de instalare. O restaurare păstrează în același loc baza de date pe care o înlocuiește, ca `<timestamp>-pre-restore`.
 Pasul de retenție al pipeline-ului săptămânal elimină doar backup-urile propriului
 spațiu de lucru mai vechi decât vârsta configurată (30 de zile implicit);
 snapshot-urile de instalare create manual nu sunt niciodată rotite de acel pas.
 `server.listBackups` listează doar snapshot-uri de instalare, inclusiv pe cele
-incomplete; `workspace.listBackups` listează backup-urile programate ale unui spațiu de
+neverificate; `workspace.listBackups` listează backup-urile programate ale unui spațiu de
 lucru.
 
 Ștergerea unui spațiu de lucru lasă acest director pe loc. Programul spațiului de lucru se
@@ -65,33 +65,39 @@ proprietarul instalării le elimină. `server.listOrphanedBackups` le raporteaz�
 
 | Câmp                       | Tip             | Semnificație                                                              |
 | -------------------------- | --------------- | ------------------------------------------------------------------------- |
-| `version`                  | int             | Versiunea formatului manifestului. În prezent `1`                          |
+| `format`                   | int             | Formatul manifestului. În prezent `2`                          |
 | `created_at`               | ISO-8601 UTC    | Când a fost făcut snapshot-ul                                              |
-| `global.file`              | string          | Mereu `global.db`                                                          |
-| `global.schema_version`    | int             | Versiunea schemei `GlobalDatabase` la momentul capturii                    |
-| `global.bytes`             | int             | Dimensiunea fișierului `global.db` scris                                   |
-| `workspace_schema_version` | int             | Versiunea schemei `WorkspaceDatabase` partajată de fiecare fișier de spațiu de lucru |
-| `workspaces[]`             | array           | O intrare pentru fiecare spațiu de lucru capturat                          |
+| `global` | object | Înregistrarea lui `global.db`. Lipsește dintr-un backup programat de spațiu de lucru |
+| `workspaces[]`             | array           | O înregistrare pentru fiecare spațiu de lucru capturat                          |
 | `workspaces[].workspace_id`| string          | Spațiul de lucru pe care îl conține acest fișier                           |
-| `workspaces[].file`        | string          | Cale relativă la rădăcina snapshot-ului, `<workspaceId>/workspace.db`      |
-| `workspaces[].bytes`       | int             | Dimensiunea acelui fișier                                                  |
-| `skipped_workspaces[]`     | array of string | Spații de lucru pe care backup-ul **nu** le-a putut captura                |
+| `skipped_workspaces[]`     | array           | Spații de lucru pe care backup-ul **nu** le poate captura |
+| `skipped_workspaces[].workspace_id` | string | Spațiul de lucru care a fost lăsat afară |
+| `skipped_workspaces[].reason` | string | `no_file`, `damaged` sau `failed` |
 
-Un spațiu de lucru este omis când este înregistrat, dar nu s-a scris niciodată în el (deci
-nu există încă niciun fișier), sau când `VACUUM INTO` al lui a eșuat. În ambele cazuri,
-snapshot-ul se finalizează totuși, iar manifestul numește ce lipsește.
+`global` și fiecare înregistrare din `workspaces[]` înregistrează un fișier copiat, măsurat pe copie după ce a fost scris:
+
+| Câmp | Tip | Semnificație |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | Cale relativă la rădăcina snapshot-ului: `global.db` sau `<workspaceId>/workspace.db`      |
+| `bytes`       | int             | Dimensiunea copiei                                                  |
+| `sha256` | string | SHA-256 al copiei, în hexazecimal cu litere mici |
+| `quick_check` | string | Ce a spus `quick_check` din SQLite despre copie: `ok`, sau constatarea lui |
+| `user_version` | int | Versiunea schemei copiei |
+| `application_id` | int | `application_id` din SQLite al copiei |
+
+Un spațiu de lucru este omis când este înregistrat, dar nu s-a scris niciodată în el (`no_file`), când baza lui de date nu trece verificarea de integritate (`damaged`; o copie deteriorată nu se ia niciodată), sau când copia lui sau verificarea acelei copii a eșuat (`failed`). În ambele cazuri, snapshot-ul se finalizează totuși, iar manifestul numește ce lipsește. Manifestul se scrie ultimul.
 
 ### Completitudine
 
-`server.listBackups` raportează un indicator `complete` pentru fiecare snapshot. Acesta
-este fals când manifestul lipsește sau nu poate fi analizat, când `global.db` lipsește sau
-când manifestul numește un fișier de spațiu de lucru care nu este pe disc.
+`server.listBackups` raportează un indicator `complete` pentru fiecare snapshot. Acesta este fals când manifestul lipsește, nu poate fi analizat sau are alt format, când un fișier pe care îl numește lipsește sau are altă dimensiune, ori când o copie nu a trecut verificarea ei. Aplicația arată un astfel de snapshot ca **Neverificat**. Snapshot-urile făcute înainte de formatul `2` se află în această stare.
 
-Un snapshot incomplet este totuși listat, pentru că un snapshot pe care un operator nu îl
+Un snapshot neverificat este totuși listat, pentru că un snapshot pe care un operator nu îl
 vede este un snapshot despre care crede că îl are. Când manifestul nu poate fi citit,
 listarea se bazează pe structura propriu-zisă și raportează orice fișiere
 `<workspaceId>/workspace.db` găsește — acelea rămân adoptabile individual prin
 `workspace.import`, chiar dacă snapshot-ul în ansamblu nu poate restaura o instalare.
+
+Un snapshot listat sau un backup programat poartă `pinned_reason: "last_good_copy"` câtă vreme păstrează cea mai recentă copie verificată a unui spațiu de lucru a cărui bază de date activă este deteriorată. Pasul de retenție o sare până când spațiul de lucru respectiv este restaurat.
 
 ## Ce nu conține un backup
 
@@ -102,6 +108,7 @@ mult decât baza lui de date, iar nimic din rest nu călătorește:
 | ----------------------------------- | ----------------- | ---------------------------------- |
 | `global.db`                         | Da                | Nu                                 |
 | `<workspaceId>/workspace.db`        | Da                | Da (chiar *este* fișierul)         |
+| `<workspaceId>/code_index.db`       | Nu                | Nu                     |
 | `<workspaceId>/blobs/`              | Nu                | Nu                                 |
 | `<workspaceId>/skills/`             | Nu                | Nu                                 |
 | `<workspaceId>/agents/`             | Nu                | Nu                                 |
@@ -114,16 +121,11 @@ mult decât baza lui de date, iar nimic din rest nu călătorește:
 | `rigs/`                             | Nu                | Nu                                 |
 | `_agent_hooks/`                     | Nu                | Nu                                 |
 
-O parte din asta este de unică folosință — `spaces/` conține worktree-uri copy-on-write
-care sunt reprovisionate din repo-uri, `pr_clones/` este un cache, `models/` se descarcă
-din nou, `rigs/` este stare de mașină. O parte nu este: `blobs/` conține imaginile lipite
-spre care indică rânduri din baza de date, `skills/` și `agents/` conțin fișierele cu care
-rulează un agent, iar `secrets.json` conține fiecare cheie de asociere, acreditare de
-provider și setare SSO din instalare. Vezi
+O parte din asta este de unică folosință — `spaces/` conține worktree-uri copy-on-write care sunt reprovisionate din repo-uri, `pr_clones/` este un cache, `code_index.db` este reconstruit, `models/` se descarcă din nou, `rigs/` este stare de mașină. O parte nu este: `blobs/` conține imaginile lipite spre care indică rânduri din baza de date, `skills/` și `agents/` conțin fișierele cu care rulează un agent, iar `secrets.json` conține fiecare cheie de asociere, acreditare de provider și setare SSO din instalare. Vezi
 [Backup și restaurare](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/#copiază-backup-urile-în-afara-mașinii)
 pentru acoperirea restului.
-:::caution[Baza de date a unui spațiu de lucru conține secretele webhook-urilor]
-`workspace.db` este întregul spațiu de lucru: conversații, jurnale de rulare, indexul de cod, legăturile de repo-uri, definițiile de medii și membrii. Conține și token-urile webhook-urilor de pipeline și secretele webhook-urilor de sincronizare a tichetelor, în formă citibilă, deci tratează un export sau un backup descărcat ca pe un secret. Nu conține nicio autentificare la un provider, cheie de dispozitiv sau secret de utilizator; acestea sunt în `global.db` și `secrets.json`.
+:::note[Secretele rămân în afara bazelor de date]
+`workspace.db` este întregul spațiu de lucru: conversații, jurnale de rulare, legăturile cu repository-urile, definițiile de medii și membrii. Token-urile webhook ale pipeline-urilor și secretele webhook ale sincronizării de tichete se află în `secrets.json`: baza de date conține o referință la fiecare, iar indexul de rute conține un hash cu cheie al fiecărui token. Un spațiu de lucru restaurat pe o altă instalare nu primește deci niciun webhook până când trigger-ele lui nu sunt salvate din nou acolo. Autentificările la provideri, cheile dispozitivelor și secretele utilizatorilor se află în `global.db` și `secrets.json`.
 :::
 
 :::note[Token-urile de chat rămân deliberat pe dinafară]
@@ -150,6 +152,8 @@ cum este serverul demo.
 | `workspace.deleteBackup` | modificare | Spațiu de lucru | `owner` | `name` | `{ok}` |
 | `workspace.export`   | citire      | Spațiu de lucru | `admin`              | niciunul      | `{ok, path}`                  |
 | `workspace.import`   | modificare  | Spațiu de lucru | `owner`, și proprietarul serverului | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | citire | Spațiu de lucru | `owner`, și proprietarul serverului | niciunul | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | modificare | Spațiu de lucru | `owner`, și proprietarul serverului | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | modificare  | Instalare*     | `owner`              | `id`          | rând de registru marcat ca șters |
 
 * `workspace.delete` nu are sferă pentru că rândul pe care îl marchează trăiește în
@@ -167,18 +171,20 @@ spațiul de lucru, așa că backup-urile lui aparțin proprietarului instalării
 operațiuni de ștergere acceptă doar numele unui director cu marcă de timp din listă, nu o
 cale.
 
+`workspace.importHolds.list` returnează ce a reținut o importare. Fiecare reținere are un `id`, un `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` sau `invite`), `payload`-ul pe care l-ar pune înapoi, `imported_at` și `source_install_id`. `workspace.importHolds.resolve` cu `accept: true` o acordă din nou, iar cu `false` o elimină. `applied` este false când cel sau ceea ce era destinatarul concesiunii nu mai este în spațiul de lucru.
+
 :::note[Un snapshot al întregii instalări este restricționat la proprietar pe ambele canale]
 `server.backupNow`, `server.listBackups` și `server.deleteBackup` cer **proprietarul**
 instalării (`ServerAuthority.serverOwner`), aceeași poartă ca `GET /backup/snapshot`. Un
 snapshot capturează baza de date a fiecărui spațiu de lucru, așa că a fi admin al unui
 spațiu de lucru nu este suficient pentru a le administra pe celelalte. Ștergerea acceptă
 doar numele directorului cu marcă de timp din listă, nu o cale arbitrară de server, și
-elimină întregul snapshot (inclusiv snapshot-urile incomplete). Exporturile per spațiu
+elimină întregul snapshot (inclusiv snapshot-urile neverificate). Exporturile per spațiu
 de lucru și descărcările backup-urilor programate rămân la adminul spațiului de lucru.
 :::
 
 :::note[Restaurarea este a proprietarului serverului]
-`workspace.import` și `POST /backup/restore` fac serverul să adopte un fișier de bază de date ale cărui rânduri le tratează apoi ca proprii: legăturile de repo-uri și cine le-a făcut, definițiile de medii care rulează pe gazdă, căile de worktree și de jurnale. De aceea ambele cer proprietarul serverului (`ServerAuthority.serverOwner`), care trebuie să fie și proprietarul spațiului de lucru. Oricine altcineva, și fiecare apelant pe o gazdă fără proprietar înregistrat, este refuzat cu `server_owner_required`. Niciun trigger sau view pe care îl aduce fișierul nu este adoptat.
+`workspace.import` și `POST /backup/restore` fac serverul să adopte un fișier de bază de date ale cărui rânduri le tratează apoi ca proprii: legăturile de repo-uri și cine le-a făcut, definițiile de medii care rulează pe gazdă, căile de worktree și de jurnale. De aceea ambele cer proprietarul serverului (`ServerAuthority.serverOwner`), care trebuie să fie și proprietarul spațiului de lucru. Oricine altcineva, și fiecare apelant pe o gazdă fără proprietar înregistrat, este refuzat cu `server_owner_required`. Niciun trigger, view, coloană sau constrângere adusă de fișier nu este adoptată.
 :::
 
 ### Răspunsul `server.listBackups`
@@ -220,21 +226,21 @@ fișier.
 
 ### Validarea `workspace.import`
 
-Înainte de a se înlocui ceva, fișierul candidat este deschis doar-pentru-citire cu o
-conexiune SQLite brută de scurtă durată, iar rândul lui `workspace_meta` este citit.
+Înainte de a se înlocui ceva, fișierul candidat este copiat într-un fișier de staging alături de țintă și verificat acolo. Un refuz nu atinge nimic și își poartă tipul ca `data.kind`.
 
 | Condiție                                          | Rezultat                                                        |
 | ------------------------------------------------- | --------------------------------------------------------------- |
-| Nu este o bază de date SQLite care poate fi citită sau nu are `workspace_meta` | Refuzat. Nu se atinge nimic |
-| Id-ul de spațiu de lucru înregistrat ≠ cel al țintei | **Permis**, înregistrat în jurnal. Așa se duplică un spațiu de lucru sau se restaurează sub un id nou |
-| Id-ul de instalare înregistrat ≠ această instalare | **Permis**, înregistrat în jurnal. Dispozitivele asociate și id-urile de utilizator ale lui aparțin acelei instalări și nu se vor rezolva aici |
-| Id de spațiu de lucru invalid sau fișierul nu există | Refuzat                                                       |
+| Fișierul nu există | Refuzat, `import.missing_source` |
+| Nu este o bază de date SQLite care poate fi citită, sau nu trece `quick_check` | Refuzat, `import.damaged` |
+| Provine dintr-un snapshot, iar SHA-256 lui diferă de cel din manifest | Refuzat, `import.checksum_mismatch` |
+| L-a scris o versiune mai nouă a serverului | Refuzat, `import.newer_schema` |
+| Un alt `application_id`, sau lipsește `workspace_meta` | Refuzat, `import.foreign_file` |
+| Nu poate fi adus la schema acestui server | Refuzat, `import.schema_mismatch` |
+| Webhook-urile sau invitațiile lui sunt deja direcționate către alt spațiu de lucru | Refuzat, `import.route_conflict` |
+| Id-ul de spațiu de lucru înregistrat ≠ cel al țintei | **Permis**. Rândurile lui sunt reasociate țintei. Așa se duplică un spațiu de lucru sau se restaurează sub un id nou |
+| Id-ul de instalare înregistrat ≠ această instalare | **Permis**. Id-urile de utilizator ale lui aparțin acelei instalări și nu se vor rezolva aici |
 
-La acceptare, baza de date a spațiului de lucru țintă este închisă și eliminată din manager
-înainte ca fișierul să fie copiat peste ea (o conexiune drift deschisă ține fișierul și
-`-wal`-ul lui), apoi redeschisă, astfel încât `beforeOpen` reinstalează trigger-ele FTS și
-de sincronizare, iar indecșii FTS sunt reconstruiți — tabelele de conținut ale unui fișier
-importat sunt populate, dar indexul lui poate fi învechit.
+La acceptare, fișierul de staging este adus la schema acestui server și trebuie apoi să corespundă exact. Concesiile pe care un fișier nu și le poate da singur sunt scoase din el: aprobările de a rula o definiție de mediu pe gazdă sunt șterse, iar regulile de acțiune care permit sau cer confirmare, concesiile de exec în sandbox, concesiile de repository peste simplul citit, rolurile peste membru și invitațiile către aceste roluri devin rețineri pe care proprietarul serverului le examinează. Cel care importă păstrează sau primește rolul de proprietar. Baza de date înlocuită este păstrată ca backup programat numit `<timestamp>-pre-restore`, fișierul de staging este mutat la locul lui cu conexiunile spațiului de lucru închise, `code_index.db` este șters ca să fie reconstruit, iar indecșii FTS sunt reconstruiți.
 
 ## Rute de transfer
 
@@ -265,7 +271,7 @@ fișier real din directorul de backup propriu al acelui spațiu de lucru.
 
 | Status | Cauză                                                                              |
 | ------ | ---------------------------------------------------------------------------------- |
-| `400`  | Lipsește un parametru de interogare obligatoriu, numele unui backup este invalid sau corpul unui upload este gol |
+| `400`  | Lipsește un parametru de interogare obligatoriu, numele unui backup este invalid, corpul unui upload este gol, sau fișierul încărcat a fost refuzat (corpul este `{error, kind}` cu o valoare `import.*`) |
 | `403`  | Dispozitiv necunoscut sau revocat, semnătură greșită sau apelantul nu are rolul      |
 | `404`  | Nu există un port de backup pe acest host sau fișierul de snapshot, de backup sau de spațiu de lucru numit nu există |
 | `405`  | `/backup/restore` apelat cu orice altceva decât `POST`                               |
@@ -306,6 +312,8 @@ criptează în repaus fișierele de backup rezultate.
 | Snapshot-uri                   | `<dataDir>/backups/<timestamp>/`                             |
 | Backup-uri programate de spațiu de lucru | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Exporturi de spațiu de lucru   | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Baza de date înlocuită printr-o restaurare | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Bazele de date așa cum erau înainte ca o actualizare să-și schimbe formatul | `<dataDir>/pre_upgrade/` și `<dataDir>/<workspaceId>/pre_upgrade/`, cele mai recente două din fiecare |
 | Pregătire pentru transfer      | `<dataDir>/backups/transfer/` — un atelier, curățat de ruta care îl scrie |
 | Numele arhivei de snapshot     | `<snapshot directory name>.zip`                              |
 | Plafon de upload               | 8 GiB per upload criptat către `/backup/restore`             |

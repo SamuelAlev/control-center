@@ -10,6 +10,7 @@ import 'package:cc_persistence/database/daos/workspace_route_dao.dart';
 import 'package:cc_persistence/database/tables/workspace_routes_table.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/pipeline_mappers.dart';
+import 'package:cc_persistence/src/log/cc_persistence_log.dart';
 
 /// Drift-backed implementation of [PipelineRunRepository].
 ///
@@ -97,7 +98,10 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
 
   @override
   Future<void> insertRun(PipelineRun run) async {
-    await _dao(run.workspaceId).insertRun(pipelineRunToCompanion(run));
+    await _dao(run.workspaceId).insertRun(
+      pipelineRunToCompanion(run),
+      templateSnapshotJson: pipelineRunSnapshotJson(run),
+    );
     // Route written after the row, so it never points at a run that does not
     // exist yet.
     await _routes.put(WorkspaceRouteKind.pipelineRun, run.id, run.workspaceId);
@@ -120,7 +124,7 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
   Future<PipelineRun?> getRun(String id) async {
     final dao = await _daoForRun(id);
     final row = await dao?.getRun(id);
-    return row != null ? pipelineRunFromRow(row) : null;
+    return row != null ? pipelineRunFromRowWithSnapshot(row) : null;
   }
 
   @override
@@ -130,7 +134,10 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
           ? Stream.value(null)
           : dao
                 .watchRun(id)
-                .map((row) => row != null ? pipelineRunFromRow(row) : null),
+                .map(
+                  (row) =>
+                      row != null ? pipelineRunFromRowWithSnapshot(row) : null,
+                ),
     );
   }
 
@@ -141,27 +148,50 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
   }
 
   @override
-  Future<void> incrementCost(String runId, int cents, int tokens) async {
+  Future<void> incrementCost(String runId, int micros, int tokens) async {
     final dao = await _daoForMutation(runId);
     // One statement, never read-then-write: a fan-out's agents all complete at
     // once and two rollups reading the same pre-increment total would each
     // write it back plus their own share, losing one. See
     // [PipelineDao.incrementRunCost].
-    await dao.incrementRunCost(runId, cents, tokens);
+    await dao.incrementRunCost(runId, micros, tokens);
   }
 
   /// CROSS-WORKSPACE BY DESIGN: the startup pipeline-resume reconciler needs
   /// every in-flight run on the install to re-attach or fail it, before any
   /// workspace has been chosen. Workspace surfaces use [watchForWorkspace].
+  ///
+  /// Rows decode inside each workspace's guard, one at a time: a row that
+  /// cannot be decoded (malformed JSON, a status this build does not know) is
+  /// skipped and logged, and a workspace whose read fails is logged and
+  /// skipped. Neither stops recovery of the other runs.
   @override
   Future<List<PipelineRun>> nonTerminalRuns() async {
     final perWorkspace = await _cross.fanOut(
-      (db) => db.pipelineDao.nonTerminalRuns(),
+      (db) async => [
+        for (final row in await db.pipelineDao.nonTerminalRuns())
+          ?_decodeForRecovery(row),
+      ],
+      onError: (workspaceId, error) => CcPersistenceLog.warning(
+        'nonTerminalRuns: workspace $workspaceId skipped: '
+        '${error.runtimeType}',
+      ),
+      backgroundWriter: 'pipeline recovery',
     );
-    return [
-      for (final rows in perWorkspace)
-        for (final row in rows) pipelineRunFromRow(row),
-    ];
+    return [for (final runs in perWorkspace) ...runs];
+  }
+
+  /// [row] as a run, or null (logged) when it cannot be decoded.
+  PipelineRun? _decodeForRecovery(PipelineRunWithSnapshot row) {
+    try {
+      return pipelineRunFromRowWithSnapshot(row);
+    } on Object catch (e) {
+      CcPersistenceLog.warning(
+        'nonTerminalRuns: run ${row.run.id} in workspace ${row.run.workspaceId} '
+        'skipped, it cannot be decoded: ${e.runtimeType}',
+      );
+      return null;
+    }
   }
 
   @override
@@ -173,7 +203,7 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
     final row = await _dao(
       workspaceId,
     ).findActiveByDedupKey(templateId, workspaceId, dedupKey);
-    return row != null ? pipelineRunFromRow(row) : null;
+    return row != null ? pipelineRunFromRowWithSnapshot(row) : null;
   }
 
   @override
@@ -190,16 +220,22 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
     final row = await _dao(
       workspaceId,
     ).findOldestQueuedForTemplate(workspaceId, templateId);
-    return row != null ? pipelineRunFromRow(row) : null;
+    return row != null ? pipelineRunFromRowWithSnapshot(row) : null;
   }
 
   /// CROSS-WORKSPACE BY DESIGN: the operator's all-workspace pipeline view.
   /// Every workspace-scoped surface uses [watchForWorkspace] instead.
+  ///
+  /// List rows, bounded: the newest [PipelineDao.listLimit] runs of each
+  /// workspace, merged and trimmed back to that many, with only the scope
+  /// keys of `state` and no template snapshot (see
+  /// [PipelineDao.listStateKeys]).
   @override
   Stream<List<PipelineRun>> watchAll() {
     return _cross
         .mergeStreams(
           (db) => db.pipelineDao.watchAll(),
+          limit: PipelineDao.listLimit,
           // Concatenation does not preserve the per-workspace ordering, so the
           // merged list is re-sorted into one newest-first sequence.
           //
@@ -214,15 +250,35 @@ class PipelineRunRepositoryImpl implements PipelineRunRepository {
             return byTime != 0 ? byTime : b.id.compareTo(a.id);
           },
         )
-        .map((rows) => rows.map(pipelineRunFromRow).toList());
+        .map((rows) => [for (final row in rows) pipelineRunFromRow(row)]);
   }
 
+  /// List rows, bounded to the newest [PipelineDao.listLimit]: only the
+  /// scope keys of `state` and no template snapshot. [getRun] / [watchRun]
+  /// carry the whole run; [runsBefore] pages past the window.
   @override
   Stream<List<PipelineRun>> watchForWorkspace(String workspaceId) {
     return _dao(workspaceId)
         .watchForWorkspace(workspaceId)
-        .map((rows) => rows.map(pipelineRunFromRow).toList());
+        .map((rows) => [for (final row in rows) pipelineRunFromRow(row)]);
   }
+
+  /// The [limit] runs of [workspaceId] listed after [before] (older, in the
+  /// list's own order), as list rows. Server-side: the keyset page behind
+  /// the bounded list watch.
+  Future<List<PipelineRun>> runsBefore(
+    String workspaceId,
+    PipelineRun before, {
+    int limit = PipelineDao.listLimit,
+  }) async => [
+    for (final row in await _dao(workspaceId).runsPage(
+      workspaceId,
+      beforeStartedAt: before.startedAt,
+      beforeId: before.id,
+      limit: limit,
+    ))
+      pipelineRunFromRow(row),
+  ];
 
   @override
   Future<void> deleteRun(String workspaceId, String runId) async {

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/catalog_file.dart';
 import 'package:cc_domain/src/errors/app_exceptions.dart';
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
@@ -165,6 +166,94 @@ void main() {
     },
   );
 
+  test('sending a message records it as the holder of each attachment it '
+      'carries', () async {
+    final global = createTestGlobalDatabase();
+    final dbs = createTestWorkspaceDatabases(global: global);
+    addTearDown(dbs.closeAll);
+    addTearDown(global.close);
+    final catalog = DaoFileCatalogRepository(dbs);
+    final upload = await catalog.createUpload(
+      workspaceId: 'ws',
+      uploaderUserId: 'alice',
+      name: 'a',
+      path: ref,
+      mediaType: 'image/png',
+      bytes: 4,
+      ownedBytes: true,
+    );
+    await catalog.claim('ws', 'alice', [(fileId: upload.id, path: ref)]);
+    Future<({String state, String? holder})> read() async {
+      final row = await dbs
+          .of('ws')
+          .customSelect(
+            'SELECT state, attached_message_id FROM catalog_files WHERE id = ?',
+            variables: [Variable<String>(upload.id)],
+          )
+          .getSingle();
+      return (
+        state: row.read<String>('state'),
+        holder: row.read<String?>('attached_message_id'),
+      );
+    }
+
+    // The claim comes first, while the message does not exist yet.
+    expect(await read(), (state: 'attached', holder: null));
+
+    final messaging = DaoMessagingRepository(dbs);
+    final attachments = {
+      'attachments': [
+        {'fileId': upload.id, 'path': ref, 'name': 'a'},
+      ],
+    };
+    final spaceId = (await messaging.createSpace('ws', 'General', const [])).id;
+    final first = await messaging.sendMessage(
+      workspaceId: 'ws',
+      spaceId: spaceId,
+      content: 'look',
+      senderId: 'alice',
+      senderType: 'user',
+      metadata: attachments,
+    );
+    expect((await read()).holder, first);
+
+    // A later message repeating the attachment does not take it over.
+    await messaging.sendMessage(
+      workspaceId: 'ws',
+      spaceId: spaceId,
+      content: 'again',
+      senderId: 'alice',
+      senderType: 'user',
+      metadata: attachments,
+    );
+    expect((await read()).holder, first);
+    expect(await catalog.canReclaim('ws', ref), isFalse);
+  });
+
+  test(
+    'reclaim is answered from the catalog without reading messages',
+    () async {
+      final global = createTestGlobalDatabase();
+      final dbs = createTestWorkspaceDatabases(global: global);
+      addTearDown(dbs.closeAll);
+      addTearDown(global.close);
+      final catalog = DaoFileCatalogRepository(dbs);
+      final upload = await catalog.createUpload(
+        workspaceId: 'ws',
+        uploaderUserId: 'alice',
+        name: 'a',
+        path: other,
+        mediaType: 'text/plain',
+        bytes: 4,
+        ownedBytes: true,
+      );
+      await catalog.discard('ws', 'alice', upload.id);
+      // With no transcript table at all, a query that scanned messages fails.
+      await dbs.of('ws').customStatement('DROP TABLE conversation_messages');
+      expect(await catalog.canReclaim('ws', other), isTrue);
+    },
+  );
+
   test(
     'v19 migration creates the catalog without backfilling old refs',
     () async {
@@ -186,7 +275,7 @@ void main() {
       await setup.customStatement(
         '''
       INSERT INTO conversation_messages
-        (id, space_id, conversation_id, sender_id, sender_type, content, metadata,
+        (id, space_id, conversation_id, sender_id, sender_type, content, list_metadata,
          created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, 0)
     ''',

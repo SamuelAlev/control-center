@@ -11,14 +11,14 @@ import 'package:cc_server_core/src/catalog/catalog_wire.dart'
 typedef GoalControl = Future<void> Function(String workspaceId, String goalId);
 
 /// The `resume` control: resumes a paused goal, or a `budgetExhausted` one
-/// when [raiseCostCapCents] lifts the cost cap above the spend that tripped
+/// when [raiseCostCapMicros] lifts the cost cap above the spend that tripped
 /// it (budget exhaustion is not completion — the goal resumes only by
 /// raising the budget).
 typedef GoalResumeControl =
     Future<void> Function(
       String workspaceId,
       String goalId, {
-      int? raiseCostCapCents,
+      int? raiseCostCapMicros,
     });
 
 /// Durable supervised goals (`/goal` + `/loop`): the pause / resume / cancel
@@ -46,7 +46,7 @@ List<RepoOp> agentGoalRunOps({
       await resumeGoal(
         ctx.workspaceId!,
         ctx.args['goal_id'] as String,
-        raiseCostCapCents: (ctx.args['raise_cost_cap_cents'] as num?)?.toInt(),
+        raiseCostCapMicros: (ctx.args['raise_cost_cap_micros'] as num?)?.toInt(),
       );
       return {'ok': true};
     },

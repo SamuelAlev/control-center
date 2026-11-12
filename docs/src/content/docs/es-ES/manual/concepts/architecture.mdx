@@ -3,7 +3,7 @@ title: Arquitectura
 description: Cómo está estructurado Control Center con un modelo de servidor y cliente ligero, Clean Architecture centrada en funcionalidades y puertos y adaptadores.
 dateModified: 2026-09-19
 slug: es-ES/manual/conceptos/arquitectura
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Resumen
@@ -222,14 +222,12 @@ el servidor compone sus adaptadores en `cc_server_core`.
   demás que pertenece solo a ese espacio de trabajo, de modo que los worktrees y
   los archivos de agente de una conversación quedan junto a la base de datos y se
   eliminan con ella. Aquí vive casi todo: agentes, espacios, tickets, memoria,
-  pipelines, reuniones, el grafo de código, revisiones, repos. Los archivos se
+  pipelines, reuniones, revisiones, repos. El grafo de código es un segundo archivo en el mismo directorio, `code_index.db`, que se reconstruye en lugar de incluirse en la copia de seguridad. Los archivos se
   abren de forma perezosa en el primer acceso mediante
   `WorkspaceDatabaseManager.of(workspaceId)` y entonces pagan su propio
   `quick_check`, la instalación de FTS/disparadores y `vector_init`.
 
-Ambas mitades partieron de una base v1 aplanada —`onCreate` construye el esquema
-actual—, con pasos de migración añadidos solo cuando una base de datos desplegada
-tiene que trasladarse hacia delante.
+Ninguna de las dos mitades tiene pasos de migración. Un archivo nuevo se construye a partir de las definiciones de tablas. Un archivo de una versión anterior se copia primero aparte (`pre_upgrade/`) y luego se lleva a las mismas definiciones al abrirlo, de modo que una instalación nueva y una actualizada acaban con el mismo esquema. Un archivo que escribió una versión más reciente se rechaza.
 
 Como un espacio de trabajo es un solo archivo, exportar un espacio de trabajo es
 una única sentencia `VACUUM INTO` (`workspace.export`), no un volcado tabla por

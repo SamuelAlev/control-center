@@ -173,14 +173,21 @@ class FakeAgentRunLogRepository implements AgentRunLogRepository {
   ) async => null;
   final List<AgentRunLog> _logs;
 
-  @override
-  Stream<List<AgentRunLog>> watchAll() =>
-      Stream.value(List.unmodifiable(_logs));
+  /// Ticket lookups the reconciler made, in order.
+  final List<String> ticketLookups = [];
 
   @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  Future<AgentRunLog?> latestForTicket(
+    String workspaceId,
+    String ticketId,
+  ) async {
+    ticketLookups.add(ticketId);
+    final runs = [
+      for (final l in _logs)
+        if (l.workspaceId == workspaceId && l.ticketId == ticketId) l,
+    ]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    return runs.firstOrNull;
+  }
 
   @override
   Stream<List<AgentRunLog>> watchByAgent(String workspaceId, String agentId) =>
@@ -339,7 +346,8 @@ AgentRunLog makeRunLog({
   RunStatus status = RunStatus.error,
   int retryAttempt = 0,
   String? parentRunId,
-  String? workspaceId,
+  // A run lives in its ticket's workspace: the reconciler reads it there.
+  String workspaceId = 'ws-1',
   DateTime? startedAt,
   RunErrorFamily? errorFamily,
 }) => AgentRunLog(

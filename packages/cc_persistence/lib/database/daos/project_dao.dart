@@ -1,13 +1,12 @@
 import 'package:cc_persistence/database/tables/projects_table.dart';
-import 'package:cc_persistence/database/tables/tickets_table.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
 part 'project_dao.g.dart';
 
-/// Data access for projects. Also touches [TicketsTable] so that deleting a
-/// project orphans (rather than removes) its tickets in a single transaction.
-@DriftAccessor(tables: [ProjectsTable, TicketsTable])
+/// Data access for projects. Deleting a project leaves its tickets in place
+/// (the ticket key is `SET NULL`).
+@DriftAccessor(tables: [ProjectsTable])
 class ProjectDao extends DatabaseAccessor<WorkspaceDatabase>
     with _$ProjectDaoMixin {
   /// Creates a [ProjectDao].
@@ -30,21 +29,13 @@ class ProjectDao extends DatabaseAccessor<WorkspaceDatabase>
             ..where((p) => p.id.equals(id) & p.workspaceId.equals(workspaceId)))
           .write(project);
 
-  /// Deletes a project scoped to [workspaceId] and orphans its tickets (sets
-  /// their `project_id` to null) in one transaction. Scoping by `workspaceId`
-  /// means a project from another workspace is not matched. Returns the number
-  /// of project rows deleted.
-  Future<int> deleteProject(String id, String workspaceId) {
-    return transaction(() async {
-      await (update(ticketsTable)..where(
-            (t) => t.projectId.equals(id) & t.workspaceId.equals(workspaceId),
-          ))
-          .write(const TicketsTableCompanion(projectId: Value(null)));
-      return (delete(projectsTable)
-            ..where((p) => p.id.equals(id) & p.workspaceId.equals(workspaceId)))
-          .go();
-    });
-  }
+  /// Deletes a project scoped to [workspaceId]; its tickets stay and lose the
+  /// project (`tickets.project_id` is `ON DELETE SET NULL`). Scoping by
+  /// `workspaceId` means a project from another workspace is not matched.
+  /// Returns the number of project rows deleted.
+  Future<int> deleteProject(String id, String workspaceId) => (delete(
+    projectsTable,
+  )..where((p) => p.id.equals(id) & p.workspaceId.equals(workspaceId))).go();
 
   // --- reads ---
 

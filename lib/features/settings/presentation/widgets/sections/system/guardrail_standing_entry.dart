@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -26,7 +27,7 @@ String guardrailEntryDescription(
   final commands = constraint?.commands;
   final tools = constraint?.tools;
   final maxCount = constraint?.maxCount;
-  final maxCents = constraint?.maxCents;
+  final maxMicros = constraint?.maxMicros;
   final facets = [
     if (prefix != null) l10n.guardrailCoversCommandPrefix(_isolate([prefix])),
     if (refs != null) l10n.guardrailCoversBranches(_isolate(refs)),
@@ -35,7 +36,8 @@ String guardrailEntryDescription(
     if (commands != null) l10n.guardrailCoversCommands(_isolate(commands)),
     if (tools != null) l10n.guardrailCoversTools(_isolate(tools)),
     if (maxCount != null) l10n.guardrailCoversMaxCount(number.format(maxCount)),
-    if (maxCents != null) l10n.guardrailCoversMaxCents(number.format(maxCents)),
+    if (maxMicros != null)
+      l10n.guardrailCoversMaxCents(number.format(maxMicros / microsPerCent)),
   ];
   final what = facets.isEmpty
       ? l10n.guardrailCoversEverything

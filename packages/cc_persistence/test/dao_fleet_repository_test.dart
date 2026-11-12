@@ -9,6 +9,7 @@ import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/repositories/dao_fleet_repository.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 /// Drift stores [DateTime] in local time, so a UTC [DateTime] round-trips as
@@ -136,6 +137,11 @@ void main() {
   });
 
   group('DaoFleetRepository jobs (workspace-scoped)', () {
+    setUp(() async {
+      await seedWorker(db, 'wk-1');
+      await seedWorker(db, 'wk-2');
+    });
+
     test('upsertJob + jobById round-trips the entity', () async {
       await repo.upsertJob(job('j-1', 'w-1'));
       final j = await repo.jobById('w-1', 'j-1');
@@ -212,6 +218,11 @@ void main() {
   });
 
   group('DaoFleetRepository lease lifecycle', () {
+    setUp(() async {
+      await seedWorker(db, 'wk-1');
+      await seedWorker(db, 'wk-2');
+    });
+
     test(
       'tryLeaseJob succeeds on a queued job and stamps lease fields',
       () async {
@@ -233,7 +244,10 @@ void main() {
     test('renewLease extends the expiry', () async {
       await repo.upsertJob(job('j-1', 'w-1'));
       await repo.tryLeaseJob('j-1', 'wk-1', soon, now);
-      await repo.renewLease('j-1', later, lastAckedSeq: 9);
+      expect(
+        await repo.renewLease('j-1', 'wk-1', later, lastAckedSeq: 9),
+        isTrue,
+      );
       final j = await repo.jobByIdGlobal('j-1');
       expect(j!.leaseExpiresAt, sameInstant(later));
       expect(j.lastAckedSeq, 9);
@@ -242,7 +256,7 @@ void main() {
     test('markJobRunning stamps startedAt', () async {
       await repo.upsertJob(job('j-1', 'w-1'));
       await repo.tryLeaseJob('j-1', 'wk-1', soon, now);
-      await repo.markJobRunning('j-1', now);
+      expect(await repo.markJobRunning('j-1', 'wk-1', now), isTrue);
       expect((await repo.jobByIdGlobal('j-1'))!.status, JobStatus.running);
     });
 
@@ -253,19 +267,27 @@ void main() {
         'j-1',
         JobStatus.done,
         now,
+        from: const {JobStatus.leased, JobStatus.running},
+        leasedTo: 'wk-1',
         resultJson: '{"branch": "main"}',
-        costCents: 42,
+        costMicros: 42,
       );
       final j = await repo.jobByIdGlobal('j-1');
       expect(j!.status, JobStatus.done);
       expect(j.leaseExpiresAt, isNull);
       expect(j.resultJson, '{"branch": "main"}');
-      expect(j.costCents, 42);
+      expect(j.costMicros, 42);
     });
 
     test('markJobTerminal records the error on failure', () async {
       await repo.upsertJob(job('j-1', 'w-1'));
-      await repo.markJobTerminal('j-1', JobStatus.failed, now, error: 'boom');
+      await repo.markJobTerminal(
+        'j-1',
+        JobStatus.failed,
+        now,
+        from: const {JobStatus.queued},
+        error: 'boom',
+      );
       expect((await repo.jobByIdGlobal('j-1'))!.error, 'boom');
     });
 
@@ -273,7 +295,15 @@ void main() {
       await repo.upsertJob(
         job('j-1', 'w-1', status: JobStatus.leased, workerId: 'wk-1'),
       );
-      await repo.requeueJob('j-1', 2);
+      expect(
+        await repo.requeueJob(
+          'j-1',
+          2,
+          from: JobStatus.leased,
+          leasedTo: 'wk-1',
+        ),
+        isTrue,
+      );
       final j = await repo.jobByIdGlobal('j-1');
       expect(j!.status, JobStatus.queued);
       expect(j.workerId, isNull);
@@ -282,6 +312,12 @@ void main() {
   });
 
   group('DaoFleetRepository placement log (workspace-scoped)', () {
+    setUp(() async {
+      await seedWorker(db, 'wk-1');
+      await seedWorker(db, 'wk-2');
+      await repo.upsertJob(job('j-1', 'w-1'));
+    });
+
     test('logPlacement + placementsForJob round-trips the decision', () async {
       await repo.logPlacement(
         workspaceId: 'w-1',

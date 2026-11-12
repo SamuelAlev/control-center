@@ -4,9 +4,7 @@ import 'package:cc_domain/core/domain/entities/run_transcript.dart';
 import 'package:cc_domain/core/domain/repositories/run_transcript_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_persistence/database/daos/run_transcript_dao.dart';
-import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
-import 'package:drift/drift.dart' as drift;
 
 /// Drift-backed [RunTranscriptRepository] over the per-workspace
 /// [RunTranscriptDao]s.
@@ -25,58 +23,65 @@ class DaoRunTranscriptRepository implements RunTranscriptRepository {
 
   @override
   Future<RunTranscript?> getForRun(String workspaceId, String runId) async {
-    final row = await _dao(workspaceId).getForRun(workspaceId, runId);
-    return row == null ? null : _toDomain(row);
+    final dao = _dao(workspaceId);
+    final row = await dao.getForRun(runId);
+    if (row == null) {
+      return null;
+    }
+    final bodies = await dao.segmentBodies(row.id);
+    return RunTranscript(
+      runId: runId,
+      workspaceId: workspaceId,
+      segments: [
+        for (final body in bodies)
+          if (_decodeSegment(body) case final Map<String, dynamic> json)
+            TranscriptSegment.fromJson(json),
+      ],
+      transcriptChars: row.transcriptChars,
+      outcome: turnOutcomeFromString(row.outcome),
+      complete: row.complete,
+      startedAt: row.startedAt,
+      updatedAt: row.updatedAt,
+    );
   }
 
   @override
-  Future<void> upsert({
+  Future<void> write({
     required String runId,
     required String workspaceId,
-    required List<Map<String, dynamic>> segmentsJson,
+    required Map<int, Map<String, dynamic>> changedSegments,
+    required int segmentCount,
     required int transcriptChars,
     required DateTime startedAt,
     required DateTime updatedAt,
     TurnOutcome? outcome,
     bool complete = false,
-  }) => _dao(workspaceId).upsert(
-    RunTranscriptsTableCompanion.insert(
-      runId: runId,
-      workspaceId: workspaceId,
-      segmentsJson: drift.Value(jsonEncode(segmentsJson)),
-      segmentCount: drift.Value(segmentsJson.length),
-      transcriptChars: drift.Value(transcriptChars),
-      outcome: drift.Value(
-        outcome == null ? null : turnOutcomeToString(outcome),
-      ),
-      complete: drift.Value(complete),
-      startedAt: drift.Value(startedAt),
-      updatedAt: drift.Value(updatedAt),
-    ),
+  }) => _dao(workspaceId).writeRunFlush(
+    runId,
+    changed: {
+      for (final MapEntry(:key, :value) in changedSegments.entries)
+        key: jsonEncode(value),
+    },
+    segmentCount: segmentCount,
+    transcriptChars: transcriptChars,
+    startedAt: startedAt,
+    updatedAt: updatedAt,
+    outcome: outcome == null ? null : turnOutcomeToString(outcome),
+    complete: complete,
   );
 
   @override
   Future<int> deleteForRun(String workspaceId, String runId) =>
-      _dao(workspaceId).deleteForRun(workspaceId, runId);
+      _dao(workspaceId).deleteForRun(runId);
 
-  RunTranscript _toDomain(RunTranscriptsTableData row) => RunTranscript(
-    runId: row.runId,
-    workspaceId: row.workspaceId,
-    segments: decodeTranscript(_decodeJson(row.segmentsJson)),
-    transcriptChars: row.transcriptChars,
-    outcome: turnOutcomeFromString(row.outcome),
-    complete: row.complete,
-    startedAt: row.startedAt,
-    updatedAt: row.updatedAt,
-  );
-
-  /// Tolerates a malformed blob rather than failing the read: a truncated write
-  /// should degrade to "nothing recorded", not break the activity view.
-  static Object? _decodeJson(String raw) {
+  /// One stored segment, or null when its body does not decode to an object:
+  /// a damaged row costs that segment, not the activity view.
+  static Map<String, dynamic>? _decodeSegment(String body) {
     try {
-      return jsonDecode(raw);
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic> ? decoded : null;
     } on FormatException {
-      return const <Object?>[];
+      return null;
     }
   }
 }

@@ -1,13 +1,15 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
   late WorkspaceDatabase db;
 
-  setUp(() {
+  setUp(() async {
     db = createTestDatabase();
+    await seedParents(db, teams: ['t-1', 't-2'], tickets: ['tk-1', 'tk-2']);
   });
 
   tearDown(() async {

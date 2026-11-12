@@ -65,7 +65,10 @@ class PairedDeviceRegistryWatch {
         return;
       }
       _global.notifyUpdates({
-        TableUpdate.onTable(_global.pairedDevicesTable, kind: UpdateKind.update),
+        TableUpdate.onTable(
+          _global.pairedDevicesTable,
+          kind: UpdateKind.update,
+        ),
       });
     } on Object catch (e) {
       CcHostLog.warning('cc_server: paired-device registry poll failed: $e');
@@ -90,7 +93,7 @@ class PairedDeviceRegistryWatch {
           d.id,
           d.status,
           d.userId,
-          d.workspaceId,
+          d.landingWorkspaceId,
           d.label,
           d.platform,
           d.expiresAt?.microsecondsSinceEpoch.toString(),

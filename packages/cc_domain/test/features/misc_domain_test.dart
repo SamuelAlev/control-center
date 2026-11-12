@@ -399,7 +399,7 @@ void main() {
     test('signalBool + toJson', () {
       const o = EvalOutcome(
         completed: true,
-        costCents: 5,
+        costMicros: 5,
         turnCount: 3,
         toolCalls: ['read'],
         sandboxViolations: 1,
@@ -412,13 +412,13 @@ void main() {
       expect(o.signalBool('missing'), isFalse);
       final json = o.toJson();
       expect(json['completed'], isTrue);
-      expect(json['costCents'], 5);
+      expect(json['costMicros'], 5);
       expect(json['error'], isNull);
     });
 
     test('defaults', () {
       const o = EvalOutcome(completed: false, error: 'boom');
-      expect(o.costCents, 0);
+      expect(o.costMicros, 0);
       expect(o.toolCalls, isEmpty);
       expect(o.signals, isEmpty);
       expect(o.toJson()['error'], 'boom');

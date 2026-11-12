@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
@@ -120,7 +121,6 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
           child: child,
         )
       : child;
-
 
   Widget _buildOrchestration(BuildContext context, Orchestration o) {
     final proposal = _draft ?? o.proposal;
@@ -272,7 +272,6 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
     );
   }
 
-
   Widget _buildDocument(BuildContext context, PlanDocument doc) {
     final graph = doc.graph;
     final agents =
@@ -384,7 +383,6 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
       ),
     );
   }
-
 
   void _replaceNode(PlanNode node) {
     final draft = _draft;
@@ -524,11 +522,11 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
           )),
         )
         .value;
-    final cents = cost?['sub_$key'];
-    if (cents == null) {
+    final micros = cost?['sub_$key'];
+    if (micros == null) {
       return null;
     }
-    final actual = (cents / 100).toStringAsFixed(2);
+    final actual = (micros / microsPerDollar).toStringAsFixed(2);
     return AppLocalizations.of(context).planLiveActualCost(actual);
   }
 

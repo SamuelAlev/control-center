@@ -8,7 +8,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 ///
 /// Implements the domain interface over the host's `space_read.markSpaceRead`
 /// op + the `space_read.watchUserLastReadAt` subscription, mapping the
-/// [SpaceReadDto] wire shape back to the cursor [DateTime?]. The host owns
+/// [SpaceReadDto] wire shape back to the cursor [FeedPosition?]. The host owns
 /// persistence (the read cursor on `space_participants`) and resolves the
 /// space inside the workspace each call names; this client never touches a
 /// database.
@@ -34,21 +34,18 @@ class RpcSpaceReadRepository implements SpaceReadRepository {
     conversationId: conversationId,
   );
 
+  /// A missing `last_read` means the space has never been opened under the
+  /// user.
   @override
-  Stream<DateTime?> watchUserLastReadAt(
+  Stream<FeedPosition?> watchUserLastReadAt(
     String workspaceId,
     String spaceId,
     String userId,
-  ) => _remote.watchUserLastReadAt(workspaceId, spaceId).map(_fromDto);
+  ) => _remote.watchUserLastReadAt(workspaceId, spaceId).map((d) => d.lastRead);
 
   @override
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
     String workspaceId,
     String userId,
   ) => _remote.watchUserSpaceReads(workspaceId);
-
-  /// Rebuilds the cursor [DateTime?] from its wire DTO. A missing/null
-  /// `lastReadAt` means the space has never been opened under the user.
-  static DateTime? _fromDto(SpaceReadDto d) =>
-      d.lastReadAt == null ? null : DateTime.parse(d.lastReadAt!);
 }

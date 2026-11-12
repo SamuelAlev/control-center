@@ -173,7 +173,7 @@ void main() {
       leaseExpiresAt: leaseExpiresAt,
       priority: 5,
       submittedBy: 'sam',
-      costCents: 250,
+      costMicros: 250,
       attempts: 1,
       maxAttempts: 3,
       lastAckedSeq: 7,
@@ -203,7 +203,7 @@ void main() {
       expect(j.workerId, 'wk-1');
       expect(j.leaseExpiresAt, leaseExpiresAt);
       expect(j.submittedBy, 'sam');
-      expect(j.costCents, 250);
+      expect(j.costMicros, 250);
       expect(j.attempts, 1);
       expect(j.maxAttempts, 3);
       expect(j.lastAckedSeq, 7);
@@ -227,7 +227,7 @@ void main() {
         preferredCapsJson: '',
         status: 'queued',
         priority: 0,
-        costCents: 0,
+        costMicros: 0,
         attempts: 0,
         maxAttempts: 1,
         lastAckedSeq: 0,
@@ -246,7 +246,7 @@ void main() {
         preferredCapsJson: '',
         status: 'queued',
         priority: 0,
-        costCents: 0,
+        costMicros: 0,
         attempts: 0,
         maxAttempts: 1,
         lastAckedSeq: 0,
@@ -267,7 +267,7 @@ void main() {
         preferredCapsJson: '42',
         status: 'queued',
         priority: 0,
-        costCents: 0,
+        costMicros: 0,
         attempts: 0,
         maxAttempts: 1,
         lastAckedSeq: 0,
@@ -294,7 +294,7 @@ void main() {
           workerId: 'wk-1',
           leaseExpiresAt: leaseExpiresAt,
           submittedBy: 'sam',
-          costCents: 250,
+          costMicros: 250,
           attempts: 1,
           maxAttempts: 3,
           lastAckedSeq: 7,
@@ -319,7 +319,7 @@ void main() {
         expect(c.leaseExpiresAt.value, leaseExpiresAt);
         expect(c.priority.value, 5);
         expect(c.submittedBy.value, 'sam');
-        expect(c.costCents.value, 250);
+        expect(c.costMicros.value, 250);
         expect(c.attempts.value, 1);
         expect(c.maxAttempts.value, 3);
         expect(c.lastAckedSeq.value, 7);
@@ -424,7 +424,7 @@ extension on JobsTableCompanion {
     leaseExpiresAt: leaseExpiresAt.present ? leaseExpiresAt.value : null,
     priority: priority.value,
     submittedBy: submittedBy.present ? submittedBy.value : null,
-    costCents: costCents.value,
+    costMicros: costMicros.value,
     attempts: attempts.value,
     maxAttempts: maxAttempts.value,
     lastAckedSeq: lastAckedSeq.value,

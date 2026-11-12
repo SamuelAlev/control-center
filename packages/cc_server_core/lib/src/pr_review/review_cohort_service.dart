@@ -26,7 +26,7 @@ class ReviewCohortService {
   final String Function() _newId;
 
   CodeGraphDao _codeGraph(String workspaceId) =>
-      _dbs.of(workspaceId).codeGraphDao;
+      _dbs.codeIndexOf(workspaceId).codeGraphDao;
 
   /// Impact-radius depth used for cohort ranking.
   final int impactDepth;
@@ -72,14 +72,9 @@ class ReviewCohortService {
     var symbolSource = SymbolSource.head;
     var symbols = checkoutId == null
         ? const <CodeSymbolsTableData>[]
-        : await dao.getSymbolsByFiles(
-            workspaceId,
-            repoId,
-            files,
-            checkoutId: checkoutId,
-          );
+        : await dao.getSymbolsByFiles(repoId, files, checkoutId: checkoutId);
     if (symbols.isEmpty) {
-      symbols = await dao.getSymbolsByFiles(workspaceId, repoId, files);
+      symbols = await dao.getSymbolsByFiles(repoId, files);
       symbolSource = symbols.isEmpty
           ? SymbolSource.none
           : (checkoutId == null ? SymbolSource.head : SymbolSource.base);
@@ -123,7 +118,6 @@ class ReviewCohortService {
       for (final entry in dominantIdByFile.entries) {
         try {
           final impact = await dao.getImpactRadius(
-            workspaceId,
             entry.value,
             depth: impactDepth,
           );
@@ -143,7 +137,6 @@ class ReviewCohortService {
       // Graph links: a resolved edge whose source and target files are both
       // changed files (and differ).
       final edges = await dao.getResolvedEdgesBySourceFiles(
-        workspaceId,
         repoId,
         files,
         checkoutId: symbolSource == SymbolSource.head ? checkoutId : null,
@@ -181,7 +174,6 @@ class ReviewCohortService {
     // split per cohort — one inbound-edge query instead of one per cohort.
     final testsBySymbolId = await _coveringTests(
       dao: dao,
-      workspaceId: workspaceId,
       repoId: repoId,
       changedByFile: changedByFile,
       indexed: indexed,
@@ -250,7 +242,6 @@ class ReviewCohortService {
   /// Test files covering each changed symbol id.
   Future<Map<String, List<String>>> _coveringTests({
     required CodeGraphDao dao,
-    required String workspaceId,
     required String repoId,
     required Map<String, List<ChangedSymbol>> changedByFile,
     required bool indexed,
@@ -268,7 +259,6 @@ class ReviewCohortService {
       return const {};
     }
     final edges = await dao.getEdgesIntoSymbols(
-      workspaceId,
       repoId,
       symbolIds.toList(),
       checkoutId: checkoutId,

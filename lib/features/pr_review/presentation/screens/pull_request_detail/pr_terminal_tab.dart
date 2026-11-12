@@ -11,6 +11,7 @@ import 'package:control_center/features/sandboxing/presentation/terminal_panel.d
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,7 +97,7 @@ class _PrTerminalTabState extends ConsumerState<PrTerminalTab> {
       loading: () => _Preparing(label: l10n.preparingWorkspace, t: t),
       error: (e, _) => Center(
         child: Text(
-          l10n.failedWithError('$e'),
+          failureMessage(l10n, e),
           style: TextStyle(
             color: t.fgSecondary,
             decoration: TextDecoration.none,

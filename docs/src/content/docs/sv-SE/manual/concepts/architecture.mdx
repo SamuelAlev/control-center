@@ -3,7 +3,7 @@ title: Arkitektur
 description: Hur Control Center är uppbyggt med en servermodell för tunna klienter, funktionsorienterad Clean Architecture samt portar och adaptrar.
 dateModified: 2026-09-19
 slug: sv-SE/handbok/koncept/arkitektur
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Översikt
@@ -100,9 +100,9 @@ Appens sammansättningsrot (`di/providers.dart`) binder portar på klientsidan t
 **Drift** (SQLite), uppdelat i två databaser, båda i `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — en kort lista med tabeller som verkligen gäller hela servern: arbetsyteregistret, användare/inställningar/parkopplade enheter, SSO-anslutningar, serverinställningar för hela installationen, hanterade åtgärdspolicyer (en installationstäckande spärr som bara kan skärpa arbetsytornas räcken), nyhetsflödet per användare, fleet-kön (fleet-workers, jobb, placeringslogg), `workspace_routes`-indexet före autentisering och installationsmetadata. Vid start öppnas bara den här filen, så startkostnaden förblir konstant hur mycket historik arbetsytorna än samlar på sig. Att lägga till en tabell här är ett isoleringsbeslut som ett spärrtest tvingar dig att argumentera för.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — en _katalog_ per arbetsyta som innehåller en SQLite-fil plus allt annat som bara hör till den arbetsytan, så att ett samtals worktrees och agentfiler ligger bredvid databasen och raderas med den. Nästan allt bor här: agenter, ytor, ärenden, minne, pipelines, möten, kodgrafen, granskningar, repos. Filerna öppnas först vid första åtkomst via `WorkspaceDatabaseManager.of(workspaceId)` och betalar då sin egen `quick_check`, installation av FTS/triggers och `vector_init`.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — en _katalog_ per arbetsyta som innehåller en SQLite-fil plus allt annat som bara hör till den arbetsytan, så att ett samtals worktrees och agentfiler ligger bredvid databasen och raderas med den. Nästan allt bor här: agenter, ytor, ärenden, minne, pipelines, möten, granskningar, repos. Kodgrafen är en egen fil i samma katalog, `code_index.db`, som byggs om i stället för att säkerhetskopieras. Filerna öppnas först vid första åtkomst via `WorkspaceDatabaseManager.of(workspaceId)` och betalar då sin egen `quick_check`, installation av FTS/triggers och `vector_init`.
 
-Båda halvorna utgick från en sammanslagen v1-baslinje — `onCreate` bygger det aktuella schemat — och migreringssteg läggs bara till när en driftsatt databas måste föras framåt.
+Ingen av halvorna har migreringssteg. En ny fil byggs från tabelldefinitionerna. En fil från en äldre version kopieras först åt sidan (`pre_upgrade/`) och förs sedan till samma definitioner när den öppnas, så att en ny installation och en uppdaterad hamnar i samma schema. En fil som en nyare version skrev avvisas.
 
 Eftersom en arbetsyta är en fil är export av en arbetsyta en enda `VACUUM INTO`-sats (`workspace.export`), inte en dump tabell för tabell; `workspace.import` tar över en sådan fil och använder den inbäddade `workspace_meta` för att avgöra om det är en egen fil som tagits över igen eller en fil som kommer från en annan installation.
 

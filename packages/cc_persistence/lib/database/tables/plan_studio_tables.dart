@@ -1,3 +1,7 @@
+import 'package:cc_persistence/database/tables/agents.dart';
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
+import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:cc_persistence/database/tables/orchestrations_table.dart';
 import 'package:drift/drift.dart';
 
@@ -7,14 +11,9 @@ import 'package:drift/drift.dart';
 /// version timeline behind plan diff and rewind. The live row in
 /// `OrchestrationsTable` always mirrors the highest revision; this table is
 /// what makes "what changed since I approved?" answerable.
-@TableIndex(
-  name: 'idx_orchestration_revisions_orchestration',
-  columns: {#orchestrationId},
-)
-@TableIndex(
-  name: 'idx_orchestration_revisions_workspace',
-  columns: {#workspaceId},
-)
+///
+/// The unique `(orchestration_id, revision)` key is also the index the
+/// timeline reads and the cascade from the orchestration use.
 class OrchestrationRevisionsTable extends Table {
   /// Unique revision row id (UUID v4).
   TextColumn get id => text()();
@@ -22,7 +21,8 @@ class OrchestrationRevisionsTable extends Table {
   /// Workspace scope.
   TextColumn get workspaceId => text()();
 
-  /// The orchestration this revision belongs to.
+  /// The orchestration this revision belongs to. `CASCADE`: a revision is
+  /// part of its orchestration's timeline.
   TextColumn get orchestrationId => text().references(
     OrchestrationsTable,
     #id,
@@ -33,13 +33,19 @@ class OrchestrationRevisionsTable extends Table {
   IntColumn get revision => integer()();
 
   /// Full JSON-serialized `OrchestrationProposal` at this revision.
-  TextColumn get proposalJson => text()();
+  TextColumn get proposalJson =>
+      // ignore: recursive_getters
+      text().check(isJsonObject(proposalJson))();
 
-  /// Who authored the revision: a user id or an agent id.
+  /// Who authored the revision: a user id or an agent id. No foreign key: it
+  /// names an agent here or a user in `global.db`, per [authorKind].
   TextColumn get authoredBy => text()();
 
-  /// Whether [authoredBy] is a `user` or an `agent`.
-  TextColumn get authorKind => text().withDefault(const Constant('user'))();
+  /// Whether [authoredBy] is a user or an agent: an `ActorKind` wire name.
+  TextColumn get authorKind => text()
+      // ignore: recursive_getters
+      .check(authorKind.isIn(AgentsStoredValues.actorKind))
+      .withDefault(const Constant('user'))();
 
   /// Creation timestamp.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -63,8 +69,12 @@ class OrchestrationRevisionsTable extends Table {
 /// `PlanGraph`). Revisions are in-place: the row keeps only the latest
 /// `planJson` and bumps [revision]; plan-mode documents are working drafts,
 /// not an audit surface (orchestrations are the audited path).
-@TableIndex(name: 'idx_plan_documents_workspace', columns: {#workspaceId})
-@TableIndex(name: 'idx_plan_documents_conversation', columns: {#conversationId})
+@TableIndex(
+  name: 'idx_plan_documents_conversation',
+  columns: {#conversationId, #updatedAt},
+)
+@TableIndex(name: 'idx_plan_documents_updated', columns: {#updatedAt})
+@TableIndex(name: 'idx_plan_documents_agent', columns: {#agentId})
 class PlanDocumentsTable extends Table {
   /// Unique plan document id (UUID v4).
   TextColumn get id => text()();
@@ -72,18 +82,27 @@ class PlanDocumentsTable extends Table {
   /// Workspace scope.
   TextColumn get workspaceId => text()();
 
-  /// The conversation (space) the plan was authored in.
-  TextColumn get conversationId => text()();
+  /// The conversation the plan was authored in. `CASCADE`: a plan-mode
+  /// document is a working draft of that conversation.
+  TextColumn get conversationId =>
+      text().references(ConversationsTable, #id, onDelete: KeyAction.cascade)();
 
-  /// The agent that authored the plan.
-  TextColumn get agentId => text()();
+  /// The agent that authored the plan. `CASCADE`: a draft has no meaning
+  /// without the agent that would execute it.
+  TextColumn get agentId =>
+      text().references(AgentsTable, #id, onDelete: KeyAction.cascade)();
 
   /// JSON-serialized `PlanDocument`.
-  TextColumn get planJson => text()();
+  TextColumn get planJson =>
+      // ignore: recursive_getters
+      text().check(isJsonObject(planJson))();
 
-  /// Lifecycle status (see `PlanDocumentStatus`): draft → proposed →
-  /// approved / rejected / superseded.
-  TextColumn get status => text().withDefault(const Constant('proposed'))();
+  /// Lifecycle status: a `PlanDocumentStatus` name (draft → proposed →
+  /// approved / rejected / superseded).
+  TextColumn get status => text()
+      // ignore: recursive_getters
+      .check(status.isIn(AgentsStoredValues.planDocumentStatus))
+      .withDefault(const Constant('proposed'))();
 
   /// Monotonic revision (>= 1), bumped on each replan/edit.
   IntColumn get revision => integer().withDefault(const Constant(1))();
@@ -108,7 +127,6 @@ class PlanDocumentsTable extends Table {
 /// source proposal JSON carries explicit `{{param}}` placeholders which
 /// instantiation substitutes before re-validation. No expression language —
 /// a playbook that needs logic is a pipeline.
-@TableIndex(name: 'idx_playbooks_workspace', columns: {#workspaceId})
 class PlaybooksTable extends Table {
   /// Unique playbook id (UUID v4).
   TextColumn get id => text()();
@@ -123,11 +141,16 @@ class PlaybooksTable extends Table {
   TextColumn get description => text().withDefault(const Constant(''))();
 
   /// JSON-serialized `List<PlaybookParam>` — the typed parameter schema.
-  TextColumn get paramsSchemaJson => text().withDefault(const Constant('[]'))();
+  TextColumn get paramsSchemaJson => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(paramsSchemaJson))
+      .withDefault(const Constant('[]'))();
 
   /// JSON-serialized source `OrchestrationProposal` with `{{param}}`
   /// placeholders.
-  TextColumn get sourceProposalJson => text()();
+  TextColumn get sourceProposalJson =>
+      // ignore: recursive_getters
+      text().check(isJsonObject(sourceProposalJson))();
 
   /// Monotonic version, bumped on each save-over.
   IntColumn get version => integer().withDefault(const Constant(1))();
@@ -144,8 +167,9 @@ class PlaybooksTable extends Table {
   @override
   Set<Column> get primaryKey => {id};
 
+  /// The name is unique in the file; the list reads order by it.
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, name},
+    {name},
   ];
 }

@@ -1,13 +1,17 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
   late WorkspaceDatabase db;
 
-  setUp(() {
+  setUp(() async {
     db = createTestDatabase();
+    for (final trigger in ['trig-1', 'trig-2', 'trig-3']) {
+      await seedPipelineTrigger(db, trigger);
+    }
   });
 
   tearDown(() async {
@@ -81,6 +85,24 @@ void main() {
         );
       },
     );
+
+    test('overlapping claims of one slot have exactly one winner', () async {
+      final slot = DateTime.utc(2025, 1, 1, 0, 45);
+      final results = await Future.wait([
+        for (final id in ['ce-a', 'ce-b', 'ce-c'])
+          db.cronExecutionDao.claimSlot(
+            id: id,
+            workspaceId: 'w-1',
+            triggerId: 'trig-1',
+            plannedAt: slot,
+          ),
+      ]);
+      expect(results.where((won) => won), hasLength(1));
+      expect(
+        await db.cronExecutionDao.forTrigger('w-1', 'trig-1'),
+        hasLength(1),
+      );
+    });
 
     test('releaseSlot reopens only the released slot', () async {
       final released = DateTime.utc(2025, 1, 1, 0, 15);

@@ -259,6 +259,8 @@ class FleetSchedulerService {
         job.id,
         JobStatus.failed,
         _now(),
+        from: const {JobStatus.leased},
+        leasedTo: worker.id,
         error: 'No executor wired for worker ${worker.name}.',
       );
       unawaited(tick());
@@ -267,12 +269,12 @@ class FleetSchedulerService {
     try {
       final execution = await executor.execute(job);
       _executions[job.id] = execution;
-      _armRenewTimer(job.id);
+      _armRenewTimer(job.id, worker.id);
       var startedMarked = false;
       final sub = execution.events.listen((event) {
         if (!startedMarked) {
           startedMarked = true;
-          unawaited(_repo.markJobRunning(job.id, _now()));
+          unawaited(_repo.markJobRunning(job.id, worker.id, _now()));
         }
         _onJobEvent?.call(event, job);
       });
@@ -281,59 +283,100 @@ class FleetSchedulerService {
       _cancelRenewTimer(job.id);
       _executions.remove(job.id);
       if (result.success) {
-        await _repo.markJobTerminal(
+        final recorded = await _repo.markJobTerminal(
           job.id,
           JobStatus.done,
           _now(),
+          from: const {JobStatus.leased, JobStatus.running},
+          leasedTo: worker.id,
           resultJson: result.resultJson,
-          costCents: result.costCents,
+          costMicros: result.costMicros,
         );
+        if (!recorded) {
+          // Cancelled or reaped while it ran: that path owns the outcome.
+          CcInfraLog.info(
+            'FleetScheduler: job ${job.id} finished after it was cancelled '
+            'or reaped; its result is dropped',
+          );
+        }
       } else {
         await _failOrRetry(
           job,
+          worker.id,
           result.error ?? 'Job failed.',
-          result.costCents,
+          result.costMicros,
         );
       }
     } on Object catch (e, st) {
       _cancelRenewTimer(job.id);
       _executions.remove(job.id);
       CcInfraLog.error('FleetScheduler: execution error for ${job.id}', e, st);
-      await _failOrRetry(job, 'Execution error: $e', 0);
+      await _failOrRetry(job, worker.id, 'Execution error: $e', 0);
     }
     unawaited(tick());
   }
 
-  Future<void> _failOrRetry(Job job, String error, int costCents) async {
+  /// Retries or fails [job] after its run on [workerId] failed.
+  Future<void> _failOrRetry(
+    Job job,
+    String? workerId,
+    String error,
+    int costMicros,
+  ) async {
     final current = await _repo.jobByIdGlobal(job.id);
-    // A job the operator cancelled (or that another path already finalized)
-    // must never be resurrected by an in-flight execution completing after the
-    // fact — honour the terminal state and stop here.
-    if (current == null || current.status.isTerminal) {
+    // A job the operator cancelled (or that another path already finalized,
+    // requeued or handed to another worker) must never be resurrected by an
+    // in-flight execution completing after the fact — honour the state it is
+    // in now and stop here.
+    if (current == null ||
+        workerId == null ||
+        current.workerId != workerId ||
+        (current.status != JobStatus.leased &&
+            current.status != JobStatus.running)) {
       return;
     }
+    // Both writes name the state just read, so a cancel, reap or second
+    // failure report landing in between wins and this one stands down: one
+    // failure is retried or failed exactly once.
     final attempts = (current.attempts) + 1;
     if (attempts < job.maxAttempts) {
-      await _repo.requeueJob(job.id, attempts);
-      CcInfraLog.warning(
-        'FleetScheduler: retrying job ${job.id} (attempt $attempts/'
-        '${job.maxAttempts}): $error',
+      final requeued = await _repo.requeueJob(
+        job.id,
+        attempts,
+        from: current.status,
+        leasedTo: workerId,
       );
+      if (requeued) {
+        CcInfraLog.warning(
+          'FleetScheduler: retrying job ${job.id} (attempt $attempts/'
+          '${job.maxAttempts}): $error',
+        );
+      }
     } else {
       await _repo.markJobTerminal(
         job.id,
         JobStatus.failed,
         _now(),
+        from: {current.status},
+        leasedTo: workerId,
         error: error,
-        costCents: costCents,
+        costMicros: costMicros,
       );
     }
   }
 
-  void _armRenewTimer(String jobId) {
+  void _armRenewTimer(String jobId, String workerId) {
     _cancelRenewTimer(jobId);
     _renewTimers[jobId] = Timer.periodic(_renewInterval, (_) {
-      unawaited(_repo.renewLease(jobId, _now().add(_leaseTtl)));
+      unawaited(
+        _repo.renewLease(jobId, workerId, _now().add(_leaseTtl)).then((held) {
+          if (!held) {
+            // The job left this worker (finished, cancelled, reaped): stop
+            // renewing a lease nobody holds any more.
+            _cancelRenewTimer(jobId);
+          }
+        }),
+      );
     });
   }
 
@@ -365,7 +408,12 @@ class FleetSchedulerService {
         await execution.cancel();
       } else {
         // No live execution (e.g. after a server restart) — finalize directly.
-        await _failOrRetry(job, 'Lease expired (worker unreachable).', 0);
+        await _failOrRetry(
+          job,
+          job.workerId,
+          'Lease expired (worker unreachable).',
+          0,
+        );
       }
     }
     if (expired.isNotEmpty) {
@@ -385,7 +433,12 @@ class FleetSchedulerService {
     if (execution != null) {
       await execution.cancel();
     }
-    await _repo.markJobTerminal(jobId, JobStatus.cancelled, _now());
+    await _repo.markJobTerminal(
+      jobId,
+      JobStatus.cancelled,
+      _now(),
+      from: const {JobStatus.queued, JobStatus.leased, JobStatus.running},
+    );
   }
 
   /// Records a worker heartbeat, applying the protocol-version handshake.
@@ -462,7 +515,7 @@ class FleetSchedulerService {
         // — never drop the handle without cancelling it.
         await execution.cancel();
       } else {
-        await _failOrRetry(job, 'Worker revoked mid-run.', 0);
+        await _failOrRetry(job, job.workerId, 'Worker revoked mid-run.', 0);
       }
     }
     unawaited(tick());

@@ -43,31 +43,22 @@ class CalendarDao extends DatabaseAccessor<WorkspaceDatabase>
           .watch();
 
   /// Inserts or updates an account, reusing the existing row id when one
-  /// already exists for `(workspaceId, userId, accountEmail)` — so a member
-  /// can hold several Google accounts and reconnecting one updates it in
-  /// place.
-  Future<void> upsertAccount(CalendarAccountsTableCompanion account) async {
-    await transaction(() async {
-      final workspaceId = account.workspaceId.value;
-      final accountEmail = account.accountEmail.value;
-      final userId = account.userId.present ? account.userId.value : '';
-      final existing =
-          await (select(calendarAccountsTable)..where(
-                (t) =>
-                    t.workspaceId.equals(workspaceId) &
-                    t.userId.equals(userId) &
-                    t.accountEmail.equals(accountEmail),
-              ))
-              .getSingleOrNull();
-      if (existing == null) {
-        await into(calendarAccountsTable).insert(account);
-      } else {
-        await (update(calendarAccountsTable)
-              ..where((t) => t.id.equals(existing.id)))
-            .write(account.copyWith(id: const Value.absent()));
-      }
-    });
-  }
+  /// already exists for `(userId, accountEmail)` — so a member can hold
+  /// several Google accounts and reconnecting one updates it in place.
+  ///
+  /// One `INSERT … ON CONFLICT` on that unique key: two concurrent connects
+  /// of the same account cannot both insert.
+  Future<void> upsertAccount(CalendarAccountsTableCompanion account) =>
+      into(calendarAccountsTable).insert(
+        account,
+        onConflict: DoUpdate(
+          (_) => account.copyWith(id: const Value.absent()),
+          target: [
+            calendarAccountsTable.userId,
+            calendarAccountsTable.accountEmail,
+          ],
+        ),
+      );
 
   /// Records the last-synced timestamp for an account and clears any
   /// [CalendarAccountsTable.authExpiredAt] flag — a successful sync proves the
@@ -389,24 +380,16 @@ class CalendarDao extends DatabaseAccessor<WorkspaceDatabase>
 
   // ── Meeting ↔ event links ──
 
-  /// Links a meeting to its source event (1:1 per meeting; relink updates).
-  Future<void> linkMeetingToEvent(
-    MeetingCalendarLinksTableCompanion link,
-  ) async {
-    await transaction(() async {
-      final meetingId = link.meetingId.value;
-      final existing = await (select(
-        meetingCalendarLinksTable,
-      )..where((t) => t.meetingId.equals(meetingId))).getSingleOrNull();
-      if (existing == null) {
-        await into(meetingCalendarLinksTable).insert(link);
-      } else {
-        await (update(meetingCalendarLinksTable)
-              ..where((t) => t.id.equals(existing.id)))
-            .write(link.copyWith(id: const Value.absent()));
-      }
-    });
-  }
+  /// Links a meeting to its source event (1:1 per meeting; relink updates),
+  /// with one `INSERT … ON CONFLICT (meeting_id)`.
+  Future<void> linkMeetingToEvent(MeetingCalendarLinksTableCompanion link) =>
+      into(meetingCalendarLinksTable).insert(
+        link,
+        onConflict: DoUpdate(
+          (_) => link.copyWith(id: const Value.absent()),
+          target: [meetingCalendarLinksTable.meetingId],
+        ),
+      );
 
   /// Removes a meeting's calendar link, scoped to [workspaceId] (no-op when the
   /// meeting isn't linked). The meeting and event are untouched.

@@ -141,7 +141,11 @@ void main() {
     expect(run.status, PipelineRunStatus.completed);
     expect(run.finishedAt, isNotNull);
     expect(run.triggerPayload?['checkout_id'], 'wt-1');
-    final summary = run.state['index_summary'] as Map<String, dynamic>;
+    // The summary is in the run's state, which a list row carries only the
+    // scope keys of; the repo index button reads it through the run itself
+    // (`pipelineRunProvider` → `watchRun`).
+    final detail = (await runs.getRun(run.id))!;
+    final summary = detail.state['index_summary'] as Map<String, dynamic>;
     expect(summary['filesIndexed'], 13);
     expect(summary['nativeAvailable'], true);
 

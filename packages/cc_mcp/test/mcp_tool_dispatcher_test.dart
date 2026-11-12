@@ -109,7 +109,72 @@ class _FailingTool extends McpTool {
   }
 }
 
+/// A workspace tool that writes, or only reads, and counts its runs.
+class _WorkspaceTool extends _ScopeProbeTool {
+  _WorkspaceTool(this.name, {required this.isMutating});
+
+  @override
+  final String name;
+
+  @override
+  final bool isMutating;
+
+  int runs = 0;
+
+  @override
+  Future<CallResult> run(Map<String, dynamic> arguments) async {
+    runs++;
+    return CallResult.success('ok');
+  }
+}
+
 void main() {
+  group('a read-only workspace', () {
+    late _WorkspaceTool writer;
+    late _WorkspaceTool reader;
+    late McpToolDispatcher dispatcher;
+
+    setUp(() {
+      writer = _WorkspaceTool('write_thing', isMutating: true);
+      reader = _WorkspaceTool('read_thing', isMutating: false);
+      dispatcher = McpToolDispatcher(
+        registry: McpToolRegistry([writer, reader]),
+        isWorkspaceReadOnly: (id) => id == 'ws-damaged',
+      );
+    });
+
+    Future<Map<String, dynamic>> callTool(String name, String ws) async {
+      final response = await dispatcher.handleRequest(
+        JsonRpcRequest(
+          method: 'tools/call',
+          params: {
+            'name': name,
+            'arguments': {'workspace_id': ws},
+          },
+          id: 1,
+        ),
+      );
+      return response['result'] as Map<String, dynamic>;
+    }
+
+    test('refuses a mutating tool before it runs', () async {
+      final result = await callTool('write_thing', 'ws-damaged');
+
+      expect(result['isError'], isTrue);
+      expect(
+        (result['content'] as List).first['text'],
+        startsWith('storage.read_only'),
+      );
+      expect(writer.runs, 0);
+    });
+
+    test('still runs a read tool there, and writes elsewhere', () async {
+      expect((await callTool('read_thing', 'ws-damaged'))['isError'], isFalse);
+      expect((await callTool('write_thing', 'ws-ok'))['isError'], isFalse);
+      expect((reader.runs, writer.runs), (1, 1));
+    });
+  });
+
   group('McpToolDispatcher', () {
     late McpToolDispatcher dispatcher;
 

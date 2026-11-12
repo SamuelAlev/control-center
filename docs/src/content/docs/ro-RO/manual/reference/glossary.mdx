@@ -2,7 +2,7 @@
 title: Glosar
 description: Definiții ale termenilor-cheie folosiți în tot Control Center.
 slug: ro-RO/manual/referinta/glosar
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), native (Seatbelt nativ pe macOS, bubblewrap pe Linux și WSL2) sau none. Detectat o singură dată la pornire; native înfășoară trimiterea agenților când este disponibil. Windows nu are backend nativ, iar Linux are nevoie de bwrap plus socat; pe o asemenea gazdă pornesc doar rulările proprietarului serverului, neînfășurate, iar ale celorlalți sunt refuzate. --sandbox off rulează neînfășurați agenții fiecărui membru.'],
 ['Stație', 'O mașină de unică folosință pe care un agent o conduce în timp real: un browser sau un desktop Linux închis, un emulator Android ori un simulator iOS administrat de gazdă, sau un terminal închis. Urmărită live prin propria bandă la rezoluție completă, cu preluarea controlului impusă pe server. Limitată la o conversație, așa că fila umană și instrumentul agentului vizează o singură mașină.'],
 ['Mediu izolat', 'Proprietatea de izolare mai puternică, disponibilă stațiilor sprijinite de VM: o graniță de kernel, disc suprapus de unică folosință, poartă de rețea cu refuz implicit și broker de credențiale. Stațiile Android și iOS sunt de unică folosință, dar folosesc rețeaua administrată de gazdă, așa că nu revendică această graniță. Conducerea oricărei stații folosește clasa de guardrail enclosureControl.'],
-['RunCost', 'Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în cenți) pentru o singură rulare de agent.'],
+['RunCost', 'Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în microdolari) pentru o singură rulare de agent.'],
 ['WakeReason', 'Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.'],
 ['SandboxPort', 'Gestionează ciclul de viață al sandbox-ului (detectare, lansare, evenimente, exec, distrugere).'],
 ['CredentialBrokerPort', 'Emite credențiale limitate pentru lansarea sandbox-ului (un token pentru un singur depozit în mediul unui agent, cu scriere doar pentru calea de push de pe server) și le eliberează la demolarea lui.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Mediu izolat**: Granița mai puternică a stațiilor sprijinite de VM — o graniță de kernel, disc suprapus de unică folosință, poartă de rețea cu refuz implicit și broker de credențiale. Stațiile Android și iOS sunt de unică folosință, dar folosesc rețeaua administrată de gazdă și nu revendică această graniță. Conducerea oricărei stații folosește clasa de guardrail `enclosureControl`.
 
-**RunCost**: Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în cenți) pentru o singură rulare de agent.
+**RunCost**: Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în microdolari) pentru o singură rulare de agent.
 
 **WakeReason**: Motivul pentru care a fost trimis un agent. Șase valori: mesaj de la utilizator, atribuire de tichet, retrimitere de recuperare după un eșec, tichet copil finalizat, semnal periodic de continuare programat și pas de pipeline.
 

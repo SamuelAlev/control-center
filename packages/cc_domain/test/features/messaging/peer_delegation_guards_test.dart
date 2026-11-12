@@ -134,7 +134,7 @@ void main() {
         targetAgentId: 'a',
         delegatorAutonomy: AutonomyLevel.actFreely,
         requestedAutonomy: AutonomyLevel.actFreely,
-        remainingBudgetCents: 100,
+        remainingBudgetMicros: 100,
       );
       expect(result.allowed, isFalse);
       expect(result.refusal, contains('depth'));
@@ -148,7 +148,7 @@ void main() {
         targetAgentId: 'c',
         delegatorAutonomy: AutonomyLevel.actWithApproval,
         requestedAutonomy: AutonomyLevel.actFreely,
-        remainingBudgetCents: 100,
+        remainingBudgetMicros: 100,
       );
       expect(result.allowed, isFalse);
       expect(result.refusal, contains('ceiling'));
@@ -162,7 +162,7 @@ void main() {
         targetAgentId: 'c',
         delegatorAutonomy: AutonomyLevel.actFreely,
         requestedAutonomy: AutonomyLevel.actWithApproval,
-        remainingBudgetCents: 100,
+        remainingBudgetMicros: 100,
       );
       expect(result.allowed, isTrue);
       expect(result.refusal, isNull);

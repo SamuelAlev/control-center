@@ -46,6 +46,7 @@ class DaoAgentGoalRunRepository implements AgentGoalRunRepository {
   Future<List<AgentGoalRun>> listActive() async {
     final perWorkspace = await _cross.fanOut(
       (db) => db.agentGoalRunDao.listActive(),
+      backgroundWriter: 'goal supervisor',
     );
     return _mapper.toDomainList([for (final rows in perWorkspace) ...rows]);
   }

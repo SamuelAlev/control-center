@@ -223,7 +223,7 @@ class DemoPipelineRunFixture {
     required this.templateId,
     required this.startedAgo,
     required this.status,
-    required this.costCents,
+    required this.costMicros,
     required this.tokens,
     required this.steps,
     this.error,
@@ -257,8 +257,8 @@ class DemoPipelineRunFixture {
   /// Pipeline state after the run, so `{{placeholders}}` in node labels resolve.
   final Map<String, dynamic> state;
 
-  /// Aggregated cost, in cents.
-  final int costCents;
+  /// Aggregated cost, in micro-dollars.
+  final int costMicros;
 
   /// Aggregated token count.
   final int tokens;
@@ -316,7 +316,7 @@ DemoPipelineRunFixture _prReview88() {
     templateId: 'pr_review',
     startedAgo: const Duration(hours: 26),
     status: PipelineRunStatus.completed,
-    costCents: 9,
+    costMicros: 90000,
     tokens: 22100,
     triggerEventType: 'PullRequestPublished',
     triggerPayload: payload,
@@ -401,7 +401,7 @@ DemoPipelineRunFixture _prReview380() {
     templateId: 'pr_review',
     startedAgo: const Duration(days: 5),
     status: PipelineRunStatus.completed,
-    costCents: 4,
+    costMicros: 40000,
     tokens: 8600,
     triggerEventType: 'PullRequestPublished',
     triggerPayload: payload,
@@ -483,7 +483,7 @@ DemoPipelineRunFixture _ticketHx129Failed() {
     startedAgo: const Duration(hours: 49),
     status: PipelineRunStatus.failed,
     error: pushError,
-    costCents: 7,
+    costMicros: 70000,
     tokens: 16400,
     triggerEventType: 'TicketAssigned',
     triggerPayload: payload,
@@ -575,7 +575,7 @@ DemoPipelineRunFixture _ticketHx131() {
     templateId: 'ticket_to_pr',
     startedAgo: const Duration(days: 6),
     status: PipelineRunStatus.completed,
-    costCents: 11,
+    costMicros: 110000,
     tokens: 24800,
     triggerEventType: 'TicketAssigned',
     triggerPayload: payload,
@@ -676,7 +676,7 @@ DemoPipelineRunFixture _releaseChecksPassed() {
     templateId: kDemoReleaseChecksTemplateId,
     startedAgo: const Duration(hours: 3),
     status: PipelineRunStatus.completed,
-    costCents: 0,
+    costMicros: 0,
     tokens: 0,
     triggerEventType: 'manual',
     triggerPayload: payload,
@@ -759,7 +759,7 @@ DemoPipelineRunFixture _releaseChecksFailed() {
     startedAgo: const Duration(hours: 18),
     status: PipelineRunStatus.failed,
     error: testError,
-    costCents: 0,
+    costMicros: 0,
     tokens: 0,
     triggerEventType: 'manual',
     triggerPayload: payload,
@@ -830,7 +830,7 @@ DemoPipelineRunFixture _releaseChecksNoBudgetFile() {
     templateId: kDemoReleaseChecksTemplateId,
     startedAgo: const Duration(days: 8),
     status: PipelineRunStatus.completed,
-    costCents: 0,
+    costMicros: 0,
     tokens: 0,
     triggerEventType: 'manual',
     triggerPayload: payload,

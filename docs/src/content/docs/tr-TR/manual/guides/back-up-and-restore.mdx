@@ -2,7 +2,7 @@
 title: Yedekleme ve geri yükleme
 description: Kurulumun anlık görüntüsünü alın, bir çalışma alanını makineler arasında taşıyın, tek bir çalışma alanını ya da tümünü geri yükleyin ve kopyaları başka bir yerde saklayın.
 slug: tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Bu kılavuz, yedeklerle gerçekte yapılan beş şeyi ele alır: yedek almak, yedeği toplamak,
@@ -43,10 +43,10 @@ Her iki yapıt da **yalnızca veritabanıdır**:
 - **Kurulum anlık görüntüsü**, zaman damgalı bir dizindir: `manifest.json`, `global.db` ve her çalışma alanı için bir `<workspaceId>/workspace.db`.
 - **Çalışma alanı dışa aktarımı** ise tek bir `workspace.db` dosyasıdır.
 
-Bir çalışma alanının veritabanı, çalışma alanının tamamıdır: konuşmaları, çalıştırma günlükleri, kod indeksi, depo bağlantıları, ortam tanımları ve üyeleri. Ayrıca çalışma alanının pipeline webhook token’larını ve bilet senkronizasyonu webhook sırlarını okunabilir biçimde taşır. İndirdiğiniz bir çalışma alanı yedeğini ya da dışa aktarımını bir sır gibi saklayın. Sağlayıcı oturum açmalarını, cihaz anahtarlarını ya da kullanıcı sırlarını taşımaz; bunlar genel veritabanında ve sunucunun sır deposunda durur.
+Bir çalışma alanının veritabanı, çalışma alanının tamamıdır: konuşmaları, çalıştırma günlükleri, depo bağlantıları, ortam tanımları ve üyeleri. Sır içermez: pipeline webhook token’ları, bilet senkronizasyonu webhook sırları, sağlayıcı oturum açmaları, cihaz anahtarları ve kullanıcı sırları genel veritabanında ve sunucunun sır deposunda durur. Yine de çalışma alanının söylediği ve yaptığı her şeyi içerir; bu yüzden indirdiğiniz bir yedeği ya da dışa aktarımı çalışma alanının kendisi kadar özel saklayın. Kod indeksi, veritabanının yanındaki ayrı bir dosyadır: `code_index.db`. Hiçbir yedek onu içermez; sunucu yeniden oluşturur.
 
 İkisi de veri dizininin geri kalanını taşımaz: `secrets.json` (eşleştirme anahtarları,
-sağlayıcı kimlik bilgileri, SSO), bir çalışma alanının `blobs/` dizini (iletilere
+sağlayıcı kimlik bilgileri, webhook sırları, SSO), bir çalışma alanının `blobs/` dizini (iletilere
 yapıştırılan görseller), `skills/`, `agents/`, `chat_credentials/`, kaydedilmiş toplantı
 sesleri veya rig imajları. Bunların bir kısmı gözden çıkarılabilir, bir kısmı değil —
 [tam tablo başvuruda](/tr-TR/kilavuz/referans/yedekleme/#bir-yedeğin-içermedikleri)
@@ -63,17 +63,13 @@ Sunucu bu sırada çalışmaya devam eder. Her dosya, canlı bir veritabanına k
 olan `VACUUM INTO` ile yazılır; bu yüzden bakım penceresi yoktur ve ajanları durdurmaya
 gerek yoktur.
 
-Listedeki her satır zaman damgasını, diskteki boyutu, kaç çalışma alanının yakalandığını
-ve anlık görüntünün **Tamamlandı** mı yoksa **Eksik** mi olduğunu gösterir. Eksik,
-manifestin bulunmadığı veya olmayan dosyaları adlandırdığı anlamına gelir — bir çökme ya
-da dolu bir disk yüzünden kesilen bir yedek. Bunlar bilerek listelenir: göremediğiniz bir
-anlık görüntü, sahip olduğunuzu sandığınız anlık görüntüdür. Eksik bir anlık görüntü tüm
-kurulumu geri yükleyemez, ancak elinde bulunan çalışma alanı dosyaları yine tek tek
-devralınabilir.
+Listedeki her satır zaman damgasını, diskteki boyutu, kaç çalışma alanının yakalandığını ve anlık görüntünün **Tamamlandı** mı yoksa **Doğrulanmadı** mı olduğunu gösterir. Her kopya yazıldıktan sonra denetlenir ve manifest boyutunu ile sağlama toplamını (checksum) kaydeder. Doğrulanmadı, sunucunun anlık görüntüyü garanti edemediği anlamına gelir: manifesti eksik ya da okunamıyorsa veya adlandırdığı bir dosya yoksa ya da boyutu değişmişse. Bu, bir çökme ya da dolu bir disk yüzünden kesilen bir yedektir ya da anlık görüntülerin sağlama toplamı kaydetmeden önce alınmış bir yedektir. Bunlar bilerek listelenir: göremediğiniz bir anlık görüntü, sahip olduğunuzu sandığınız anlık görüntüdür. Doğrulanmamış bir anlık görüntü tüm kurulumu geri yükleyemez, ancak elinde bulunan çalışma alanı dosyaları yine tek tek geri yüklenebilir.
 
 Bir satırda **_n_ çalışma alanı yakalanmadı** da yazabilir. Bu, kayıtlı ama hiç
-yazılmamış bir çalışma alanıdır (henüz dosyası yoktur) ya da kopyası başarısız olmuştur —
+yazılmamış bir çalışma alanıdır (henüz dosyası yoktur) ya da veritabanı hasarlı olan bir çalışma alanıdır (hasarlı bir kopya asla alınmaz) ya da kopyası başarısız olmuştur —
 sunucu günlüğüne bakın.
+
+**Son sağlam kopya** işaretli bir anlık görüntü ya da zamanlanmış yedek, veritabanı sonradan hasar görmüş bir çalışma alanının en yeni sağlam kopyasını tutar. Zamanlanmış temizlik ona dokunmaz; silinmesi ise çalışma alanı geri yüklenene kadar onay ister.
 
 ## Çalışma alanı yedeklerini ve saklama süresini zamanlayın
 
@@ -101,7 +97,7 @@ arasında yer alır ve her çalışma alanı için bir satır gösterir: son yed
 
 Her yedeği görmek için bir satırı genişletin; en yenisi en üsttedir:
 
-- **Geri yükle**, çalışma alanının mevcut veritabanını bu yedekle değiştirir. Bunu geri almanız gerekebilecekse önce çalışma alanını dışa aktarın. Sunucu sahibi olmanız gerekir; çalışma alanının sahibi de olmanız gerekir.
+- **Geri yükle**, çalışma alanının mevcut veritabanını bu yedekle değiştirir. Değiştirilen veritabanı bu listede, adı `-pre-restore` ile biten bir kayıt olarak tutulur; böylece geri dönebilirsiniz. Sunucu sahibi olmanız gerekir; çalışma alanının sahibi de olmanız gerekir.
 - **İndir**, dosyayı kullandığınız makineye kaydeder. Yedek sunucuda kalır.
 - **Yolu kopyala**, sunucudaki konumunu kopyalar.
 - **Sil**, çalışma alanının adını yazdığınızda bu yedeği kalıcı olarak kaldırır. Çalışma alanının **sahibi** olmanız gerekir.
@@ -120,7 +116,7 @@ bölümünde anlatıldığı gibi yükleyin.
 
 ## Kurulum anlık görüntüsünü silme
 
-**Kurulum anlık görüntüleri** altında, eksik olanlar dahil, anlık görüntüyü genişletin ve
+**Kurulum anlık görüntüleri** altında, doğrulanmamış olanlar dahil, anlık görüntüyü genişletin ve
 tehlike bölümündeki **Anlık görüntüyü sil** seçeneğini kullanın. Adını doğrulayın. Anlık
 görüntü dizininin tamamı sunucudan kalıcı olarak kaldırılır; bir kopyaya ihtiyacınız varsa
 önce indirin. Çalışma alanı yedekleme işlem hattı bu anlık görüntüleri asla silmez.
@@ -161,22 +157,14 @@ Her iki sunucu da bulunduğunuz makineyse, kaynakta **Sunucuya kaydet** ve ardı
 olmadan yapar; bu yol sunucu makinesinde çözülür.
 
 :::caution[İçe aktarma her şeyin üzerine yazar]
-İçe aktarma, hedef çalışma alanının şu anda barındırdığı her şeyin üzerine yazar ve geri
-alınamaz. Geri isteme ihtimaliniz olan bir şey barındırıyorsa önce hedefi dışa aktarın.
+İçe aktarma, hedef çalışma alanının şu anda barındırdığı her şeyin üzerine yazar. Üzerine yazılan veritabanı **Zamanlanmış yedekler** altında, adı `-pre-restore` ile biten bir kayıt olarak tutulur; geri dönmek için onu geri yükleyin.
 :::
 
-İki şeye izin verilir ve reddedilmek yerine günlüğe yazılır: kayıtlı çalışma alanı kimliği
-hedeften farklı olan bir dosyayı içe aktarmak (bir çalışma alanını bu şekilde çoğaltır ya
-da yeni bir kimlik altında geri yüklersiniz) ve **farklı bir kurulumdan** gelen bir dosyayı
-içe aktarmak. İkinci durumda dosyanın eşleştirilmiş aygıtları ve kullanıcı kimlikleri
-geldiği kuruluma aittir ve bu kurulumda çözülmez — çalışma alanının kendi verisi
-sağlamdır, ancak devraldıktan sonra üyeliği yeniden kontrol edin.
+Başka bir çalışma alanından ya da **farklı bir kurulumdan** gelen dosya kabul edilir: bir çalışma alanını bu yolla çoğaltır, yeni bir kimlik altında geri yükler veya başka birine devredersiniz. Başka bir kurulumdaki kullanıcı kimlikleri bu kurulumda çözülmez — çalışma alanının kendi verisi sağlamdır, ancak devraldıktan sonra üyeliği yeniden kontrol edin.
 
-Sohbet botu token'ları ve sağlayıcı oturum açmaları veritabanının dışında yaşar; bu yüzden
-alıcı kurulum kendi bağlantılarını yeniden kurar. Dosya ise çalışma alanının pipeline
-webhook token'larını ve bilet senkronizasyonu webhook sırlarını taşır; bu yüzden
-devrettiğiniz çalışma alanı bunları da devreder. Alıcının bunlara sahip olmaması gerekiyorsa
-sonra bunları yenileyin.
+Geri yüklenen bir dosya, bu sunucuda tek başına hiçbir şey veremez. Olağan üyelikten öte taşıdığı izinler çıkarılır ve sayfanın en üstündeki **Geri yüklenen kopyalardan tutulanlar** bölümünde listelenir: ajanların onay olmadan ya da onaydan sonra işlem yapmasına izin veren eylem kuralları, bir sandbox’ın çalıştırabileceği yollar, okumanın ötesindeki depo erişimi, üyeden yüksek roller ve bu rollere açık davetler. **Kabul et** onu yeniden verir; **Reddet** düşürür. Ana makinede bir ortam tanımını çalıştırma onayları temizlenir, bu yüzden bu tanımları yeniden onaylayın. Geri yükleyen kişi sahip rolünü korur veya alır.
+
+Sohbet botu token’ları, sağlayıcı oturum açmaları ve webhook sırları veritabanının dışında yaşar; bu yüzden alıcı kurulum kendi bağlantılarını yeniden kurar. Webhook tetikleyicileri ile bilet senkronizasyonu webhook’ları sırlarıyla birlikte gelmez; başka bir sunucuda, orada yeniden kaydedilene kadar hiçbir şey almaz; bu da her tetikleyiciye yeni bir URL verir.
 
 ## Bir çalışma alanını anlık görüntüden geri yükleme
 
@@ -188,7 +176,7 @@ Bunun için sunucu sahibi ve çalışma alanının sahibi olmanız gerekir.
 
 Bu, içe aktarmayla aynı işlemdir; yalnızca o çalışma alanının dosyasının anlık görüntüdeki
 kopyasını hedefler — bilerek böyle, aynı dosyayı farklı ele alabilecek ikinci bir
-mekanizma olmasın diye.
+mekanizma olmasın diye. Kopya önce anlık görüntünün kaydettiği sağlama toplamına karşı denetlenir.
 
 Bir satırda **Artık bu sunucuda yok** yazabilir ve **Geri yükle** devre dışı olabilir:
 anlık görüntü, bu kurulumun artık sahip olmadığı bir çalışma alanını barındırıyordur. Onu
@@ -196,6 +184,10 @@ elle geri getirin — bir çalışma alanı oluşturun (yalnızca sunucu sahibi)
 `<snapshot path>/<old workspace id>/workspace.db` yolunu onun **Çalışma alanı veritabanı dosyası** alanına girin ve **İçe aktar**’a basın. Genişletilmiş
 anlık görüntü kendi **Sunucudaki yol** değerini kopyalanabilir bir alanda gösterir ve
 satırın başlığı eski çalışma alanı kimliğidir; böylece o yolun iki yarısı da önünüzde olur.
+
+## Hasarlı bir çalışma alanını geri yükleme
+
+Veritabanı bütünlük denetimini geçemeyen bir çalışma alanı salt okunur olur: her şey okunabilir kalır ve her değişiklik reddedilir. Üyeler çalışma alanının en üstünde **Bu çalışma alanı salt okunur** uyarısını görür, sunucu sahibi bunu bu sayfadaki **Dikkatinizi gerektiriyor** bölümünde görür ve sağlam bir kopya tutan en yeni yedek **Son sağlam kopya** olarak saklanır. Çalışma alanını yeniden yazılabilir yapmak için, yukarıda anlatıldığı gibi o kopyadan geri yükleyin. Hasarlı veritabanı bir `-pre-restore` yedeği olarak saklanır.
 
 ## Tüm kurulumu geri yükleme
 
@@ -323,7 +315,7 @@ Bunu veri dizininin sahibi olan kullanıcıyla, cron'dan ya da bir systemd zaman
 SQLite 3.27 veya daha yeni bir sürüm gerekir.
 
 Bunu `<dataDir>/backups/` dizininin **dışına** yazın. Orada elle oluşturulmuş bir dizinde
-`manifest.json` bulunmaz; uygulama onu eksik bir anlık görüntü olarak listeler ve liste,
+`manifest.json` bulunmaz; uygulama onu doğrulanmamış bir anlık görüntü olarak listeler ve liste,
 sunucunun kendisinin ürettiklerinin dürüst kaydı olmaktan çıkar.
 
 ### Eski tüm kurulum anlık görüntülerini budama
@@ -369,9 +361,11 @@ yapın.
 | “Yedekleri yalnızca sunucu sahibi geri yükleyebilir. Yine de bunları indirebilirsiniz.” | Geri yükleme, bir çalışma alanının veritabanını sunucu ana makinesinde değiştirir; bu yüzden yalnızca sunucu sahibi geri yükler. Yedeği indirin ve onlardan geri yüklemelerini isteyin |
 | “Bu sunucuda yedekleme yüzeyi yok.”                                       | Makinede yedekleme portu bağlı değil — bir demo sunucusu. İşlemler reddedilmek yerine yoktur                                  |
 | “Dosya, sunucunun kabul ettiğinden büyük.”                               | Yüklemeler 8 GiB ile sınırlıdır. Dosyayı sunucu makinesine koyun ve yolunu **Çalışma alanı veritabanı dosyası** alanına girin |
-| Import refused: not a Control Center workspace database                  | Dosyada `workspace_meta` satırı yok — bu bir çalışma alanı dışa aktarımı değil veya dosya kesilmiş. Hiçbir şey değiştirilmedi |
-| Bir anlık görüntü **Eksik** olarak listelenir                            | Manifesti eksik ya da olmayan dosyaları adlandırıyor. Yeni bir tane alın; bu arada ondan tek tek çalışma alanı dosyalarını devralın |
-| Bir anlık görüntü, bazı çalışma alanlarının yakalanmadığını söyler       | O çalışma alanlarına hiç yazılmamıştır veya kopyaları başarısız olmuştur. Sunucu günlüğüne bakın                            |
+| Geri yükleme reddedilir ve hiçbir şey değiştirilmez | Dosya bir denetimi geçemedi ve mesaj hangisi olduğunu söyler: çalışma alanı veritabanı değil, hasarlı, anlık görüntüsünün kaydettiği sağlama toplamıyla uyuşmuyor, sunucunun daha yeni bir sürümü tarafından yazılmış, ya da webhook’ları veya davetleri bu sunucudaki başka bir çalışma alanına zaten ait. Başka bir kopya kullanın ya da önce sunucuyu güncelleyin |
+| Bir anlık görüntü **Doğrulanmadı** olarak listelenir | Hiç tamamlanmadı ya da anlık görüntüler sağlama toplamı kaydetmeden önce alındı. Yeni bir tane alın; bu arada ondan tek tek çalışma alanı dosyalarını geri yükleyin |
+| Bir anlık görüntü, bazı çalışma alanlarının yakalanmadığını söyler       | O çalışma alanlarına hiç yazılmamıştır, hasarlıdır veya kopyaları başarısız olmuştur. Sunucu günlüğüne bakın                            |
+| Bir çalışma alanı **Bu çalışma alanı salt okunur** uyarısını verir | Veritabanı bütünlük denetimini geçemedi. Sunucu sahibi onu bir yedekten geri yükleyene kadar içindeki hiçbir şey değiştirilemez |
+| Bir çalışma alanı başka bir sunucuya taşındıktan sonra webhook’lar gelmeyi bırakır | Webhook sırları veritabanıyla birlikte taşınmaz. Her webhook tetikleyicisini ve bilet senkronizasyonu bağlantısını yeni sunucuda yeniden kaydedin, ardından göndericiye yeni URL’yi verin |
 | Geri yüklenen bir kurulumda forge veya SSO kimlik bilgisi yok            | `secrets.json` bir anlık görüntüde yer almaz. Onu sakladığınız yerden geri yükleyin veya sağlayıcıları yeniden bağlayın    |
 | Geri yüklenen bir çalışma alanında yapıştırılan görseller eksik          | Blob'lar veritabanının içinde değil yanında bulunur. `<workspaceId>/blobs/` dizinini de kopyalayın                        |
 

@@ -55,9 +55,8 @@ class DaoNotificationFeedRepository implements NotificationFeedRepository {
   ).watchItemStates(workspaceId, userId).map(_mapper.itemStatesToDomain);
 
   @override
-  Future<void> markAllRead(String workspaceId, String userId) => _dao(
-    workspaceId,
-  ).markAllRead(workspaceId, userId, DateTime.now());
+  Future<void> markAllRead(String workspaceId, String userId) =>
+      _dao(workspaceId).markAllRead(workspaceId, userId, DateTime.now());
 
   @override
   Future<void> clearAll(String workspaceId, String userId) =>
@@ -69,24 +68,15 @@ class DaoNotificationFeedRepository implements NotificationFeedRepository {
     String userId,
     String itemId, {
     required bool read,
-  }) => _dao(workspaceId).setItemRead(
+  }) => _dao(
     workspaceId,
-    userId,
-    itemId,
-    read ? DateTime.now() : null,
-  );
+  ).setItemRead(workspaceId, userId, itemId, read ? DateTime.now() : null);
 
   @override
-  Future<void> dismissItem(
-    String workspaceId,
-    String userId,
-    String itemId,
-  ) => _dao(workspaceId).dismissItem(
-    workspaceId,
-    userId,
-    itemId,
-    DateTime.now(),
-  );
+  Future<void> dismissItem(String workspaceId, String userId, String itemId) =>
+      _dao(
+        workspaceId,
+      ).dismissItem(workspaceId, userId, itemId, DateTime.now());
 
   @override
   Future<void> markConversationMessagesRead(
@@ -125,22 +115,29 @@ class DaoNotificationFeedRepository implements NotificationFeedRepository {
     String method,
     Map<String, dynamic> params,
   ) async {
-    final item = NotificationFeedItem(
-      id: _uuid.v4(),
+    final id = _uuid.v4();
+    // Whole seconds, as the column stores it: the returned item must compare
+    // against read marks exactly as the stored one will.
+    final now = DateTime.now();
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(
+      now.millisecondsSinceEpoch ~/ 1000 * 1000,
+    );
+    final seq = await _dao(workspaceId).insertAndPrune(
+      NotificationFeedTableCompanion.insert(
+        id: id,
+        workspaceId: workspaceId,
+        method: method,
+        paramsJson: jsonEncode(params),
+        createdAt: Value(createdAt),
+      ),
+    );
+    return NotificationFeedItem(
+      id: id,
       workspaceId: workspaceId,
       method: method,
       params: params,
-      createdAt: DateTime.now(),
+      createdAt: createdAt,
+      seq: seq,
     );
-    await _dao(workspaceId).insertAndPrune(
-      NotificationFeedTableCompanion.insert(
-        id: item.id,
-        workspaceId: item.workspaceId,
-        method: item.method,
-        paramsJson: jsonEncode(item.params),
-        createdAt: Value(item.createdAt),
-      ),
-    );
-    return item;
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 import 'package:cc_remote/format.dart';
@@ -16,11 +17,13 @@ String planStatusLabel(AppLocalizations l10n, PlanDocumentStatus status) =>
       PlanDocumentStatus.superseded => l10n.mobilePlanSuperseded,
     };
 
-String planMoney(BuildContext context, int cents) =>
+/// The phone's money formatter: [micros] (1 USD = 1,000,000) as a locale
+/// currency amount in cents.
+String planMoney(BuildContext context, int micros) =>
     NumberFormat.simpleCurrency(
       locale: Localizations.localeOf(context).toLanguageTag(),
       name: 'USD',
-    ).format(cents / 100);
+    ).format(micros / microsPerDollar);
 
 /// Selectable node in a linear reading order (not a miniature graph editor).
 class PhonePlanStep extends StatelessWidget {
@@ -111,11 +114,11 @@ class PhonePlanStep extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: t.textSecondary),
               ),
             ],
-            if (estimate?.costCentsHigh != null) ...[
+            if (estimate?.costMicrosHigh != null) ...[
               const SizedBox(height: 8),
               Text(
                 l10n.mobilePlanStepCost(
-                  planMoney(context, estimate!.costCentsHigh!),
+                  planMoney(context, estimate!.costMicrosHigh!),
                 ),
                 style: TextStyle(fontSize: 12, color: t.textSecondary),
               ),
@@ -236,10 +239,11 @@ class PhonePlanDocumentBody extends StatelessWidget {
   }
 }
 
-/// A whole-cent budget typed into [raw], or null when it is not a positive
-/// amount. Accepts the locale's digits and decimal mark plus ASCII digits for
-/// hardware keyboards; rejects grouping and never rounds a third cent.
-int? parsePlanBudgetCents(BuildContext context, String raw) {
+/// A budget typed in dollars into [raw], in micro-dollars, or null when it is
+/// not a positive amount. Accepts the locale's digits and decimal mark plus
+/// ASCII digits for hardware keyboards; rejects grouping and never rounds a
+/// third decimal.
+int? parsePlanBudgetMicros(BuildContext context, String raw) {
   final locale = Localizations.localeOf(context).toLanguageTag();
   final format = NumberFormat.decimalPattern(locale);
   var text = raw.trim();
@@ -254,6 +258,6 @@ int? parsePlanBudgetCents(BuildContext context, String raw) {
   final cents = pieces.length == 1
       ? 0
       : int.parse(pieces.last.padRight(2, '0'));
-  final total = dollars * 100 + cents;
+  final total = dollars * microsPerDollar + cents * microsPerCent;
   return total > 0 ? total : null;
 }

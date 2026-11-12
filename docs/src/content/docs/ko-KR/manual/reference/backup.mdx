@@ -2,7 +2,7 @@
 title: 백업, 내보내기, 가져오기
 description: 스냅샷 레이아웃, 매니페스트, 모든 백업 연산과 전송 라우트, 그리고 백업에 포함되는 파일과 포함되지 않는 파일을 정확히 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/백업
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것과 각 산출물의 정확한
@@ -44,14 +44,7 @@ Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것
 타임스탬프이므로, Windows에서 파일 시스템에 안전하고 일반 문자열로도 시간순으로
 정렬됩니다.
 
-예약된 워크스페이스 백업은
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`에 따로
-있습니다. 여기에는 매니페스트나 `global.db`가 없으며 설치 스냅샷도 아닙니다.
-주간 파이프라인의 보존 단계는 구성된 기간(기본값 30일)보다 오래된 자기
-워크스페이스의 백업만 제거합니다. 수동으로 만든 설치 스냅샷은 그 단계에서 순환
-삭제되는 일이 없습니다. `server.listBackups`는 불완전한 것까지 포함해 설치
-스냅샷만 나열하고, `workspace.listBackups`는 워크스페이스 하나의 예약 백업을
-나열합니다.
+예약된 워크스페이스 백업은 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`에 따로 있습니다. 각각에는 그 파일 하나에 대한 `manifest.json`이 있고 `global.db`는 없습니다. 설치 스냅샷이 아닙니다. 복원은 교체되는 데이터베이스를 같은 위치에 `<timestamp>-pre-restore`로 보관합니다. 주간 파이프라인의 보존 단계는 구성된 기간(기본값 30일)보다 오래된, 그 워크스페이스 자체의 백업만 제거합니다. 수동으로 만든 설치 스냅샷은 그 단계에서 순환 삭제되는 일이 없습니다. `server.listBackups`는 확인되지 않은 것까지 포함해 설치 스냅샷만 나열하고, `workspace.listBackups`는 워크스페이스 하나의 예약 백업을 나열합니다.
 
 워크스페이스를 삭제해도 이 디렉터리는 그대로 남습니다. 워크스페이스의 일정이 함께
 멈추므로 그 백업은 더 이상 순환 삭제되지 않고, 설치 소유자가 제거할 때까지 남습니다.
@@ -62,33 +55,39 @@ Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것
 
 | 필드                       | 유형            | 의미                                                             |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | 매니페스트 형식 버전. 현재 `1`                                       |
+| `format`                  | int             | 매니페스트 형식. 현재 `2`                                       |
 | `created_at`               | ISO-8601 UTC    | 스냅샷을 생성한 시각                                                 |
-| `global.file`              | string          | 항상 `global.db`                                                    |
-| `global.schema_version`    | int             | 캡처 시점의 `GlobalDatabase` 스키마 버전                             |
-| `global.bytes`             | int             | 작성된 `global.db`의 크기                                            |
-| `workspace_schema_version` | int             | 모든 워크스페이스 파일이 공유하는 `WorkspaceDatabase` 스키마 버전     |
-| `workspaces[]`             | array           | 캡처한 워크스페이스마다 하나의 항목                                   |
+| `global`                   | object          | `global.db`의 기록. 예약 워크스페이스 백업에는 없습니다 |
+| `workspaces[]`             | array           | 캡처한 워크스페이스마다 하나의 레코드                                   |
 | `workspaces[].workspace_id`| string          | 이 파일이 담고 있는 워크스페이스                                      |
-| `workspaces[].file`        | string          | 스냅샷 루트 기준 상대 경로, `<workspaceId>/workspace.db`              |
-| `workspaces[].bytes`       | int             | 그 파일의 크기                                                       |
-| `skipped_workspaces[]`     | array of string | 백업이 캡처하지 **못한** 워크스페이스                                 |
+| `skipped_workspaces[]`     | array           | 백업이 캡처하지 **못한** 워크스페이스                                 |
+| `skipped_workspaces[].workspace_id` | string | 제외된 워크스페이스 |
+| `skipped_workspaces[].reason` | string       | `no_file`, `damaged` 또는 `failed`                                    |
 
-워크스페이스는 등록되어 있지만 한 번도 기록된 적이 없거나(따라서 아직 파일이
-없거나), `VACUUM INTO`가 실패했을 때 건너뜁니다. 어느 쪽이든 스냅샷은 그대로
-완료되며, 매니페스트에 무엇이 빠졌는지 적힙니다.
+`global`과 `workspaces[]`의 각 항목은 복사된 파일 하나를 기록하며, 복사본을 쓴 뒤 그 복사본을 측정한 값입니다.
+
+| 필드 | 유형 | 의미 |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | 스냅샷 루트 기준 상대 경로: `global.db` 또는 `<workspaceId>/workspace.db`              |
+| `bytes`       | int             | 복사본의 크기                                                       |
+| `sha256`         | string | 복사본의 SHA-256(소문자 16진수)                                                |
+| `quick_check`    | string | 복사본에 대한 SQLite `quick_check` 결과: `ok` 또는 검출 내용                  |
+| `user_version`   | int    | 복사본의 스키마 버전                                                           |
+| `application_id` | int    | 복사본의 SQLite `application_id`                                               |
+
+워크스페이스는 등록되어 있지만 한 번도 기록된 적이 없는 경우(`no_file`), 데이터베이스가 무결성 검사에 실패하는 경우(`damaged`. 손상된 사본은 캡처되지 않습니다), 또는 복사본이나 그 복사본의 검사가 실패한 경우(`failed`) 건너뜁니다. 어느 경우든 스냅샷은 그대로 완료되며, 매니페스트에 무엇이 빠졌는지 적힙니다. 매니페스트는 맨 마지막에 기록됩니다.
 
 ### 완전성
 
-`server.listBackups`는 스냅샷마다 `complete` 플래그를 보고합니다. 매니페스트가
-없거나 파싱할 수 없을 때, `global.db`가 없을 때, 또는 매니페스트가 디스크에 없는
-워크스페이스 파일을 가리킬 때 false입니다.
+`server.listBackups`는 스냅샷마다 `complete` 플래그를 보고합니다. 매니페스트가 없거나, 파싱할 수 없거나, 다른 형식이거나, 매니페스트가 가리키는 파일이 없거나 크기가 다르거나, 복사본이 검사를 통과하지 못했을 때 false입니다. 앱은 이런 스냅샷을 **확인되지 않음**으로 표시합니다. 형식 `2` 이전에 만들어진 스냅샷이 이 상태입니다.
 
-불완전한 스냅샷도 계속 나열됩니다. 운영자가 볼 수 없는 스냅샷은 가지고 있다고
+확인되지 않은 스냅샷도 계속 나열됩니다. 운영자가 볼 수 없는 스냅샷은 가지고 있다고
 믿는 스냅샷이기 때문입니다. 매니페스트를 읽을 수 없으면 목록은 레이아웃 자체로
 폴백하여 찾아낸 `<workspaceId>/workspace.db` 파일을 보고합니다. 이런 파일들은
 스냅샷 전체로는 설치를 복원할 수 없더라도 `workspace.import`로 개별적으로
 받아들일 수 있습니다.
+
+나열된 스냅샷이나 예약 백업은, 라이브 데이터베이스가 손상된 워크스페이스의 최신 검증된 사본을 담고 있는 동안 `pinned_reason: "last_good_copy"`를 가집니다. 보존 단계는 그 워크스페이스가 복원될 때까지 이를 건너뜁니다.
 
 ## 백업에 포함되지 않는 것
 
@@ -99,6 +98,7 @@ Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것
 | ----------------------------------- | -------------- | ---------------------- |
 | `global.db`                         | 예             | 아니요                 |
 | `<workspaceId>/workspace.db`        | 예             | 예(파일 *자체*입니다)  |
+| `<workspaceId>/code_index.db`       | 아니요          | 아니요                     |
 | `<workspaceId>/blobs/`              | 아니요         | 아니요                 |
 | `<workspaceId>/skills/`             | 아니요         | 아니요                 |
 | `<workspaceId>/agents/`             | 아니요         | 아니요                 |
@@ -111,16 +111,9 @@ Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것
 | `rigs/`                             | 아니요         | 아니요                 |
 | `_agent_hooks/`                     | 아니요         | 아니요                 |
 
-그중 일부는 버려도 됩니다. `spaces/`는 저장소에서 다시 프로비저닝되는
-copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는 다시
-내려받고, `rigs/`는 머신 상태입니다. 그렇지 않은 것도 있습니다. `blobs/`는
-데이터베이스의 행이 가리키는 붙여넣은 이미지를 담고, `skills/`와 `agents/`는
-에이전트가 실행에 쓰는 파일을 담고, `secrets.json`은 설치의 모든 페어링 키와
-공급자 자격 증명, SSO 설정을 담습니다. 나머지를 챙기는 방법은
-[백업 및 복원](/ko-KR/매뉴얼/사용-가이드/백업-및-복원/#백업을-머신-밖으로-복사하기)을
-참고하세요.
-:::caution[워크스페이스 데이터베이스에는 웹훅 시크릿이 들어 있습니다]
-`workspace.db`는 워크스페이스 전체입니다. 대화, 실행 로그, 코드 인덱스, 저장소 링크, 환경 정의, 멤버가 들어 있습니다. 또한 워크스페이스의 파이프라인 웹훅 토큰과 티켓 동기화 웹훅 시크릿을 읽을 수 있는 형태로 담고 있으므로, 내려받은 내보내기나 백업을 시크릿처럼 다루십시오. 공급자 로그인, 기기 키, 사용자 시크릿은 담고 있지 않으며, 그것들은 `global.db`와 `secrets.json`에 있습니다.
+그중 일부는 버려도 됩니다. `spaces/`는 저장소에서 다시 프로비저닝되는 copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `code_index.db`는 다시 생성되고, `models/`는 다시 내려받고, `rigs/`는 머신 상태입니다. 그렇지 않은 것도 있습니다. `blobs/`는 데이터베이스의 행이 가리키는 붙여넣은 이미지를 담고, `skills/`와 `agents/`는 에이전트가 실행에 쓰는 파일을 담고, `secrets.json`은 설치의 모든 페어링 키와 공급자 자격 증명, SSO 설정을 담습니다. 나머지를 챙기는 방법은 [백업 및 복원](/ko-KR/매뉴얼/사용-가이드/백업-및-복원/#백업을-머신-밖으로-복사하기)을 참고하세요.
+:::note[시크릿은 데이터베이스 밖에 있습니다]
+`workspace.db`는 워크스페이스 전체입니다. 대화, 실행 로그, 저장소 연결, 환경 정의, 구성원이 들어 있습니다. 파이프라인 웹훅 토큰과 티켓 동기화 웹훅 시크릿은 `secrets.json`에 있습니다. 데이터베이스에는 각각에 대한 참조가 있고, 라우트 인덱스에는 각 토큰의 키 해시가 있습니다. 따라서 다른 설치에 복원된 워크스페이스는 트리거가 그곳에서 다시 저장되기 전까지 웹훅을 받지 않습니다. 공급자 로그인, 기기 키, 사용자 시크릿은 `global.db`와 `secrets.json`에 있습니다.
 :::
 
 :::note[채팅 토큰은 의도적으로 남겨 둡니다]
@@ -147,6 +140,8 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 | `workspace.deleteBackup` | 변경 | 워크스페이스 | `owner` | `name` | `{ok}` |
 | `workspace.export`   | 읽기   | 워크스페이스 | `admin`      | 없음          | `{ok, path}`                  |
 | `workspace.import`   | 변경   | 워크스페이스 | `owner` 및 서버 소유자 | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | 읽기 | 워크스페이스 | `owner` 및 서버 소유자 | 없음 | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | 변경 | 워크스페이스 | `owner` 및 서버 소유자 | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | 변경   | 설치*      | `owner`      | `id`          | 레지스트리 행이 삭제됨으로 표시됨 |
 
 * `workspace.delete`는 표시하는 행이 전역 레지스트리에 있으므로 범위가 없습니다.
@@ -163,17 +158,19 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 자체의 역할 뒤에 머뭅니다. 두 삭제 연산 모두 목록에 있는 타임스탬프 디렉터리 이름만 받으며
 경로는 받지 않습니다.
 
+`workspace.importHolds.list`는 가져오기가 보류한 항목을 반환합니다. 각 보류 항목에는 `id`, `kind`(`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role`, 또는 `invite`), 되돌렸을 `payload`, `imported_at`, `source_install_id`가 있습니다. `workspace.importHolds.resolve`를 `accept: true`로 호출하면 다시 부여하고, `false`로 호출하면 버립니다. 부여 대상이었던 사람이나 항목이 워크스페이스에 더 이상 없으면 `applied`는 false입니다.
+
 :::note[설치 전체 스냅샷은 두 레인 모두 소유자 전용입니다]
 `server.backupNow`, `server.listBackups`, `server.deleteBackup`은 설치
 **소유자**(`ServerAuthority.serverOwner`)를 요구하며, `GET /backup/snapshot`과 같은
 관문을 씁니다. 스냅샷은 모든 워크스페이스의 데이터베이스를 캡처하므로,
 워크스페이스 하나의 관리자인 것만으로는 나머지를 관리하기에 충분하지 않습니다.
 삭제는 나열된 타임스탬프 디렉터리 이름만 받아들이고 임의의 서버 경로는 받지
-않으며, 스냅샷 전체(불완전한 스냅샷 포함)를 제거합니다. 워크스페이스별 내보내기와 예약 백업 다운로드는 워크스페이스 관리자에게 남습니다.
+않으며, 스냅샷 전체(확인되지 않은 스냅샷 포함)를 제거합니다. 워크스페이스별 내보내기와 예약 백업 다운로드는 워크스페이스 관리자에게 남습니다.
 :::
 
 :::note[복원은 서버 소유자의 것입니다]
-`workspace.import`와 `POST /backup/restore`는 서버가 데이터베이스 파일을 자기 것으로 받아들이게 합니다. 파일의 행을 서버가 자기 것으로 취급하기 때문입니다. 저장소 링크와 그것을 만든 사람, 호스트에서 실행되는 환경 정의, 워크트리와 로그 경로가 그렇습니다. 따라서 둘 다 서버 소유자(`ServerAuthority.serverOwner`)가 필요하며, 그 사람은 워크스페이스의 소유자이기도 해야 합니다. 그 밖의 사용자와 기록된 소유자가 없는 호스트의 모든 호출자는 `server_owner_required`와 함께 거부됩니다. 파일이 가져오는 트리거나 뷰는 하나도 채택되지 않습니다.
+`workspace.import`와 `POST /backup/restore`는 서버가 데이터베이스 파일을 자기 것으로 받아들이게 합니다. 파일의 행을 서버가 자기 것으로 취급하기 때문입니다. 저장소 링크와 그것을 만든 사람, 호스트에서 실행되는 환경 정의, 워크트리와 로그 경로가 그렇습니다. 따라서 둘 다 서버 소유자(`ServerAuthority.serverOwner`)가 필요하며, 그 사람은 워크스페이스의 소유자이기도 해야 합니다. 그 밖의 사용자와 기록된 소유자가 없는 호스트의 모든 호출자는 `server_owner_required`와 함께 거부됩니다. 파일이 가져오는 트리거, 뷰, 열, 제약 조건은 하나도 채택되지 않습니다.
 :::
 
 ### `server.listBackups` 응답
@@ -215,21 +212,21 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 
 ### `workspace.import` 검증
 
-무엇이든 대체되기 전에, 후보 파일을 수명이 짧은 원시 SQLite 연결로 읽기 전용으로
-열고 `workspace_meta` 행을 읽습니다.
+무엇이든 교체되기 전에, 후보 파일을 대상 옆의 스테이징 파일로 복사하고 거기서 확인합니다. 거부되는 경우 아무것도 건드리지 않으며, 그 종류는 `data.kind`로 전달됩니다.
 
 | 조건                                        | 결과                                                          |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| 읽을 수 있는 SQLite 데이터베이스가 아니거나 `workspace_meta`가 없음 | 거부됩니다. 아무것도 건드리지 않습니다                     |
-| 기록된 워크스페이스 id ≠ 대상                | **허용**되고 기록됩니다. 이렇게 해서 워크스페이스를 복제하거나 새 id로 복원합니다 |
-| 기록된 설치 id ≠ 이 설치                | **허용**되고 기록됩니다. 그 워크스페이스의 페어링된 기기와 사용자 id는 그 설치에 속하며 여기서는 해석되지 않습니다 |
-| 유효하지 않은 워크스페이스 id이거나 파일이 없음      | 거부됩니다                                                         |
+| 파일이 존재하지 않음 | 거부, `import.missing_source` |
+| 읽을 수 있는 SQLite 데이터베이스가 아니거나 `quick_check`에 실패함 | 거부, `import.damaged` |
+| 스냅샷에서 가져온 파일이며 SHA-256이 매니페스트의 값과 다름 | 거부, `import.checksum_mismatch` |
+| 서버의 더 새로운 버전이 기록함 | 거부, `import.newer_schema` |
+| 다른 `application_id`이거나 `workspace_meta`가 없음 | 거부, `import.foreign_file` |
+| 이 서버의 스키마에 맞출 수 없음 | 거부, `import.schema_mismatch` |
+| 그 웹훅이나 초대가 이미 다른 워크스페이스로 라우팅됨 | 거부, `import.route_conflict` |
+| 기록된 워크스페이스 id ≠ 대상                | **허용**됩니다. 그 행은 대상에 맞춰 다시 키가 지정됩니다. 이렇게 해서 워크스페이스를 복제하거나 새 id로 복원합니다 |
+| 기록된 설치 id ≠ 이 설치                | **허용**됩니다. 그 사용자 id는 그 설치에 속하며 여기서는 해석되지 않습니다 |
 
-받아들이면 대상 워크스페이스의 데이터베이스가 매니저에서 닫히고 제거된 뒤에 그
-위로 파일이 복사되며(열려 있는 drift 연결이 파일과 그 `-wal`을 붙잡고 있습니다),
-그다음 다시 열려 `beforeOpen`이 FTS와 동기화 트리거를 다시 설치하고 FTS 인덱스가
-다시 작성됩니다. 가져온 파일의 콘텐츠 테이블은 채워져 있지만 인덱스는 오래되었을
-수 있습니다.
+수락되면 스테이징된 파일은 이 서버의 스키마에 맞춰지며, 그 뒤 정확히 일치해야 합니다. 파일이 스스로 부여해서는 안 되는 권한은 파일에서 제거됩니다. 호스트에서 환경 정의를 실행하는 승인은 해제되며, 허용하거나 확인을 요청하는 액션 규칙, 샌드박스 exec 권한, 읽기 이상의 저장소 권한, 멤버 이상의 역할, 그 역할에 대한 초대는 서버 소유자가 검토할 수 있도록 보류됩니다. 가져온 사람은 소유자 역할을 유지하거나 얻습니다. 교체되는 데이터베이스는 `<timestamp>-pre-restore`라는 이름의 예약 백업으로 보관되고, 스테이징된 파일은 워크스페이스 연결이 닫힌 상태에서 제자리로 이름이 바뀌며, `code_index.db`는 다시 만들어지도록 삭제되고, FTS 인덱스가 다시 빌드됩니다.
 
 ## 전송 라우트
 
@@ -257,7 +254,7 @@ HTTP 파일 전송 엔드포인트가 아닙니다. 공개 리스너에서 이 �
 
 | 상태 | 원인                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | 필수 쿼리 매개변수가 없거나, 백업 이름이 잘못되었거나, 업로드 본문이 비어 있음 |
+| `400`  | 필수 쿼리 매개변수가 없거나, 백업 이름이 잘못되었거나, 업로드 본문이 비어 있거나, 업로드된 파일이 거부됨(본문은 `import.*` 종류를 가진 `{error, kind}`) |
 | `403`  | 알 수 없거나 해지된 기기, 잘못된 서명, 또는 호출자에게 역할이 없음              |
 | `404`  | 이 호스트에 백업 포트가 없거나, 지정한 스냅샷, 백업 또는 워크스페이스 파일이 없음 |
 | `405`  | `/backup/restore`가 `POST`가 아닌 다른 메서드로 호출됨                                   |
@@ -297,6 +294,8 @@ HTTP 파일 전송 엔드포인트가 아닙니다. 공개 리스너에서 이 �
 | 스냅샷                      | `<dataDir>/backups/<timestamp>/`                             |
 | 예약된 워크스페이스 백업    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | 워크스페이스 내보내기              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| 복원으로 교체된 데이터베이스 | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| 업데이트로 형식이 바뀌기 전의 데이터베이스 | `<dataDir>/pre_upgrade/`와 `<dataDir>/<workspaceId>/pre_upgrade/`, 각각 가장 최근 2개 |
 | 전송 스테이징               | `<dataDir>/backups/transfer/` — 작업 공간이며, 여기에 쓰는 라우트가 스윕합니다 |
 | 스냅샷 아카이브 이름          | `<snapshot directory name>.zip`                              |
 | 업로드 상한                 | 암호화된 `/backup/restore` 업로드당 8 GiB                  |

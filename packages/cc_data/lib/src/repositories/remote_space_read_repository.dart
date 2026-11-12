@@ -44,7 +44,7 @@ class RemoteSpaceReadRepository {
       .map((data) => SpaceReadDto.fromJson(data.cast<String, dynamic>()));
 
   /// Workspace-wide user cursor snapshot; identity is resolved by the server.
-  Stream<Map<String, DateTime>> watchUserSpaceReads(String workspaceId) =>
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(String workspaceId) =>
       _client
           .subscribe('space_read.watchUserSpaceReads', {
             'workspace_id': workspaceId,
@@ -52,10 +52,10 @@ class RemoteSpaceReadRepository {
           .map(
             (data) => {
               for (final row in (data['reads'] as List? ?? const []))
-                if (row is Map &&
-                    row['space_id'] is String &&
-                    row['last_read_at'] is String)
-                  row['space_id'] as String: ?DateTime.tryParse(row['last_read_at'] as String),
+                if (row is Map && row['space_id'] is String)
+                  row['space_id'] as String: ?FeedPosition.fromJson(
+                    row['last_read'],
+                  ),
             },
           );
 }

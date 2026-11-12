@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart'
     show ActionPolicyRule;
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart'
@@ -215,7 +216,7 @@ void main() {
         'context_size': 100,
         'role': 'leader',
         'capabilities': {'k': 1},
-        'monthly_budget_cents': 5,
+        'monthly_budget_micros': 5,
         'silence_timeout_minutes': 10,
         'max_concurrent_tasks': 3,
         'visibility': 'private',
@@ -508,14 +509,17 @@ void main() {
 
   group('SpaceReadDto', () {
     test('round-trip', () {
-      final dto = SpaceReadDto.fromJson({'space_id': 'c', 'last_read_at': 'x'});
+      final position = {'at': '2025-01-02T00:00:00.000Z', 'seq': 7};
+      final dto = SpaceReadDto.fromJson({
+        'space_id': 'c',
+        'last_read': position,
+      });
       expect(dto.spaceId, 'c');
-      final out = dto.toJson();
-      expect(out['last_read_at'], 'x');
+      expect(dto.lastRead, FeedPosition(at: DateTime.utc(2025, 1, 2), seq: 7));
+      expect(dto.toJson()['last_read'], position);
       final d2 = SpaceReadDto.fromJson({});
       expect(d2.spaceId, '');
-      final out2 = d2.toJson();
-      expect(out2.containsKey('last_read_at'), isFalse);
+      expect(d2.toJson().containsKey('last_read'), isFalse);
     });
   });
 
@@ -776,17 +780,17 @@ void main() {
   group('CostSummaryDto', () {
     test('round-trip + defaults', () {
       final dto = CostSummaryDto.fromJson({
-        'total_usd': 1.5,
+        'total_micros': 1500000,
         'request_count': 9,
         'window_start': 's',
         'next_reset_at': 'r',
-        'by_provider': {'a': 1.0},
-        'by_model': {'m': 2.0},
+        'by_provider': {'a': 1000000},
+        'by_model': {'m': 2000000},
       });
-      expect(dto.totalUsd, 1.5);
-      expect(dto.byProvider, {'a': 1.0});
+      expect(dto.totalMicros, 1500000);
+      expect(dto.byProvider, {'a': 1000000});
       final d = CostSummaryDto.fromJson({});
-      expect(d.totalUsd, 0);
+      expect(d.totalMicros, 0);
       expect(d.requestCount, 0);
       expect(d.byProvider, isEmpty);
     });
@@ -814,14 +818,13 @@ void main() {
         'thought_tokens': 3,
         'cached_read_tokens': 4,
         'cached_write_tokens': 6,
-        'estimated_cost_cents': 7,
+        'estimated_cost_micros': 7,
         'agent_role': 'main',
         'duration_ms': 100,
         'time_to_first_token_ms': 50,
         'liveness': 'healthy',
         'error_family': 'none',
         'last_output_at': 'lo',
-        'continuation_summary': 'cs',
         'context_snapshot_json': '{}',
         'pipeline_run_id': 'pr',
         'pipeline_step_id': 'psr',
@@ -989,7 +992,7 @@ void main() {
         'parent_pipeline_run_id': 'ppr',
         'parent_step_id': 'psi',
         'template_version': 3,
-        'total_cost_cents': 4,
+        'total_cost_micros': 4,
         'total_tokens': 5,
         'dry_run': true,
       });
@@ -1178,8 +1181,8 @@ void main() {
         'pipeline_run_id': 'pr',
         'team_id': 't',
         'project_id': 'p',
-        'estimated_cost_cents': 10,
-        'max_cost_cents': 20,
+        'estimated_cost_micros': 10,
+        'max_cost_micros': 20,
         'hired_agent_ids': ['a'],
         'error_message': 'e',
         'created_at': 'ca',
@@ -1959,17 +1962,17 @@ void main() {
 
     test('CostSummaryDto emits nullable timestamps + maps', () {
       final out = CostSummaryDto(
-        totalUsd: 1.5,
+        totalMicros: 1500000,
         requestCount: 3,
         windowStart: '2025-01-01T00:00:00.000',
         nextResetAt: '2025-01-02T00:00:00.000',
-        byProvider: {'a': 1.0},
-        byModel: {'m': 2.0},
+        byProvider: {'a': 1000000},
+        byModel: {'m': 2000000},
       ).toJson();
       expect(out['window_start'], '2025-01-01T00:00:00.000');
       expect(out['next_reset_at'], '2025-01-02T00:00:00.000');
-      expect(out['by_provider'], {'a': 1.0});
-      expect(out['by_model'], {'m': 2.0});
+      expect(out['by_provider'], {'a': 1000000});
+      expect(out['by_model'], {'m': 2000000});
     });
 
     test('AgentRunLogDto emits every nullable field', () {
@@ -1993,14 +1996,13 @@ void main() {
         'thought_tokens': 30,
         'cached_read_tokens': 40,
         'cached_write_tokens': 50,
-        'estimated_cost_cents': 60,
+        'estimated_cost_micros': 60,
         'agent_role': 'main',
         'duration_ms': 100,
         'time_to_first_token_ms': 5,
         'liveness': 'alive',
         'error_family': 'none',
         'last_output_at': '2025-01-03T00:00:00.000',
-        'continuation_summary': 'cs',
         'context_snapshot_json': '{}',
         'pipeline_run_id': 'pr',
         'pipeline_step_id': 'psr',
@@ -2126,7 +2128,7 @@ void main() {
         'parent_pipeline_run_id': 'pr',
         'parent_step_id': 'ps',
         'template_version': 2,
-        'total_cost_cents': 5,
+        'total_cost_micros': 5,
         'total_tokens': 6,
         'dry_run': true,
       }).toJson();
@@ -2258,8 +2260,8 @@ void main() {
         'pipeline_run_id': 'pr',
         'team_id': 't',
         'project_id': 'p',
-        'estimated_cost_cents': 100,
-        'max_cost_cents': 200,
+        'estimated_cost_micros': 100,
+        'max_cost_micros': 200,
         'hired_agent_ids': ['a1'],
         'error_message': 'e',
         'created_at': '2025-01-01T00:00:00.000',
@@ -2273,8 +2275,8 @@ void main() {
       expect(out['pipeline_run_id'], 'pr');
       expect(out['team_id'], 't');
       expect(out['project_id'], 'p');
-      expect(out['estimated_cost_cents'], 100);
-      expect(out['max_cost_cents'], 200);
+      expect(out['estimated_cost_micros'], 100);
+      expect(out['max_cost_micros'], 200);
       expect(out['error_message'], 'e');
       expect(out['completed_at'], '2025-01-03T00:00:00.000');
     });

@@ -32,15 +32,15 @@ class MemoryDomainDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .getSingleOrNull();
 
-  /// Upserts a domain keyed on its natural identity `(workspaceId, name)`.
+  /// Upserts a domain keyed on its natural identity, its `name`.
   ///
-  /// We deliberately target the `(workspaceId, name)` unique index rather than
+  /// We deliberately target the `name` unique index rather than
   /// the `id` primary key. Domains are looked up and referenced by their slug
   /// (`name`) and each `ResolveOrCreateDomainUseCase.execute` mints a fresh
   /// `id` for a domain it believes is new. When two `propose_fact` calls race
   /// for the same new slug, both pass the `findByName` check and attempt to
   /// insert with different UUIDs — `insertOnConflictUpdate` (which conflicts on
-  /// `id`) would then trip the `(workspaceId, name)` unique constraint and
+  /// `id`) would then trip the `name` unique constraint and
   /// throw. Targeting the natural key makes the second write an idempotent
   /// update, preserving the original row's `id` and `createdAt`.
   Future<void> upsert(MemoryDomainsTableCompanion entry) =>
@@ -52,7 +52,7 @@ class MemoryDomainDao extends DatabaseAccessor<WorkspaceDatabase>
             description: entry.description,
             createdByRole: entry.createdByRole,
           ),
-          target: [memoryDomainsTable.workspaceId, memoryDomainsTable.name],
+          target: [memoryDomainsTable.name],
         ),
       );
 }

@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: A headless szerver minden kapcsolója, környezeti változója, alparancsa és adatkönyvtár-útvonala.
 slug: hu-HU/kezikonyv/referencia/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Minden folyamatszintű beállítás megadható parancssori kapcsolóként vagy környezeti
@@ -239,12 +239,16 @@ Windowson `%APPDATA%\control-center`, másutt pedig `$XDG_DATA_HOME/control-cent
 nincs, `~/.local/share/control-center`). A munkakönyvtárhoz viszonyított `.cc_server`
 csak akkor használatos, ha sem otthoni, sem alkalmazásadat-könyvtár nem oldható fel.
 
+A szerver az adatkönyvtárat csak a saját fiókja számára tartja hozzáférhetővé (`0700`). Ha ezt nem tudja biztosítani, vagy ha a `global.db` sérült vagy újabb verzió írta, vagy ha az azonosítófájlját nem lehet beolvasni, a szerver nem indul el (kilépési kód: `78`).
+
 | Útvonal                           | Tartalom                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | A munkaterület-nyilvántartás, a felhasználók, a párosított eszközök, a hírfolyam és a flottasor |
-| `<workspaceId>/workspace.db`      | Munkaterületenként egy adatbázis — ügynökök, terek, jegyek, memória, a kódgráf   |
+| `<workspaceId>/workspace.db`      | Munkaterületenként egy adatbázis — ügynökök, terek, jegyek, memória   |
+| `<workspaceId>/code_index.db` | Az adott munkaterület kódgráfja. Hiány esetén újraépül, soha nem mentik |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Egy adatbázis két legfrissebb másolata abból az időből, mielőtt egy frissítés megváltoztatta a formátumát |
 | `<workspaceId>/chat_credentials/` | Csevegőbot-tokenek egyszerű JSON-ként, hogy a munkaterülettel együtt mozogjanak  |
-| `secrets.json`                    | Párosítási kulcsok, a Connect telepítési kulcsa, szolgáltatói alkalmazások, az emberek bejelentkezései (lepecsételve, ha a Connecten keresztül jöttek létre), SSO (`0600`) |
+| `secrets.json`                    | Párosítási kulcsok, a Connect telepítési kulcsa, szolgáltatói alkalmazások, az emberek bejelentkezései (lepecsételve, ha a Connecten keresztül jöttek létre), webhook-titkok, SSO (`0600`) |
 | `backups/<timestamp>/`            | Egy telepítési pillanatkép — `manifest.json`, `global.db` és minden munkaterület egy másolata |
 | `backups/exports/`                | Egyetlen munkaterület exportjai, `<workspaceId>-<timestamp>.db`                  |
 | `backups/transfer/`               | Átmeneti terület a mentések letöltéséhez és feltöltéséhez; az azt író útvonal takarítja |

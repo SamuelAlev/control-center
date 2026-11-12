@@ -55,30 +55,6 @@ void main() {
       expect(grant.permission, MemoryPermission.write);
     });
 
-    test(
-      'defaults to general role for unknown agent role',
-      timeout: const Timeout.factor(2),
-      () {
-        final row = createRow(agentRole: 'unknown_role');
-
-        final grant = mapper.toDomain(row);
-
-        expect(grant.agentRole, AgentRole.general);
-      },
-    );
-
-    test(
-      'defaults to read permission for unknown permission string',
-      timeout: const Timeout.factor(2),
-      () {
-        final row = createRow(permission: 'unknown_permission');
-
-        final grant = mapper.toDomain(row);
-
-        expect(grant.permission, MemoryPermission.read);
-      },
-    );
-
     test('parses all agent roles', timeout: const Timeout.factor(2), () {
       for (final role in AgentRole.values) {
         final row = createRow(agentRole: role.name);
@@ -86,29 +62,5 @@ void main() {
         expect(grant.agentRole, role, reason: 'Failed for role: ${role.name}');
       }
     });
-
-    test(
-      'is case-insensitive for agent role parsing',
-      timeout: const Timeout.factor(2),
-      () {
-        final row = createRow(agentRole: 'CODER');
-
-        final grant = mapper.toDomain(row);
-
-        expect(grant.agentRole, AgentRole.coder);
-      },
-    );
-
-    test(
-      'is case-insensitive for permission parsing',
-      timeout: const Timeout.factor(2),
-      () {
-        final row = createRow(permission: 'WRITE');
-
-        final grant = mapper.toDomain(row);
-
-        expect(grant.permission, MemoryPermission.write);
-      },
-    );
   });
 }

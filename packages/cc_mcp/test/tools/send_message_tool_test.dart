@@ -233,12 +233,6 @@ class _FakeMessagingRepository implements MessagingRepository {
     String spaceId,
   ) async => [];
 
-  @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
-  }) async => [];
-
   /// The tree is not exercised by this fake — a branch it silently accepted
   /// would be a pointer move nothing could observe, so it refuses instead.
   @override

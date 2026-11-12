@@ -9,6 +9,7 @@ import 'package:control_center/features/chat_bridges/providers/chat_bridge_provi
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -151,7 +152,7 @@ class _ChatCreateAppDialogState extends ConsumerState<_ChatCreateAppDialog> {
                 if (state.hasError) ...[
                   const SizedBox(height: 12),
                   Text(
-                    l10n.failedWithError('${state.error}'),
+                    failureMessage(l10n, state.error!),
                     style: CcTypography.caption.copyWith(color: t.bgErrorSolid),
                   ),
                 ],

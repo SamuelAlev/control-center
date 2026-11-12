@@ -24349,18 +24349,6 @@ abstract class AppLocalizations {
   /// **'Complete'**
   String get backupSnapshotComplete;
 
-  /// Status of a snapshot that died halfway
-  ///
-  /// In en, this message translates to:
-  /// **'Incomplete'**
-  String get backupSnapshotIncomplete;
-
-  /// What an incomplete snapshot can and cannot restore
-  ///
-  /// In en, this message translates to:
-  /// **'The manifest is missing or names files that are not there, so this snapshot cannot restore the whole install. The workspace files it does have can still be adopted one by one.'**
-  String get backupSnapshotIncompleteNote;
-
   /// Heading of the destructive action inside an expanded install snapshot
   ///
   /// In en, this message translates to:
@@ -30856,6 +30844,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can watch this machine. It uses the sign-ins of the person it was opened for, so only they can drive it, forward its ports, paste into it or drop files on it.'**
   String get rigHolderOnlyHint;
+
+  /// A request the server refused because its database stayed locked by other work; retrying shortly works
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s database is busy right now. Try again in a moment.'**
+  String get refusalStorageBusy;
+
+  /// A request the server refused because its disk is full
+  ///
+  /// In en, this message translates to:
+  /// **'The server is out of disk space, so nothing can be saved. The server owner has to free some up.'**
+  String get refusalStorageFull;
+
+  /// A request that hit damage in the workspace's database file on the server
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace\'s data is damaged. The server owner has to restore it from a backup.'**
+  String get refusalStorageDamaged;
+
+  /// A change refused because the workspace's database failed an integrity check; it serves reads until the server owner restores it
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace is read-only until the server owner restores it from a backup, so changes can\'t be saved.'**
+  String get refusalStorageReadOnly;
+
+  /// A request for data the server cannot open because a newer server version wrote it
+  ///
+  /// In en, this message translates to:
+  /// **'This data was written by a newer version of the server. Update the server, then try again.'**
+  String get refusalStorageNewerSchema;
+
+  /// A request the server refused because a database file on its disk is not one it wrote
+  ///
+  /// In en, this message translates to:
+  /// **'The server found a database file it didn\'t write. The server owner has to check the server\'s data folder.'**
+  String get refusalStorageForeignFile;
+
+  /// A request that named a workspace which was deleted
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace was deleted.'**
+  String get refusalWorkspaceDeleted;
+
+  /// The same request was sent again while the first one is still running on the server
+  ///
+  /// In en, this message translates to:
+  /// **'This request is still being processed. Wait for it to finish, then check the result.'**
+  String get refusalIdempotencyInProgress;
+
+  /// A restore or import refused because no file exists at the given path on the server
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no file at that path on the server. Nothing was replaced.'**
+  String get refusalImportMissingSource;
+
+  /// A restore or import refused because the file failed its integrity check
+  ///
+  /// In en, this message translates to:
+  /// **'That file is damaged, so it can\'t be restored. Nothing was replaced.'**
+  String get refusalImportDamaged;
+
+  /// A restore refused because the file differs from the checksum its snapshot recorded
+  ///
+  /// In en, this message translates to:
+  /// **'That file doesn\'t match the checksum its backup recorded, so it may have been changed or damaged. Nothing was replaced.'**
+  String get refusalImportChecksumMismatch;
+
+  /// A restore or import refused because a newer server version wrote the file
+  ///
+  /// In en, this message translates to:
+  /// **'That file was written by a newer version of the server. Update the server to restore it. Nothing was replaced.'**
+  String get refusalImportNewerSchema;
+
+  /// A restore or import refused because the file is not a workspace database
+  ///
+  /// In en, this message translates to:
+  /// **'That file isn\'t a workspace database. Nothing was replaced.'**
+  String get refusalImportForeignFile;
+
+  /// A restore or import refused because the file could not be converted to the server's database schema
+  ///
+  /// In en, this message translates to:
+  /// **'That file couldn\'t be brought up to this server\'s format. Nothing was replaced.'**
+  String get refusalImportSchemaMismatch;
+
+  /// A restore or import refused because webhooks, invites or other links in the file already belong to another workspace
+  ///
+  /// In en, this message translates to:
+  /// **'That file holds links that belong to another workspace on this server, and restoring it would take them over. Nothing was replaced.'**
+  String get refusalImportRouteConflict;
+
+  /// Title of the notice in the workspace shell while the workspace's database failed its integrity check
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace is read-only'**
+  String get workspaceReadOnlyBannerTitle;
+
+  /// Body of the read-only workspace notice for a member who is not the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'Its data failed an integrity check, so changes can\'t be saved. Everything is still readable. The server owner can restore it from a backup.'**
+  String get workspaceReadOnlyBannerBody;
+
+  /// Body of the read-only workspace notice for the server owner, who can restore it
+  ///
+  /// In en, this message translates to:
+  /// **'Its data failed an integrity check, so changes can\'t be saved. Everything is still readable. Restore it from a backup to make it writable again.'**
+  String get workspaceReadOnlyBannerOwnerBody;
+
+  /// Button on the read-only workspace notice that opens Settings, Backup and restore
+  ///
+  /// In en, this message translates to:
+  /// **'Open backups'**
+  String get workspaceReadOnlyBannerAction;
+
+  /// Card label at the top of Backup and restore listing problems only the server owner can fix
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your attention'**
+  String get serverNoticesLabel;
+
+  /// Status tag of a workspace whose database failed its integrity check
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get serverNoticeReadOnlyStatus;
+
+  /// When a server notice was first raised; time is a relative phrase such as '5 minutes ago'
+  ///
+  /// In en, this message translates to:
+  /// **'Since {time}'**
+  String serverNoticeSince(String time);
+
+  /// What a read-only workspace notice means and what the server owner does about it
+  ///
+  /// In en, this message translates to:
+  /// **'Its database failed an integrity check, so it serves reads and refuses every change. Restore it from a backup in the lists below; its last good copy is kept until you do.'**
+  String get serverNoticeReadOnlyBody;
+
+  /// Disclosure that reveals the database's own technical finding behind a server notice
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get serverNoticeDetails;
+
+  /// Status of a backup that cannot be verified: it never finished, or it was taken before backups recorded checksums
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get backupSnapshotUnverified;
+
+  /// Note inside an unverified install snapshot
+  ///
+  /// In en, this message translates to:
+  /// **'This snapshot can\'t be verified. It never finished, or it was taken before snapshots recorded checksums, so it can\'t restore the whole install. The workspace files it holds can still be restored one by one.'**
+  String get backupSnapshotUnverifiedNote;
+
+  /// Tag on a backup kept because it holds the last good copy of a damaged workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Last good copy'**
+  String get backupSnapshotLastGoodCopy;
+
+  /// Why a backup is kept whatever its age
+  ///
+  /// In en, this message translates to:
+  /// **'Kept because it holds the last good copy of a damaged workspace. Cleanup leaves it alone until that workspace is restored.'**
+  String get backupSnapshotLastGoodCopyNote;
+
+  /// Warning in the delete callout of a backup that holds the last good copy of a damaged workspace
+  ///
+  /// In en, this message translates to:
+  /// **'This is the last good copy of a damaged workspace. Delete it and there is nothing left to restore that workspace from.'**
+  String get backupDeleteLastGoodCopyDescription;
+
+  /// Toast after a restore whose file carried grants the server held for the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 permission was held back for your review. It\'s listed at the top of this page.} other{{count} permissions were held back for your review. They\'re listed at the top of this page.}}'**
+  String backupRestoreHeldBack(int count);
+
+  /// Card label on Backup and restore listing grants a restored workspace file carried, waiting for the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'Held back from restored copies'**
+  String get importHoldsLabel;
+
+  /// Explainer under the held-back permissions card
+  ///
+  /// In en, this message translates to:
+  /// **'A restored copy can\'t grant anything on this server by itself. These permissions were in it: accept one to grant it again, or dismiss it to drop it.'**
+  String get importHoldsExplainer;
+
+  /// A held action policy that allows an agent action without a person's approval; action is a sentence-case action such as 'Push to a remote'
+  ///
+  /// In en, this message translates to:
+  /// **'Agents may do this without approval: {action}'**
+  String importHoldPolicyAllow(String action);
+
+  /// A held action policy that lets an agent action run after a person approves it; action is a sentence-case action such as 'Push to a remote'
+  ///
+  /// In en, this message translates to:
+  /// **'Agents may do this once a person approves: {action}'**
+  String importHoldPolicyPrompt(String action);
+
+  /// The action of a held policy that governs a command prefix such as 'git push'
+  ///
+  /// In en, this message translates to:
+  /// **'Run commands starting with {command}'**
+  String importHoldCommand(String command);
+
+  /// Where a held action policy applies: the whole workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Everywhere in this workspace'**
+  String get importHoldScopeWorkspace;
+
+  /// Where a held action policy applies: one space, by name or id
+  ///
+  /// In en, this message translates to:
+  /// **'In space {space}'**
+  String importHoldScopeSpace(String space);
+
+  /// Where a held action policy applies: one agent, by name or id
+  ///
+  /// In en, this message translates to:
+  /// **'For agent {agent}'**
+  String importHoldScopeAgent(String agent);
+
+  /// A held grant that lets sandboxes execute a program at a path
+  ///
+  /// In en, this message translates to:
+  /// **'Sandboxes may run {path}'**
+  String importHoldSandboxExec(String path);
+
+  /// A held repository grant at write level
+  ///
+  /// In en, this message translates to:
+  /// **'{person} may change {repo}'**
+  String importHoldRepoWrite(String person, String repo);
+
+  /// A held repository grant at review level
+  ///
+  /// In en, this message translates to:
+  /// **'{person} may review pull requests in {repo}'**
+  String importHoldRepoReview(String person, String repo);
+
+  /// A held repository grant at a level this app does not name; level is the raw level
+  ///
+  /// In en, this message translates to:
+  /// **'{person} gets {level} access to {repo}'**
+  String importHoldRepoOther(String person, String repo, String level);
+
+  /// A held membership role above member; role is a role name such as 'Admin'
+  ///
+  /// In en, this message translates to:
+  /// **'{person} gets the {role} role'**
+  String importHoldMemberRole(String person, String role);
+
+  /// A held unredeemed invite to a role above member
+  ///
+  /// In en, this message translates to:
+  /// **'An open invite to join with the {role} role'**
+  String importHoldInvite(String role);
+
+  /// A held unredeemed invite that also grants repositories above read
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{An open invite to join with the {role} role and review or write access to 1 repository} other{An open invite to join with the {role} role and review or write access to {count} repositories}}'**
+  String importHoldInviteWithRepos(int count, String role);
+
+  /// A held grant of a kind this app does not know; it can only be dismissed
+  ///
+  /// In en, this message translates to:
+  /// **'A permission this version of the app can\'t describe'**
+  String get importHoldUnknown;
+
+  /// When the restore that held a grant ran; time is a relative phrase such as '5 minutes ago'
+  ///
+  /// In en, this message translates to:
+  /// **'Restored {time}'**
+  String importHoldRestoredAt(String time);
+
+  /// Button that applies a held grant
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get importHoldAccept;
+
+  /// Button that drops a held grant without applying it. A verb for refusing or discarding it, not for closing a panel
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get importHoldDismiss;
+
+  /// Title of the confirmation before accepting a held grant that lets something run
+  ///
+  /// In en, this message translates to:
+  /// **'Grant this permission?'**
+  String get importHoldAcceptTitle;
+
+  /// Body of the confirmation before accepting a held grant; permission repeats exactly what it allows
+  ///
+  /// In en, this message translates to:
+  /// **'{permission}\n\nAccepting grants this on the server right away.'**
+  String importHoldAcceptBody(String permission);
+
+  /// Toast after a held grant was accepted and applied
+  ///
+  /// In en, this message translates to:
+  /// **'Permission granted.'**
+  String get importHoldAccepted;
+
+  /// Toast after accepting a held grant whose subject (a member or repository) is gone
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was granted: who or what it was for is no longer in this workspace.'**
+  String get importHoldNotApplied;
 }
 
 class _AppLocalizationsDelegate

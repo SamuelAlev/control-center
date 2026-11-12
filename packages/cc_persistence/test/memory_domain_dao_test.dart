@@ -74,16 +74,12 @@ void main() {
       expect(updated!.createdAt, original!.createdAt);
     });
 
-    test('same slug in a different workspace is a distinct row', () async {
+    test('a slug is unique in the file, which holds one workspace', () async {
       await db.memoryDomainDao.upsert(domain(id: 'd-a', workspaceId: 'w-1'));
       await db.memoryDomainDao.upsert(domain(id: 'd-b', workspaceId: 'w-2'));
 
-      final a = await db.memoryDomainDao.getByWorkspace('w-1');
-      final b = await db.memoryDomainDao.getByWorkspace('w-2');
-      expect(a, hasLength(1));
-      expect(b, hasLength(1));
-      expect(a.single.id, 'd-a');
-      expect(b.single.id, 'd-b');
+      final rows = await db.select(db.memoryDomainsTable).get();
+      expect(rows.map((r) => r.id), ['d-a']);
     });
   });
 }

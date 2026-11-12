@@ -50,7 +50,7 @@ void main() {
         AgentRunLogsTableCompanion.insert(
           id: id,
           agentId: 'agent-1',
-          workspaceId: const Value('ws-1'),
+          workspaceId: 'ws-1',
           startedAt: Value(DateTime.utc(2026, 7, 26)),
           status: const Value('running'),
           agentRole: Value(parentRunId == null ? 'main' : 'sub'),
@@ -73,10 +73,13 @@ void main() {
     String runId, {
     required bool complete,
     TurnOutcome? outcome,
-  }) => repo.upsert(
+  }) => repo.write(
     runId: runId,
     workspaceId: 'ws-1',
-    segmentsJson: encodeTranscript(segments),
+    changedSegments: {
+      for (var i = 0; i < segments.length; i++) i: segments[i].toJson(),
+    },
+    segmentCount: segments.length,
     transcriptChars: 20,
     startedAt: DateTime.utc(2026, 7, 26),
     updatedAt: DateTime.utc(2026, 7, 26, 0, 1),

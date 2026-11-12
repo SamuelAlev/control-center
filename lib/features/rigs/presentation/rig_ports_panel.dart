@@ -20,6 +20,7 @@ import 'package:control_center/features/rigs/providers/rig_access_provider.dart'
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -253,7 +254,7 @@ class _PortsPopover extends ConsumerWidget {
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Text(
                       spaceAccessFailureOf(l10n, refused)?.message ??
-                          l10n.failedWithError('$refused'),
+                          failureMessage(l10n, refused),
                       style: CcTypography.caption.copyWith(
                         color: t.textTertiary,
                       ),

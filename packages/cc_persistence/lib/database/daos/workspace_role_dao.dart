@@ -34,9 +34,11 @@ class WorkspaceRoleDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .getSingleOrNull();
 
-  /// Inserts or replaces a role row.
+  /// Inserts a role row, or updates the one with its id. A name another role
+  /// holds is refused by the unique key, never resolved by replacing that
+  /// role (members holding it would silently fall to guest).
   Future<void> upsert(WorkspaceRolesTableCompanion row) =>
-      into(workspaceRolesTable).insert(row, mode: InsertMode.insertOrReplace);
+      into(workspaceRolesTable).insertOnConflictUpdate(row);
 
   /// Deletes a role by id within [workspaceId].
   Future<void> deleteById(String workspaceId, String id) =>

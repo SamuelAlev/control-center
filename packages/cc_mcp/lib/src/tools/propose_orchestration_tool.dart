@@ -112,7 +112,9 @@ class ProposeOrchestrationTool extends McpTool {
       },
       'budget': {
         'type': 'object',
-        'description': '{estimatedCostCents?, maxCostCents?}',
+        'description':
+            '{estimatedCostMicros?, maxCostMicros?}, both integers in '
+            'micro-dollars (1 USD = 1,000,000).',
       },
       'drift_policy': {
         'type': 'string',
@@ -210,8 +212,8 @@ class ProposeOrchestrationTool extends McpTool {
       orchestration = existing.copyWith(
         proposal: proposal,
         revision: existing.revision + 1,
-        estimatedCostCents: proposal.budget.estimatedCostCents,
-        maxCostCents: proposal.budget.maxCostCents,
+        estimatedCostMicros: proposal.budget.estimatedCostMicros,
+        maxCostMicros: proposal.budget.maxCostMicros,
         updatedAt: now,
       );
       isRevision = true;
@@ -224,8 +226,8 @@ class ProposeOrchestrationTool extends McpTool {
         parentTicketId: ticketId,
         spaceId: ticket.spaceId,
         orchestratorAgentId: agentId,
-        estimatedCostCents: proposal.budget.estimatedCostCents,
-        maxCostCents: proposal.budget.maxCostCents,
+        estimatedCostMicros: proposal.budget.estimatedCostMicros,
+        maxCostMicros: proposal.budget.maxCostMicros,
         createdAt: now,
         updatedAt: now,
       );

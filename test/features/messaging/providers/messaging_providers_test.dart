@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
@@ -73,22 +74,25 @@ class _RecordingSpaceReadRepository implements SpaceReadRepository {
   }) async {}
 
   @override
-  Stream<DateTime?> watchUserLastReadAt(
+  Stream<FeedPosition?> watchUserLastReadAt(
     String workspaceId,
     String spaceId,
     String userId,
   ) {
     watched.add((workspaceId: workspaceId, spaceId: spaceId));
-    return Stream<DateTime?>.value(DateTime(2024));
+    return Stream<FeedPosition?>.value(
+      FeedPosition(at: DateTime(2024), seq: 0),
+    );
   }
 
   @override
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
     String workspaceId,
     String userId,
   ) => Stream.value({
     for (final entry in watched)
-      if (entry.workspaceId == workspaceId) entry.spaceId: DateTime(2024),
+      if (entry.workspaceId == workspaceId)
+        entry.spaceId: FeedPosition(at: DateTime(2024), seq: 0),
   });
 }
 
@@ -301,7 +305,7 @@ void main() {
 
     /// Reads the cursor while holding a listener open — the provider is
     /// autoDispose, so a bare `read(...future)` would dispose it mid-loading.
-    Future<DateTime?> readCursor(
+    Future<FeedPosition?> readCursor(
       ProviderContainer container,
       String spaceId,
     ) async {
@@ -1025,13 +1029,15 @@ void main() {
   group('conversationUnreadProvider', () {
     const ws = 'ws-1';
     const spaceId = 'ch-1';
-    final cursor = DateTime(2024, 6, 1, 12);
-    final before = DateTime(2024, 6, 1, 11);
-    final after = DateTime(2024, 6, 1, 13);
+    final cursor = FeedPosition(at: DateTime(2024, 6, 1, 12), seq: 10);
+    final before = FeedPosition(at: DateTime(2024, 6, 1, 11), seq: 3);
+    final after = FeedPosition(at: DateTime(2024, 6, 1, 13), seq: 20);
+    // Written in the very second of the read, after it.
+    final sameSecondLater = FeedPosition(at: DateTime(2024, 6, 1, 12), seq: 11);
 
     ProviderContainer containerWith({
-      required DateTime? lastReadAt,
-      required Map<String, DateTime> lastAgentByConversation,
+      required FeedPosition? lastReadAt,
+      required Map<String, FeedPosition> lastAgentByConversation,
     }) {
       final container = ProviderContainer(
         overrides: [
@@ -1054,13 +1060,13 @@ void main() {
             AsyncData({
               spaceId: SpaceActivity(
                 spaceId: spaceId,
-                lastAgentMessageAt: lastAgentByConversation.values
-                    .fold<DateTime?>(
+                lastAgentMessage: lastAgentByConversation.values
+                    .fold<FeedPosition?>(
                       null,
                       (best, at) =>
                           best == null || at.isAfter(best) ? at : best,
                     ),
-                lastAgentMessageAtByConversation: lastAgentByConversation,
+                lastAgentMessageByConversation: lastAgentByConversation,
               ),
             }),
           ),
@@ -1078,13 +1084,14 @@ void main() {
           lastAgentByConversation: {
             'c-new': after,
             'c-other-new': after,
+            'c-same-second': sameSecondLater,
             'c-at-cursor': cursor,
             'c-old': before,
           },
         );
         expect(
           container.read(spaceUnreadConversationCountProvider(spaceId)),
-          2,
+          3,
         );
       },
     );

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/services/cosine_similarity.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
@@ -282,9 +283,9 @@ String buildLastRunDigest(List<Message> messages) {
     buf.write(' Tools used: $parts.');
   }
   final turn = meta['turn'];
-  if (turn is Map && turn['costCents'] is num) {
+  if (turn is Map && turn['costMicros'] is num) {
     buf.write(
-      ' Cost: \$${((turn['costCents'] as num) / 100).toStringAsFixed(2)}.',
+      ' Cost: ${formatUsdMicros((turn['costMicros'] as num).toInt())}.',
     );
   }
   final digest = buf.toString();

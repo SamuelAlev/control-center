@@ -33,6 +33,7 @@ import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/services/activity_logger.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
 import 'package:cc_domain/core/domain/services/user_mention_parser.dart';
+import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dart'
     show agentCommitAttributionSettingKey, resolveAgentCommitAttribution;
@@ -173,6 +174,8 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
 import 'package:cc_server_core/src/activity_log_persister.dart';
 import 'package:cc_server_core/src/agent_action_blocked_publisher.dart';
 import 'package:cc_server_core/src/agent_awaiting_input_publisher.dart';
+import 'package:cc_server_core/src/backfill_embeddings_use_case.dart';
+import 'package:cc_server_core/src/backup/workspace_restore_invalidation.dart';
 import 'package:cc_server_core/src/backup_archive.dart';
 import 'package:cc_server_core/src/catalog/connect_ops.dart';
 import 'package:cc_server_core/src/catalog/github_app_ops.dart';
@@ -315,6 +318,7 @@ import 'package:cc_server_core/src/runtime/server_extra_ops.dart';
 import 'package:cc_server_core/src/runtime/server_fleet_wiring.dart';
 import 'package:cc_server_core/src/runtime/server_native_preflight.dart';
 import 'package:cc_server_core/src/runtime/server_skill_evaluation_wiring.dart';
+import 'package:cc_server_core/src/server_boot_refusal.dart';
 import 'package:cc_server_core/src/server_mcp_client_control.dart';
 import 'package:cc_server_core/src/server_mcp_control.dart';
 import 'package:cc_server_core/src/server_mcp_registry.dart';
@@ -329,6 +333,8 @@ import 'package:cc_server_core/src/space_stack_service.dart';
 import 'package:cc_server_core/src/telemetry/server_analytics.dart';
 import 'package:cc_server_core/src/ticket_sync_webhook_handler.dart';
 import 'package:cc_server_core/src/webhook_delivery_service.dart';
+import 'package:cc_server_core/src/workspace_run_teardown.dart';
+import 'package:cc_server_core/src/workspace_storage_alerts.dart';
 import 'package:cc_server_core/src/workspaces/live_workspaces.dart';
 import 'package:cc_server_core/src/workspaces/workspace_logo.dart';
 import 'package:cc_server_core/src/write_ledger_adapter.dart';
@@ -383,6 +389,9 @@ Future<CcServer> runCcServer({
   // failing every Connect lane at its call site.
   ConnectSettings.checkEnvironment(serverEnv);
   final config = CcServerConfig.resolve(args, environment: serverEnv);
+  // The data dir holds the identity seed, the secrets file and every database:
+  // owner-only (0700) before anything in it is created or opened, or no boot.
+  secureDataDirectory(config.dataDir);
   _configureBootLogging(config);
 
   // Load the headless rhttp native library BEFORE any HTTP client exists:
@@ -409,16 +418,26 @@ Future<CcServer> runCcServer({
   // This is also the workspace-isolation boundary: a `WorkspaceDatabase` does
   // not declare another workspace's tables, so a cross-workspace read is a
   // compile error rather than a missing WHERE clause.
-  final globalDb = GlobalDatabase(
-    openGlobalDatabase(dataDir: config.dataDir),
+  final globalDb = GlobalDatabase.atDataDir(
+    config.dataDir,
     onWarn: (tag, message) => CcHostLog.warning('$tag: $message'),
     onError: (tag, message) => CcHostLog.error('$tag: $message'),
+  );
+  await openGlobalDatabaseOrRefuse(
+    globalDb,
+    globalDatabasePath(config.dataDir),
+  );
+  final storageAlerts = WorkspaceStorageAlerts(
+    DaoServerNoticeRepository(globalDb),
+    log: CcHostLog.error,
   );
   final workspaceDbs = WorkspaceDatabaseManager(
     dataDir: config.dataDir,
     global: globalDb,
     onWarn: (tag, message) => CcHostLog.warning('$tag: $message'),
     onError: (tag, message) => CcHostLog.error('$tag: $message'),
+    onIntegrityFailure: (workspaceId, finding) =>
+        unawaited(storageAlerts.report(workspaceId, finding)),
     // A workspace that nobody is watching and nobody is querying does not
     // keep its isolate, page cache and mapping. The open workspace stays:
     // its live watches hold the file, so the next action does not pay a
@@ -439,7 +458,11 @@ Future<CcServer> runCcServer({
   // would be invisible to the server's authenticator (auth would silently fail
   // and a freshly-paired client could never connect).
   final secrets = FileSecretsStore(dataDir: config.dataDir);
+  // Webhook tokens and ticket-sync webhook secrets live in that store, never
+  // in a database row; one instance, so the route key is minted once.
+  final webhookSecrets = WebhookSecretVault(secrets);
   final eventBus = DomainEventBus();
+  storageAlerts.listen(eventBus);
 
   // The Ed25519 keypair + relay room minted at first boot. Its fingerprint is
   // the server's identity across every path (loopback, LAN, tunnel, relay) —
@@ -489,6 +512,12 @@ Future<CcServer> runCcServer({
     'opening database + identity bootstrap',
     () async {
       await workspaceDbs.loadInstallId();
+      // A deleted workspace has no database: its id is refused from here on,
+      // and anything an earlier process left under it is removed.
+      await workspaceDbs.loadDeletedWorkspaces();
+      for (final id in await workspaceDbs.removeFilesOfDeletedWorkspaces()) {
+        CcHostLog.warning('removed files left under deleted workspace $id');
+      }
       return IdentityBootstrap(
         global: globalDb,
         workspaces: workspaceDbs,
@@ -561,7 +590,7 @@ Future<CcServer> runCcServer({
       workspaceDbs,
     ),
     members: membershipRepository,
-    cache: DaoCacheRepository(workspaceDbs),
+    escalations: DaoApprovalEscalationRepository(workspaceDbs),
     // Durable policy home (a `caches` row was retention-pruned after 21
     // quiet days — a security control must not garbage-collect itself).
     policies: DaoApprovalRoutingPolicyRepository(workspaceDbs),
@@ -669,6 +698,7 @@ Future<CcServer> runCcServer({
     secrets: secrets,
     install: providerApps,
   );
+  workspaceGitHub.addDeletionListener(webhookSecrets.deleteForWorkspace);
   // A workspace's own Google, Linear and Klipy apps (else the lanes above).
   final workspaceProviderApps = WorkspaceProviderAppSettings(secrets);
   final connectClient = ConnectClient(settings: connectSettings);
@@ -771,7 +801,7 @@ Future<CcServer> runCcServer({
           return AutonomyLevel.tryFromWire(stored?.autonomyLevel) ??
               AutonomyLevel.actWithApproval;
         },
-    resolveRemainingBudgetCents:
+    resolveRemainingBudgetMicros:
         ({required String workspaceId, required String agentId}) async {
           final policy = await DaoBudgetPolicyRepository(
             workspaceDbs,
@@ -779,7 +809,7 @@ Future<CcServer> runCcServer({
           if (policy == null || policy.isUnlimited || !policy.hardStopEnabled) {
             return null;
           }
-          return policy.monthlyBudgetCents - policy.spentCents;
+          return policy.monthlyBudgetMicros - policy.spentMicros;
         },
   );
   final messagingRepository = DaoMessagingRepository(workspaceDbs);
@@ -1002,6 +1032,7 @@ Future<CcServer> runCcServer({
   final pipelineTriggerRepository = PipelineTriggerRepositoryImpl(
     workspaceDbs,
     globalDb.workspaceRouteDao,
+    webhookSecrets,
   );
   final teamRepository = TeamRepositoryImpl(workspaceDbs);
   final orchestrationRepository = DaoOrchestrationRepository(workspaceDbs);
@@ -1201,11 +1232,10 @@ Future<CcServer> runCcServer({
 
   // Who asked an agent for each pull request it opened, and the approval
   // check every server forge client runs before it approves (see
-  // AgentPrRequesters): recorded in each workspace's own database, read
-  // across all of them by forge coordinates.
+  // AgentPrRequesters): recorded server-wide in the global database by forge
+  // coordinates, whichever workspace the pull request was opened through.
   final agentPrRequesters = AgentPrRequesters(
-    cacheFor: (workspaceId) => workspaceDbs.of(workspaceId).cacheDao,
-    crossWorkspace: crossWorkspace,
+    records: DaoAgentPullRequestRequesterRepository(globalDb),
     viewer: (forge, userId, workspaceId) => forgeCredentials.viewerAccount(
       forge,
       userId: userId,
@@ -1475,6 +1505,7 @@ Future<CcServer> runCcServer({
   // Agents read spaces as their requester may (run gateway wired below).
   final agentSpaces = AgentSpaceVisibility(spaceData);
   final mcpRegistry = buildServerMcpRegistry(
+    pipelineTriggerRepository: pipelineTriggerRepository,
     hiddenSpacesForCaller: agentSpaces.hiddenFor,
     globalDb: globalDb,
     workspaceDbs: workspaceDbs,
@@ -1488,6 +1519,7 @@ Future<CcServer> runCcServer({
     mediaRenderer: mediaRenderer,
     // Pipeline structured-output contract (submit_output writes outputJson).
     agentRunLogRepository: agentRunLogRepository,
+    agentRunOutputs: agentRunLogRepository,
     schemaValidator: const JsonSchemaValidator(),
     // Shared with the dispatcher below so discovery tools report per-mode
     // callability with the exact rules the dispatcher enforces.
@@ -1712,6 +1744,7 @@ Future<CcServer> runCcServer({
     // Same instance the registry's discovery tools read, so "can I call this?"
     // and "you can't call this" always agree.
     modeGuard: mcpModeGuard,
+    isWorkspaceReadOnly: (id) => workspaceDbs.integrityFailure(id) != null,
   );
 
   // The headless server runs its OWN MCP surface (real desktop/web parity):
@@ -1763,7 +1796,6 @@ Future<CcServer> runCcServer({
       bytes: await File(path).length(),
     );
   };
-
 
   // Content-addressed skill bundles: register install/verify/pin tools now that
   // filesystem + GitHub exist. Fail-closed scan gate: Layers 1–2 inline (pure);
@@ -1942,7 +1974,8 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
     // Every open-PR list the sweep reads settles the agent PR rows still
     // pending by head branch (an open that timed out or 5xx'd).
-    onOpenPrsRead: agentPrRequesters.reconcile,
+    onOpenPrsRead: (_, repo, openPrs, {required complete}) =>
+        agentPrRequesters.reconcile(repo, openPrs, complete: complete),
     // The author gate for the merge-readiness / review-decision / checks
     // lanes. This poller sweeps EVERY open PR in every linked repo, so without
     // a viewer login it would announce strangers' work. Each event goes to
@@ -1993,6 +2026,9 @@ Future<CcServer> runCcServer({
   final bootWork = _BootWork();
   DemoMeetingService? demoMeeting;
   DemoReviewService? demoReview;
+  // Assigned once the dispatch service exists: a reaped visitor's replays
+  // stop before their workspace's database goes.
+  Future<void> Function(String workspaceId)? stopDemoRuns;
   final demoLimits = demoBuilder == null
       ? null
       : DemoLimits.fromEnvironment(serverEnv);
@@ -2019,6 +2055,7 @@ Future<CcServer> runCcServer({
             onVisitorReap: (workspaceId) async {
               await demoMeeting?.retireWorkspace(workspaceId);
               await demoReview?.retireWorkspace(workspaceId);
+              await stopDemoRuns?.call(workspaceId);
             },
             // The product's own seeder, so a demo workspace starts as a
             // NORMAL workspace (CEO, specialists, the built-in pipeline
@@ -2525,7 +2562,7 @@ Future<CcServer> runCcServer({
     // Subagent activity timelines: the child loop's events fold into transcript
     // segments streamed under the CHILD run id (same registry a parent turn
     // uses, so the relay and client renderers work unchanged) and flushed to
-    // `run_transcripts` for replay after the run ends.
+    // `transcripts` for replay after the run ends.
     runTranscriptRecorder: RunTranscriptRecorder(
       registry: streamRegistry,
       repo: runTranscriptRepository,
@@ -2899,6 +2936,11 @@ Future<CcServer> runCcServer({
                 claudeAccountStore.markAuthFailed(accountId, reason: reason),
           );
         },
+  );
+  stopDemoRuns = (workspaceId) => stopRunsOfWorkspace(
+    workspaceId,
+    runLogs: agentRunLogRepository,
+    stopRun: agentDispatchService.stopRun,
   );
   // Anchored compaction + tool-output pruning maintenance after each turn.
   // Defaults to the deterministic structural summarizer (LLM-free, lossless of
@@ -4014,10 +4056,14 @@ Future<CcServer> runCcServer({
             .messagingDao
             .watchSpaceActivity(workspaceId)
             .first;
-        activity = {
-          for (final row in rows)
-            if (row.lastMessageAt != null) row.spaceId: row.lastMessageAt!,
-        };
+        // One row per conversation: a space is as fresh as its newest one.
+        activity = <String, DateTime>{};
+        for (final row in rows) {
+          final known = activity[row.spaceId];
+          if (known == null || row.lastMessageAt.isAfter(known)) {
+            activity[row.spaceId] = row.lastMessageAt;
+          }
+        }
         spaceActivity[workspaceId] = MapEntry(DateTime.now(), activity);
       }
       final lastMessageAt = activity[spaceId];
@@ -4093,8 +4139,26 @@ Future<CcServer> runCcServer({
           global: globalDb,
           workspaces: workspaceDbs,
           backupsDir: '${config.dataDir}/backups',
+          webhookSecrets: webhookSecrets,
+          eventBus: eventBus,
           onWarn: CcHostLog.warning,
         );
+  // A staged import file left by a crash mid-import is never adopted.
+  await databaseBackupService?.removeStaleImportFiles();
+  // A route is written beside its row in another file, so a crash or restore
+  // leaves the two apart. Before the server listens: no request can create a
+  // row the derivation has not seen.
+  final routeRepair = await WorkspaceRouteReconciler(
+    global: globalDb,
+    workspaces: workspaceDbs,
+    webhookSecrets: webhookSecrets,
+  ).run();
+  if (routeRepair.removed + routeRepair.restored > 0) {
+    CcHostLog.warning(
+      'workspace routes: removed ${routeRepair.removed}, restored '
+      '${routeRepair.restored}',
+    );
+  }
 
   final pipeline = buildServerPipelineExecutor(
     templateRepository: pipelineTemplateRepository,
@@ -4755,8 +4819,7 @@ Future<CcServer> runCcServer({
   }) async {
     final linked = await resolveLinkedReviewRepo(workspaceId, owner, repo);
     return fileBlastRadiusPayload(
-      dao: workspaceDbs.of(workspaceId).codeGraphDao,
-      workspaceId: workspaceId,
+      dao: workspaceDbs.codeIndexOf(workspaceId).codeGraphDao,
       repoId: linked.id,
       filePath: filePath,
       depth: depth,
@@ -4819,17 +4882,13 @@ Future<CcServer> runCcServer({
     // Control Center's credit when their attribution setting is on, and
     // their own signing key.
     commitIdentity:
-        ({
-          required workspaceId,
-          required userId,
-          required forge,
-          unverified,
-        }) => agentCommitIdentities.forPerson(
-          userId,
-          workspaceId: workspaceId,
-          forge: forge,
-          unverified: unverified,
-        ),
+        ({required workspaceId, required userId, required forge, unverified}) =>
+            agentCommitIdentities.forPerson(
+              userId,
+              workspaceId: workspaceId,
+              forge: forge,
+              unverified: unverified,
+            ),
     signing: demo != null ? null : commitSigningKeys,
     // Source control counts behind from local refs. Without this, commits
     // pushed from anywhere else never show until the user runs Sync.
@@ -4872,7 +4931,7 @@ Future<CcServer> runCcServer({
   // Pauses runs at turn boundaries (or stops CLI runs), writes the durable
   // marker (a restart comes back paused) and gates dispatch while it stands.
   final takeoverService = TakeoverService(
-    workspaceDbs: workspaceDbs,
+    takeovers: DaoSpaceTakeoverRepository(workspaceDbs),
     runLogs: agentRunLogRepository,
     messaging: messagingRepository,
     pauseRun: agentDispatchService.pauseRun,
@@ -4890,7 +4949,7 @@ Future<CcServer> runCcServer({
   final planDriftService = PlanDriftService(
     orchestrations: orchestrationRepository,
     runLogs: agentRunLogRepository,
-    workspaceDbs: workspaceDbs,
+    divergences: DaoPlanDivergenceRepository(workspaceDbs),
     messaging: messagingRepository,
     conversationChanges: repoIdeData.conversationChanges,
   );
@@ -4899,17 +4958,19 @@ Future<CcServer> runCcServer({
   // main run, in-thread.
   final checkerListener = CheckerDispatchListener(
     eventBus: eventBus,
-    workspaceDbs: workspaceDbs,
+    checkers: DaoSpaceCheckerRepository(workspaceDbs),
     runLogs: agentRunLogRepository,
     dispatchChecker:
         ({
           required String spaceId,
+          required String? conversationId,
           required String agentId,
           required String prompt,
           required String workspaceId,
         }) async {
           await messagingService.dispatchAgent(
             spaceId: spaceId,
+            conversationId: conversationId,
             agentId: agentId,
             prompt: prompt,
             workspaceId: workspaceId,
@@ -5176,12 +5237,22 @@ Future<CcServer> runCcServer({
           (change) => (userId: change.userId, workspaceId: change.workspaceId),
         ),
   );
+  // A restored or imported workspace file rewrote memberships, grants and
+  // policies underneath these caches.
+  invalidateOnAuthorityRewrite(
+    eventBus: eventBus,
+    memberships: membershipRepository,
+    githubLogins: githubLoginDirectory,
+    repoIndex: repoWorkspaceIndex,
+    prVisibility: prRepoVisibility,
+    repoAccess: repoAccess,
+  );
   final prConversationBridge = GitHubPrConversationBridge(
     gatewayFor: githubAutomation.prConversationGateway,
     loginDirectory: githubLoginDirectory,
     messaging: messagingService,
     messagingRepository: messagingRepository,
-    workspaceDbs: workspaceDbs,
+    pendingReplies: DaoPendingPrReplyRepository(workspaceDbs),
     startReview: startPrReview,
     // The bridge hands the PR number; the space seam wants the PR's node id
     // (the review-space association key), which `startPrReview` resolves the
@@ -5299,8 +5370,7 @@ Future<CcServer> runCcServer({
       return empty;
     }
     return cohortImpactPayload(
-      dao: workspaceDbs.of(workspaceId).codeGraphDao,
-      workspaceId: workspaceId,
+      dao: workspaceDbs.codeIndexOf(workspaceId).codeGraphDao,
       repoId: linked.id,
       filePaths: cohort.filePaths,
       cohortKey: cohortKey,
@@ -5509,6 +5579,8 @@ Future<CcServer> runCcServer({
     // read or rotate its token. demo: no MCP server control, so /mcp and /sse
     // are never mounted.
     mcpServer: demo != null ? null : mcpControl,
+    // demo: no owner to notify.
+    serverNotices: demo != null ? null : DaoServerNoticeRepository(globalDb),
     agentRepository: agentRepository,
     workspaceFilesystem: workspaceFilesystem,
     workspaceRepository: workspaceRepository,
@@ -5697,7 +5769,10 @@ Future<CcServer> runCcServer({
     // Read-only sync-health surface (§188): the client watches these to show
     // per-vendor last-sync + error streak. Cheap stateless DAO wrappers over
     // the same ticketSyncDao the sync engine writes to.
-    syncConfigRepository: DaoTicketSyncConfigRepository(workspaceDbs),
+    syncConfigRepository: DaoTicketSyncConfigRepository(
+      workspaceDbs,
+      webhookSecrets,
+    ),
     syncLogRepository: DaoTicketSyncLogRepository(workspaceDbs),
     // Manual "sync now" trigger (§188). Deferred: the engine is constructed
     // later in bootstrap; this closure is only invoked when an RPC arrives.
@@ -6281,7 +6356,9 @@ Future<CcServer> runCcServer({
         : demo.fetchClaudeAccountUsage,
     // Generic workspace-scoped cache (the messaging IDE editor-layout persists
     // + restores per conversation here, so layouts are shared across clients).
-    cacheRepository: DaoCacheRepository(workspaceDbs),
+    editorLayouts: DaoEditorLayoutRepository(workspaceDbs),
+    isWorkspaceReadOnly: (id) => workspaceDbs.integrityFailure(id) != null,
+    workspaceStorageChanges: storageAlerts.changes,
     // PR/commit link previews on the caller's client; see
     // [_linkPreviewFetchers].
     fetchPrPreview: linkPreviews.pr,
@@ -6621,7 +6698,10 @@ Future<CcServer> runCcServer({
     // answers `opUnknown` exactly as for an op that was never wired.
     registry: demo?.profile.lockdown(catalog.ops) ?? catalog.ops,
     mapException: mapAppExceptionToRpc,
+    // Failure log lines never carry a storage error's bound values.
+    describeError: describeErrorForLog,
     workspaceExists: workspaceExists,
+    isWorkspaceReadOnly: (id) => workspaceDbs.integrityFailure(id) != null,
     // The `ServerAuthority.serverOwner` gate: the recorded server owner.
     resolveServerOwner: isServerOwner,
     // `RepoOpKind.destructive` asks the operator before it applies. This was
@@ -6740,11 +6820,8 @@ Future<CcServer> runCcServer({
         ))[repoId] ??
         RepoGrantLevel.none,
     // Code follows the caller's own forge access on top of the grant.
-    requireForgeRead: (workspaceId, userId, repoId) => repoForgeRead(
-      workspaceId: workspaceId,
-      userId: userId,
-      repoId: repoId,
-    ),
+    requireForgeRead: (workspaceId, userId, repoId) =>
+        repoForgeRead(workspaceId: workspaceId, userId: userId, repoId: repoId),
     // Audit backbone: every successful mutating op appends who did what,
     // from where. The GeoIP table is decoded lazily on the first audited
     // call that actually carries an IP — never on the boot path.
@@ -6888,6 +6965,7 @@ Future<CcServer> runCcServer({
   );
   final ticketSyncConfigRepository = DaoTicketSyncConfigRepository(
     workspaceDbs,
+    webhookSecrets,
   );
   final ticketSyncEngine = TicketSyncEngine(
     adapters: [
@@ -6955,7 +7033,7 @@ Future<CcServer> runCcServer({
       PairedDevicesTableCompanion(
         id: Value(deviceId),
         userId: Value(redeemed.user.id),
-        workspaceId: Value(redeemed.invite.workspaceId),
+        landingWorkspaceId: Value(redeemed.invite.workspaceId),
         label: Value(switch (body['device_label']) {
           final String l when l.isNotEmpty => l,
           _ => '${redeemed.user.displayName} ($platform)',
@@ -7235,10 +7313,15 @@ Future<CcServer> runCcServer({
     backupStoredFile: storedBackupReader(databaseBackupService),
     backupRestore: databaseBackupService == null
         ? null
-        : ({required workspaceId, required sourcePath}) async {
+        : ({
+            required workspaceId,
+            required sourcePath,
+            required importedBy,
+          }) async {
             await databaseBackupService.importWorkspace(
               workspaceId: workspaceId,
               sourcePath: sourcePath,
+              importedBy: importedBy,
             );
           },
     backupUploadDir: demo != null ? null : backupTransferStagingDir,
@@ -7273,6 +7356,7 @@ Future<CcServer> runCcServer({
     // /healthz's `codeGraph` block: whether background indexing is watching /
     // indexing / has runs pending. Pure in-memory snapshot, safe to expose —
     // counts only, no paths or workspace data.
+    readOnlyWorkspaceCount: () => workspaceDbs.integrityFailures.length,
     codeGraphStatus: () {
       final s = codeGraphWatch.status;
       return {
@@ -7433,6 +7517,22 @@ Future<CcServer> runCcServer({
       'speech) under ${config.dataDir}/models',
     );
     unawaited(embeddingModelControl.install());
+    // Facts, messages and symbols written while the model was missing have
+    // no vector: fill them whenever the model is installed, now included.
+    BackfillEmbeddingsUseCase(
+      workspaces: workspaceDbs,
+      facts: memoryFactRepository,
+      messages: messagingRepository,
+      codeGraph: DaoCodeGraphRepository(
+        workspaceDbs,
+        embeddingService: embeddingService,
+      ),
+      embedder: embeddingService,
+      onError: (workspaceId, error, _) => CcHostLog.warning(
+        'cc_server: embedding backfill failed for workspace $workspaceId: '
+        '$error',
+      ),
+    ).runWhenInstalled(embeddingModelControl.watch());
     unawaited(diarizationModelControl.install());
     unawaited(voiceModelControl.install());
   }
@@ -7690,6 +7790,8 @@ Future<CcServer> runCcServer({
   // transcripts: daily prune past a generous per-table window.
   final databaseRetention = DatabaseRetentionService(
     workspaces: workspaceDbs,
+    global: globalDb,
+    dataDir: config.dataDir,
     onError: (message) => CcHostLog.warning('retention: $message'),
   )..start();
   // Harness transcripts age out on the same cadence. They are keyed by
@@ -7756,6 +7858,7 @@ Future<CcServer> runCcServer({
   final agentRunTaskCompleter = AgentRunTaskCompleter(
     eventBus: eventBus,
     runLogRepository: agentRunLogRepository,
+    runOutputs: agentRunLogRepository,
     messagingRepository: messagingRepository,
     // Harvest only needs that agent's newest message text.
     latestAgentContent: messagingRepository.latestAgentContent,

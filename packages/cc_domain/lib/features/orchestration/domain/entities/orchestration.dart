@@ -22,8 +22,8 @@ class Orchestration {
     this.pipelineRunId,
     this.teamId,
     this.projectId,
-    this.estimatedCostCents,
-    this.maxCostCents,
+    this.estimatedCostMicros,
+    this.maxCostMicros,
     this.hiredAgentIds = const [],
     this.approvedNodeKeys,
     this.errorMessage,
@@ -79,11 +79,11 @@ class Orchestration {
   /// Project created on approval.
   final String? projectId;
 
-  /// Estimated total cost in US cents.
-  final int? estimatedCostCents;
+  /// Estimated total cost in micro-dollars.
+  final int? estimatedCostMicros;
 
-  /// Hard spending limit in US cents.
-  final int? maxCostCents;
+  /// Hard spending limit in micro-dollars.
+  final int? maxCostMicros;
 
   /// Agent ids hired specifically for this orchestration.
   final List<String> hiredAgentIds;
@@ -122,8 +122,8 @@ class Orchestration {
     String? pipelineRunId,
     String? teamId,
     String? projectId,
-    int? estimatedCostCents,
-    int? maxCostCents,
+    int? estimatedCostMicros,
+    int? maxCostMicros,
     List<String>? hiredAgentIds,
     List<String>? approvedNodeKeys,
     bool clearApprovedNodeKeys = false,
@@ -146,8 +146,8 @@ class Orchestration {
     pipelineRunId: pipelineRunId ?? this.pipelineRunId,
     teamId: teamId ?? this.teamId,
     projectId: projectId ?? this.projectId,
-    estimatedCostCents: estimatedCostCents ?? this.estimatedCostCents,
-    maxCostCents: maxCostCents ?? this.maxCostCents,
+    estimatedCostMicros: estimatedCostMicros ?? this.estimatedCostMicros,
+    maxCostMicros: maxCostMicros ?? this.maxCostMicros,
     hiredAgentIds: hiredAgentIds ?? this.hiredAgentIds,
     approvedNodeKeys: clearApprovedNodeKeys
         ? null

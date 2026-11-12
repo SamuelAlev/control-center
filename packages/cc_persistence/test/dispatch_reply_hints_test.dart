@@ -16,17 +16,13 @@ void main() {
     repo = DaoMessagingRepository(dbs);
     final db = dbs.of('ws-1');
     await db.messagingDao.insertSpace(
-      SpacesTableCompanion.insert(
-        id: 's',
-        name: 'S',
-        workspaceId: const Value('ws-1'),
-      ),
+      SpacesTableCompanion.insert(id: 's', name: 'S', workspaceId: 'ws-1'),
     );
     await db.conversationDao.insertConversation(
       ConversationsTableCompanion.insert(
         id: 'c',
         spaceId: 's',
-        workspaceId: const Value('ws-1'),
+        workspaceId: 'ws-1',
       ),
     );
   });
@@ -47,20 +43,23 @@ void main() {
     bool reverted = false,
     String conversationId = 'c',
   }) {
-    return dbs.of('ws-1').messagingDao.insertMessage(
-      ConversationMessagesTableCompanion.insert(
-        id: id,
-        spaceId: 's',
-        conversationId: conversationId,
-        senderId: senderId,
-        senderType: senderType,
-        content: content,
-        messageType: Value(messageType),
-        createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
-        metadata: Value(metadata),
-        reverted: Value(reverted),
-      ),
-    );
+    return dbs
+        .of('ws-1')
+        .messagingDao
+        .insertMessage(
+          ConversationMessagesTableCompanion.insert(
+            id: id,
+            spaceId: 's',
+            conversationId: conversationId,
+            senderId: senderId,
+            senderType: senderType,
+            content: content,
+            messageType: Value(messageType),
+            createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
+            metadata: Value(metadata),
+            reverted: Value(reverted),
+          ),
+        );
   }
 
   test('reply hints skip transcript blobs', () async {
@@ -172,41 +171,55 @@ void main() {
       );
     }
     expect(MessagingDao.latestAgentSenderSql.contains('metadata'), isFalse);
-    expect(MessagingDao.recentLiveMessageKindsSql.contains('segments'), isFalse);
+    expect(
+      MessagingDao.recentLiveMessageKindsSql.contains('segments'),
+      isFalse,
+    );
+    // Plan state is a column: neither read parses a message's JSON.
+    expect(
+      MessagingDao.recentLiveMessageKindsSql.contains('metadata'),
+      isFalse,
+    );
+    expect(MessagingDao.latestPendingPlanIdSql.contains('metadata'), isFalse);
+    final stored = await db.messagingDao.getMessageById('plan-new');
+    expect(stored!.planStatus, 'approved');
+    expect(stored.metadata, isNot(contains('planStatus')));
   });
 
-  test('a pending plan immediately before the send is the previous message',
-      () async {
-    await message(
-      id: 'agent',
-      senderId: 'agent-1',
-      senderType: 'agent',
-      messageType: 'agent_turn',
-      second: 1,
-    );
-    await message(
-      id: 'plan',
-      senderId: 'agent-1',
-      senderType: 'agent',
-      messageType: 'plan',
-      second: 2,
-      metadata: '{"planStatus":"pending"}',
-    );
-    await message(
-      id: 'user',
-      senderId: 'user',
-      senderType: 'user',
-      messageType: 'text',
-      second: 3,
-    );
-    final hints = await repo.dispatchReplyHints(
-      workspaceId: 'ws-1',
-      spaceId: 's',
-      conversationId: 'c',
-    );
-    expect(hints.previousIsPendingPlan, isTrue);
-    expect(hints.lastAgentSenderId, 'agent-1');
-  });
+  test(
+    'a pending plan immediately before the send is the previous message',
+    () async {
+      await message(
+        id: 'agent',
+        senderId: 'agent-1',
+        senderType: 'agent',
+        messageType: 'agent_turn',
+        second: 1,
+      );
+      await message(
+        id: 'plan',
+        senderId: 'agent-1',
+        senderType: 'agent',
+        messageType: 'plan',
+        second: 2,
+        metadata: '{"planStatus":"pending"}',
+      );
+      await message(
+        id: 'user',
+        senderId: 'user',
+        senderType: 'user',
+        messageType: 'text',
+        second: 3,
+      );
+      final hints = await repo.dispatchReplyHints(
+        workspaceId: 'ws-1',
+        spaceId: 's',
+        conversationId: 'c',
+      );
+      expect(hints.previousIsPendingPlan, isTrue);
+      expect(hints.lastAgentSenderId, 'agent-1');
+    },
+  );
 
   test('same-second agent rows keep insertion order', () async {
     final at = Value(DateTime.utc(2026, 1, 1, 0, 0, 10));

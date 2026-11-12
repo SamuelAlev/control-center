@@ -4,8 +4,8 @@ import 'package:drift/drift.dart';
 
 part 'ticket_write_ledger_dao.g.dart';
 
-/// Data access for the agent-write idempotency ledger. Workspace-scoped: the
-/// composite key is `(workspace_id, write_id)`.
+/// Data access for the agent-write idempotency ledger. The key is `write_id`
+/// (one workspace per file); reads still filter by workspace.
 @DriftAccessor(tables: [TicketWriteLedgerTable])
 class TicketWriteLedgerDao extends DatabaseAccessor<WorkspaceDatabase>
     with _$TicketWriteLedgerDaoMixin {

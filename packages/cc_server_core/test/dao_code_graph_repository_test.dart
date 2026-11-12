@@ -31,11 +31,11 @@ void main() {
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, wsId, name: 'Test Workspace');
     db = dbs.of(wsId);
-    dao = db.codeGraphDao;
+    dao = dbs.codeIndexOf(wsId).codeGraphDao;
     repo = DaoCodeGraphRepository(dbs);
 
-    // Seed the repo so the code-index foreign keys are satisfied. The workspace
-    // itself is the database file, so there is no workspace row to insert here.
+    // The repo the index rows name. Not a foreign key any more (the index is
+    // in `code_index.db`), but it is what a real workspace holds.
     await db
         .into(db.reposTable)
         .insert(
@@ -48,7 +48,8 @@ void main() {
   });
 
   tearDown(() async {
-    await db.close();
+    await dbs.closeAll();
+    await global.close();
   });
 
   // Helpers
@@ -1206,16 +1207,28 @@ void main() {
       edges: const [],
     );
 
-    CodeSymbol sym(String path, String qualifiedName, {String signature = ''}) =>
-        symbol(qualifiedName: qualifiedName, signature: signature).copyWith(
-          id: codeSymbolId(wsId, repoId, path, qualifiedName),
-          filePath: path,
-        );
+    CodeSymbol sym(
+      String path,
+      String qualifiedName, {
+      String signature = '',
+    }) => symbol(qualifiedName: qualifiedName, signature: signature).copyWith(
+      id: codeSymbolId(wsId, repoId, path, qualifiedName),
+      filePath: path,
+    );
 
-    Future<List<int?>> embeddingLengths() async {
-      final rows = await dao.getSymbolsByRepo(wsId, repoId);
-      return [for (final row in rows) row.embedding?.length];
-    }
+    /// Byte length of each symbol's vector row, by qualified name; null for a
+    /// symbol with none.
+    Future<List<int?>> embeddingLengths() async => [
+      for (final row
+          in await dao.attachedDatabase
+              .customSelect(
+                'SELECT length(e.embedding) AS n FROM code_symbols cs '
+                'LEFT JOIN code_symbol_embeddings e ON e.symbol_id = cs.id '
+                'ORDER BY cs.qualified_name',
+              )
+              .get())
+        row.read<int?>('n'),
+    ];
 
     test('a first index embeds every symbol', () async {
       await embedRepo.ingestFiles([
@@ -1267,19 +1280,46 @@ void main() {
       // Line numbers are not part of the embed text — inserting a line above a
       // symbol must not cost inference, which is the common case when a file is
       // edited at all.
-      final before = symbol(
-        qualifiedName: 'a',
-      ).copyWith(id: codeSymbolId(wsId, repoId, 'a.dart', 'a'), filePath: 'a.dart', startLine: 1, endLine: 5);
+      final before = symbol(qualifiedName: 'a').copyWith(
+        id: codeSymbolId(wsId, repoId, 'a.dart', 'a'),
+        filePath: 'a.dart',
+        startLine: 1,
+        endLine: 5,
+      );
       final after = before.copyWith(startLine: 40, endLine: 44);
 
-      await embedRepo.ingestFiles([ingestOf('a.dart', 'h1', [before])]);
+      await embedRepo.ingestFiles([
+        ingestOf('a.dart', 'h1', [before]),
+      ]);
       embedder.texts.clear();
-      await embedRepo.ingestFiles([ingestOf('a.dart', 'h2', [after])]);
+      await embedRepo.ingestFiles([
+        ingestOf('a.dart', 'h2', [after]),
+      ]);
 
       expect(embedder.texts, isEmpty);
-      final rows = await dao.getSymbolsByRepo(wsId, repoId);
+      final rows = await dao.getSymbolsByRepo(repoId);
       expect(rows.single.startLine, 40);
-      expect(rows.single.embedding, isNotNull);
+      expect(await embeddingLengths(), [isNotNull]);
+    });
+
+    test('a symbol re-indexed with new text and no model loses the old '
+        'vector; its unchanged sibling keeps its own', () async {
+      await embedRepo.ingestFiles([
+        ingestOf('a.dart', 'h1', [
+          sym('a.dart', 'a', signature: 'void a()'),
+          sym('a.dart', 'b', signature: 'void b()'),
+        ]),
+      ]);
+
+      // `repo` has no embedder: the model is not installed.
+      await repo.ingestFiles([
+        ingestOf('a.dart', 'h2', [
+          sym('a.dart', 'a', signature: 'void a()'),
+          sym('a.dart', 'b', signature: 'void b(int x)'),
+        ]),
+      ]);
+
+      expect(await embeddingLengths(), [isNotNull, null]);
     });
 
     test('a symbol the file no longer defines is deleted', () async {
@@ -1310,6 +1350,25 @@ void main() {
 
       expect(embedder.texts, hasLength(1));
       expect(await embeddingLengths(), everyElement(isNotNull));
+    });
+
+    test('the backfill embeds what was indexed without a model, writing only '
+        'vector rows', () async {
+      await repo.ingestFiles([
+        ingestOf('a.dart', 'h1', [sym('a.dart', 'a'), sym('a.dart', 'b')]),
+        ingestOf('b.dart', 'h1', [sym('b.dart', 'c')]),
+      ]);
+      expect(await repo.backfillEmbeddings(wsId), 0);
+      final before = await dao.getSymbolsByRepo(repoId);
+
+      expect(await embedRepo.backfillEmbeddings(wsId, batchSize: 2), 3);
+
+      expect(embedder.texts, hasLength(3));
+      expect(await embeddingLengths(), everyElement(isNotNull));
+      expect(await dao.getSymbolsByRepo(repoId), before);
+      embedder.texts.clear();
+      expect(await embedRepo.backfillEmbeddings(wsId), 0);
+      expect(embedder.texts, isEmpty);
     });
 
     test('reuse is per checkout partition, never inherited from base', () async {
@@ -1521,7 +1580,7 @@ void main() {
     test(
       'a worktree read returns its own row AND the base generation',
       () async {
-        // Seed the worktree row the FK references.
+        // The worktree row the partition belongs to.
         await db
             .into(db.isolatedReposTable)
             .insert(
@@ -1571,7 +1630,7 @@ void main() {
         await repo.writeCheckpoint(cp());
         expect((await repo.readCheckpoint(wsId, repoId)).own, isNotNull);
 
-        await dao.deleteByRepo(wsId, repoId);
+        await dao.deleteByRepo(repoId);
 
         expect(await repo.symbolsForRepo(wsId, repoId), isEmpty);
         expect(await repo.fileHashes(wsId, repoId), isEmpty);

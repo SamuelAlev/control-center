@@ -3,12 +3,11 @@
 part of 'code_graph_dao.dart';
 
 // ignore_for_file: type=lint
-mixin _$CodeGraphDaoMixin on DatabaseAccessor<WorkspaceDatabase> {
-  $ReposTableTable get reposTable => attachedDatabase.reposTable;
-  $IsolatedReposTableTable get isolatedReposTable =>
-      attachedDatabase.isolatedReposTable;
+mixin _$CodeGraphDaoMixin on DatabaseAccessor<CodeIndexDatabase> {
   $CodeSymbolsTableTable get codeSymbolsTable =>
       attachedDatabase.codeSymbolsTable;
+  $CodeSymbolEmbeddingsTableTable get codeSymbolEmbeddingsTable =>
+      attachedDatabase.codeSymbolEmbeddingsTable;
   $CodeEdgesTableTable get codeEdgesTable => attachedDatabase.codeEdgesTable;
   $CodeFilesTableTable get codeFilesTable => attachedDatabase.codeFilesTable;
   $CodeIndexCheckpointsTableTable get codeIndexCheckpointsTable =>
@@ -19,17 +18,15 @@ mixin _$CodeGraphDaoMixin on DatabaseAccessor<WorkspaceDatabase> {
 class CodeGraphDaoManager {
   final _$CodeGraphDaoMixin _db;
   CodeGraphDaoManager(this._db);
-  $$ReposTableTableTableManager get reposTable =>
-      $$ReposTableTableTableManager(_db.attachedDatabase, _db.reposTable);
-  $$IsolatedReposTableTableTableManager get isolatedReposTable =>
-      $$IsolatedReposTableTableTableManager(
-        _db.attachedDatabase,
-        _db.isolatedReposTable,
-      );
   $$CodeSymbolsTableTableTableManager get codeSymbolsTable =>
       $$CodeSymbolsTableTableTableManager(
         _db.attachedDatabase,
         _db.codeSymbolsTable,
+      );
+  $$CodeSymbolEmbeddingsTableTableTableManager get codeSymbolEmbeddingsTable =>
+      $$CodeSymbolEmbeddingsTableTableTableManager(
+        _db.attachedDatabase,
+        _db.codeSymbolEmbeddingsTable,
       );
   $$CodeEdgesTableTableTableManager get codeEdgesTable =>
       $$CodeEdgesTableTableTableManager(

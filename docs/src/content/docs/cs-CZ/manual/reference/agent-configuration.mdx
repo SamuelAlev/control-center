@@ -2,7 +2,7 @@
 title: Konfigurace agentů
 description: Každé pole entity agenta a enumy, které používá.
 slug: cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Tahle stránka vypisuje všechna pole entity agenta a enumy a příznaky, se kterými pracuje. Jak agenta v aplikaci krok za krokem založit nebo upravit, popisuje [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/).
@@ -26,17 +26,17 @@ Tahle stránka vypisuje všechna pole entity agenta a enumy a příznaky, se kte
 | `effort`                | `String?`              | Ne      | Id úrovně uvažování (např. `'low'`, `'xhigh'`), brané z `thinkingLevels` vybraného modelu                                                                                  |
 | `contextSize`           | `int?`                 | Ne      | Maximální velikost kontextového okna                                                                                                                                       |
 | `role`                  | `AgentRole?`           | Ne      | Role agenta                                                                                                                                                                |
-| `monthlyBudgetCents`    | `int`                  | Ne      | Měsíční strop útraty v centech (výchozí `0`, bez omezení)                                                                                                                  |
+| `monthlyBudgetMicros`    | `int`                  | Ne      | Měsíční strop útraty v mikrodolarech (výchozí `0`, bez omezení)                                                                                                                  |
 | `silenceTimeoutMinutes` | `int?`                 | Ne      | Přepis timeoutu ticha v minutách; musí být null, nebo v rozsahu 1–240 (kontrola v konstruktoru)                                                                           |
 | `maxConcurrentTasks`    | `int`                  | Ne      | Výchozí `1`. Kapacita, kterou hlásí model přítomnosti (počty běžících a čekajících běhů se s ní porovnávají)                                                               |
 | `visibility`            | `AgentVisibility`      | Ne      | Výchozí `workspace`                                                                                                                                                        |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Ne      | Stav správy (výchozí `active`). Zapisuje ho tvrdé zastavení rozpočtu a zobrazuje se v organizačním schématu i na soupisce přítomnosti. Odeslání od agenta ve stavu `paused` práci pořád bere |
-| `budgetPolicyId`        | `String?`              | Ne      | Id sdílené politiky rozpočtu; při null platí přímo `monthlyBudgetCents`                                                                                                    |
+| `budgetPolicyId`        | `String?`              | Ne      | Id sdílené politiky rozpočtu; při null platí přímo `monthlyBudgetMicros`                                                                                                    |
 | `runtimeProfileId`      | `String?`              | Ne      | Id vlastního profilu běhu                                                                                                                                                  |
 | `createdAt`             | `DateTime`             | Ano     | Časové razítko vytvoření                                                                                                                                                   |
 
 `name` i `title` musí být neprázdné (kontrola v konstruktoru). Výchozí
-`monthlyBudgetCents` s hodnotou `0` znamená bez omezení. Strop se zapisuje přes `agents.upsert`.
+`monthlyBudgetMicros` s hodnotou `0` znamená bez omezení. Strop se zapisuje přes `agents.upsert`.
 
 ## Enum AgentRole
 

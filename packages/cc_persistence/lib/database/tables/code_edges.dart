@@ -1,6 +1,3 @@
-import 'package:cc_persistence/database/tables/isolated_repos.dart'
-    show IsolatedReposTable;
-import 'package:cc_persistence/database/tables/repos.dart' show ReposTable;
 import 'package:drift/drift.dart';
 
 /// Drift table for relationships between code symbols (the code graph's edges).
@@ -12,36 +9,27 @@ import 'package:drift/drift.dart';
 /// [targetName] carries the raw callee name / import URI for a later
 /// name-resolution pass. [kind] stores a `CodeEdgeKind.name`.
 ///
-/// Scoped by [workspaceId] as well as [repoId] so edges never cross workspace
-/// boundaries (workspaces are isolated worktrees that may share a repo).
-@TableIndex(name: 'idx_code_edges_workspaceId', columns: {#workspaceId})
-@TableIndex(name: 'idx_code_edges_repoId', columns: {#repoId})
-@TableIndex(name: 'idx_code_edges_checkoutId', columns: {#checkoutId})
+/// Lives in a workspace's `code_index.db` beside the symbols'
+/// rows; like them it carries no workspace column and no foreign key into
+/// `workspace.db`.
+@TableIndex(
+  name: 'idx_code_edges_partition_file',
+  columns: {#repoId, #checkoutId, #sourceFilePath},
+)
 @TableIndex(name: 'idx_code_edges_source', columns: {#sourceSymbolId})
 @TableIndex(name: 'idx_code_edges_target', columns: {#targetSymbolId})
-@TableIndex(name: 'idx_code_edges_kind', columns: {#kind})
 class CodeEdgesTable extends Table {
-  /// Deterministic id: hash(workspaceId | repoId | source | target-or-name | kind)
-  /// for the linked checkout; the worktree partition adds a checkoutId
-  /// segment (see `code_graph_ids`).
+  /// Deterministic content-addressed id (see `code_graph_ids`); the
+  /// worktree partition's ids add a checkoutId segment.
   TextColumn get id => text()();
 
-  /// Owning workspace.
-  TextColumn get workspaceId => text()();
-
-  /// Owning repository.
-  TextColumn get repoId =>
-      text().references(ReposTable, #id, onDelete: KeyAction.cascade)();
+  /// The repository (`repos.id` in `workspace.db`).
+  TextColumn get repoId => text()();
 
   /// The checkout partition: NULL = the linked checkout, otherwise an
   /// `isolated_repos` row id. Edges never cross partitions (ids embed the
-  /// checkout), so a worktree's graph is self-contained and cascades away
-  /// with the worktree row.
-  TextColumn get checkoutId => text().nullable().references(
-    IsolatedReposTable,
-    #id,
-    onDelete: KeyAction.cascade,
-  )();
+  /// checkout), so a worktree's graph is self-contained.
+  TextColumn get checkoutId => text().nullable()();
 
   /// `code_symbols.id` of the edge source (or a `<file>` pseudo-id for imports).
   TextColumn get sourceSymbolId => text()();

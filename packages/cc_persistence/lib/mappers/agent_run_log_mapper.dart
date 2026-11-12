@@ -7,15 +7,24 @@ import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
+import 'package:cc_persistence/database/daos/agent_dao.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 
 /// Maps database agent run log rows to domain [AgentRunLog] entities.
+///
+/// A run read from a list has no [AgentRunPayloadsTableData]: its payload
+/// fields (`contextSnapshotJson`, `expectedOutputSchema`, `outputJson`) are
+/// null and its verification carries the verdict without its detail. The single-run reads pass the payload row.
 class AgentRunLogMapper {
   /// Creates a const [AgentRunLogMapper].
   const AgentRunLogMapper();
 
-  /// Converts a single database row into an [AgentRunLog] domain entity.
-  AgentRunLog toDomain(AgentRunLogsTableData row) {
+  /// Converts a run-log row, and its [payload] row when one was read, into an
+  /// [AgentRunLog] domain entity.
+  AgentRunLog toDomain(
+    AgentRunLogsTableData row, [
+    AgentRunPayloadsTableData? payload,
+  ]) {
     return AgentRunLog(
       id: row.id,
       agentId: row.agentId,
@@ -37,7 +46,6 @@ class AgentRunLogMapper {
         thoughtTokens: row.thoughtTokens,
         cachedReadTokens: row.cachedReadTokens,
         cachedWriteTokens: row.cachedWriteTokens,
-        estimatedCostCents: row.estimatedCostCents,
         costMicros: row.costMicros,
         // A null basis reads as `estimated`, which is what a locally-priced
         // figure is — never as a reported or billed one.
@@ -52,16 +60,12 @@ class AgentRunLogMapper {
       nativeSessionId: row.nativeSessionId,
       resumedNativeSession: row.resumedNativeSession,
       latency: RunLatencyProfile.fromJson(_decodeJsonOrNull(row.latencyJson)),
-      verification: row.verificationJson == null
-          ? (row.verificationStatus == null
-                ? RunVerification.none
-                : RunVerification(
-                    status: VerificationStatus.fromWire(row.verificationStatus),
-                  ))
-          : RunVerification.fromJson(_decodeJsonOrNull(row.verificationJson)),
+      verification: _verification(
+        row.verificationStatus,
+        payload?.verificationJson,
+      ),
       lastOutputAt: row.lastOutputAt,
-      continuationSummary: row.continuationSummary,
-      contextSnapshotJson: row.contextSnapshotJson,
+      contextSnapshotJson: payload?.contextSnapshotJson,
       // NOT `tryParse` on a null column: it answers `empty` for anything it
       // does not recognise, which turned "nobody has classified this run yet"
       // into "this run produced nothing" on the way out — and the next upsert
@@ -74,15 +78,11 @@ class AgentRunLogMapper {
       pipelineRunId: row.pipelineRunId,
       pipelineStepId: row.pipelineStepId,
       errorCode: row.errorCode,
-      expectedOutputSchema: row.expectedOutputSchema != null
-          ? jsonDecode(row.expectedOutputSchema!) as Map<String, dynamic>
-          : null,
+      expectedOutputSchema: _decodeObjectOrNull(payload?.expectedOutputSchema),
       outputContractMode: OutputContractMode.fromStorage(
         row.outputContractMode,
       ),
-      outputJson: row.outputJson != null
-          ? jsonDecode(row.outputJson!) as Map<String, dynamic>
-          : null,
+      outputJson: _decodeObjectOrNull(payload?.outputJson),
       outputRejections: row.outputRejections,
       retry: RetryMeta(
         parentRunId: row.retryOfRunId,
@@ -93,9 +93,35 @@ class AgentRunLogMapper {
     );
   }
 
-  /// Converts a list of database rows into a list of [AgentRunLog] domain entities.
-  List<AgentRunLog> toDomainList(List<AgentRunLogsTableData> rows) =>
-      rows.map(toDomain).toList(growable: false);
+  /// Converts a run-log row read with its payload into a full [AgentRunLog].
+  AgentRunLog toDomainWithPayload(AgentRunLogWithPayload row) =>
+      toDomain(row.log, row.payload);
+
+  /// Converts list rows (no payload) into [AgentRunLog] domain entities.
+  List<AgentRunLog> toDomainList(List<AgentRunLogsTableData> rows) => [
+    for (final row in rows) toDomain(row),
+  ];
+
+  /// The run's verdict from [status] (the run-log column), with the detail
+  /// from [detailJson] (the payload column) only while that detail records
+  /// the same verdict: a detail left from an earlier verdict is never shown
+  /// under a later one.
+  static RunVerification _verification(String? status, String? detailJson) {
+    if (status == null) {
+      return RunVerification.none;
+    }
+    final verdict = RunVerification(
+      status: VerificationStatus.fromWire(status),
+    );
+    final detail = RunVerification.fromJson(_decodeJsonOrNull(detailJson));
+    return detail.status == verdict.status && detailJson != null
+        ? detail
+        : verdict;
+  }
+
+  /// Decodes a JSON-object payload column, or null when it is null.
+  static Map<String, dynamic>? _decodeObjectOrNull(String? raw) =>
+      raw == null ? null : jsonDecode(raw) as Map<String, dynamic>;
 
   /// Decodes a nullable JSON column to its Dart value, or null when the column
   /// is null/corrupt.

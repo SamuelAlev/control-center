@@ -2,14 +2,14 @@
 title: Gestionează costurile
 description: Vezi cât cheltuiesc agenții tăi, plafonează o rulare autonomă și reduce consumul de tokeni.
 slug: ro-RO/manual/ghiduri-practice/gestioneaza-costuri
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Acest ghid îți arată cum să vezi cât costă rulările agenților și cum să plafonezi o rulare autonomă.
 
 ## Cum sunt înregistrate costurile
 
-Fiecare rulare de agent scrie un jurnal de rulare care cuprinde tokenii ei de intrare, tokenii de ieșire, tokenii de raționament, tokenii citiți din cache și scriși în cache, un cost estimat în cenți și costul oricărui subagent pe care l-a generat.
+Fiecare rulare de agent scrie un jurnal de rulare care cuprinde tokenii ei de intrare, tokenii de ieșire, tokenii de raționament, tokenii citiți din cache și scriși în cache, un cost estimat în microdolari (milionimi de dolar american) și costul oricărui subagent pe care l-a generat.
 
 Prețurile provin din catalogul models.dev, care este folosit doar pentru a îmbogăți lista de modele cu preț și fereastra de context — niciodată ca sursă de id-uri de model. Un model pe care catalogul nu-l poate prețui înregistrează **0 $**, iar rulările cu cost zero sunt excluse din rezumatul **Utilizare și cost**. Un model Ollama local nu arată, prin urmare, nicio cheltuială, deși numărul lui de tokeni este totuși înregistrat. Un plan cu tarif fix (kimi-code, un abonament Claude) se comportă la fel doar atunci când catalogul nu are un preț pentru modelul servit; dacă are, rularea este oricum estimată la acele tarife. Într-un lanț de rezervă, rularea este evaluată după modelul care a servit-o efectiv, nu după cel cerut.
 
@@ -78,7 +78,7 @@ Deschide jurnalul de rulare din Insights (cele mai recente 50 de rulări filtrat
 
 ## Ce se întâmplă dacă un buget este stabilit în afara fluxului
 
-Pentru completitudine, dacă `monthlyBudgetCents` sau o politică de buget este scrisă direct într-un rând de agent:
+Pentru completitudine, dacă `monthlyBudgetMicros` sau o politică de buget este scrisă direct într-un rând de agent:
 
 - Bugetele sunt evaluate **după** ce o rulare se încheie, nu înainte de trimitere. Un ascultător de la finalizarea rulării compară cheltuiala agentului de la începutul lunii cu plafonul lui.
 - Depășirea pragului soft (80% implicit) înregistrează un incident de avertizare și emite un eveniment `BudgetThresholdCrossed` pe care poți agăța un trigger de pipeline.

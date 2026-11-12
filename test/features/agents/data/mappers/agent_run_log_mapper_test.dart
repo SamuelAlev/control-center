@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
+import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/mappers/agent_run_log_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 AgentRunLogsTableData _makeRow({
   String id = 'log-1',
   String agentId = 'agent-1',
-  String? workspaceId = 'ws-1',
+  String workspaceId = 'ws-1',
   String? conversationId,
   String? ticketId,
   String? spaceId,
@@ -24,7 +25,7 @@ AgentRunLogsTableData _makeRow({
   int thoughtTokens = 0,
   int cachedReadTokens = 0,
   int cachedWriteTokens = 0,
-  int estimatedCostCents = 15,
+  int costMicros = 150000,
   int childCostMicros = 0,
   String? agentRole,
   int? durationMs,
@@ -32,13 +33,10 @@ AgentRunLogsTableData _makeRow({
   String? livenessClass,
   String? errorFamily,
   DateTime? lastOutputAt,
-  String? continuationSummary,
-  String? contextSnapshotJson,
   String? retryOfRunId,
   int retryAttempt = 0,
-  String? expectedOutputSchema,
   String? outputContractMode,
-  String? outputJson,
+  String? verificationStatus,
   int outputRejections = 0,
 }) => AgentRunLogsTableData(
   id: id,
@@ -59,8 +57,7 @@ AgentRunLogsTableData _makeRow({
   thoughtTokens: thoughtTokens,
   cachedReadTokens: cachedReadTokens,
   cachedWriteTokens: cachedWriteTokens,
-  estimatedCostCents: estimatedCostCents,
-  costMicros: 0,
+  costMicros: costMicros,
   childCostMicros: childCostMicros,
   resumedNativeSession: false,
   agentRole: agentRole,
@@ -69,16 +66,13 @@ AgentRunLogsTableData _makeRow({
   livenessClass: livenessClass,
   errorFamily: errorFamily,
   lastOutputAt: lastOutputAt,
-  continuationSummary: continuationSummary,
-  contextSnapshotJson: contextSnapshotJson,
+  verificationStatus: verificationStatus,
   retryOfRunId: retryOfRunId,
   retryAttempt: retryAttempt,
   memoryReads: 0,
   memoryWrites: 0,
   codeGraphCalls: 0,
-  expectedOutputSchema: expectedOutputSchema,
   outputContractMode: outputContractMode,
-  outputJson: outputJson,
   outputRejections: outputRejections,
 );
 
@@ -104,23 +98,25 @@ void main() {
         thoughtTokens: 25,
         cachedReadTokens: 40,
         cachedWriteTokens: 10,
-        estimatedCostCents: 30,
+        costMicros: 300000,
         childCostMicros: 70000,
         agentRole: 'sub',
         durationMs: 4200,
         timeToFirstTokenMs: 850,
         lastOutputAt: DateTime(2025, 6, 1, 23),
-        continuationSummary: 'continued',
-        contextSnapshotJson: '{}',
         retryOfRunId: 'parent-1',
         retryAttempt: 2,
-        expectedOutputSchema: '{"type":"object"}',
         outputContractMode: 'permissive',
-        outputJson: '{"result":"ok"}',
         outputRejections: 2,
       );
+      const payload = AgentRunPayloadsTableData(
+        runId: 'r1',
+        contextSnapshotJson: '{}',
+        expectedOutputSchema: '{"type":"object"}',
+        outputJson: '{"result":"ok"}',
+      );
 
-      final log = mapper.toDomain(row);
+      final log = mapper.toDomain(row, payload);
 
       expect(log.id, 'r1');
       expect(log.agentId, 'a1');
@@ -138,13 +134,12 @@ void main() {
       expect(log.cost.thoughtTokens, 25);
       expect(log.cost.cachedReadTokens, 40);
       expect(log.cost.cachedWriteTokens, 10);
-      expect(log.cost.estimatedCostCents, 30);
+      expect(log.cost.costMicros, 300000);
       expect(log.cost.durationMs, 4200);
       expect(log.cost.timeToFirstTokenMs, 850);
       expect(log.childCostMicros, 70000);
       expect(log.role, AgentRunRole.sub);
       expect(log.lastOutputAt, DateTime(2025, 6, 1, 23));
-      expect(log.continuationSummary, 'continued');
       expect(log.contextSnapshotJson, '{}');
       expect(log.retry.parentRunId, 'parent-1');
       expect(log.retry.attempt, 2);
@@ -152,6 +147,47 @@ void main() {
       expect(log.outputContractMode, OutputContractMode.permissive);
       expect(log.outputJson, {'result': 'ok'});
       expect(log.outputRejections, 2);
+    });
+
+    test('a list row (no payload) carries no payload fields', () {
+      final log = mapper.toDomain(
+        _makeRow(
+          outputContractMode: 'permissive',
+          verificationStatus: 'passed',
+        ),
+      );
+      expect(log.contextSnapshotJson, isNull);
+      expect(log.expectedOutputSchema, isNull);
+      expect(log.outputJson, isNull);
+      expect(log.outputContractMode, OutputContractMode.permissive);
+      expect(
+        log.verification,
+        const RunVerification(status: VerificationStatus.passed),
+      );
+    });
+
+    test('verification detail is attached only to its own verdict', () {
+      const detail = AgentRunPayloadsTableData(
+        runId: 'log-1',
+        verificationJson:
+            '{"status":"passed","verifier":"tests","notes":"green"}',
+      );
+      final matching = mapper.toDomain(
+        _makeRow(verificationStatus: 'passed'),
+        detail,
+      );
+      expect(matching.verification.verifier, 'tests');
+      expect(matching.verification.notes, 'green');
+
+      // A later verdict without detail must not show the earlier one's.
+      final stale = mapper.toDomain(
+        _makeRow(verificationStatus: 'failed'),
+        detail,
+      );
+      expect(
+        stale.verification,
+        const RunVerification(status: VerificationStatus.failed),
+      );
     });
 
     test(

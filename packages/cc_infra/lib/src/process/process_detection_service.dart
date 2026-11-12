@@ -80,9 +80,9 @@ class ProcessDetectionService {
 
   /// Running runs with a recorded pid and workspace whose process is alive.
   Future<List<AgentRunLog>> _liveRuns() async {
-    final all = await _runLogRepo.watchAll().first;
+    final unfinished = await _runLogRepo.nonTerminal();
     return [
-      for (final log in all)
+      for (final log in unfinished)
         if (log.isRunning &&
             log.pid != null &&
             log.workspaceId != null &&

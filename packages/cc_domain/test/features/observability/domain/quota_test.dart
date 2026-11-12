@@ -16,7 +16,7 @@ AgentRunLog _run({
   int thoughtTokens = 0,
   int cachedReadTokens = 0,
   int cachedWriteTokens = 0,
-  int costCents = 0,
+  int costMicros = 0,
 }) {
   _runSeq++;
   return AgentRunLog(
@@ -31,7 +31,7 @@ AgentRunLog _run({
       thoughtTokens: thoughtTokens,
       cachedReadTokens: cachedReadTokens,
       cachedWriteTokens: cachedWriteTokens,
-      estimatedCostCents: costCents,
+      costMicros: costMicros,
     ),
   );
 }
@@ -176,7 +176,7 @@ void main() {
           thoughtTokens: 5,
           cachedReadTokens: 3,
           cachedWriteTokens: 2,
-          costCents: 999, // must be ignored for tokens unit
+          costMicros: 999, // must be ignored for tokens unit
         ),
       ];
       final r = calc.report(
@@ -198,7 +198,7 @@ void main() {
           startedAt: _now.subtract(const Duration(hours: 1)),
           adapter: 'anthropic',
           inputTokens: 5000,
-          costCents: 5000,
+          costMicros: 5000,
         ),
         _run(
           startedAt: _now.subtract(const Duration(hours: 2)),
@@ -222,18 +222,18 @@ void main() {
       expect(r.used, 3);
     });
 
-    test('costCents unit sums estimatedCostCents only', () {
+    test('costMicros unit sums costMicros only', () {
       final runs = [
         _run(
           startedAt: _now.subtract(const Duration(hours: 1)),
           adapter: 'anthropic',
           inputTokens: 9999, // ignored for cost unit
-          costCents: 120,
+          costMicros: 120,
         ),
         _run(
           startedAt: _now.subtract(const Duration(hours: 2)),
           adapter: 'anthropic',
-          costCents: 80,
+          costMicros: 80,
         ),
       ];
       final r = calc.report(
@@ -242,7 +242,7 @@ void main() {
         limit: const QuotaLimit(
           provider: 'anthropic',
           window: QuotaWindow.daily,
-          unit: QuotaUnit.costCents,
+          unit: QuotaUnit.costMicros,
           limit: 500,
         ),
       );

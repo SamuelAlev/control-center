@@ -2,7 +2,7 @@
 title: Peristiwa domain
 description: Katalog lengkap dari 54 peristiwa domain, payload-nya, dan pelanggan sisi server yang mengonsumsinya.
 slug: id-ID/panduan-pengguna/referensi/peristiwa-domain
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Bus peristiwa
@@ -112,7 +112,7 @@ Hanya transisi terminal yang diterbitkan. Tidak ada `PipelineRunStarted` dan tid
 | Peristiwa                | Payload                                                                                                  | Dipicu saat               |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Entri jejak audit dibuat  |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Pengeluaran melampaui ambang batas |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Pengeluaran melampaui ambang batas |
 
 ## Peristiwa identitas dan keanggotaan
 

@@ -5,6 +5,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/messaging/providers/space_search_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/utils/format_utils.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/widgets.dart';
@@ -107,7 +108,7 @@ class _SpaceSearchDialogState extends ConsumerState<SpaceSearchDialog> {
     );
     return resultsAsync.when(
       loading: () => const Center(child: CcSpinner()),
-      error: (e, _) => Center(child: Text(l10n.failedWithError('$e'))),
+      error: (e, _) => Center(child: Text(failureMessage(l10n, e))),
       data: (messages) {
         if (messages.isEmpty) {
           return Center(

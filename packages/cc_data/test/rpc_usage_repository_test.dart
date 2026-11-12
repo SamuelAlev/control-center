@@ -21,21 +21,21 @@ void main() {
   group('RpcUsageRepository.costSummary', () {
     test('maps a full summary and forwards window_days', () async {
       host.callResults['usage.costSummary'] = {
-        'total_usd': 12.4,
+        'total_micros': 12400000,
         'request_count': 100,
         'window_start': '2026-07-01T00:00:00.000',
         'next_reset_at': '2026-07-02T00:00:00.000',
-        'by_provider': {'claude': 10.0, 'glm': 2.4},
-        'by_model': {'claude/opus': 10.0},
+        'by_provider': {'claude': 10000000, 'glm': 2400000},
+        'by_model': {'claude/opus': 10000000},
       };
       final repo = RpcUsageRepository(client);
       final summary = await repo.costSummary(windowDays: 14);
-      expect(summary.totalUsd, 12.4);
+      expect(summary.totalMicros, 12400000);
       expect(summary.requestCount, 100);
       expect(summary.windowStart, DateTime(2026, 7, 1));
       expect(summary.nextResetAt, DateTime(2026, 7, 2));
-      expect(summary.byProvider, {'claude': 10.0, 'glm': 2.4});
-      expect(summary.byModel, {'claude/opus': 10.0});
+      expect(summary.byProvider, {'claude': 10000000, 'glm': 2400000});
+      expect(summary.byModel, {'claude/opus': 10000000});
       expect(host.lastCall('usage.costSummary')!.args['window_days'], 14);
     });
 
@@ -43,7 +43,7 @@ void main() {
       host.callResults['usage.costSummary'] = const {};
       final repo = RpcUsageRepository(client);
       final summary = await repo.costSummary();
-      expect(summary.totalUsd, 0);
+      expect(summary.totalMicros, 0);
       expect(summary.requestCount, 0);
       expect(summary.windowStart, DateTime.fromMillisecondsSinceEpoch(0));
       expect(summary.nextResetAt, isNull);
@@ -60,7 +60,7 @@ void main() {
 
     test('nextResetAt is null when absent', () async {
       host.callResults['usage.costSummary'] = {
-        'total_usd': 1.0,
+        'total_micros': 1000000,
         'request_count': 1,
       };
       final repo = RpcUsageRepository(client);

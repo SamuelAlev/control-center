@@ -2,7 +2,7 @@
 title: Ordlista
 description: Definitioner av centrala begrepp som används i Control Center.
 slug: sv-SE/handbok/referens/ordlista
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (en avskild VM – den enda backend som har en kärngräns, tillämpad på interaktiva terminaler), native (OS-native Seatbelt på macOS, bubblewrap på Linux och WSL2) eller none. Sonderas en gång vid start; native lindar in agentdispatch när den finns tillgänglig. Windows har ingen native-backend och Linux behöver bwrap plus socat; på en sådan värd startar bara serverägarens körningar, oinlindade, och andras nekas. --sandbox off kör varje medlems agenter oinlindade.'],
 ['Station', 'En tillfällig maskin som en agent kör i realtid: en avskild webbläsare eller ett Linux-skrivbord, en värdhanterad Android-emulator eller iOS Simulator, eller en avskild terminal. Bevakas live över sin egen kanal i full upplösning, med övertagande framtvingat på serversidan. Avgränsad till ett samtal så att människans flik och agentens verktyg adresserar en och samma maskin.'],
 ['Avskild miljö', 'Den starkare isoleringsegenskap som är tillgänglig för VM-baserade stationer: en kärngräns, en tillfällig overlaydisk, en nätverksgrind som nekar som standard och en broker för autentiseringsuppgifter. Android- och iOS-stationer är tillfälliga men använder värdhanterat nätverk, så de gör inte anspråk på den här gränsen. Att styra en station använder åtgärdsklassen enclosureControl.'],
-['RunCost', 'Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i cent) för en enskild agentkörning.'],
+['RunCost', 'Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i mikrodollar) för en enskild agentkörning.'],
 ['WakeReason', 'Varför en agent dispatchades. Sex värden: användarmeddelande, ärendetilldelning, återdispatch efter ett fel, underärende slutfört, schemalagt uppföljningshjärtslag och pipelinesteg.'],
 ['SandboxPort', 'Hanterar sandlådans livscykel (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Präglar avgränsade autentiseringsuppgifter för sandlådestart (en token för ett enda repo för en agents miljö, skrivning bara för pushvägen på servern) och släpper dem vid nedrivning.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Avskild miljö**: Den starkare gränsen för VM-baserade stationer – en kärngräns, en tillfällig overlaydisk, en nätverksgrind som nekar som standard och en broker för autentiseringsuppgifter. Android- och iOS-stationer är tillfälliga men använder värdhanterat nätverk och gör inte anspråk på den här gränsen. Att styra en station använder åtgärdsklassen `enclosureControl`.
 
-**RunCost**: Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i cent) för en enskild agentkörning.
+**RunCost**: Token- och kostnadsräkning (indata-tokens, utdata-tokens, uppskattad kostnad i mikrodollar) för en enskild agentkörning.
 
 **WakeReason**: Varför en agent dispatchades. Sex värden: användarmeddelande, ärendetilldelning, återdispatch efter ett fel, underärende slutfört, schemalagt uppföljningshjärtslag och pipelinesteg.
 

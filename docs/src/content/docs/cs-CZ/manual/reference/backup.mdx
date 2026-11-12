@@ -2,7 +2,7 @@
 title: Záloha, export a import
 description: Rozložení snímku, manifest, každá operace zálohy a trasa přenosu a přesně které soubory záloha obsahuje a které ne.
 slug: cs-CZ/prirucka/referencni-prirucka/zaloha
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Všechno, co Control Center umí zkopírovat, předat nebo převzít, a přesný tvar každého
@@ -46,12 +46,8 @@ a jako obyčejný řetězec se řadí chronologicky.
 
 Naplánované zálohy pracovního prostoru leží zvlášť v
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Nemají manifest ani `global.db` a nejsou to snímky instalace.
-Krok uchování v týdenní pipeline maže jen zálohy svého pracovního prostoru
-starší než nastavený věk (výchozí je 30 dní). Ten krok nikdy nerotuje ručně
-pořízené snímky instalace. `server.listBackups` vypisuje jen snímky
-instalace, včetně neúplných; `workspace.listBackups` vypisuje plánované zálohy jednoho
-pracovního prostoru.
+Každá má `manifest.json` jen pro ten jeden soubor a žádný `global.db`; nejsou to snímky instalace. Obnovení uchová databázi, kterou nahradí, na stejném místě jako `<timestamp>-pre-restore`.
+Krok uchování v týdenní pipeline maže jen zálohy svého pracovního prostoru starší než nastavený věk (výchozí je 30 dní). Ten krok nikdy nerotuje ručně pořízené snímky instalace. `server.listBackups` vypisuje jen snímky instalace, včetně neověřených; `workspace.listBackups` vypisuje plánované zálohy jednoho pracovního prostoru.
 
 Smazání pracovního prostoru tenhle adresář nechá na místě. Plán pracovního prostoru s ním
 skončí, takže ty zálohy už nic nerotuje a zůstanou, dokud je vlastník instalace neodstraní.
@@ -62,33 +58,39 @@ skončí, takže ty zálohy už nic nerotuje a zůstanou, dokud je vlastník ins
 
 | Pole                         | Typ             | Význam                                                                    |
 | ---------------------------- | --------------- | ------------------------------------------------------------------------- |
-| `version`                    | celé číslo      | Verze formátu manifestu. Teď `1`                                          |
+| `format`                     | celé číslo      | Formát manifestu. Teď `2`                                                                 |
 | `created_at`                 | ISO-8601 UTC    | Kdy se snímek pořídil                                                     |
-| `global.file`                | řetězec         | Vždy `global.db`                                                          |
-| `global.schema_version`      | celé číslo      | Verze schématu `GlobalDatabase` v okamžiku zachycení                      |
-| `global.bytes`               | celé číslo      | Velikost zapsaného `global.db`                                            |
-| `workspace_schema_version`   | celé číslo      | Verze schématu `WorkspaceDatabase` společná všem souborům pracovních prostorů |
-| `workspaces[]`               | pole            | Jedna položka na zachycený pracovní prostor                               |
+| `global`                     | objekt          | Záznam `global.db`. U plánované zálohy pracovního prostoru chybí |
+| `workspaces[]`               | pole            | Jeden záznam na zachycený pracovní prostor                               |
 | `workspaces[].workspace_id`  | řetězec         | Pracovní prostor, který tenhle soubor drží                                |
-| `workspaces[].file`          | řetězec         | Cesta relativní ke kořeni snímku, `<workspaceId>/workspace.db`            |
-| `workspaces[].bytes`         | celé číslo      | Velikost toho souboru                                                     |
-| `skipped_workspaces[]`       | pole řetězců    | Pracovní prostory, které záloha **nezachytila**                           |
+| `skipped_workspaces[]`     | pole            | Pracovní prostory, které záloha **nezachytila**                         |
+| `skipped_workspaces[].workspace_id` | řetězec | Pracovní prostor, který byl vynechán                                     |
+| `skipped_workspaces[].reason` | řetězec       | `no_file`, `damaged` nebo `failed`                                    |
 
-Pracovní prostor se přeskočí, když je zaregistrovaný, ale ještě se do něj nezapsalo (soubor
-tedy zatím není), nebo když jeho `VACUUM INTO` selhalo. V obou případech se snímek stejně dokončí
-a manifest pojmenuje, co chybí.
+`global` a každý záznam v `workspaces[]` zaznamenávají jeden zkopírovaný soubor, změřený na kopii poté, co byla zapsána:
+
+| Pole             | Typ    | Význam                                                                         |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`          | řetězec         | Cesta relativní ke kořeni snímku: `global.db` nebo `<workspaceId>/workspace.db`            |
+| `bytes`         | celé číslo      | Velikost kopie                                                     |
+| `sha256`         | řetězec    | SHA-256 kopie v malých hexadecimálních znacích                                 |
+| `quick_check`    | řetězec    | Co SQLite `quick_check` řekl o kopii: `ok`, nebo jeho nález                    |
+| `user_version`   | celé číslo | Verze schématu kopie                                                           |
+| `application_id` | celé číslo | SQLite `application_id` kopie                                                  |
+
+Pracovní prostor se přeskočí, když je zaregistrovaný, ale ještě se do něj nezapsalo (`no_file`), když jeho databáze neprojde kontrolou integrity (`damaged`; poškozená kopie se nikdy nepořizuje), nebo když jeho kopie nebo kontrola té kopie selhala (`failed`). V každém případě se snímek stejně dokončí a manifest pojmenuje, co chybí. Manifest se zapíše jako poslední.
 
 ### Úplnost
 
-`server.listBackups` hlásí u každého snímku příznak `complete`. Je nepravdivý, když
-manifest chybí nebo nejde rozebrat, když chybí `global.db`, nebo když manifest
-jmenuje soubor pracovního prostoru, který na disku není.
+`server.listBackups` hlásí u každého snímku příznak `complete`. Je nepravdivý, když manifest chybí, nejde rozebrat nebo je v jiném formátu, když soubor, který jmenuje, chybí nebo má jinou velikost, nebo když kopie neprošla svou kontrolou. Aplikace takový snímek zobrazí jako **Neověřeno**. Snímky pořízené před formátem `2` jsou v tomhle stavu.
 
-Neúplný snímek se pořád vypíše, protože snímek, který operátor nevidí, je
+Neověřený snímek se pořád vypíše, protože snímek, který operátor nevidí, je
 snímek, o kterém věří, že ho má. Když manifest nejde přečíst, výpis se vrátí
 k samotnému rozložení a nahlásí ty soubory `<workspaceId>/workspace.db`, které najde.
 Ty se pořád dají převzít jednotlivě přes `workspace.import`, i když snímek
 jako celek instalaci neobnoví.
+
+Vypsaný snímek nebo plánovaná záloha nese `pinned_reason: "last_good_copy"`, dokud drží nejnovější ověřenou kopii pracovního prostoru, jehož živá databáze je poškozená. Krok uchování ji přeskočí, dokud se ten pracovní prostor neobnoví.
 
 ## Co záloha neobsahuje
 
@@ -99,6 +101,7 @@ databázi a nic z toho zbytku se nepřenáší:
 | ----------------------------------- | ---------- | ------------------------------ |
 | `global.db`                         | Ano        | Ne                             |
 | `<workspaceId>/workspace.db`        | Ano        | Ano (ten soubor *to je*)       |
+| `<workspaceId>/code_index.db`       | Ne             | Ne                     |
 | `<workspaceId>/blobs/`              | Ne         | Ne                             |
 | `<workspaceId>/skills/`             | Ne         | Ne                             |
 | `<workspaceId>/agents/`             | Ne         | Ne                             |
@@ -111,19 +114,9 @@ databázi a nic z toho zbytku se nepřenáší:
 | `rigs/`                             | Ne         | Ne                             |
 | `_agent_hooks/`                     | Ne         | Ne                             |
 
-Část z toho se dá zahodit. `spaces/` drží copy-on-write worktree a ty se
-znovu připraví z repozitářů, `pr_clones/` je mezipaměť, `models/` se stáhne znovu a `rigs/`
-je stav stroje. Část ne: `blobs/` drží vložené obrázky, na které ukazují řádky v
-databázi, `skills/` a `agents/` drží soubory, se kterými agent běží, a
-`secrets.json` drží každý klíč párování, přihlašovací údaje poskytovatele a nastavení SSO na
-instalaci. Zbytek pokrývá [Záloha a obnovení](/cs-CZ/prirucka/navody/zaloha-a-obnoveni/#kopíruj-zálohy-mimo-stroj).
-:::caution[Databáze pracovního prostoru drží tajemství webhooků]
-`workspace.db` je celý pracovní prostor: konverzace, záznamy běhů, index kódu,
-propojení repozitářů, definice prostředí a členové. Drží také tokeny webhooků
-pipeline a tajemství webhooků synchronizace ticketů v čitelné podobě, takže
-staženého exportu nebo zálohy zacházejte jako s tajemstvím. Nedrží žádné
-přihlášení poskytovatele, klíč zařízení ani uživatelské tajemství; ty jsou v
-`global.db` a `secrets.json`.
+Část z toho se dá zahodit. `spaces/` drží copy-on-write worktree a ty se znovu připraví z repozitářů, `pr_clones/` je mezipaměť, `code_index.db` se znovu sestaví, `models/` se stáhne znovu a `rigs/` je stav stroje. Část ne: `blobs/` drží vložené obrázky, na které ukazují řádky v databázi, `skills/` a `agents/` drží soubory, se kterými agent běží, a `secrets.json` drží každý klíč párování, přihlašovací údaje poskytovatele a nastavení SSO na instalaci. Zbytek pokrývá [Záloha a obnovení](/cs-CZ/prirucka/navody/zaloha-a-obnoveni/#kopíruj-zálohy-mimo-stroj).
+:::note[Tajemství zůstávají mimo databáze]
+`workspace.db` je celý pracovní prostor: konverzace, záznamy běhů, propojení repozitářů, definice prostředí a členové. Tokeny webhooků pipeline a tajemství webhooků synchronizace ticketů jsou v `secrets.json`: databáze drží odkaz na každé z nich a index tras drží klíčovaný hash každého tokenu. Pracovní prostor obnovený na jiné instalaci proto nedostane žádné webhooky, dokud se jeho spouštěče tam znovu neuloží. Přihlášení poskytovatelů, klíče zařízení a uživatelská tajemství jsou v `global.db` a `secrets.json`.
 :::
 
 :::note[Tokeny chatu schválně zůstávají stranou]
@@ -149,6 +142,8 @@ demo server, chybí úplně. Neodmítají se, ve struktuře nejsou.
 | `workspace.deleteBackup` | zápis | Pracovní prostor | `owner` | `name` | `{ok}` |
 | `workspace.export`    | čtení  | Pracovní prostor | `admin`          | žádné         | `{ok, path}`                       |
 | `workspace.import`    | zápis  | Pracovní prostor | `owner` a vlastník serveru | `source_path` | `{ok, workspace_id}`               |
+| `workspace.importHolds.list` | čtení | Pracovní prostor | `owner` a vlastník serveru | žádné | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | zápis | Pracovní prostor | `owner` a vlastník serveru | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`    | zápis  | Instalace*  | `owner`               | `id`          | řádek registru označený jako smazaný |
 
 * `workspace.delete` je bez rozsahu, protože řádek, který označuje, žije v globálním
@@ -164,18 +159,20 @@ patří vlastníkovi instalace. `server.deleteOrphanedBackup` odmítne živý pr
 zálohy zůstávají za `workspace.deleteBackup` a vlastními rolemi toho prostoru. Obě mazací
 operace přijímají jen vypsané jméno adresáře s časovým razítkem, ne cestu.
 
+`workspace.importHolds.list` vrací, co import zadržel. Každé zadržení má `id`, `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` nebo `invite`), `payload`, který by se vrátil zpět, `imported_at` a `source_install_id`. `workspace.importHolds.resolve` s `accept: true` ho přidělí znovu a s `false` zahodí. `applied` je nepravdivé, když komu nebo čemu grant patřil, už v pracovním prostoru není.
+
 :::note[Snímek celé instalace je na obou linkách jen pro vlastníka]
 `server.backupNow`, `server.listBackups` a `server.deleteBackup` vyžadují
 **vlastníka** instalace (`ServerAuthority.serverOwner`), stejnou bránu jako
 `GET /backup/snapshot`. Snímek zachytí databázi každého pracovního prostoru, takže
 admin jednoho pracovního prostoru nestačí na správu ostatních. Smazání
 přijme jen uvedené jméno adresáře s časovým razítkem, ne libovolnou cestu na
-serveru, a odstraní celý snímek, včetně neúplných.
+serveru, a odstraní celý snímek, včetně neověřených.
 Export jednoho pracovního prostoru a stahování plánovaných záloh zůstávají na adminovi pracovního prostoru.
 :::
 
 :::note[Obnovení patří vlastníkovi serveru]
-`workspace.import` a `POST /backup/restore` přinutí server převzít databázový soubor, jehož řádky pak bere jako své: propojení repozitářů a to, kdo je vytvořil, definice prostředí, které běží na hostiteli, cesty worktree a logů. Proto obojí vyžaduje vlastníka serveru (`ServerAuthority.serverOwner`), který musí být zároveň vlastníkem pracovního prostoru. Kdokoli jiný a každý volající na hostiteli bez zaznamenaného vlastníka je odmítnut s `server_owner_required`. Žádný spouštěč ani pohled, který soubor přinese, se nepřevezme.
+`workspace.import` a `POST /backup/restore` přinutí server převzít databázový soubor, jehož řádky pak bere jako své: propojení repozitářů a to, kdo je vytvořil, definice prostředí, které běží na hostiteli, cesty worktree a logů. Proto obojí vyžaduje vlastníka serveru (`ServerAuthority.serverOwner`), který musí být zároveň vlastníkem pracovního prostoru. Kdokoli jiný a každý volající na hostiteli bez zaznamenaného vlastníka je odmítnut s `server_owner_required`. Žádný spouštěč, pohled, sloupec ani omezení, které soubor přinese, se nepřevezme.
 :::
 
 ### Odpověď `server.listBackups`
@@ -215,21 +212,21 @@ nemůžou rozejít v tom, jak se stejným souborem naloží.
 
 ### Ověření `workspace.import`
 
-Než se cokoli nahradí, kandidátní soubor se otevře jen ke čtení krátkým
-syrovým spojením SQLite a přečte se jeho řádek `workspace_meta`.
+Než se cokoli nahradí, kandidátní soubor se zkopíruje do přípravného souboru vedle cíle a tam se zkontroluje. Odmítnutí se ničeho nedotkne a jeho druh nese jako `data.kind`.
 
 | Podmínka                                              | Výsledek                                                                                          |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Není to čitelná databáze SQLite, nebo chybí `workspace_meta` | Odmítnuto. Na nic se nesáhne                                                                |
-| Zaznamenané id pracovního prostoru ≠ cíl              | **Povoleno**, zapsáno do logu. Takhle se pracovní prostor zduplikuje nebo obnoví pod novým id    |
-| Zaznamenané id instalace ≠ tahle instalace            | **Povoleno**, zapsáno do logu. Jeho spárovaná zařízení a id uživatelů patří té instalaci a tady se nevyřeší |
-| Neplatné id pracovního prostoru, nebo soubor neexistuje | Odmítnuto                                                                                       |
+| Soubor neexistuje | Odmítnuto, `import.missing_source` |
+| Není to čitelná databáze SQLite, nebo neprojde `quick_check` | Odmítnuto, `import.damaged` |
+| Pochází ze snímku a jeho SHA-256 se liší od hodnoty v manifestu | Odmítnuto, `import.checksum_mismatch` |
+| Zapsala ho novější verze serveru | Odmítnuto, `import.newer_schema` |
+| Jiné `application_id`, nebo chybí `workspace_meta` | Odmítnuto, `import.foreign_file` |
+| Nejde převést na schéma tohoto serveru | Odmítnuto, `import.schema_mismatch` |
+| Jeho webhooky nebo pozvánky už směrují do jiného pracovního prostoru | Odmítnuto, `import.route_conflict` |
+| Zaznamenané id pracovního prostoru ≠ cíl              | **Povoleno**. Jeho řádky se přepíšou na id cíle. Takhle se pracovní prostor zduplikuje nebo obnoví pod novým id    |
+| Zaznamenané id instalace ≠ tahle instalace            | **Povoleno**. Id uživatelů z něj patří té instalaci a tady se nevyřeší |
 
-Po přijetí se databáze cílového pracovního prostoru zavře a odpojí od správce databází,
-než se přes ni soubor zkopíruje (otevřené spojení Drift drží soubor i jeho
-`-wal`). Pak se znovu otevře, `beforeOpen` znovu nainstaluje spouštěče FTS a synchronizace
-a indexy FTS se přestaví. Tabulky obsahu v importovaném souboru jsou naplněné, ale jeho index může
-být zastaralý.
+Po přijetí se přípravný soubor převede na schéma tohoto serveru a pak se s ním musí přesně shodovat. Granty, které si soubor nesmí přidělit sám, se z něj vyjmou: schválení spouštět definici prostředí na hostiteli se zruší a pravidla akcí, která povolují nebo vyžadují schválení, granty sandbox exec, repozitářové granty nad čtení, role nad člena a pozvánky do těchto rolí se stanou zadrženími, která vlastník serveru projde. Importující si zachová roli vlastníka, nebo ji získá. Nahrazovaná databáze se uchová jako plánovaná záloha s názvem `<timestamp>-pre-restore`, přípravný soubor se s uzavřenými připojeními pracovního prostoru přejmenuje na místo cíle, `code_index.db` se smaže, aby se znovu sestavil, a indexy FTS se znovu sestaví.
 
 ## Trasy přenosu
 
@@ -258,7 +255,7 @@ s časovým razítkem a soubor musí být skutečný soubor uvnitř vlastního a
 
 | Stav   | Příčina                                                                                 |
 | ------ | --------------------------------------------------------------------------------------- |
-| `400`  | Chybí povinný parametr dotazu, jméno zálohy je neplatné, nebo je tělo nahrání prázdné   |
+| `400`  | Chybí povinný parametr dotazu, jméno zálohy je neplatné, tělo nahrání je prázdné, nebo byl nahraný soubor odmítnut (tělo je `{error, kind}` s druhem `import.*`) |
 | `403`  | Neznámé nebo odvolané zařízení, špatný podpis, nebo volající nemá roli                  |
 | `404`  | Na tomhle hostiteli není port záloh, nebo pojmenovaný snímek, záloha či soubor pracovního prostoru neexistuje |
 | `405`  | `/backup/restore` zavolané jinak než `POST`                                             |
@@ -297,6 +294,8 @@ Ani jeden přenos nešifruje výsledné soubory záloh v klidu.
 | Snímky                             | `<dataDir>/backups/<timestamp>/`                             |
 | Naplánované zálohy pracovního prostoru | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Exporty pracovního prostoru        | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Databáze nahrazená obnovením | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Databáze tak, jak byly před aktualizací, která změnila jejich formát | `<dataDir>/pre_upgrade/` a `<dataDir>/<workspaceId>/pre_upgrade/`, vždy dvě nejnovější kopie každé |
 | Příprava přenosu                   | `<dataDir>/backups/transfer/` — mezisklad, který uklidí trasa, jež do něj zapisuje |
 | Jméno archivu snímku               | `<snapshot directory name>.zip`                              |
 | Strop nahrání                      | 8 GiB na šifrované nahrání `/backup/restore`                 |

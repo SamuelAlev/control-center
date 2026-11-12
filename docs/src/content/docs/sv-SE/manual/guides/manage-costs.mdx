@@ -2,14 +2,14 @@
 title: Hantera kostnader
 description: Se vad dina agenter gör av med, sätt ett tak för en autonom körning och minska tokenanvändningen.
 slug: sv-SE/handbok/how-to-guider/hantera-kostnader
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Den här guiden visar hur du ser vad agentkörningar kostar och hur du sätter ett tak för en autonom körning.
 
 ## Så registreras kostnader
 
-Varje agentkörning skriver en körningslogg med sina indatatokens, utdatatokens, resonemangstokens, cachelästa och cacheskrivna tokens, en uppskattad kostnad i cent och kostnaden för eventuella subagenter som körningen startade.
+Varje agentkörning skriver en körningslogg med sina indatatokens, utdatatokens, resonemangstokens, cachelästa och cacheskrivna tokens, en uppskattad kostnad i mikrodollar (miljondelar av en amerikansk dollar) och kostnaden för eventuella subagenter som körningen startade.
 
 Prissättningen kommer från katalogen models.dev, som bara används för att berika modellistan med pris och kontextfönster – aldrig som källa för modell-id:n. En modell som katalogen inte kan prissätta registreras som **$0**, och körningar utan kostnad utesluts från sammanställningen **Användning och kostnad**. En lokal Ollama-modell visar därför ingen utgift alls, även om dess tokenantal fortfarande registreras. Ett abonnemang med fast pris (kimi-code, en Claude-prenumeration) fungerar bara på samma sätt när katalogen saknar pris för den modell som betjänade körningen; om den har ett pris uppskattas körningen ändå efter de priserna. Under en reservkedja prissätts körningen efter den modell som faktiskt betjänade den, inte den som begärdes.
 
@@ -78,7 +78,7 @@ Modell är ett fält per agent, så en formaterings- eller triageagent kan köra
 
 ## Vad som händer om en budget sätts utanför det vanliga flödet
 
-För fullständighetens skull: om `monthlyBudgetCents` eller en budgetpolicy skrivs direkt till en agentrad:
+För fullständighetens skull: om `monthlyBudgetMicros` eller en budgetpolicy skrivs direkt till en agentrad:
 
 - Budgetar utvärderas **efter** att en körning har slutförts, inte före dispatch. En lyssnare på körningsslut jämför agentens utgifter sedan månadens början mot dess tak.
 - När den mjuka tröskeln passeras (80 % som standard) registreras en varningsincident och en `BudgetThresholdCrossed`-händelse utlöses, som du kan hänga en pipelinetrigger på.

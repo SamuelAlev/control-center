@@ -14428,13 +14428,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get backupSnapshotComplete => 'Teljes';
 
   @override
-  String get backupSnapshotIncomplete => 'Hiányos';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'A manifest hiányzik, vagy olyan fájlokat nevez meg, amelyek nincsenek ott, így ez a pillanatkép nem tudja visszaállítani a teljes telepítést. A meglévő munkaterület-fájljai egyenként még átvehetők.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Pillanatkép törlése';
 
   @override
@@ -18594,4 +18587,234 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Megfigyelheted ezt a gépet. Annak a személynek a bejelentkezéseit használja, akinek megnyitották, ezért csak ő vezérelheti, továbbíthatja a portjait, tartalmat illeszthet bele, vagy fájlokat húzhat rá.';
+
+  @override
+  String get refusalStorageBusy =>
+      'A szerver adatbázisa jelenleg foglalt. Próbálja újra kis idő múlva.';
+
+  @override
+  String get refusalStorageFull =>
+      'A szerveren elfogyott a lemezterület, ezért semmit nem lehet menteni. A szerver tulajdonosának fel kell szabadítania egy kis helyet.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Ennek a munkaterületnek az adatai sérültek. A szerver tulajdonosának vissza kell állítania egy biztonsági mentésből.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Ez a munkaterület csak olvasható, amíg a szerver tulajdonosa vissza nem állítja egy biztonsági mentésből, így a módosítások nem menthetők.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Ezeket az adatokat a szerver egy újabb verziója írta. Frissítse a szervert, majd próbálja újra.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'A szerver olyan adatbázisfájlt talált, amelyet nem ő írt. A szerver tulajdonosának ellenőriznie kell a szerver adatmappáját.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Ez a munkaterület törölve lett.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Ez a kérés még feldolgozás alatt áll. Várja meg, amíg befejeződik, majd ellenőrizze az eredményt.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'A szerveren nincs fájl ezen az útvonalon. Semmi nem lett lecserélve.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Ez a fájl sérült, ezért nem állítható vissza. Semmi nem lett lecserélve.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Ez a fájl nem egyezik a biztonsági mentés által rögzített ellenőrző összeggel, ezért lehet, hogy módosult vagy megsérült. Semmi nem lett lecserélve.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Ezt a fájlt a szerver egy újabb verziója írta. Frissítse a szervert a visszaállításhoz. Semmi nem lett lecserélve.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Ez a fájl nem munkaterület-adatbázis. Semmi nem lett lecserélve.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Ezt a fájlt nem sikerült a szerver formátumára hozni. Semmi nem lett lecserélve.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Ez a fájl a szerveren egy másik munkaterülethez tartozó hivatkozásokat tartalmaz, és a visszaállítás átvenné azokat. Semmi nem lett lecserélve.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'Ez a munkaterület csak olvasható';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Adatai nem mentek át az integritás-ellenőrzésen, ezért a módosítások nem menthetők. Minden továbbra is olvasható. A szerver tulajdonosa visszaállíthatja egy biztonsági mentésből.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Adatai nem mentek át az integritás-ellenőrzésen, ezért a módosítások nem menthetők. Minden továbbra is olvasható. Állítsa vissza egy biztonsági mentésből, hogy újra írható legyen.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Biztonsági mentések megnyitása';
+
+  @override
+  String get serverNoticesLabel => 'Figyelmet igényel';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Csak olvasható';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Ettől: $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Adatbázisa nem ment át az integritás-ellenőrzésen, ezért csak olvasható, és minden módosítást elutasít. Állítsa vissza egy biztonsági mentésből az alábbi listákban; legutolsó jó másolata addig megmarad, amíg ezt meg nem teszi.';
+
+  @override
+  String get serverNoticeDetails => 'Részletek';
+
+  @override
+  String get backupSnapshotUnverified => 'Nem ellenőrzött';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Ez a pillanatkép nem ellenőrizhető. Nem fejeződött be, vagy azelőtt készült, hogy a pillanatképek ellenőrző összegeket rögzítettek volna, ezért nem állíthatja vissza a teljes telepítést. A benne lévő munkaterület-fájlok továbbra is visszaállíthatók egyenként.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Legutolsó jó másolat';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Azért marad meg, mert egy sérült munkaterület legutolsó jó másolatát tartalmazza. A takarítás nem nyúl hozzá, amíg az adott munkaterület nincs visszaállítva.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Ez egy sérült munkaterület legutolsó jó másolata. Ha törli, nincs más, amiből az adott munkaterületet vissza lehetne állítani.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count engedély lett visszatartva felülvizsgálatra. Ezek az oldal tetején láthatók.',
+      one:
+          '1 engedély lett visszatartva felülvizsgálatra. Az oldal tetején látható.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Visszatartva a visszaállított másolatokból';
+
+  @override
+  String get importHoldsExplainer =>
+      'A visszaállított másolat önmagában nem adhat jogosultságot ezen a szerveren. Ezek a jogosultságok voltak benne: fogadjon el egyet, hogy újra megadja, vagy utasítsa el, hogy eltávolítsa.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Az ügynökök jóváhagyás nélkül megtehetik ezt: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Az ügynökök azután tehetik meg ezt, hogy valaki jóváhagyta: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Ezzel kezdődő parancsok futtatása: $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'A munkaterület egész területén';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'A(z) $space térben';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'A(z) $agent ügynöknek';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'A homokozók futtathatják: $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person módosíthatja a(z) $repo tárolót';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person áttekintheti a pull requesteket a(z) $repo tárolóban';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person $level hozzáférést kap a(z) $repo tárolóhoz';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person megkapja a(z) $role szerepkört';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Nyitott meghívás a(z) $role szerepkörrel való csatlakozásra';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Nyitott meghívás a(z) $role szerepkörrel, áttekintési vagy írási jogosultsággal $count tárolóhoz',
+      one:
+          'Nyitott meghívás a(z) $role szerepkörrel, áttekintési vagy írási jogosultsággal $count tárolóhoz',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Olyan jogosultság, amelyet az alkalmazás ezen verziója nem tud leírni';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Visszaállítva: $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Elfogadás';
+
+  @override
+  String get importHoldDismiss => 'Elutasítás';
+
+  @override
+  String get importHoldAcceptTitle => 'Megadja ezt a jogosultságot?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nAz elfogadás azonnal megadja ezt a szerveren.';
+  }
+
+  @override
+  String get importHoldAccepted => 'A jogosultság megadva.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Semmi nem lett megadva: az, akinek vagy amire a jogosultság szólt, már nincs ebben a munkaterületen.';
 }

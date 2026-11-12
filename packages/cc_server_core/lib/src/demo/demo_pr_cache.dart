@@ -1,72 +1,73 @@
 /// The cache kinds and key shapes the PR-review surface is stored under.
 ///
-/// These MIRROR the private `_Kind` constants and `_prKey`/`_shaKey` helpers in
-/// `cached_pr_review_repository.dart`. They are duplicated rather than shared
-/// because that class keeps them private, and the demo has to agree with it
-/// exactly: the seeder writes rows the demo repository reads, and keeping the
-/// real format means a demo fixture is a realistic cache entry rather than a
-/// parallel invention.
+/// The kinds are the production ones ([PrReviewCacheKinds]); the key helpers
+/// MIRROR the private `_prKey`/`_shaKey` in `cached_pr_review_repository.dart`.
+/// The demo has to agree with it exactly: the seeder writes rows the demo
+/// repository reads, and keeping the real format means a demo fixture is a
+/// realistic cache entry rather than a parallel invention.
 library;
+
+import 'package:cc_domain/features/pr_review/domain/value_objects/pr_review_cache_kinds.dart';
 
 /// Cache kinds for the PR review surface.
 class DemoPrCacheKind {
   const DemoPrCacheKind._();
 
   /// The PR's own detail row.
-  static const String detail = 'prDetail';
+  static const String detail = PrReviewCacheKinds.prDetail;
 
   /// The unified diff, stored as raw text (not JSON).
-  static const String diff = 'prDiff';
+  static const String diff = PrReviewCacheKinds.prDiff;
 
   /// The changed-file list.
-  static const String files = 'prFiles';
+  static const String files = PrReviewCacheKinds.prFiles;
 
   /// One file's content at a ref, stored as raw text (not JSON).
-  static const String fileContent = 'prFileContent';
+  static const String fileContent = PrReviewCacheKinds.prFileContent;
 
   /// The commit list.
-  static const String commits = 'prCommits';
+  static const String commits = PrReviewCacheKinds.prCommits;
 
   /// Files touched by one commit.
-  static const String commitFiles = 'prCommitFiles';
+  static const String commitFiles = PrReviewCacheKinds.prCommitFiles;
 
   /// Submitted reviews.
-  static const String reviews = 'prReviews';
+  static const String reviews = PrReviewCacheKinds.prReviews;
 
   /// Inline code-review comments.
-  static const String reviewComments = 'prReviewComments';
+  static const String reviewComments = PrReviewCacheKinds.prReviewComments;
 
   /// Conversation (issue) comments.
-  static const String issueComments = 'prIssueComments';
+  static const String issueComments = PrReviewCacheKinds.prIssueComments;
 
   /// The timeline rail.
-  static const String timelineEvents = 'prTimelineEvents';
+  static const String timelineEvents = PrReviewCacheKinds.prTimelineEvents;
 
   /// CI check runs.
-  static const String checkRuns = 'prCheckRuns';
+  static const String checkRuns = PrReviewCacheKinds.prCheckRuns;
 
   /// Commit statuses.
-  static const String commitStatuses = 'prCommitStatuses';
+  static const String commitStatuses = PrReviewCacheKinds.prCommitStatuses;
 
   /// Enriched reviewer rows.
-  static const String reviewerState = 'prReviewerState';
+  static const String reviewerState = PrReviewCacheKinds.prReviewerState;
 
   /// Repo-scoped assignable users.
-  static const String assignableUsers = 'assignableUsers';
+  static const String assignableUsers = PrReviewCacheKinds.assignableUsers;
 
   /// Repo-scoped requestable teams.
-  static const String requestableTeams = 'requestableTeams';
+  static const String requestableTeams = PrReviewCacheKinds.requestableTeams;
 
   /// The open-PR list snapshot the poller persists and
   /// `pr.watchOpenForWorkspace` follows.
-  static const String openPrList = 'openPrList';
+  static const String openPrList = PrReviewCacheKinds.openPrList;
 
   /// Single-row key for [openPrList].
   static const String openPrListKey = 'v1';
 
   /// Maya's merged-PR history, the snapshot
   /// `pr.closedByAuthorForWorkspace` reads in demo mode.
-  static const String closedPrList = 'closedPrList';
+  static const String closedPrList = PrReviewCacheKinds.closedPrList;
 
   /// Single-row key for [closedPrList].
   static const String closedPrListKey = 'v1';

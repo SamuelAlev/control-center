@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
@@ -124,11 +123,15 @@ AgentRunLog _run(
   required String agentId,
   RunStatus status = RunStatus.running,
   AgentRunRole role = AgentRunRole.main,
+  String? spaceId,
+  String? conversationId,
 }) => AgentRunLog(
   id: id,
   agentId: agentId,
   status: status,
   role: role,
+  spaceId: spaceId,
+  conversationId: conversationId,
   startedAt: DateTime.now(),
 );
 
@@ -168,6 +171,15 @@ void main() {
       dbs = createTestWorkspaceDatabases(global: global);
       await seedTestWorkspace(global, dbs, workspaceId);
       db = dbs.of(workspaceId);
+      await db
+          .into(db.spacesTable)
+          .insert(
+            SpacesTableCompanion.insert(
+              id: 'ch1',
+              name: 'General',
+              workspaceId: workspaceId,
+            ),
+          );
       messaging = _FakeMessagingRepository();
       runLogs = _FakeAgentRunLogRepository();
       paused.clear();
@@ -176,7 +188,7 @@ void main() {
       steered.clear();
       pausable = {};
       service = TakeoverService(
-        workspaceDbs: dbs,
+        takeovers: DaoSpaceTakeoverRepository(dbs),
         runLogs: runLogs,
         messaging: messaging,
         pauseRun: (runId) async {
@@ -213,8 +225,8 @@ void main() {
       await db.close();
     });
 
-    test('begin pauses pausable runs, stops non-pausable ones, writes the '
-        'Caches marker and posts a system message', () async {
+    test('begin pauses pausable runs, stops non-pausable ones, records the '
+        'take-over and posts a system message', () async {
       pausable.add('run-pausable');
       runLogs.activeByConversationSeeds['ws1:ch1'] = [
         _run('run-pausable', agentId: 'a1'),
@@ -233,15 +245,12 @@ void main() {
       expect(marker['paused_run_ids'], ['run-pausable']);
       expect(marker['stopped_run_ids'], ['run-stubborn']);
 
-      final raw = await db.cacheDao.read(
-        workspaceId,
-        TakeoverService.cacheKind,
-        'ch1',
-      );
-      expect(raw, isNotNull);
-      final decoded = jsonDecode(raw!) as Map<String, dynamic>;
-      expect(decoded['user_id'], 'u1');
-      expect(decoded['display_name'], 'Ada');
+      final stored = await DaoSpaceTakeoverRepository(
+        dbs,
+      ).get(workspaceId, 'ch1');
+      expect(stored?.userId, 'u1');
+      expect(stored?.displayName, 'Ada');
+      expect(stored?.pausedRunIds, ['run-pausable']);
 
       expect(messaging.sent, hasLength(1));
       expect(messaging.sent.single.content, contains('Ada took over'));
@@ -428,7 +437,13 @@ void main() {
     late DomainEventBus eventBus;
     final dispatches =
         <
-          ({String spaceId, String agentId, String workspaceId, String prompt})
+          ({
+            String spaceId,
+            String? conversationId,
+            String agentId,
+            String workspaceId,
+            String prompt,
+          })
         >[];
     var clock = DateTime(2026, 1, 1);
     late CheckerDispatchListener listener;
@@ -442,23 +457,34 @@ void main() {
       dbs = createTestWorkspaceDatabases(global: global);
       await seedTestWorkspace(global, dbs, workspaceId);
       db = dbs.of(workspaceId);
+      await db
+          .into(db.spacesTable)
+          .insert(
+            SpacesTableCompanion.insert(
+              id: 'ch1',
+              name: 'General',
+              workspaceId: workspaceId,
+            ),
+          );
       runLogs = _FakeAgentRunLogRepository();
       eventBus = DomainEventBus();
       dispatches.clear();
       clock = DateTime(2026, 1, 1);
       listener = CheckerDispatchListener(
         eventBus: eventBus,
-        workspaceDbs: dbs,
+        checkers: DaoSpaceCheckerRepository(dbs),
         runLogs: runLogs,
         dispatchChecker:
             ({
               required String spaceId,
+              required String? conversationId,
               required String agentId,
               required String prompt,
               required String workspaceId,
             }) async {
               dispatches.add((
                 spaceId: spaceId,
+                conversationId: conversationId,
                 agentId: agentId,
                 workspaceId: workspaceId,
                 prompt: prompt,
@@ -476,54 +502,74 @@ void main() {
       await db.close();
     });
 
-    test(
-      "a configured checker dispatches on another agent's completed main run",
-      () async {
-        await db.cacheDao.put(
-          'ws1',
-          CheckerDispatchListener.cacheKind,
-          'ch1',
-          jsonEncode({'agent_id': 'checker-agent'}),
-        );
-        runLogs.byId['run-1'] = _run(
-          'run-1',
-          agentId: 'worker-agent',
-          status: RunStatus.completed,
-        );
-
-        eventBus.publish(
-          AgentRunCompleted(
-            agentId: 'worker-agent',
-            workspaceId: 'ws1',
-            conversationId: 'ch1',
-            runId: 'run-1',
-            occurredAt: clock,
-          ),
-        );
-
-        await _pumpUntil(() => dispatches.isNotEmpty);
-        expect(dispatches.single.agentId, 'checker-agent');
-        expect(dispatches.single.spaceId, 'ch1');
-        expect(dispatches.single.workspaceId, 'ws1');
-      },
-    );
-
-    test("the checker's own completion never re-triggers", () async {
-      await db.cacheDao.put(
-        'ws1',
-        CheckerDispatchListener.cacheKind,
-        'ch1',
-        jsonEncode({'agent_id': 'checker-agent'}),
+    /// A finished run of [agentId] in the space `ch1`, in a conversation
+    /// whose id is not the space's, and the event its completion publishes.
+    AgentRunCompleted finished(
+      String runId, {
+      required String agentId,
+      AgentRunRole role = AgentRunRole.main,
+      String? spaceId = 'ch1',
+    }) {
+      runLogs.byId[runId] = _run(
+        runId,
+        agentId: agentId,
+        status: RunStatus.completed,
+        role: role,
+        spaceId: spaceId,
+        conversationId: 'conv-7',
       );
+      return AgentRunCompleted(
+        agentId: agentId,
+        workspaceId: 'ws1',
+        conversationId: 'conv-7',
+        runId: runId,
+        occurredAt: clock,
+      );
+    }
+
+    Future<void> setChecker() async {
+      // The checker is an agent of the workspace; the setting goes with it.
+      await dbs
+          .of('ws1')
+          .customStatement(
+            'INSERT OR IGNORE INTO agents '
+            '(id, name, title, agent_md_path, workspace_id, skills) '
+            "VALUES ('checker-agent', 'Checker', 'Agent', '', 'ws1', '')",
+          );
+      await DaoSpaceCheckerRepository(
+        dbs,
+      ).setChecker('ws1', 'ch1', 'checker-agent');
+    }
+
+    test("a configured checker reviews another agent's completed main run, "
+        "in the run's space and conversation", () async {
+      await setChecker();
+
+      eventBus.publish(finished('run-1', agentId: 'worker-agent'));
+
+      await _pumpUntil(() => dispatches.isNotEmpty);
+      expect(dispatches.single.agentId, 'checker-agent');
+      // The space is the run's, not the event's conversation id.
+      expect(dispatches.single.spaceId, 'ch1');
+      expect(dispatches.single.conversationId, 'conv-7');
+      expect(dispatches.single.workspaceId, 'ws1');
+    });
+
+    test('a run outside any space is not reviewed', () async {
+      await setChecker();
 
       eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'checker-agent',
-          workspaceId: 'ws1',
-          conversationId: 'ch1',
-          occurredAt: clock,
-        ),
+        finished('run-1', agentId: 'worker-agent', spaceId: null),
       );
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(dispatches, isEmpty);
+    });
+
+    test("the checker's own completion never re-triggers", () async {
+      await setChecker();
+
+      eventBus.publish(finished('run-1', agentId: 'checker-agent'));
 
       // Give the async handler a chance to run, then assert nothing fired.
       await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -531,27 +577,10 @@ void main() {
     });
 
     test('a sub-agent run never triggers a review (main runs only)', () async {
-      await db.cacheDao.put(
-        'ws1',
-        CheckerDispatchListener.cacheKind,
-        'ch1',
-        jsonEncode({'agent_id': 'checker-agent'}),
-      );
-      runLogs.byId['run-sub'] = _run(
-        'run-sub',
-        agentId: 'worker-agent',
-        status: RunStatus.completed,
-        role: AgentRunRole.sub,
-      );
+      await setChecker();
 
       eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'worker-agent',
-          workspaceId: 'ws1',
-          conversationId: 'ch1',
-          runId: 'run-sub',
-          occurredAt: clock,
-        ),
+        finished('run-sub', agentId: 'worker-agent', role: AgentRunRole.sub),
       );
 
       await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -559,58 +588,25 @@ void main() {
     });
 
     test('the cooldown suppresses a burst', () async {
-      await db.cacheDao.put(
-        'ws1',
-        CheckerDispatchListener.cacheKind,
-        'ch1',
-        jsonEncode({'agent_id': 'checker-agent'}),
-      );
+      await setChecker();
 
-      eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'worker-1',
-          workspaceId: 'ws1',
-          conversationId: 'ch1',
-          occurredAt: clock,
-        ),
-      );
+      eventBus.publish(finished('run-1', agentId: 'worker-1'));
       await _pumpUntil(() => dispatches.length == 1);
 
       // A second completion moments later, within the cooldown, is absorbed.
       clock = clock.add(const Duration(seconds: 5));
-      eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'worker-2',
-          workspaceId: 'ws1',
-          conversationId: 'ch1',
-          occurredAt: clock,
-        ),
-      );
+      eventBus.publish(finished('run-2', agentId: 'worker-2'));
       await Future<void>.delayed(const Duration(milliseconds: 200));
       expect(dispatches, hasLength(1));
 
       // Past the cooldown window, the next completion dispatches again.
       clock = clock.add(const Duration(minutes: 3));
-      eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'worker-3',
-          workspaceId: 'ws1',
-          conversationId: 'ch1',
-          occurredAt: clock,
-        ),
-      );
+      eventBus.publish(finished('run-3', agentId: 'worker-3'));
       await _pumpUntil(() => dispatches.length == 2);
     });
 
     test('no checker configured means nothing dispatches', () async {
-      eventBus.publish(
-        AgentRunCompleted(
-          agentId: 'worker-1',
-          workspaceId: 'ws1',
-          conversationId: 'ch1',
-          occurredAt: clock,
-        ),
-      );
+      eventBus.publish(finished('run-1', agentId: 'worker-1'));
       await Future<void>.delayed(const Duration(milliseconds: 200));
       expect(dispatches, isEmpty);
     });

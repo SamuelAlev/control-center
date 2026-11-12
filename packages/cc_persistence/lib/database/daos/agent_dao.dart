@@ -1,12 +1,25 @@
 import 'package:cc_persistence/database/tables/agent_run_logs.dart';
+import 'package:cc_persistence/database/tables/agent_run_payloads_table.dart';
 import 'package:cc_persistence/database/tables/agents.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
 part 'agent_dao.g.dart';
 
-/// Data access object for [AgentsTable] and [AgentRunLogsTable].
-@DriftAccessor(tables: [AgentsTable, AgentRunLogsTable])
+/// A run-log row read together with its payload row, which is null when the
+/// run has stored nothing in `agent_run_payloads`.
+typedef AgentRunLogWithPayload = ({
+  AgentRunLogsTableData log,
+  AgentRunPayloadsTableData? payload,
+});
+
+/// Data access object for [AgentsTable], [AgentRunLogsTable] and
+/// [AgentRunPayloadsTable].
+///
+/// Run lists read `agent_run_logs` alone. The single-run reads and the
+/// pipeline step harvest, which are what read a run's payload, join
+/// `agent_run_payloads` and return [AgentRunLogWithPayload].
+@DriftAccessor(tables: [AgentsTable, AgentRunLogsTable, AgentRunPayloadsTable])
 class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
     with _$AgentDaoMixin {
   /// Creates an [AgentDao] for the given database.
@@ -61,13 +74,55 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Deletes all agents.
   Future<int> deleteAll() => delete(agentsTable).go();
 
-  /// Deletes an agent and all its associated run logs in a transaction.
-  Future<void> deleteAgentWithLogs(String id) => transaction(() async {
-    await (delete(agentRunLogsTable)..where((t) => t.agentId.equals(id))).go();
-    await (delete(agentsTable)..where((t) => t.id.equals(id))).go();
-  });
+  /// Deletes an agent and all its run logs: `agent_run_logs.agent_id` is
+  /// `ON DELETE CASCADE`, so the one delete takes them.
+  Future<void> deleteAgentWithLogs(String id) =>
+      (delete(agentsTable)..where((t) => t.id.equals(id))).go();
 
   // ── Agent run log methods ──
+
+  /// Run-log order, newest first. `started_at` has whole-second resolution,
+  /// so runs started together (a fan-out, a team dispatch) tie on it; `id`
+  /// makes the order the same on every read.
+  static final List<OrderClauseGenerator<$AgentRunLogsTableTable>>
+  _newestFirst = [
+    (t) => OrderingTerm.desc(t.startedAt),
+    (t) => OrderingTerm.desc(t.id),
+  ];
+
+  /// Run-log rows matching [where], each with its payload row (a primary-key
+  /// lookup per run), newest first.
+  JoinedSelectStatement<HasResultSet, dynamic> _withPayload(
+    Expression<bool> where,
+  ) =>
+      select(agentRunLogsTable).join([
+          leftOuterJoin(
+            agentRunPayloadsTable,
+            agentRunPayloadsTable.runId.equalsExp(agentRunLogsTable.id),
+          ),
+        ])
+        ..where(where)
+        ..orderBy([
+          OrderingTerm.desc(agentRunLogsTable.startedAt),
+          OrderingTerm.desc(agentRunLogsTable.id),
+        ]);
+
+  AgentRunLogWithPayload _readWithPayload(TypedResult row) => (
+    log: row.readTable(agentRunLogsTable),
+    payload: row.readTableOrNull(agentRunPayloadsTable),
+  );
+
+  /// The statuses of a run that has not finished: the complement of
+  /// `completed` and `error`.
+  static const List<String> nonTerminalStatuses = ['pending', 'running'];
+
+  /// Most non-terminal runs [nonTerminalLogs] returns. A workspace never has
+  /// this many runs in flight; the bound keeps a corrupted status column from
+  /// turning a liveness scan back into a full-table read.
+  static const int nonTerminalLimit = 1000;
+
+  /// Most rows a conversation's or space's run watch returns (the newest).
+  static const int watchLogsByScopeLimit = 500;
 
   /// How many run logs [watchLogsByAgent] returns per agent (newest first).
   ///
@@ -93,27 +148,9 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
               (t) =>
                   t.workspaceId.equals(workspaceId) & t.agentId.equals(agentId),
             )
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
+            ..orderBy(_newestFirst)
             ..limit(watchLogsByAgentLimit))
           .watch();
-
-  /// Returns ALL run logs for a specific agent within a workspace, newest
-  /// first — no limit.
-  ///
-  /// For one-shot maintenance jobs that genuinely need the complete
-  /// history (historical backfill). Live UI watches must
-  /// use the bounded [watchLogsByAgent] instead.
-  Future<List<AgentRunLogsTableData>> allLogsByAgent(
-    String workspaceId,
-    String agentId,
-  ) =>
-      (select(agentRunLogsTable)
-            ..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) & t.agentId.equals(agentId),
-            )
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
-          .get();
 
   /// Returns the run logs belonging to a pipeline run within a workspace,
   /// newest first. Used to roll up per-step cost on the run waterfall.
@@ -129,42 +166,38 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
                   t.workspaceId.equals(workspaceId) &
                   t.pipelineRunId.equals(pipelineRunId),
             )
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
+            ..orderBy(_newestFirst))
           .get();
 
   /// Returns the run logs belonging to a specific pipeline step within a
-  /// workspace, newest first. Workspace-scoped: filters on `workspaceId`,
-  /// `pipelineRunId` and `pipelineStepId` (which carries the template step
-  /// id the engine dispatches under).
-  Future<List<AgentRunLogsTableData>> logsForPipelineStep(
+  /// workspace, newest first, with their payloads: the engine harvests each
+  /// run's `submit_output` from them. Workspace-scoped: filters on
+  /// `workspaceId`, `pipelineRunId` and `pipelineStepId` (which carries the
+  /// template step id the engine dispatches under).
+  Future<List<AgentRunLogWithPayload>> logsForPipelineStep(
     String workspaceId,
     String pipelineRunId,
     String pipelineStepId,
-  ) =>
-      (select(agentRunLogsTable)
-            ..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) &
-                  t.pipelineRunId.equals(pipelineRunId) &
-                  t.pipelineStepId.equals(pipelineStepId),
-            )
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
-          .get();
+  ) => _withPayload(
+    agentRunLogsTable.workspaceId.equals(workspaceId) &
+        agentRunLogsTable.pipelineRunId.equals(pipelineRunId) &
+        agentRunLogsTable.pipelineStepId.equals(pipelineStepId),
+  ).map(_readWithPayload).get();
 
   /// The three columns the spend summary needs, for cost-bearing runs in
   /// [workspaceId] started at or after [sinceSeconds] (epoch seconds).
   ///
   /// Projected on purpose: the summary reads `started_at`, `adapter` and
-  /// `estimated_cost_cents`, and materializing whole run-log rows to get them
-  /// drags each run's serialized prompt context along for nothing.
-  Future<List<({DateTime startedAt, String? adapter, int costCents})>>
+  /// `cost_micros`, and materializing whole run-log rows to get them
+  /// decodes some fifty columns per run for nothing.
+  Future<List<({DateTime startedAt, String? adapter, int costMicros})>>
   costHistory(String workspaceId, int sinceSeconds) =>
       customSelect(
-        'SELECT started_at, adapter, estimated_cost_cents '
+        'SELECT started_at, adapter, cost_micros '
         'FROM agent_run_logs '
         'WHERE workspace_id = ? AND started_at >= ? '
-        'AND estimated_cost_cents > 0 '
-        'ORDER BY started_at DESC',
+        'AND cost_micros > 0 '
+        'ORDER BY started_at DESC, id DESC',
         variables: [
           Variable.withString(workspaceId),
           Variable.withInt(sinceSeconds),
@@ -178,44 +211,107 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
                 row.read<int>('started_at') * 1000,
               ),
               adapter: row.readNullable<String>('adapter'),
-              costCents: row.read<int>('estimated_cost_cents'),
+              costMicros: row.read<int>('cost_micros'),
             ),
         ],
       );
 
-  /// Watches this workspace's run logs.
+  /// This workspace's runs that have not finished (pending or running),
+  /// newest first, at most [limit].
   ///
-  /// Live UI surfaces should prefer [watchRecentLogs] — this unbounded watch
-  /// re-materializes the whole table on every run-log change.
-  Stream<List<AgentRunLogsTableData>> watchAllLogs() => (select(
-    agentRunLogsTable,
-  )..orderBy([(t) => OrderingTerm.desc(t.startedAt)])).watch();
-
-  /// Watches the [limit] most recent run logs across every workspace, newest first.
-  ///
-  /// The bounded companion to [watchAllLogs] for live dashboards: only the newest [limit]
-  /// rows are read and re-emitted per change, keeping memory and wire traffic flat as history
-  /// grows.
-  /// An all-workspace "most recent N" takes N from every workspace and merge-sorts
-  /// (`CrossWorkspaceQueries.topN` / `mergeStreams`) — taking fewer per workspace could miss
-  /// rows that outrank another workspace's.
-  Stream<List<AgentRunLogsTableData>> watchRecentLogs(int limit) =>
+  /// The liveness jobs (orphan reaping, process detection) only ever look at
+  /// runs still in flight. They used to read every run log of every
+  /// workspace and filter in Dart; the status filter here is an index probe
+  /// on `idx_agent_run_logs_status`.
+  Future<List<AgentRunLogsTableData>> nonTerminalLogs({
+    int limit = nonTerminalLimit,
+  }) =>
       (select(agentRunLogsTable)
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
+            ..where((t) => t.status.isIn(nonTerminalStatuses))
+            ..orderBy(_newestFirst)
+            ..limit(limit))
+          .get();
+
+  /// Watches [workspaceId]'s unfinished runs (pending or running), newest
+  /// first, at most [limit]. Backs "which spaces have an agent working".
+  Stream<List<AgentRunLogsTableData>> watchNonTerminalLogs(
+    String workspaceId, {
+    int limit = nonTerminalLimit,
+  }) =>
+      (select(agentRunLogsTable)
+            ..where(
+              (t) =>
+                  t.workspaceId.equals(workspaceId) &
+                  t.status.isIn(nonTerminalStatuses),
+            )
+            ..orderBy(_newestFirst)
             ..limit(limit))
           .watch();
 
-  /// Returns all run logs belonging to [workspaceId], newest first.
+  /// The most recently started run for [ticketId] in [workspaceId], with its
+  /// payload, or null.
+  Future<AgentRunLogWithPayload?> latestLogForTicket(
+    String workspaceId,
+    String ticketId,
+  ) => (_withPayload(
+    agentRunLogsTable.workspaceId.equals(workspaceId) &
+        agentRunLogsTable.ticketId.equals(ticketId),
+  )..limit(1)).map(_readWithPayload).getSingleOrNull();
+
+  /// Watches the [limit] most recent run logs of this workspace file, newest
+  /// first.
   ///
-  /// Workspace-scoped: the SQL `WHERE` filters on `workspaceId` so only this
-  /// workspace's rows are read — never load `watchAllLogs()` and filter in
-  /// memory (that both leaks other workspaces' rows into memory and scales
-  /// with the whole DB). Used by the workspace-health rollup.
-  Future<List<AgentRunLogsTableData>> logsByWorkspace(String workspaceId) =>
+  /// An all-workspace "most recent N" takes N from every workspace and
+  /// merge-sorts (`CrossWorkspaceQueries.mergeStreams`) — taking fewer per
+  /// workspace could miss rows that outrank another workspace's.
+  Stream<List<AgentRunLogsTableData>> watchRecentLogs(int limit) =>
       (select(agentRunLogsTable)
-            ..where((t) => t.workspaceId.equals(workspaceId))
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
-          .get();
+            ..orderBy(_newestFirst)
+            ..limit(limit))
+          .watch();
+
+  /// One keyset page of [workspaceId]'s run logs, newest first: at most
+  /// [limit] rows strictly older than the `(beforeStartedAt, beforeId)`
+  /// position, or the newest rows when no position is given.
+  ///
+  /// Narrowed by whichever of [agentId], [spaceId] and [conversationId] is
+  /// set. The bounded watches show the newest window; this reads what lies
+  /// behind it without an `OFFSET` scan.
+  Future<List<AgentRunLogsTableData>> logsPage(
+    String workspaceId, {
+    required int limit,
+    String? agentId,
+    String? spaceId,
+    String? conversationId,
+    DateTime? beforeStartedAt,
+    String? beforeId,
+  }) {
+    final hasCursor = beforeStartedAt != null && beforeId != null;
+    return (select(agentRunLogsTable)
+          ..where((t) {
+            Expression<bool> where = t.workspaceId.equals(workspaceId);
+            if (agentId != null) {
+              where = where & t.agentId.equals(agentId);
+            }
+            if (spaceId != null) {
+              where = where & t.spaceId.equals(spaceId);
+            }
+            if (conversationId != null) {
+              where = where & t.conversationId.equals(conversationId);
+            }
+            if (hasCursor) {
+              where =
+                  where &
+                  (t.startedAt.isSmallerThanValue(beforeStartedAt) |
+                      (t.startedAt.equals(beforeStartedAt) &
+                          t.id.isSmallerThanValue(beforeId)));
+            }
+            return where;
+          })
+          ..orderBy(_newestFirst)
+          ..limit(limit))
+        .get();
+  }
 
   /// Watches the active (not-yet-completed) run logs for a conversation within
   /// a workspace, newest first.
@@ -236,7 +332,7 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
                   t.conversationId.equals(conversationId) &
                   t.completedAt.isNull(),
             )
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
+            ..orderBy(_newestFirst))
           .watch();
 
   /// Watches the active run logs of a whole SPACE (every conversation in it,
@@ -258,13 +354,15 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
                   t.spaceId.equals(spaceId) &
                   t.completedAt.isNull(),
             )
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
+            ..orderBy(_newestFirst))
           .watch();
 
-  /// Watches ALL run logs (active + completed) for a conversation within a
-  /// workspace, newest first. Workspace-scoped (filters both `workspaceId` and
+  /// Watches the newest [watchLogsByScopeLimit] run logs (active +
+  /// completed) for a conversation within a workspace, returned oldest
+  /// first. Workspace-scoped (filters both `workspaceId` and
   /// `conversationId`). Used by the conversation run-tree UI to render the
-  /// parent dispatch plus its ephemeral subagent runs (`parentRunId`).
+  /// parent dispatch plus its ephemeral subagent runs (`parentRunId`); older
+  /// runs are read with [logsPage].
   Stream<List<AgentRunLogsTableData>> watchLogsByConversation(
     String workspaceId,
     String conversationId,
@@ -275,10 +373,14 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
                   t.workspaceId.equals(workspaceId) &
                   t.conversationId.equals(conversationId),
             )
-            ..orderBy([(t) => OrderingTerm.asc(t.startedAt)]))
-          .watch();
+            ..orderBy(_newestFirst)
+            ..limit(watchLogsByScopeLimit))
+          .watch()
+          .map((rows) => rows.reversed.toList(growable: false));
 
-  /// parent dispatch plus its ephemeral subagent runs (`parentRunId`).
+  /// The space-wide twin of [watchLogsByConversation]: the newest
+  /// [watchLogsByScopeLimit] runs of every conversation in [spaceId],
+  /// returned oldest first.
   Stream<List<AgentRunLogsTableData>> watchLogsBySpace(
     String workspaceId,
     String spaceId,
@@ -288,27 +390,101 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
               (t) =>
                   t.workspaceId.equals(workspaceId) & t.spaceId.equals(spaceId),
             )
-            ..orderBy([(t) => OrderingTerm.asc(t.startedAt)]))
-          .watch();
+            ..orderBy(_newestFirst)
+            ..limit(watchLogsByScopeLimit))
+          .watch()
+          .map((rows) => rows.reversed.toList(growable: false));
 
-  /// Returns a single run log by [id] or null.
-  Future<AgentRunLogsTableData?> getLogById(String id) => (select(
-    agentRunLogsTable,
-  )..where((t) => t.id.equals(id))).getSingleOrNull();
+  /// Returns a single run log by [id] with its payload, or null.
+  Future<AgentRunLogWithPayload?> getLogById(String id) => _withPayload(
+    agentRunLogsTable.id.equals(id),
+  ).map(_readWithPayload).getSingleOrNull();
 
   /// Returns the agent's most-recently-started run that has not yet completed,
-  /// or null. Used to resolve which conversation an agent is currently working
-  /// in, server-side, without trusting client-supplied tool arguments.
-  Future<AgentRunLogsTableData?> getActiveLogByAgent(String agentId) =>
-      (select(agentRunLogsTable)
-            ..where((t) => t.agentId.equals(agentId) & t.completedAt.isNull())
-            ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
-            ..limit(1))
-          .getSingleOrNull();
+  /// with its payload, or null. Used to resolve which conversation an agent is
+  /// currently working in, server-side, without trusting client-supplied tool
+  /// arguments, and by `submit_output`, which validates against the run's
+  /// output contract.
+  Future<AgentRunLogWithPayload?> getActiveLogByAgent(String agentId) =>
+      (_withPayload(
+        agentRunLogsTable.agentId.equals(agentId) &
+            agentRunLogsTable.completedAt.isNull(),
+      )..limit(1)).map(_readWithPayload).getSingleOrNull();
 
-  /// Upserts a run log.
-  Future<void> upsertLog(AgentRunLogsTableCompanion entry) =>
-      into(agentRunLogsTable).insertOnConflictUpdate(entry);
+  /// Upserts a run log, and writes the payload columns [payload] carries.
+  ///
+  /// The payload write is skipped when [payload] carries nothing, and is a
+  /// no-op on a payload row that already holds those values (see
+  /// [writePayload]), so re-upserting a run to change its status never
+  /// rewrites its payload row.
+  Future<void> upsertLog(
+    AgentRunLogsTableCompanion entry, [
+    AgentRunPayloadsTableCompanion payload =
+        const AgentRunPayloadsTableCompanion(),
+  ]) => transaction(() async {
+    await into(agentRunLogsTable).insertOnConflictUpdate(entry);
+    await writePayload(entry.workspaceId.value, entry.id.value, payload);
+  });
+
+  /// Writes the payload columns [values] carries for run [runId] of
+  /// [workspaceId], in ONE statement, and returns how many rows changed.
+  ///
+  /// Only the columns present in [values] are written (a present null clears
+  /// one); absent columns keep what they hold. The run-log row is never
+  /// written. The statement inserts the payload row the first time, and
+  /// otherwise updates it only when a written column actually changes, so an
+  /// unchanged value costs no row write. A run that does not exist in
+  /// [workspaceId] matches nothing and returns 0.
+  Future<int> writePayload(
+    String workspaceId,
+    String runId,
+    AgentRunPayloadsTableCompanion values,
+  ) {
+    final present = <String, Value<String?>>{
+      agentRunPayloadsTable.contextSnapshotJson.name:
+          values.contextSnapshotJson,
+      agentRunPayloadsTable.expectedOutputSchema.name:
+          values.expectedOutputSchema,
+      agentRunPayloadsTable.outputJson.name: values.outputJson,
+      agentRunPayloadsTable.verificationJson.name: values.verificationJson,
+    }..removeWhere((_, value) => !value.present);
+    if (present.isEmpty) {
+      return Future.value(0);
+    }
+    final columns = present.keys.toList(growable: false);
+    // `INSERT … SELECT` from the run-log row both scopes the write to the
+    // workspace and turns a missing run into zero rows instead of a
+    // foreign-key failure. SQLite needs the WHERE on that SELECT to parse the
+    // upsert clause after it.
+    return customUpdate(
+      'INSERT INTO agent_run_payloads (run_id, ${columns.join(', ')}) '
+      'SELECT id, ${List.filled(columns.length, '?').join(', ')} '
+      'FROM agent_run_logs WHERE id = ? AND workspace_id = ? '
+      'ON CONFLICT (run_id) DO UPDATE SET '
+      '${columns.map((c) => '$c = excluded.$c').join(', ')} '
+      'WHERE ${columns.map((c) => 'agent_run_payloads.$c IS NOT excluded.$c').join(' OR ')}',
+      variables: [
+        for (final value in present.values) Variable<String>(value.value),
+        Variable.withString(runId),
+        Variable.withString(workspaceId),
+      ],
+      updates: {agentRunPayloadsTable},
+      updateKind: UpdateKind.update,
+    );
+  }
+
+  /// Adds one to the run's `submit_output` rejection count, in one statement,
+  /// and returns the new count, or null when the run is not in [workspaceId].
+  Future<int?> addOutputRejection(String workspaceId, String runId) async {
+    final rows = await customWriteReturning(
+      'UPDATE agent_run_logs SET output_rejections = output_rejections + 1 '
+      'WHERE id = ? AND workspace_id = ? RETURNING output_rejections',
+      variables: [Variable.withString(runId), Variable.withString(workspaceId)],
+      updates: {agentRunLogsTable},
+      updateKind: UpdateKind.update,
+    );
+    return rows.isEmpty ? null : rows.single.read<int>('output_rejections');
+  }
 
   /// Mutates only the own usage/timing columns, without an upsert that could
   /// replace concurrent child rollups or terminal metadata.
@@ -345,20 +521,38 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Atomically applies supplied runtime fields while guarding ONLY the
   /// pending→running status change. A late path/output write must survive even
   /// if the run completed just before this call.
+  ///
+  /// [runtime] goes to the run-log row and [payload] to the payload row, each
+  /// only when it carries a column: a snapshot-only write leaves the run-log
+  /// row alone, and a status or classification write the payload row.
   Future<int> updateLogRuntime(
     String workspaceId,
     String runId,
-    AgentRunLogsTableCompanion runtime, {
-    required bool hasMetadata,
+    AgentRunLogsTableCompanion runtime,
+    AgentRunPayloadsTableCompanion payload, {
     required bool markRunning,
   }) => transaction(() async {
     var updated = 0;
-    if (hasMetadata) {
+    if (_carriesColumns(runtime)) {
       updated =
           await (update(agentRunLogsTable)..where(
                 (t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId),
               ))
               .write(runtime);
+    }
+    if (_carriesColumns(payload)) {
+      final run =
+          await (selectOnly(agentRunLogsTable)
+                ..addColumns([agentRunLogsTable.id])
+                ..where(
+                  agentRunLogsTable.id.equals(runId) &
+                      agentRunLogsTable.workspaceId.equals(workspaceId),
+                ))
+              .getSingleOrNull();
+      if (run != null) {
+        await writePayload(workspaceId, runId, payload);
+        updated = 1;
+      }
     }
     if (markRunning) {
       final started =
@@ -381,18 +575,32 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// Conditional partial terminal write; no descendant spend columns are
   /// included, even when they change between preparing and applying the row.
+  ///
+  /// [payload] (the verification detail, when the verdict has one) is written
+  /// only when the terminal write landed, in the same transaction.
   Future<int> completeLogIfActive(
     String workspaceId,
     String runId,
     AgentRunLogsTableCompanion terminal,
-  ) =>
-      (update(agentRunLogsTable)..where(
-            (t) =>
-                t.id.equals(runId) &
-                t.workspaceId.equals(workspaceId) &
-                t.completedAt.isNull(),
-          ))
-          .write(terminal);
+    AgentRunPayloadsTableCompanion payload,
+  ) => transaction(() async {
+    final updated =
+        await (update(agentRunLogsTable)..where(
+              (t) =>
+                  t.id.equals(runId) &
+                  t.workspaceId.equals(workspaceId) &
+                  t.completedAt.isNull(),
+            ))
+            .write(terminal);
+    if (updated > 0) {
+      await writePayload(workspaceId, runId, payload);
+    }
+    return updated;
+  });
+
+  /// Whether [companion] carries at least one column to write.
+  static bool _carriesColumns(UpdateCompanion<Object?> companion) =>
+      companion.toColumns(false).isNotEmpty;
 
   /// Deletes run logs by agent id.
   Future<int> deleteLogsByAgentId(String agentId) =>

@@ -258,7 +258,7 @@ void main() {
           thoughtTokens: 10,
           cachedReadTokens: 20,
           cachedWriteTokens: 5,
-          estimatedCostCents: 42,
+          costMicros: 420000,
         );
         final e = UsageEvent(usage: usage, durationMs: 1500);
         final meta = e.metadata;
@@ -267,7 +267,7 @@ void main() {
         expect(meta['thoughtTokens'], 10);
         expect(meta['cachedReadTokens'], 20);
         expect(meta['cachedWriteTokens'], 5);
-        expect(meta['estimatedCostCents'], 42);
+        expect(meta['costMicros'], 420000);
         expect(meta['durationMs'], 1500);
       },
     );

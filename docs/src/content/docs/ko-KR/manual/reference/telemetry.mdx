@@ -2,7 +2,7 @@
 title: 사용 분석
 description: 사용 분석이 켜져 있을 때 Control Center가 기록하는 내용, 누가 결정하는지, 그리고 절대 전송되지 않는 항목.
 slug: ko-KR/매뉴얼/레퍼런스/사용-분석
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center는 **가명 처리된 사용 이벤트**를 [Umami](https://umami.is) 인스턴스로 보낼 수 있습니다. 사용 분석은 **서버 운영자가 켜기 전까지 꺼져 있습니다**. 이 설정은 서버에 속하며 서버에 연결된 모든 클라이언트, 즉 데스크톱 앱, 웹 앱, 휴대폰, 그리고 서버 자체에 적용됩니다.
@@ -109,7 +109,7 @@ Umami는 이 밖에도 요청의 IP 주소(주소를 저장하지 않고 국가�
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | 워크스페이스 스킬이 변경되었을 때 |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | 오케스트레이션 제안에 응답했을 때 |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | 계획이 승인되거나 거부되었을 때(휴대폰) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | 감독되는 목표나 루프를 시작했을 때(휴대폰) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | 감독되는 목표나 루프를 시작했을 때(휴대폰) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | 대화가 생성되거나 포크되었을 때 |
 | `conversation_rewound` | `conversation_id` | 이전 메시지에서 대화를 이어 갔을 때 |
 | `space_archived` | `workspace_id`, `space_id` | 스페이스가 보관되었을 때 |
@@ -128,7 +128,7 @@ Umami는 이 밖에도 요청의 IP 주소(주소를 저장하지 않고 국가�
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | 에이전트 실행이 끝났을 때 |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | 에이전트가 멈추고 사람을 기다릴 때 |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | 액션 정책이 에이전트의 작업을 거부했을 때 |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | 파이프라인 실행이 끝났을 때. `trigger`는 `manual`, 실행을 시작한 이벤트 유형, 또는 이름 있는 트리거의 경우 그 종류(`webhook`)만 담습니다 |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | 파이프라인 실행이 끝났을 때. `trigger`는 `manual`, 실행을 시작한 이벤트 유형, 또는 이름 있는 트리거의 경우 그 종류(`webhook`)만 담습니다 |
 | `pull_request_published` | `workspace_id`, `pr_id` | 스페이스에서 풀 리퀘스트를 게시했을 때 |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | 에이전트가 연 풀 리퀘스트가 병합되었을 때 |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | 회의 녹음이 저장되었을 때 |
@@ -142,7 +142,7 @@ Umami는 이 밖에도 요청의 IP 주소(주소를 저장하지 않고 국가�
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | 워크스페이스 스킬이 설치, 업데이트되거나 디스크에서 변경되었을 때 |
 | `calendar_auth_expired` | `workspace_id` | 캘린더 연결에 다시 로그인해야 할 때 |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | 캘린더 이벤트가 곧 시작될 때 |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | 지출이 예산 임계값을 넘었을 때 |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | 지출이 예산 임계값을 넘었을 때 |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | 추적 중인 PR에 리뷰가 요청되었을 때 |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | 추적 중인 PR의 리뷰 결정이 바뀌었을 때 |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | 에이전트가 열지 않은 PR이 연결된 저장소에서 병합되었을 때 |

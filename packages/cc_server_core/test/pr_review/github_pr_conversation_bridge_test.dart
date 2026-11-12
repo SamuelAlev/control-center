@@ -18,6 +18,7 @@ import 'package:cc_server_core/src/identity/github_login_directory.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_bridge.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:test/test.dart';
 
 import '../helpers/test_database.dart';
@@ -370,18 +371,17 @@ Future<Map<String, dynamic>?> _readPending(
   WorkspaceDatabaseManager dbs,
   String runId,
 ) async {
-  final raw = await dbs
+  final rows = await dbs
       .of(_workspaceId)
-      .cacheDao
-      .read(
-        _workspaceId,
-        GitHubPrConversationBridge.pendingReplyCacheKind,
-        runId,
-      );
-  if (raw == null) {
+      .customSelect(
+        'SELECT reply_json FROM pending_pr_replies WHERE run_log_id = ?',
+        variables: [Variable(runId)],
+      )
+      .get();
+  if (rows.isEmpty) {
     return null;
   }
-  final decoded = jsonDecode(raw);
+  final decoded = jsonDecode(rows.single.read<String>('reply_json'));
   return decoded is Map<String, dynamic> ? decoded : null;
 }
 
@@ -414,6 +414,14 @@ void main() {
     global = createTestGlobalDatabase();
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, _workspaceId);
+    // A pending reply hangs off its run's row.
+    final wsDb = dbs.of(_workspaceId);
+    await wsDb.customStatement('PRAGMA foreign_keys = OFF');
+    await wsDb.customStatement(
+      "INSERT INTO agent_run_logs (id, agent_id, workspace_id) VALUES ('run-1', "
+      "'agent-1', '$_workspaceId')",
+    );
+    await wsDb.customStatement('PRAGMA foreign_keys = ON');
     gateway = _FakeGateway();
     messaging = _FakeMessagingPort();
     messagingRepository = _FakeMessagingRepository();
@@ -448,7 +456,7 @@ void main() {
       loginDirectory: directory,
       messaging: messaging,
       messagingRepository: messagingRepository,
-      workspaceDbs: dbs,
+      pendingReplies: DaoPendingPrReplyRepository(dbs),
       startReview:
           ({
             required workspaceId,
@@ -1162,22 +1170,14 @@ void main() {
     });
 
     test('a pending row from an older build is consumed silently', () async {
-      await dbs
-          .of(_workspaceId)
-          .cacheDao
-          .put(
-            _workspaceId,
-            GitHubPrConversationBridge.pendingReplyCacheKind,
-            'run-1',
-            jsonEncode({
-              'v': 1,
-              'owner': 'acme',
-              'repo': 'app',
-              'pr_number': 7,
-              'asker_login': 'octocat',
-              'kind': 'issue',
-            }),
-          );
+      await DaoPendingPrReplyRepository(dbs).save(_workspaceId, 'run-1', {
+        'v': 1,
+        'owner': 'acme',
+        'repo': 'app',
+        'pr_number': 7,
+        'asker_login': 'octocat',
+        'kind': 'issue',
+      });
 
       await completeRun('It adds the polling lane.');
 

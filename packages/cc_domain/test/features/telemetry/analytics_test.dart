@@ -271,7 +271,7 @@ void main() {
           workspaceId: 'w',
           spaceId: 's',
           accepted: true,
-          budgetCents: 500,
+          budgetMicros: 500,
         ),
         AnalyticsEvents.ticketStatusChanged(
           workspaceId: 'w',
@@ -294,8 +294,8 @@ void main() {
         AnalyticsEvents.budgetThresholdCrossed(
           scopeType: 'workspace',
           scopeId: 'w',
-          spentCents: 900,
-          budgetCents: 1000,
+          spentMicros: 900,
+          budgetMicros: 1000,
           hardStop: false,
         ),
         AnalyticsEvents.pullRequestReviewDecisionChanged(

@@ -14,6 +14,23 @@ sealed class PrGenerationStatus {
     }
   }
 
+  /// Every status, in lifecycle order: what `pull_requests.status` may hold.
+  static const List<PrGenerationStatus> values = [
+    Draft(),
+    Published(),
+    Created(),
+  ];
+
+  /// The status stored as [name], or null when it names none.
+  static PrGenerationStatus? tryFromName(String name) {
+    for (final status in values) {
+      if (status.name == name) {
+        return status;
+      }
+    }
+    return null;
+  }
+
   /// From name.
   static PrGenerationStatus fromName(String name) {
     switch (name) {

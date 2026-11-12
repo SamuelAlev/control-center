@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/workspaces.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table of the host port blocks held by spaces.
@@ -20,13 +21,16 @@ class EnvironmentSlotLeasesTable extends Table {
   /// Ports in the block.
   IntColumn get size => integer()();
 
-  /// Holding workspace.
-  TextColumn get workspaceId => text()();
+  /// Holding workspace; the block goes back to the pool with it.
+  TextColumn get workspaceId =>
+      text().references(WorkspacesTable, #id, onDelete: KeyAction.cascade)();
 
-  /// Holding space.
+  /// Holding space. No foreign key: spaces live in the workspace's own
+  /// database.
   TextColumn get spaceId => text()();
 
-  /// The definition.
+  /// The definition. No foreign key: definitions live in the workspace's own
+  /// database.
   TextColumn get definitionId => text()();
 
   /// A name pool, when the environment uses one.

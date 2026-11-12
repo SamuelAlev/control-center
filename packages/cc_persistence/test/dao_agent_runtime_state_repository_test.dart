@@ -4,6 +4,7 @@ import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/mappers/agent_runtime_state_mapper.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart' as seed;
 import 'helpers/test_database.dart';
 
 /// Exercises [DaoAgentRuntimeStateRepository] and [AgentRuntimeStateMapper]
@@ -75,6 +76,7 @@ void main() {
 
   group('AgentRuntimeStateMapper round-trip', () {
     test('toCompanion → upsert → mapper toDomain is lossless', () async {
+      await seed.seedRunLog(dbs.of('w-1'), 'run-9', agentId: 'a-1');
       final original = state(
         status: HeartbeatStatus.stuck,
         lastHeartbeatAt: DateTime(2026, 1, 2, 3, 4, 5),

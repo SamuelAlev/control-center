@@ -56,3 +56,29 @@ enum ActionScopeType {
         orElse: () => ActionScopeType.workspace,
       );
 }
+
+/// Where a stored guardrail rule came from.
+enum ActionPolicyProvenance {
+  /// A rule a person set on the policy surface (or a template applied).
+  user('user'),
+
+  /// A materialized "remember this decision" answer: a standing approval.
+  remembered('remembered');
+
+  const ActionPolicyProvenance(this.wire);
+
+  /// Stable wire/storage string (`ActionPolicyRule.provenance`).
+  final String wire;
+
+  /// The stored provenance spelled [value]; throws [ArgumentError] for any
+  /// other string. A `managed` rule is resolved from the managed policies and
+  /// never stored as a workspace rule.
+  static ActionPolicyProvenance parse(String value) => values.firstWhere(
+    (v) => v.wire == value,
+    orElse: () => throw ArgumentError.value(
+      value,
+      'value',
+      'not a stored rule provenance',
+    ),
+  );
+}

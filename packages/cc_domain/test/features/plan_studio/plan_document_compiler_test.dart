@@ -135,9 +135,9 @@ void main() {
       final proposal = PlanDocumentCompiler.toProposal(
         _doc(graph),
         agentId: 'agent-xyz',
-        maxCostCents: 12345,
+        maxCostMicros: 12345,
       );
-      expect(proposal.budget.maxCostCents, 12345);
+      expect(proposal.budget.maxCostMicros, 12345);
     });
 
     test('leaves the ceiling null when not given', () {
@@ -148,7 +148,7 @@ void main() {
         _doc(graph),
         agentId: 'agent-xyz',
       );
-      expect(proposal.budget.maxCostCents, isNull);
+      expect(proposal.budget.maxCostMicros, isNull);
     });
   });
 

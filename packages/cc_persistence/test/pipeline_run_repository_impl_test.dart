@@ -10,6 +10,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 PipelineRun _makeRun({
@@ -23,7 +24,7 @@ PipelineRun _makeRun({
   DateTime? finishedAt,
   String? errorMessage,
   String? errorStackTrace,
-  int totalCostCents = 0,
+  int totalCostMicros = 0,
   int totalTokens = 0,
   bool dryRun = false,
   bool isProjection = false,
@@ -41,7 +42,7 @@ PipelineRun _makeRun({
     finishedAt: finishedAt,
     errorMessage: errorMessage,
     errorStackTrace: errorStackTrace,
-    totalCostCents: totalCostCents,
+    totalCostMicros: totalCostMicros,
     totalTokens: totalTokens,
     dryRun: dryRun,
     isProjection: isProjection,
@@ -104,6 +105,7 @@ void main() {
     // any workspace file is opened (deep links, worker callbacks).
     routes = _CountingRouteDao(global);
     repo = PipelineRunRepositoryImpl(dbs, routes);
+    await seedSpace(dbs.of('ws-1'), 'space-9');
   });
 
   tearDown(() async {
@@ -160,7 +162,7 @@ void main() {
         dedupKey: 'dedup-1',
         errorMessage: 'err',
         errorStackTrace: 'stack',
-        totalCostCents: 500,
+        totalCostMicros: 500,
         totalTokens: 1000,
       );
       await repo.insertRun(run);
@@ -175,7 +177,7 @@ void main() {
       expect(fetched.dedupKey, 'dedup-1');
       expect(fetched.errorMessage, 'err');
       expect(fetched.errorStackTrace, 'stack');
-      expect(fetched.totalCostCents, 500);
+      expect(fetched.totalCostMicros, 500);
       expect(fetched.totalTokens, 1000);
     });
 
@@ -197,7 +199,7 @@ void main() {
       await expectLater(caller.incrementCost('run-1', 4, 10), throwsStateError);
       await expectLater(caller.insertStepRun(_makeStepRun()), throwsStateError);
       expect(
-        (await dbs.of('ws-1').pipelineDao.getRun('run-1'))!.totalCostCents,
+        (await dbs.of('ws-1').pipelineDao.getRun('run-1'))!.run.totalCostMicros,
         0,
       );
       expect(
@@ -256,7 +258,7 @@ void main() {
     // vanishes because a sibling failed.
     test('updateRun leaves state and cost to their own writers', () async {
       await repo.insertRun(
-        _makeRun(state: {'from': 'insert'}, totalCostCents: 7, totalTokens: 3),
+        _makeRun(state: {'from': 'insert'}, totalCostMicros: 7, totalTokens: 3),
       );
       final stale = (await repo.getRun('run-1'))!;
 
@@ -274,7 +276,7 @@ void main() {
       final fetched = (await repo.getRun('run-1'))!;
       expect(fetched.status, PipelineRunStatus.completed);
       expect(fetched.state, {'from': 'a parallel branch'});
-      expect(fetched.totalCostCents, 47);
+      expect(fetched.totalCostMicros, 47);
       expect(fetched.totalTokens, 403);
     });
 
@@ -318,7 +320,7 @@ void main() {
     });
 
     test('incrementCost composes across interleaved callers', () async {
-      await repo.insertRun(_makeRun(totalCostCents: 0, totalTokens: 0));
+      await repo.insertRun(_makeRun(totalCostMicros: 0, totalTokens: 0));
 
       // Every agent of a fan-out completes at once: each rollup must add to the
       // row as it stands, not to the total it read before the others wrote.
@@ -327,7 +329,7 @@ void main() {
       ]);
 
       final fetched = (await repo.getRun('run-1'))!;
-      expect(fetched.totalCostCents, 40);
+      expect(fetched.totalCostMicros, 40);
       expect(fetched.totalTokens, 400);
     });
 
@@ -361,6 +363,76 @@ void main() {
 
       expect(events.length, 2);
       expect(events.map((r) => r.id), containsAll(['ws1-r1', 'ws1-r2']));
+    });
+
+    test('list rows carry only the gate keys of state and no graph', () async {
+      final graph = PipelineDefinition(
+        templateId: 'tpl-1',
+        workspaceId: 'ws-1',
+        name: 'Pinned',
+        version: 1,
+        steps: [
+          PipelineStepDefinition(
+            id: 'trigger',
+            kind: StepKind.trigger,
+            bodyKey: 'pipeline.trigger',
+          ),
+        ],
+      );
+      final state = {
+        'repo_full_name': 'acme/app',
+        'space_id': 'space-1',
+        'repo_id': null,
+        'step_outputs': {'trigger': 'x' * 2000},
+      };
+      await repo.insertRun(
+        PipelineRun(
+          id: 'run-1',
+          templateId: 'tpl-1',
+          workspaceId: 'ws-1',
+          status: PipelineRunStatus.running,
+          startedAt: DateTime(2025, 6, 1),
+          state: state,
+          templateSnapshot: graph,
+        ),
+      );
+
+      for (final listed in [
+        (await repo.watchForWorkspace('ws-1').first).single,
+        (await repo.watchAll().first).single,
+      ]) {
+        expect(listed.state, {
+          'repo_full_name': 'acme/app',
+          'space_id': 'space-1',
+        });
+        expect(listed.templateSnapshot, isNull);
+      }
+      // The detail read still carries the whole run.
+      final full = (await repo.getRun('run-1'))!;
+      expect(full.state, state);
+      expect(full.templateSnapshot, graph);
+    });
+
+    test('runsBefore pages past the list window, ties by insertion', () async {
+      final stamp = DateTime(2025, 6, 1, 12);
+      for (final id in ['r-a', 'r-c', 'r-b']) {
+        await repo.insertRun(
+          _makeRun(id: id, workspaceId: 'ws-1', startedAt: stamp),
+        );
+      }
+      await repo.insertRun(
+        _makeRun(id: 'r-old', workspaceId: 'ws-1', startedAt: DateTime(2025)),
+      );
+      await repo.insertRun(
+        _makeRun(id: 'r-other', workspaceId: 'ws-2', startedAt: stamp),
+      );
+
+      final listed = await repo.watchForWorkspace('ws-1').first;
+      expect(listed.map((r) => r.id), ['r-b', 'r-c', 'r-a', 'r-old']);
+
+      final page = await repo.runsBefore('ws-1', listed[1], limit: 2);
+      expect(page.map((r) => r.id), ['r-a', 'r-old']);
+      expect(await repo.runsBefore('ws-1', listed.last), isEmpty);
     });
 
     test(
@@ -412,6 +484,30 @@ void main() {
       expect(ids, isNot(contains('r6')));
     });
 
+    test('a run state that is not a JSON object is refused at write', () async {
+      await repo.insertRun(
+        _makeRun(id: 'bad', status: PipelineRunStatus.running),
+      );
+      await repo.insertRun(
+        _makeRun(id: 'ok-1', status: PipelineRunStatus.running),
+      );
+
+      // The schema keeps every stored run decodable, so a scan of
+      // non-terminal runs never meets a row it has to skip.
+      await expectLater(
+        dbs
+            .of('ws-1')
+            .customStatement(
+              "UPDATE pipeline_runs SET state_json = '{not json' "
+              "WHERE id = 'bad'",
+            ),
+        throwsA(anything),
+      );
+
+      final ids = (await repo.nonTerminalRuns()).map((r) => r.id).toSet();
+      expect(ids, containsAll(['bad', 'ok-1']));
+    });
+
     test('watchRun emits updated run after status change', () async {
       await repo.insertRun(
         _makeRun(id: 'run-1', status: PipelineRunStatus.pending),
@@ -459,16 +555,29 @@ void main() {
       });
     });
 
-    test('incrementCost adds cents and tokens', () async {
+    test('incrementCost adds micros and tokens', () async {
       await repo.insertRun(
-        _makeRun(id: 'run-1', totalCostCents: 100, totalTokens: 50),
+        _makeRun(id: 'run-1', totalCostMicros: 100, totalTokens: 50),
       );
 
       await repo.incrementCost('run-1', 25, 10);
 
       final fetched = await repo.getRun('run-1');
-      expect(fetched!.totalCostCents, 125);
+      expect(fetched!.totalCostMicros, 125);
       expect(fetched.totalTokens, 60);
+    });
+
+    test('many sub-cent runs add up in the pipeline total', () async {
+      await repo.insertRun(_makeRun(id: 'run-1'));
+
+      // Each run costs 0.3 cents: a cents total would stay at zero.
+      await Future.wait([
+        for (var i = 0; i < 50; i++) repo.incrementCost('run-1', 3000, 1),
+      ]);
+
+      final fetched = await repo.getRun('run-1');
+      expect(fetched!.totalCostMicros, 150000);
+      expect(fetched.totalTokens, 50);
     });
   });
 

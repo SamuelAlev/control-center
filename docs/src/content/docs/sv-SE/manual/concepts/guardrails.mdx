@@ -2,7 +2,7 @@
 title: Räcken – en policy för varje muterande åtgärd
 description: Varför Control Center leder varje sidoeffekt från en agent genom en enda motor för tillåt/fråga/neka, hur ActionClass-taxonomin medvetet hålls liten och vad autonomireglaget verkligen ändrar.
 slug: sv-SE/handbok/koncept/racken
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Agenter i Control Center kan ta bort filer, pusha grenar, publicera pull
@@ -111,7 +111,7 @@ En begränsning kan namnge:
 - **värdar** – nätverksdestinationer, med jokertecken för underdomäner (`*.internal`)
 - **kommandon** – kommandoprefix, matchade på en ordgräns
 - **verktyg** – det exakta verktyg som ett anrop anger, så att ett godkännande kan täcka ett enda verktyg i stället för alla verktyg med samma effekt
-- **tak** – `maxCount` / `maxCents`, så att "radera upp till 50 filer" går att
+- **tak** – `maxCount` / `maxMicros`, så att "radera upp till 50 filer" går att
   uttrycka
 
 Tre egenskaper följer av att grammatiken hålls sluten och utan loopar, och alla

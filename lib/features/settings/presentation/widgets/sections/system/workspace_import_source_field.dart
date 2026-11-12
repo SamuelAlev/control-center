@@ -31,6 +31,7 @@ class _WorkspaceImportSourceFieldState
     extends ConsumerState<WorkspaceImportSourceField> {
   final TextEditingController _source = TextEditingController();
   bool _importing = false;
+  String? _refusal;
 
   @override
   void dispose() {
@@ -58,29 +59,35 @@ class _WorkspaceImportSourceFieldState
     if (!confirmed || !mounted) {
       return;
     }
-    setState(() => _importing = true);
-    String message;
-    var ok = false;
+    setState(() {
+      _importing = true;
+      _refusal = null;
+    });
     try {
-      await ref
+      final held = await ref
           .read(backupActionsProvider)
           .importWorkspace(
             workspaceId: widget.workspace.id,
             sourcePath: source,
           );
-      message = l10n.backupImportDone(name);
-      ok = true;
+      if (mounted) {
+        reportRestoreDone(
+          context,
+          done: l10n.backupImportDone(name),
+          held: held,
+        );
+      }
     } on Object catch (e) {
-      message = describeBackupTransferError(l10n, e);
+      // In place, under the path: the sentence says what is wrong with the
+      // file there, which the person needs while typing another one.
+      if (mounted) {
+        setState(() => _refusal = describeBackupTransferError(l10n, e));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _importing = false);
+      }
     }
-    if (!mounted) {
-      return;
-    }
-    setState(() => _importing = false);
-    CcToastScope.maybeOf(context)?.show(
-      message,
-      variant: ok ? CcToastVariant.success : CcToastVariant.danger,
-    );
   }
 
   @override
@@ -90,13 +97,16 @@ class _WorkspaceImportSourceFieldState
       label: l10n.backupImportSourceLabel,
       description: l10n.backupImportSourceDescription,
       layout: SettingsFieldLayout.stacked,
+      // Top-aligned: a refusal under the field must not drag the button down.
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: CcTextField(
               controller: _source,
               hintText: '/path/to/workspace.db',
-              onChanged: (_) => setState(() {}),
+              errorText: _refusal,
+              onChanged: (_) => setState(() => _refusal = null),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),

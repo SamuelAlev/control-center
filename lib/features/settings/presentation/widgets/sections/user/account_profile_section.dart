@@ -5,6 +5,7 @@ import 'package:control_center/features/identity/providers/account_profile_provi
 import 'package:control_center/features/settings/presentation/widgets/sections/user/account_profile_form.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -49,9 +50,10 @@ class AccountProfileSection extends ConsumerWidget {
           children: [
             Icon(AppIcons.triangleAlert, size: 14, color: t.fgErrorPrimary),
             Text(
-              l10n.accountLoadFailed(
-                error is RemoteRpcException ? error.message : '$error',
-              ),
+              storageRefusalMessage(l10n, error) ??
+                  l10n.accountLoadFailed(
+                    error is RemoteRpcException ? error.message : '$error',
+                  ),
               style: CcTypography.caption.copyWith(color: t.textErrorPrimary),
             ),
             CcButton(

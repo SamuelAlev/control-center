@@ -12,9 +12,60 @@ class ActionPolicyDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Creates an [ActionPolicyDao].
   ActionPolicyDao(super.db);
 
-  /// Inserts or replaces a rule by id (deterministic id → PK upsert).
-  Future<void> upsertRule(ActionPoliciesTableCompanion entry) =>
-      into(actionPoliciesTable).insertOnConflictUpdate(entry);
+  /// The rule identity of one subject shape, exactly as the table's partial
+  /// unique index on that shape spells it (an upsert target must repeat the
+  /// index's columns and `WHERE`).
+  static String _identityTarget(String subject) =>
+      '(scope_type, scope_id, $subject, provenance, '
+      "coalesce(constraint_json, ''), "
+      "(provenance = 'user' AND constraint_json IS NULL "
+      'AND expires_at IS NULL)) WHERE $subject IS NOT NULL';
+
+  /// The upsert of a rule writing [columns]: an insert whose conflicts with
+  /// the id or with either identity index update the existing row's
+  /// [columns] in place.
+  ///
+  /// A new id whose identity already exists takes over the existing row, id
+  /// included, so the caller's id names the rule it just wrote (no key
+  /// points at a rule id).
+  static String _upsertSql(List<String> columns) {
+    final edit = [
+      for (final c in columns)
+        if (c != 'id') '$c = excluded.$c',
+    ].join(', ');
+    final takeOver = [for (final c in columns) '$c = excluded.$c'].join(', ');
+    return 'INSERT INTO action_policies (${columns.join(', ')}) '
+        'VALUES (${List.filled(columns.length, '?').join(', ')}) '
+        // The same id is an edit of that rule, whatever it now says.
+        'ON CONFLICT (id) DO UPDATE SET $edit '
+        // A new id whose identity already exists replaces that rule in place
+        // instead of adding a second one.
+        'ON CONFLICT ${_identityTarget('action_class')} '
+        'DO UPDATE SET $takeOver '
+        'ON CONFLICT ${_identityTarget('command_prefix')} '
+        'DO UPDATE SET $takeOver';
+  }
+
+  /// Writes [entry] in ONE statement keyed on the rule's identity.
+  ///
+  /// The row with the same id is updated; otherwise the row that already has
+  /// the rule's identity (same scope, subject, provenance and constraint, see
+  /// `ActionPolicyRule.sharesIdentityWith`) is updated; otherwise the rule is
+  /// inserted. Two writers of the same rule therefore leave one row, and no
+  /// moment exists where an old deny is gone and its replacement not yet
+  /// written. Editing a rule (same id) into the identity of ANOTHER existing
+  /// rule is refused by the unique index rather than merging the two.
+  ///
+  /// Only the columns present in [entry] are written; an absent column takes
+  /// its default on insert and keeps its value on update.
+  Future<void> upsertRule(ActionPoliciesTableCompanion entry) {
+    final columns = entry.toColumns(false);
+    return customInsert(
+      _upsertSql(columns.keys.toList()),
+      variables: [for (final value in columns.values) value as Variable],
+      updates: {actionPoliciesTable},
+    );
+  }
 
   /// All rules in [workspaceId] (the resolver loads the full set once per
   /// evaluation batch and resolves in memory).

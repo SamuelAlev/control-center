@@ -2,7 +2,7 @@
 title: Záloha a obnovení
 description: Pořiď snímek instalace, přesuň pracovní prostor mezi stroji, obnov jeden pracovní prostor nebo všechny a drž kopie jinde.
 slug: cs-CZ/prirucka/navody/zaloha-a-obnoveni
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Zálohy se v praxi používají na pět věcí: pořídit snímek, stáhnout ho, přesunout
@@ -42,10 +42,10 @@ Oba artefakty jsou **jen databáze**:
 - **Snímek instalace** je adresář s časovým razítkem: `manifest.json`, `global.db` a jeden `<workspaceId>/workspace.db` na pracovní prostor.
 - **Export pracovního prostoru** je ten jeden soubor `workspace.db`.
 
-Databáze pracovního prostoru je celý pracovní prostor: jeho konverzace, logy běhů, index kódu, propojení repozitářů, definice prostředí a členové. Obsahuje také tokeny webhooků pipeline a tajemství webhooků synchronizace tiketů v čitelné podobě. Staženou zálohu pracovního prostoru nebo export ulož stejně, jako ukládáš tajemství. Nenese žádná přihlášení poskytovatelů, klíče zařízení ani uživatelská tajemství; ta žijí v globální databázi a v tajném úložišti serveru.
+Databáze pracovního prostoru je celý pracovní prostor: jeho konverzace, logy běhů, propojení repozitářů, definice prostředí a členové. Nedrží žádná tajemství: tokeny webhooků pipeline, tajemství webhooků synchronizace tiketů, přihlášení poskytovatelů, klíče zařízení a uživatelská tajemství žijí v globální databázi a v tajném úložišti serveru. Pořád je to ale všechno, co pracovní prostor řekl a udělal, takže staženou zálohu nebo export měj stejně v soukromí jako samotný pracovní prostor. Index kódu je samostatný soubor vedle databáze, `code_index.db`. Žádná záloha ho neobsahuje; server ho znovu sestaví.
 
 Ani jeden nenese zbytek datového adresáře: `secrets.json` (klíče párování,
-přihlašovací údaje poskytovatelů, SSO), `blobs/` pracovního prostoru (obrázky
+přihlašovací údaje poskytovatelů, tajemství webhooků, SSO), `blobs/` pracovního prostoru (obrázky
 vložené do zpráv), `skills/`, `agents/`, `chat_credentials/`, nahraný zvuk
 schůzek ani obrazy stanic. Část se dá zahodit a část ne. Celá tabulka je v
 [referenci](/cs-CZ/prirucka/referencni-prirucka/zaloha/#co-záloha-neobsahuje)
@@ -61,17 +61,13 @@ Server běží po celou dobu. Každý soubor se zapisuje přes `VACUUM INTO`, co
 konzistentní vůči živé databázi, takže okno údržby není a agenty zastavovat
 nemusíš.
 
-Každý řádek seznamu ukazuje časové razítko, velikost na disku, kolik pracovních
-prostorů se zachytilo a jestli je snímek **Úplný**, nebo **Neúplný**. Neúplný
-znamená, že manifest chybí nebo jmenuje soubory, které tam nejsou: záloha
-přerušená pádem nebo plným diskem. V seznamu zůstávají schválně. Snímek, který
-nevidíš, pokládáš za snímek, který máš. Neúplný snímek celou instalaci
-neobnoví, ale soubory pracovních prostorů, které v něm jsou, se pořád dají
-převzít po jednom.
+Každý řádek seznamu ukazuje časové razítko, velikost na disku, kolik pracovních prostorů se zachytilo a jestli je snímek **Úplný**, nebo **Neověřeno**. Každá kopie se po zapsání zkontroluje a manifest zaznamená její velikost a kontrolní součet. Neověřeno znamená, že server za snímek neručí: manifest chybí nebo se nedá přečíst, nebo soubor, který jmenuje, chybí anebo změnil velikost. To je záloha přerušená pádem nebo plným diskem, nebo záloha pořízená dřív, než snímky začaly zaznamenávat kontrolní součty. Ty zůstávají v seznamu schválně: snímek, který nevidíš, pokládáš za snímek, který máš. Neověřený snímek neobnoví celou instalaci, ale soubory pracovních prostorů, které v něm jsou, se dají obnovit po jednom.
 
 Řádek taky může hlásit **_n_ pracovních prostorů nezachyceno**. To je pracovní
 prostor zaregistrovaný, ale ještě nezapsaný (soubor zatím není), nebo takový,
-jehož kopie selhala. Podívej se do logu serveru.
+jehož databáze je poškozená (poškozená kopie se nikdy nepořizuje), nebo takový, jehož kopie selhala. Podívej se do logu serveru.
+
+Snímek nebo plánovaná záloha označená **Poslední dobrá kopie** drží nejnovější dobrou kopii pracovního prostoru, jehož databáze se mezitím poškodila. Plánovaný úklid ji nechává být a její smazání vyžaduje potvrzení, dokud se ten pracovní prostor neobnoví.
 
 ## Naplánuj zálohy pracovního prostoru a uchování
 
@@ -98,7 +94,7 @@ nevytvořila, stojí **Zatím žádné zálohy**. Pracovní prostor, ve kterém 
 
 Rozbal řádek a uvidíš každou zálohu, od nejnovější:
 
-- **Obnovit** nahradí aktuální databázi pracovního prostoru touto zálohou. Když to možná budeš chtít vrátit, pracovní prostor nejdřív exportuj. Vyžaduje vlastníka serveru, který musí být zároveň vlastníkem pracovního prostoru.
+- **Obnovit** nahradí aktuální databázi pracovního prostoru touto zálohou. Databáze, kterou nahradí, zůstane v tomhle seznamu pod názvem končícím na `-pre-restore`, takže se můžeš vrátit. Vyžaduje vlastníka serveru, který musí být zároveň vlastníkem pracovního prostoru.
 - **Stáhnout** uloží soubor na stroj, který právě používáš. Záloha zůstane na serveru.
 - **Kopírovat cestu** zkopíruje její umístění na serveru.
 - **Smazat** tuhle zálohu trvale odstraní, jakmile napíšeš název pracovního prostoru. Vyžaduje roli **vlastník**.
@@ -117,7 +113,7 @@ postupu v části
 
 ## Smaž snímek instalace
 
-Pod **Snímky instalace** rozbal snímek, i neúplný, a v nebezpečné části použij
+Pod **Snímky instalace** rozbal snímek, i neověřený, a v nebezpečné části použij
 **Smazat snímek**. Potvrď jeho jméno. Celý adresář snímku se ze serveru trvale
 smaže. Nejdřív ho stáhni, když kopii potřebuješ. Pipeline zálohy pracovního
 prostoru tyhle snímky nemaže.
@@ -157,21 +153,14 @@ Krok 3 je obnovení, takže potřebuje vlastníka serveru cílové instalace, kt
 Když jsou oba servery ten stroj, u kterého sedíš, **Uložit na server** na zdroji, pak cestu k souboru v poli **Soubor databáze pracovního prostoru** a **Importovat** na cíli udělá totéž bez cesty tam a zpět. Tahle cesta se řeší na hostiteli serveru.
 
 :::caution[Import nahradí všechno]
-Import přepíše všechno, co cílový pracovní prostor právě drží, a nejde vrátit.
-Cíl nejdřív exportuj, když v něm je něco, co bys chtěl zpátky.
+Import nahradí všechno, co cílový pracovní prostor právě drží. Databáze, kterou nahradí, se uchová v **Plánované zálohy** pod názvem končícím na `-pre-restore`; tu pak obnov, pokud se chceš vrátit.
 :::
 
-Dvě věci se povolí a zapíšou do logu, místo aby se odmítly: import souboru,
-jehož zaznamenané id pracovního prostoru se liší od cíle (tak pracovní prostor
-zduplikuješ nebo ho obnovíš pod novým id), a import souboru z **jiné
-instalace**. V tom druhém případě spárovaná zařízení a id uživatelů v souboru
-patří instalaci, odkud přišel, a na téhle se nevyřeší. Vlastní data pracovního
-prostoru jsou v pořádku, ale po převzetí znovu zkontroluj členství.
+Soubor z jiného pracovního prostoru nebo z **jiné instalace** se přijme: takhle pracovní prostor zduplikuješ, obnovíš pod novým id nebo ho předáš někomu jinému. Id uživatelů z jiné instalace se na této instalaci nevyřeší. Vlastní data pracovního prostoru jsou v pořádku, ale po převzetí znovu zkontroluj členství.
 
-Tokeny chatbotů a přihlášení poskytovatelů leží mimo databázi, takže přijímající
-instalace si připojí svoje. Soubor ale nese tokeny webhooků pipeline a tajemství
-webhooků synchronizace tiketů, takže pracovní prostor, který předáš někomu jinému,
-předá i ty. Pokud by je příjemce neměl mít, otoč je potom.
+Obnovený soubor sám o sobě na tomto serveru nic nepřidělí. Oprávnění, která nesl nad rámec běžného členství, se vyjmou a vypíšou pod **Zadrženo z obnovených kopií** nahoře na stránce: pravidla akcí, která agentům dovolují jednat bez schválení nebo až po něm, cesty, které smí spouštět sandbox, přístup k repozitářům nad čtení, role nad člena a otevřená pozvání do těchto rolí. **Přijmout** je přidělí znovu; **Zamítnout** je zahodí. Schválení spouštět definici prostředí na hostiteli se zruší, takže ty definice schval znovu. Kdo obnovuje, roli vlastníka si zachová, nebo ji získá.
+
+Tokeny chatbotů, přihlášení poskytovatelů a tajemství webhooků leží mimo databázi, takže přijímající instalace si připojí svoje. Spouštěče webhooků a webhooky synchronizace tiketů přijdou bez svých tajemství a na jiném serveru nic nepřijmou, dokud je tam znovu neuložíš. Tím každý spouštěč dostane novou URL.
 
 ## Obnov jeden pracovní prostor ze snímku
 
@@ -183,7 +172,7 @@ Musíš být vlastník serveru a vlastník tohoto pracovního prostoru.
 
 Je to stejná operace jako import, namířená na kopii souboru toho pracovního
 prostoru ve snímku. Schválně, aby neexistoval druhý mechanismus, který by se
-stejným souborem zacházel jinak.
+stejným souborem zacházel jinak. Kopie se nejdřív ověří proti kontrolnímu součtu, který snímek zaznamenal.
 
 Řádek může říct **Na tomto serveru už není** a **Obnovit** je vypnuté: snímek
 drží pracovní prostor, který tahle instalace už nemá. Vrať ho ručně. Založ
@@ -191,6 +180,10 @@ pracovní prostor (jen vlastník serveru) a pod **Data pracovního prostoru** do
 `<snapshot path>/<old workspace id>/workspace.db` a stiskni **Importovat**. Rozbalený snímek ukazuje
 vlastní **Cesta na serveru** v poli ke kopírování a titulek řádku je staré id
 pracovního prostoru, takže máš obě poloviny té cesty před sebou.
+
+## Obnovení poškozeného pracovního prostoru
+
+Pracovní prostor, jehož databáze neprojde kontrolou integrity, se přepne do režimu jen pro čtení: vše zůstane čitelné a každá změna se odmítne. Členové vidí nahoře v pracovním prostoru **Tento pracovní prostor je jen pro čtení**, vlastník serveru to vidí na této stránce pod **Vyžaduje vaši pozornost** a nejnovější záloha, která drží dobrou kopii, se uchová jako **Poslední dobrá kopie**. Obnov pracovní prostor z této kopie, jak je popsáno výše, aby byl zase zapisovatelný. Poškozená databáze se uchová jako záloha `-pre-restore`.
 
 ## Obnov celou instalaci
 
@@ -318,7 +311,7 @@ Spusť ho jako stejný uživatel, který vlastní datový adresář, z cronu neb
 potřebuje SQLite 3.27 nebo novější.
 
 Piš ho **mimo** `<dataDir>/backups/`. Ručně udělaný adresář tam nemá
-`manifest.json`, takže by ho aplikace vypsala jako neúplný snímek a seznam by
+`manifest.json`, takže by ho aplikace vypsala jako neověřený snímek a seznam by
 přestal být poctivý záznam toho, co vyrobil sám server.
 
 ### Promaž staré snímky celé instalace
@@ -365,9 +358,11 @@ ukládají.
 | „Zálohy může obnovit jen vlastník serveru. Stáhnout je můžete i nadále.“ | Obnovení přepíše databázi pracovního prostoru na hostiteli serveru, takže ji obnovuje jen vlastník serveru. Stáhni zálohu a požádej ho |
 | „Tento server nemá povrch záloh.“ | Hostitel nemá připojený port záloh. Je to demo server. Operace chybí, neodmítají se |
 | „Soubor je větší, než server přijímá.“ | Nahrávání je omezené na 8 GiB. Dej soubor na hostitele serveru a zadej jeho cestu do pole **Soubor databáze pracovního prostoru** |
-| Import odmítnut: není to databáze pracovního prostoru Control Center | Soubor nemá řádek `workspace_meta`. Není to export pracovního prostoru, nebo je useknutý. Nic se nenahradilo |
-| Snímek je uvedený jako **Neúplný** | Manifest chybí, nebo jmenuje chybějící soubory. Pořiď nový a mezitím z něj převezmi jednotlivé soubory pracovních prostorů |
-| Snímek hlásí, že se pracovní prostory nezachytily | Ty pracovní prostory se ještě nikdy nezapsaly, nebo jejich kopie selhala. Podívej se do logu serveru |
+| Obnovení se odmítne a nic se nenahradí | Soubor neprošel kontrolou a zpráva říká které: není to databáze pracovního prostoru, je poškozený, neshoduje se s kontrolním součtem, který zaznamenal jeho snímek, zapsala ho novější verze serveru, nebo jeho webhooky či pozvánky už patří jinému pracovnímu prostoru na tomto serveru. Použij jinou kopii, nebo nejdřív aktualizuj server |
+| Snímek je uvedený jako **Neověřeno** | Nikdy se nedokončil, nebo vznikl dřív, než snímky začaly zaznamenávat kontrolní součty. Pořiď nový a mezitím z něj obnov jednotlivé soubory pracovních prostorů |
+| Snímek hlásí, že se pracovní prostory nezachytily | Ty pracovní prostory se ještě nikdy nezapsaly, jsou poškozené, nebo jejich kopie selhala. Podívej se do logu serveru |
+| Pracovní prostor zobrazuje **Tento pracovní prostor je jen pro čtení** | Jeho databáze neprošla kontrolou integrity. Nic v ní nejde změnit, dokud ji vlastník serveru neobnoví ze zálohy |
+| Webhooky přestanou přicházet, když se pracovní prostor přesune na jiný server | Tajemství webhooků necestují s databází. Ulož každý spouštěč webhooku a připojení synchronizace ticketů na novém serveru znovu a odesílateli pak dej novou URL |
 | Obnovená instalace nemá přihlašovací údaje forge ani SSO | `secrets.json` ve snímku není. Obnov ho odtud, kde ho držíš, nebo poskytovatele znovu připoj |
 | Obnovenému pracovnímu prostoru chybí vložené obrázky | Bloby leží vedle databáze, ne v ní. Zkopíruj taky `<workspaceId>/blobs/` |
 

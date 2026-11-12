@@ -17,6 +17,7 @@ import 'package:control_center/features/shell/presentation/widgets/banner_rail.d
 import 'package:control_center/features/shell/presentation/widgets/web_update_banner.dart';
 import 'package:control_center/features/shell/providers/sidebar_providers.dart';
 import 'package:control_center/features/soundscape/presentation/widgets/soundscape_audio_host.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/workspace_read_only_banner.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter/services.dart';
@@ -133,6 +134,10 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
                   // with the sign-in one click away, rather than gating the
                   // whole app on it.
                   const ForgeSignInBanner(),
+                  // The workspace's database failed its integrity check: it
+                  // reads but refuses writes until restored. Said once, here,
+                  // before anyone types.
+                  const WorkspaceReadOnlyBanner(),
                   Expanded(child: _buildPanes(showSpacesSubSidebar)),
                 ],
               ),

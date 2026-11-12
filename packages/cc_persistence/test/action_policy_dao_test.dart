@@ -47,7 +47,7 @@ void main() {
         ws: 'w-1',
         scopeType: 'workspace',
         scopeId: '',
-        actionClass: 'Bash',
+        actionClass: 'gitPush',
         decision: 'allow',
       );
       await seedRule(
@@ -55,7 +55,7 @@ void main() {
         ws: 'w-2',
         scopeType: 'workspace',
         scopeId: '',
-        actionClass: 'Bash',
+        actionClass: 'prCreate',
         decision: 'deny',
       );
 
@@ -71,7 +71,7 @@ void main() {
         ws: 'w-1',
         scopeType: 'workspace',
         scopeId: '',
-        actionClass: 'Bash',
+        actionClass: 'gitPush',
         decision: 'allow',
       );
       await seedRule(
@@ -79,7 +79,7 @@ void main() {
         ws: 'w-1',
         scopeType: 'workspace',
         scopeId: '',
-        actionClass: 'Bash',
+        actionClass: 'gitPush',
         decision: 'deny',
       );
       final rows = await db.actionPolicyDao.rules('w-1');
@@ -126,7 +126,7 @@ void main() {
         ws: 'w-2',
         scopeType: 'space',
         scopeId: 'c-1',
-        commandPrefix: 'git',
+        commandPrefix: 'npm',
       );
 
       final rows = await db.actionPolicyDao.rulesForScope(
@@ -144,7 +144,7 @@ void main() {
         ws: 'w-1',
         scopeType: 'workspace',
         scopeId: '',
-        actionClass: 'Bash',
+        actionClass: 'gitPush',
       );
       expect((await db.actionPolicyDao.ruleById('w-1', 'ap-1'))?.id, 'ap-1');
       expect(await db.actionPolicyDao.ruleById('w-2', 'ap-1'), isNull);
@@ -159,7 +159,7 @@ void main() {
           ws: 'w-1',
           scopeType: 'workspace',
           scopeId: '',
-          actionClass: 'Bash',
+          actionClass: 'gitPush',
         );
         // A foreign workspace cannot delete it.
         await db.actionPolicyDao.deleteRule('w-2', 'ap-1');

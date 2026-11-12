@@ -32,7 +32,6 @@ class StrandedTicketReconciler {
   /// Scans active tickets and repairs ones left in an inconsistent execution state.
   Future<void> reconcile() async {
     final agents = await _agentRepo.watchAll().first;
-    final allRuns = await _runLogRepo.watchAll().first;
 
     final seenTickets = <String>{};
 
@@ -48,7 +47,7 @@ class StrandedTicketReconciler {
             continue;
           }
           seenTickets.add(ticket.id);
-          await _reconcileTicket(ticket, agent, allRuns);
+          await _reconcileTicket(ticket, agent);
         }
       } on Object catch (e, st) {
         CcDomainLog.error(
@@ -64,11 +63,7 @@ class StrandedTicketReconciler {
     );
   }
 
-  Future<void> _reconcileTicket(
-    Ticket ticket,
-    Agent? agent,
-    List<AgentRunLog> allRuns,
-  ) async {
+  Future<void> _reconcileTicket(Ticket ticket, Agent? agent) async {
     if (agent == null) {
       CcDomainLog.warning(
         '$_tag: Ticket ${ticket.id} assigned to non-existent agent '
@@ -78,18 +73,20 @@ class StrandedTicketReconciler {
       return;
     }
 
-    final ticketRuns = allRuns.where((r) => r.ticketId == ticket.id).toList()
-      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    // Only the newest run decides; the store answers that directly instead
+    // of this job reading every run of every workspace per pass.
+    final latestRun = await _runLogRepo.latestForTicket(
+      ticket.workspaceId,
+      ticket.id,
+    );
 
-    if (ticketRuns.isEmpty) {
+    if (latestRun == null) {
       CcDomainLog.info(
         '$_tag: Ticket ${ticket.id} has no runs — eligible for re-dispatch',
       );
       await _markForRedispatch(ticket, agent);
       return;
     }
-
-    final latestRun = ticketRuns.first;
 
     if (latestRun.status == RunStatus.error) {
       await _handleFailedRun(ticket, agent, latestRun);

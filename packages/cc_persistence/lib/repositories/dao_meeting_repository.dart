@@ -11,7 +11,6 @@ import 'package:cc_persistence/database/workspace/workspace_database.dart'
     as db;
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/meeting_mapper.dart';
-import 'package:cc_persistence/repositories/distinct_rows.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -52,6 +51,7 @@ class DaoMeetingRepository implements MeetingRepository {
   Future<List<Meeting>> getUnfinalized() async {
     final perWorkspace = await _cross.fanOut(
       (workspaceDb) => workspaceDb.meetingDao.getUnfinalized(),
+      backgroundWriter: 'meeting reconciler',
     );
     return [
       for (final rows in perWorkspace)
@@ -110,10 +110,10 @@ class DaoMeetingRepository implements MeetingRepository {
     String workspaceId,
     String meetingId,
   ) =>
-      // Deduped: a segment written for ANY meeting re-runs this watch, so a
-      // live recording re-shipped every other open meeting's whole transcript.
-      // See `distinct_rows.dart`.
-      distinctRows(_dao(workspaceId).watchSegments(workspaceId, meetingId))
+      // Incremental and change-only: a new segment reads just itself, and a
+      // segment written for another meeting emits nothing here.
+      _dao(workspaceId)
+          .watchSegments(workspaceId, meetingId)
           .map((rows) => rows.map(_mapper.segmentToDomain).toList());
 
   @override

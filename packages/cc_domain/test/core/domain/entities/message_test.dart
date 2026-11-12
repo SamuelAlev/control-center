@@ -366,14 +366,14 @@ void main() {
         messageType: MessageType.agentTurn,
         metadata: const {
           'outcome': 'completed',
-          'turn': {'durationMs': 1200, 'totalTokens': 800, 'costCents': 4},
+          'turn': {'durationMs': 1200, 'totalTokens': 800, 'costMicros': 4},
         },
         createdAt: DateTime(2025, 6, 1),
       );
       expect(message.turnOutcome, TurnOutcome.completed);
       expect(message.turnDurationMs, 1200);
       expect(message.turnTotalTokens, 800);
-      expect(message.turnCostCents, 4);
+      expect(message.turnCostMicros, 4);
 
       // Absent keys.
       final bare = Message(
@@ -389,7 +389,7 @@ void main() {
       expect(bare.turnOutcome, isNull);
       expect(bare.turnDurationMs, isNull);
       expect(bare.turnTotalTokens, isNull);
-      expect(bare.turnCostCents, isNull);
+      expect(bare.turnCostMicros, isNull);
 
       // Non-map turn.
       expect(

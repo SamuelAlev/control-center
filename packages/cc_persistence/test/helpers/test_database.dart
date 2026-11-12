@@ -7,13 +7,25 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 /// Builds an in-memory [WorkspaceDatabase] for tests — one workspace's data.
 ///
-/// Most tests want this one: it is where agents, spaces, tickets, memory, pipelines, repos
-/// and the code graph live.
+/// Most tests want this one: it is where agents, spaces, tickets, memory, pipelines and
+/// repos live. The code graph is in [createTestCodeIndexDatabase].
 /// [workspaceId] is the id the file claims and the value to pass to any DAO or repository
 /// method that still takes one.
 WorkspaceDatabase createTestDatabase({String workspaceId = 'test-workspace'}) {
   sqlite3.sqlite3.tempDirectory = Directory.systemTemp.path;
   return WorkspaceDatabase.forTesting(
+    NativeDatabase.memory(),
+    workspaceId: workspaceId,
+  );
+}
+
+/// Builds an in-memory [CodeIndexDatabase] for tests — one workspace's code
+/// index (symbols, edges, file hashes, checkpoints).
+CodeIndexDatabase createTestCodeIndexDatabase({
+  String workspaceId = 'test-workspace',
+}) {
+  sqlite3.sqlite3.tempDirectory = Directory.systemTemp.path;
+  return CodeIndexDatabase.forTesting(
     NativeDatabase.memory(),
     workspaceId: workspaceId,
   );
@@ -94,11 +106,7 @@ Future<void> seedTodoConversations(
     await db
         .into(db.spacesTable)
         .insert(
-          SpacesTableCompanion.insert(
-            id: id,
-            name: id,
-            workspaceId: Value(ws),
-          ),
+          SpacesTableCompanion.insert(id: id, name: id, workspaceId: ws),
         );
     await db
         .into(db.conversationsTable)
@@ -106,7 +114,7 @@ Future<void> seedTodoConversations(
           ConversationsTableCompanion.insert(
             id: id,
             spaceId: id,
-            workspaceId: Value(ws),
+            workspaceId: ws,
           ),
         );
   }

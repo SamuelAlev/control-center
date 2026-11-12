@@ -10,6 +10,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/repos/domain/value_objects/repo_access_cache_kinds.dart';
 import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 
@@ -167,7 +168,7 @@ class RepoAccessRegistry {
     : _now = now ?? DateTime.now;
 
   /// Cache kind of the persisted record.
-  static const cacheKind = 'repoAccess';
+  static const cacheKind = RepoAccessCacheKinds.repoAccess;
 
   /// Cache key (one row per workspace).
   static const cacheKey = 'v1';
@@ -347,6 +348,23 @@ class RepoAccessRegistry {
     if (map.length != before) {
       await _persist(workspaceId);
     }
+  }
+
+  /// Re-reads [workspaceId]'s records from its database and tells every
+  /// watcher. For when the database file was replaced underneath (a
+  /// restore): what is in memory then describes the file that is gone.
+  ///
+  /// Watchers stay subscribed, unlike [forgetWorkspace]: the workspace is
+  /// still there.
+  Future<void> reload(String workspaceId) async {
+    // A read of the replaced file that is still in flight would land after
+    // this one and put the old records back.
+    await _loading[workspaceId]?.catchError(
+      (Object _) => <_RepoKey, RepoAccessIssue>{},
+    );
+    _byWorkspace.remove(workspaceId);
+    final map = await _load(workspaceId);
+    _changes[workspaceId]?.add(issuesSorted(map.values));
   }
 
   /// Drops every in-memory record of [workspaceId] (deleted). The persisted

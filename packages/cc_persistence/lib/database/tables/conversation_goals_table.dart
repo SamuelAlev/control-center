@@ -9,14 +9,10 @@ import 'package:drift/drift.dart';
 /// by both. Deleting a conversation or workspace cascades its goal. Isolated
 /// from the `todos` table on purpose: the agent's `todo_write` replaces the
 /// whole todo list and would otherwise clobber the goal.
-@TableIndex(name: 'idx_conversation_goals_workspaceId', columns: {#workspaceId})
 class ConversationGoalsTable extends Table {
   /// Owning conversation — one goal per conversation.
-  TextColumn get conversationId => text().references(
-    ConversationsTable,
-    #id,
-    onDelete: KeyAction.cascade,
-  )();
+  TextColumn get conversationId =>
+      text().references(ConversationsTable, #id, onDelete: KeyAction.cascade)();
 
   /// Owning workspace.
   TextColumn get workspaceId => text()();

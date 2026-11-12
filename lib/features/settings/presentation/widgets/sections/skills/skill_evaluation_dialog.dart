@@ -1,4 +1,5 @@
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/skills/skill_evaluation_model_fields.dart';
 import 'package:control_center/l10n/app_localizations.dart';

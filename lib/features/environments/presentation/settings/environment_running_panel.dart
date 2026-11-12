@@ -5,7 +5,6 @@ import 'package:cc_domain/features/environments/domain/ports/environment_port.da
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_form_fields.dart';
-import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_labels.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_lifecycle_actions.dart';
 import 'package:control_center/features/environments/providers/environment_actions.dart';
@@ -13,6 +12,7 @@ import 'package:control_center/features/environments/providers/environment_provi
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -48,7 +48,7 @@ class EnvironmentRunningPanel extends ConsumerWidget {
         loading: () => const Center(child: CcSpinner()),
         error: (error, _) => CcAlert(
           variant: CcAlertVariant.danger,
-          title: environmentFailureMessage(error),
+          title: failureMessage(l10n, error),
         ),
         data: (items) => items.isEmpty
             ? Text(

@@ -9,6 +9,7 @@ import 'package:control_center/features/connect/presentation/widgets/connect_mod
 import 'package:control_center/features/connect/providers/connect_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +33,7 @@ class ConnectSection extends ConsumerWidget {
       return SectionCard(
         label: l10n.connectTitle,
         child: CcAlert(
-          title: l10n.failedWithError('${async.error}'),
+          title: failureMessage(l10n, async.error!),
           variant: CcAlertVariant.danger,
         ),
       );
@@ -124,7 +125,7 @@ class _ConnectStatusCardState extends ConsumerState<ConnectStatusCard> {
       if (mounted) {
         CcToastScope.maybeOf(
           context,
-        )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        )?.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     } finally {
       if (mounted) {

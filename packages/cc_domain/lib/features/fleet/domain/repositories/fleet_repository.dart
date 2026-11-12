@@ -70,28 +70,44 @@ abstract interface class FleetRepository {
     DateTime now,
   );
 
-  /// Renews the lease on an active job (cheap, frequent).
-  Future<void> renewLease(
+  /// Renews the lease [workerId] holds on an active job (cheap, frequent).
+  /// Returns false when the job is no longer active or is leased to another
+  /// worker: that worker no longer owns the job.
+  Future<bool> renewLease(
     String jobId,
+    String workerId,
     DateTime leaseExpiresAt, {
     int? lastAckedSeq,
   });
 
-  /// Marks a job running.
-  Future<void> markJobRunning(String jobId, DateTime now);
+  /// Marks a job running, only while it is still leased to [workerId].
+  /// Returns whether it applied.
+  Future<bool> markJobRunning(String jobId, String workerId, DateTime now);
 
-  /// Marks a job terminal (`done`/`failed`/`cancelled`).
-  Future<void> markJobTerminal(
+  /// Marks a job terminal (`done`/`failed`/`cancelled`), only while its status
+  /// is one of [from] and, when [leasedTo] is given, it is leased to that
+  /// worker. Returns whether it applied: false means another path moved the
+  /// job first and owns its outcome.
+  Future<bool> markJobTerminal(
     String jobId,
     JobStatus status,
     DateTime now, {
+    required Set<JobStatus> from,
+    String? leasedTo,
     String? resultJson,
     String? error,
-    int? costCents,
+    int? costMicros,
   });
 
-  /// Requeues a reaped job for retry (increments attempts).
-  Future<void> requeueJob(String jobId, int attempts);
+  /// Requeues a reaped job for retry with [attempts], only while it is still
+  /// in [from] and leased to [leasedTo] (null: leased to nobody). Returns
+  /// whether it applied, so one failure is retried exactly once.
+  Future<bool> requeueJob(
+    String jobId,
+    int attempts, {
+    required JobStatus from,
+    required String? leasedTo,
+  });
 
   // ── Placement log (workspace-scoped) ──
 

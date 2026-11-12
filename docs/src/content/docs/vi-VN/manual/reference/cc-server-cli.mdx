@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Mọi cờ, biến môi trường, lệnh con và đường dẫn thư mục dữ liệu của máy chủ không giao diện.
 slug: vi-VN/so-tay/tham-chieu/cli-cc-server
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Mọi cờ của tiến trình nhận một cờ CLI hoặc một biến môi trường; cờ thắng, rồi đến
@@ -232,12 +232,16 @@ Thư mục dữ liệu mặc định là `~/Library/Application Support/control-
 `~/.local/share/control-center`) ở những nơi khác. Một `.cc_server` tương đối theo cwd
 chỉ được dùng khi không phân giải được thư mục home hay thư mục dữ liệu ứng dụng nào.
 
+Máy chủ giữ thư mục dữ liệu riêng cho tài khoản của chính nó (`0700`). Máy chủ từ chối khởi động (mã thoát `78`) khi không thể làm vậy, khi `global.db` bị hỏng hoặc do phiên bản mới hơn ghi, hoặc khi không đọc được tệp định danh của nó.
+
 | Đường dẫn                         | Nội dung                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Sổ đăng ký không gian làm việc, người dùng, thiết bị đã ghép nối, bảng tin và hàng đợi đội máy |
-| `<workspaceId>/workspace.db`      | Một cơ sở dữ liệu cho mỗi không gian làm việc — agent, space, phiếu, bộ nhớ, đồ thị mã    |
+| `<workspaceId>/workspace.db`      | Một cơ sở dữ liệu cho mỗi không gian làm việc — agent, space, phiếu, bộ nhớ    |
+| `<workspaceId>/code_index.db` | Đồ thị mã của không gian làm việc đó. Được dựng lại khi thiếu, không bao giờ được sao lưu |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Hai bản sao mới nhất của một cơ sở dữ liệu từ trước khi một bản cập nhật thay đổi định dạng của nó |
 | `<workspaceId>/chat_credentials/` | Token bot chat, dưới dạng JSON thuần, để chúng đi kèm không gian làm việc                   |
-| `secrets.json`                    | Khóa ghép nối, khóa cài đặt Connect, ứng dụng của nhà cung cấp, đăng nhập của người dùng (được niêm phong khi tạo qua Connect), SSO (`0600`) |
+| `secrets.json`                    | Khóa ghép nối, khóa cài đặt Connect, ứng dụng của nhà cung cấp, đăng nhập của người dùng (được niêm phong khi tạo qua Connect), bí mật webhook, SSO (`0600`) |
 | `backups/<timestamp>/`            | Một ảnh chụp nhanh bản cài đặt — `manifest.json`, `global.db` và một bản sao của từng không gian làm việc |
 | `backups/exports/`                | Bản xuất của một không gian làm việc, `<workspaceId>-<timestamp>.db`                        |
 | `backups/transfer/`               | Khu trung chuyển cho việc tải lên và tải xuống bản sao lưu; được dọn bởi tuyến ghi vào đó     |

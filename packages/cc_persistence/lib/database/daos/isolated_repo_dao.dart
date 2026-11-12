@@ -112,9 +112,22 @@ class IsolatedRepoDao extends DatabaseAccessor<WorkspaceDatabase>
             ),
           );
 
-  /// Inserts or updates a worktree row.
-  Future<void> upsert(IsolatedReposTableCompanion entry) =>
-      into(isolatedReposTable).insertOnConflictUpdate(entry);
+  /// Inserts or updates a worktree row: by its id, or by its unit
+  /// `(spaceId, repoId)`, which holds one worktree (the row already there
+  /// keeps its id).
+  Future<void> upsert(IsolatedReposTableCompanion entry) {
+    final onUpdate = entry.copyWith(id: const Value.absent());
+    return into(isolatedReposTable).insert(
+      entry,
+      onConflict: UpsertMultiple([
+        DoUpdate((_) => onUpdate),
+        DoUpdate(
+          (_) => onUpdate,
+          target: [isolatedReposTable.spaceId, isolatedReposTable.repoId],
+        ),
+      ]),
+    );
+  }
 
   /// Deletes a worktree row by [id].
   Future<void> deleteById(String id) =>

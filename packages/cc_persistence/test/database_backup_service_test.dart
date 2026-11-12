@@ -10,6 +10,10 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
+import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
+import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -37,6 +41,8 @@ void main() {
   late Directory tmp;
   late GlobalDatabase global;
   late WorkspaceDatabaseManager workspaces;
+  late WebhookSecretVault vault;
+  late DomainEventBus bus;
   final warnings = <String>[];
 
   /// Fixed clock so snapshot directory names are assertable.
@@ -48,9 +54,20 @@ void main() {
         workspaces: workspaces,
         backupsDir: backupsDir ?? '${tmp.path}/backups',
         exportsDir: exportsDir,
+        webhookSecrets: vault,
+        eventBus: bus,
         now: () => now,
         onWarn: warnings.add,
       );
+
+  /// Expects a refused import of kind [refusal].
+  Matcher refusedAs(WorkspaceImportRefusal refusal) => throwsA(
+    isA<WorkspaceImportRefusedException>().having(
+      (e) => e.refusal,
+      'refusal',
+      refusal,
+    ),
+  );
 
   Future<void> seedWorkspace(String id, {required String agentName}) async {
     await global.workspaceRegistryDao.upsertWorkspace(
@@ -72,6 +89,8 @@ void main() {
   setUp(() async {
     warnings.clear();
     now = DateTime.utc(2026, 7, 5, 12, 34, 56);
+    vault = WebhookSecretVault(InMemorySecretStore());
+    bus = DomainEventBus();
     tmp = Directory.systemTemp.createTempSync('db_backup_service');
     global = GlobalDatabase(NativeDatabase(File('${tmp.path}/global.db')));
     // In-process executor, not the default createInBackground isolate: the
@@ -89,6 +108,7 @@ void main() {
   });
 
   tearDown(() async {
+    bus.dispose();
     await workspaces.closeAll();
     await global.close();
     if (tmp.existsSync()) {
@@ -130,22 +150,38 @@ void main() {
                 )
                 as Map<String, Object?>;
 
-        expect(manifest['version'], 1);
+        expect(manifest['format'], 2);
         expect(manifest['created_at'], '2026-07-05T12:34:56.000Z');
         final globalEntry = manifest['global']! as Map<String, Object?>;
         expect(globalEntry['file'], 'global.db');
-        expect(globalEntry['schema_version'], global.schemaVersion);
-        expect(globalEntry['bytes'], greaterThan(0));
+        expect(globalEntry['user_version'], global.schemaVersion);
+        expect(globalEntry['bytes'], File('$path/global.db').lengthSync());
+        expect(globalEntry['quick_check'], 'ok');
+        expect(
+          globalEntry['sha256'],
+          await backupFileDigest(File('$path/global.db').openRead()),
+        );
 
         final entries = (manifest['workspaces']! as List<Object?>)
             .cast<Map<String, Object?>>();
         expect(entries, hasLength(1));
         expect(entries.single['workspace_id'], 'ws1');
         expect(entries.single['file'], 'ws1/workspace.db');
+        final copy = File('$path/ws1/workspace.db');
+        expect(entries.single['bytes'], copy.lengthSync());
+        // Measured on the copy, so a later truncation or edit is detectable.
         expect(
-          entries.single['bytes'],
-          greaterThan(0),
-          reason: 'a zero-byte entry is how a half-written snapshot is spotted',
+          entries.single['sha256'],
+          await backupFileDigest(copy.openRead()),
+        );
+        expect(entries.single['quick_check'], 'ok');
+        expect(
+          entries.single['user_version'],
+          WorkspaceDatabase.currentSchemaVersion,
+        );
+        expect(
+          entries.single['application_id'],
+          WorkspaceDatabase.fileApplicationId,
         );
         expect(manifest['skipped_workspaces'], isEmpty);
       },
@@ -169,7 +205,9 @@ void main() {
                 )
                 as Map<String, Object?>;
 
-        expect(manifest['skipped_workspaces'], <String>['untouched']);
+        expect(manifest['skipped_workspaces'], [
+          {'workspace_id': 'untouched', 'reason': 'no_file'},
+        ]);
         expect(manifest['workspaces']! as List<Object?>, hasLength(1));
         expect(
           warnings.any((w) => w.contains('untouched')),
@@ -345,7 +383,15 @@ void main() {
       expect(listed.map((b) => b.workspaces.single.path), [newer, older]);
       expect(listed.first.createdAt, now);
       expect(listed.first.complete, isTrue);
-      expect(listed.first.bytes, File(newer).lengthSync());
+      // The copy and its manifest.
+      expect(
+        listed.first.bytes,
+        File(newer).lengthSync() +
+            File(
+              '${File(newer).parent.path}/'
+              '${AppDatabaseBackupService.manifestFileName}',
+            ).lengthSync(),
+      );
       expect(listed.first.workspaces.single.workspaceId, 'ws-a');
     });
 
@@ -563,10 +609,15 @@ void main() {
         expect(path, contains('/workspace-backups/ws1/'));
         expect(File(path).existsSync(), isTrue);
         expect(
-          File(path).parent.listSync().map(
-            (entry) => entry.path.split(Platform.pathSeparator).last,
-          ),
-          [workspaceDatabaseFileName],
+          File(path).parent
+              .listSync()
+              .map((entry) => entry.path.split(Platform.pathSeparator).last)
+              .toList()
+            ..sort(),
+          [
+            AppDatabaseBackupService.manifestFileName,
+            workspaceDatabaseFileName,
+          ],
         );
         expect(
           Directory('${tmp.path}/backups/workspace-backups/ws2').existsSync(),
@@ -749,6 +800,7 @@ void main() {
       final id = await service().importWorkspace(
         workspaceId: 'ws1',
         sourcePath: exported,
+        importedBy: 'owner',
       );
 
       expect(id, 'ws1');
@@ -775,9 +827,10 @@ void main() {
           await service().importWorkspace(
             workspaceId: 'ws1',
             sourcePath: exported,
+            importedBy: 'owner',
           );
           expect(
-            (await workspaces.of('ws1').pipelineDao.getRun('in-wal'))?.id,
+            (await workspaces.of('ws1').pipelineDao.getRun('in-wal'))?.run.id,
             'in-wal',
           );
           expect(
@@ -814,7 +867,11 @@ void main() {
         writer.close();
       }
 
-      await service().importWorkspace(workspaceId: 'ws1', sourcePath: exported);
+      await service().importWorkspace(
+        workspaceId: 'ws1',
+        sourcePath: exported,
+        importedBy: 'owner',
+      );
 
       final schema = await workspaces
           .of('ws1')
@@ -844,10 +901,29 @@ void main() {
         '(id, workspace_id, code_hash, created_by, expires_at) '
         "VALUES ('inv', 'ws1', 'code-hash', 'owner', 4102444800)",
       );
+      // The row names its token by reference; the token lives in this
+      // server's secret store, and its route is the server-keyed HMAC.
+      final routeKey = await vault.webhookRouteKey('webhook-secret');
+      final ref = WebhookSecretVault.pipelineTriggerRef('ws1', routeKey);
+      await vault.write(ref, 'webhook-secret');
+      await db.customStatement(
+        'INSERT INTO pipeline_templates (id, workspace_id, name) '
+        "VALUES ('tpl', 'ws1', 'Template'), ('tpl-2', 'ws1', 'Other')",
+      );
       await db.customStatement(
         'INSERT INTO pipeline_triggers '
-        '(id, event_type, template_id, workspace_id, webhook_token, enabled) '
-        "VALUES ('trigger', 'webhook', 'tpl', 'ws1', 'webhook-secret', 1)",
+        '(id, event_type, template_id, workspace_id, webhook_token_ref, '
+        'enabled) '
+        "VALUES ('trigger', 'webhook', 'tpl', 'ws1', ?, 1)",
+        [ref],
+      );
+      // A trigger whose token this server does not hold routes nowhere.
+      await db.customStatement(
+        'INSERT INTO pipeline_triggers '
+        '(id, event_type, template_id, workspace_id, webhook_token_ref, '
+        'enabled) '
+        "VALUES ('foreign', 'webhook', 'tpl-2', 'ws1', ?, 1)",
+        [WebhookSecretVault.pipelineTriggerRef('ws1', 'not-held')],
       );
       await db.customStatement(
         'INSERT INTO pipeline_runs (id, template_id, workspace_id) '
@@ -872,11 +948,15 @@ void main() {
       final exported = await service().exportWorkspace('ws1');
       await global.workspaceRouteDao.removeAllForWorkspace('ws1');
 
-      await service().importWorkspace(workspaceId: 'ws1', sourcePath: exported);
+      await service().importWorkspace(
+        workspaceId: 'ws1',
+        sourcePath: exported,
+        importedBy: 'owner',
+      );
 
       for (final (kind, key) in [
         (WorkspaceRouteKind.inviteCode, 'code-hash'),
-        (WorkspaceRouteKind.webhookToken, 'webhook-secret'),
+        (WorkspaceRouteKind.webhookToken, routeKey),
         (WorkspaceRouteKind.pipelineRun, 'run'),
         (WorkspaceRouteKind.space, 'space-id'),
         (WorkspaceRouteKind.ticketExternalKey, 'linear:ENG-1'),
@@ -902,9 +982,24 @@ void main() {
         (await PipelineTriggerRepositoryImpl(
           workspaces,
           global.workspaceRouteDao,
+          vault,
         ).byWebhookToken('webhook-secret'))?.id,
         'trigger',
       );
+      expect(
+        await global.workspaceRouteDao.resolve(
+          WorkspaceRouteKind.webhookToken,
+          'not-held',
+        ),
+        isNull,
+      );
+      final webhookRoutes = await global
+          .customSelect(
+            'SELECT key_hash FROM workspace_routes '
+            "WHERE kind = 'webhook_token' AND workspace_id = 'ws1'",
+          )
+          .get();
+      expect(webhookRoutes.map((r) => r.read<String>('key_hash')), [routeKey]);
       expect(
         (await DaoTicketRepository(
           workspaces,
@@ -922,6 +1017,7 @@ void main() {
       await service().importWorkspace(
         workspaceId: 'ws-clone',
         sourcePath: exported,
+        importedBy: 'owner',
       );
 
       expect(
@@ -972,8 +1068,9 @@ void main() {
           service().importWorkspace(
             workspaceId: 'ws-clone',
             sourcePath: exported,
+            importedBy: 'owner',
           ),
-          throwsStateError,
+          refusedAs(WorkspaceImportRefusal.routeConflict),
         );
         expect(
           (await workspaces.of('ws-clone').agentDao.getAll()).single.name,
@@ -998,8 +1095,9 @@ void main() {
           () => service().importWorkspace(
             workspaceId: 'ws1',
             sourcePath: bogus.path,
+            importedBy: 'owner',
           ),
-          throwsArgumentError,
+          refusedAs(WorkspaceImportRefusal.damaged),
         );
       },
     );
@@ -1009,8 +1107,9 @@ void main() {
         () => service().importWorkspace(
           workspaceId: 'ws1',
           sourcePath: '${tmp.path}/missing.db',
+          importedBy: 'owner',
         ),
-        throwsArgumentError,
+        refusedAs(WorkspaceImportRefusal.missingSource),
       );
     });
 
@@ -1018,8 +1117,11 @@ void main() {
       await seedWorkspace('ws1', agentName: 'Ada');
       final exported = await service().exportWorkspace('ws1');
       expect(
-        () =>
-            service().importWorkspace(workspaceId: 'a/b', sourcePath: exported),
+        () => service().importWorkspace(
+          workspaceId: 'a/b',
+          sourcePath: exported,
+          importedBy: 'owner',
+        ),
         throwsArgumentError,
       );
     });

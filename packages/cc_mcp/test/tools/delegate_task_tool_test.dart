@@ -24,7 +24,7 @@ void main() {
         resolveEffectiveAutonomy:
             ({required workspaceId, required agentId, spaceId}) async =>
                 AutonomyLevel.actWithApproval,
-        resolveRemainingBudgetCents:
+        resolveRemainingBudgetMicros:
             ({required workspaceId, required agentId}) async => null,
       ),
       pendingHops: pendingHops,

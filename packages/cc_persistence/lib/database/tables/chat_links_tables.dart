@@ -1,38 +1,44 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:drift/drift.dart';
 
 /// Maps one external chat conversation (a space `@mention` thread, or a bot
 /// DM) to one Control Center space.
 ///
-/// `(workspace_id, provider, external_channel_id, external_thread_id)` is unique
-/// — one CC space per external thread — and `cc_space_id` is the reverse
-/// lookup the outbound relay uses to find where an agent turn should stream.
-/// Deleting the CC space cascades: the external thread simply loses its bridge
-/// and the next `@mention` opens a fresh space.
+/// `(provider, external_channel_id, external_thread_id)` is unique — one CC
+/// space per external thread — and `cc_space_id` is the reverse lookup the
+/// outbound relay uses to find where an agent turn should stream. Deleting
+/// the CC space cascades: the external thread simply loses its bridge and the
+/// next `@mention` opens a fresh space.
 ///
 /// `provider` is part of every unique index and every lookup, so two providers
 /// whose id spaces collide cannot resolve each other's conversations.
 ///
 /// SQLite treats NULLs as distinct in a UNIQUE index, so the uniqueness of a
-/// conversation-level link (null `external_thread_id`, i.e. a bot DM) is enforced
-/// by the second, partial index installed from `WorkspaceDatabase`.
+/// conversation-level link (null `external_thread_id`, i.e. a bot DM) is
+/// enforced by a second, partial index.
 @TableIndex(
-  name: 'uq_chat_channel_links_ws_provider_channel_thread',
-  columns: {#workspaceId, #provider, #externalChannelId, #externalThreadId},
+  name: 'uq_chat_space_links_ws_provider_space_thread',
+  columns: {#provider, #externalChannelId, #externalThreadId},
   unique: true,
 )
-@TableIndex(
-  name: 'idx_chat_channel_links_ccChannelId',
-  columns: {#ccSpaceId},
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX uq_chat_space_links_ws_provider_dm '
+  'ON chat_space_links (provider, external_channel_id) '
+  'WHERE external_thread_id IS NULL',
 )
+@TableIndex(name: 'idx_chat_space_links_ccSpaceId', columns: {#ccSpaceId})
 class ChatSpaceLinksTable extends Table {
   /// Unique row id (UUID v4).
   TextColumn get id => text()();
 
   /// Workspace scope (isolation invariant).
-  TextColumn get workspaceId => text().customConstraint('NOT NULL')();
+  TextColumn get workspaceId => text()();
 
   /// Which chat product the external side lives on (`ChatProvider.wire`).
-  TextColumn get provider => text()();
+  TextColumn get provider => text().check(
+    // ignore: recursive_getters
+    provider.isIn(SpacesStoredValues.chatProvider),
+  )();
 
   /// Provider-side workspace/guild id (Slack `T024BE7LD`). Empty for a provider
   /// with no such concept.
@@ -50,7 +56,8 @@ class ChatSpaceLinksTable extends Table {
     'NOT NULL REFERENCES spaces (id) ON DELETE CASCADE',
   )();
 
-  /// The CC user whose message created the link, when known.
+  /// The CC user whose message created the link, when known. No foreign
+  /// key: `users` lives in `global.db`.
   TextColumn get createdByUserId => text().nullable()();
 
   /// When the link was created.
@@ -75,19 +82,18 @@ class ChatSpaceLinksTable extends Table {
 /// re-checks workspace membership on every inbound event, so a link to a user
 /// who has since been removed resolves to a refusal.
 ///
-/// `(workspace_id, provider, external_team_id, external_user_id)` is unique (one
-/// CC user per external member) and so is `(workspace_id, provider, user_id)`
-/// (one identity **per provider** per CC user), which keeps attribution
-/// single-valued in both directions while letting one person be linked on Slack
-/// and Discord at once.
+/// `(provider, external_team_id, external_user_id)` is unique (one CC user
+/// per external member) and so is `(provider, user_id)` (one identity **per
+/// provider** per CC user), which keeps attribution single-valued in both
+/// directions while letting one person be linked on Slack and Discord at once.
 @TableIndex(
   name: 'uq_chat_user_links_ws_provider_team_user',
-  columns: {#workspaceId, #provider, #externalTeamId, #externalUserId},
+  columns: {#provider, #externalTeamId, #externalUserId},
   unique: true,
 )
 @TableIndex(
   name: 'uq_chat_user_links_ws_provider_user',
-  columns: {#workspaceId, #provider, #userId},
+  columns: {#provider, #userId},
   unique: true,
 )
 class ChatUserLinksTable extends Table {
@@ -95,10 +101,13 @@ class ChatUserLinksTable extends Table {
   TextColumn get id => text()();
 
   /// Workspace scope (isolation invariant).
-  TextColumn get workspaceId => text().customConstraint('NOT NULL')();
+  TextColumn get workspaceId => text()();
 
   /// Which chat product the external identity lives on (`ChatProvider.wire`).
-  TextColumn get provider => text()();
+  TextColumn get provider => text().check(
+    // ignore: recursive_getters
+    provider.isIn(SpacesStoredValues.chatProvider),
+  )();
 
   /// Provider-side workspace/guild id. Empty for a provider with no such
   /// concept.
@@ -112,7 +121,12 @@ class ChatUserLinksTable extends Table {
   TextColumn get userId => text()();
 
   /// How the link was established (`ChatLinkMethod.wire`).
-  TextColumn get method => text().withDefault(const Constant('code'))();
+  TextColumn get method => text()
+      .check(
+        // ignore: recursive_getters
+        method.isIn(SpacesStoredValues.chatLinkMethod),
+      )
+      .withDefault(const Constant('code'))();
 
   /// When the link was established.
   DateTimeColumn get linkedAt => dateTime().withDefault(currentDateAndTime)();

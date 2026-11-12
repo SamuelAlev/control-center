@@ -28,8 +28,8 @@ const Duration kDeltaFlushInterval = Duration(seconds: 2);
 /// message id) and a subagent run (`RunTranscriptRecorder`, keyed by run id)
 /// without duplicating any of the logic below — which is subtler than it looks
 /// (tool pairing by call id with an orphan path, delta buffering to avoid
-/// quadratic re-copies, an incremental flush-encode cache and the tool-argument
-/// echo guard).
+/// quadratic re-copies, the changed-segment tracking a flush writes from and
+/// the tool-argument echo guard).
 class TranscriptFolder {
   /// Creates a folder that reports every change through [onUpdate].
   ///
@@ -70,15 +70,15 @@ class TranscriptFolder {
   /// Fallback for results whose tool-call id is empty / unknown.
   int? _lastOpenToolIndex;
 
-  /// Incremental flush-encode cache: the JSON entry per segment index and the
-  /// segment instance it was encoded from. Closed segments never change
-  /// identity, so a flush re-encodes only open/changed indices instead of the
-  /// whole transcript (the old `encodeTranscript(segments)` per flush was
-  /// O(transcript²) over a turn).
-  final List<Map<String, dynamic>> _encodedSegments = <Map<String, dynamic>>[];
+  /// The segment instance each index held at the last [takeChangedSegments].
+  /// Segments are replaced, never mutated, so a new instance is a change.
+  final List<TranscriptSegment> _flushedFrom = <TranscriptSegment>[];
 
-  /// See [_encodedSegments].
-  final List<TranscriptSegment?> _encodedFrom = <TranscriptSegment?>[];
+  /// For an index that was open at the last [takeChangedSegments], how long
+  /// its buffer was then. An open segment's entry stays the same instance
+  /// while its buffer grows, and a buffer only grows, so the length is what
+  /// tells a grown one apart.
+  final Map<int, int> _flushedOpenLength = <int, int>{};
 
   /// Index of the most recently closed **text** segment, held as a candidate
   /// for the tool-argument-echo guard while the tool calls it preceded arrive.
@@ -496,32 +496,45 @@ class TranscriptFolder {
     return buf.join('\n\n').trim();
   }
 
-  /// Encodes the transcript for a mid-run flush, re-encoding ONLY segments
-  /// that changed since the last flush (open buffers + replaced instances).
-  /// Closed segments are immutable, so identity is the change signal.
-  List<Map<String, dynamic>> encodeForFlush() {
-    final encoded = _encodedSegments;
-    final from = _encodedFrom;
-    if (encoded.length > _segments.length) {
-      encoded.removeRange(_segments.length, encoded.length);
-      from.removeRange(_segments.length, from.length);
-    }
+  /// The segments that are new or changed since the previous call, encoded,
+  /// by index; the first call returns every segment.
+  ///
+  /// A flush writes exactly these rows, so a long turn costs each flush the
+  /// segments it touched, never the whole transcript. A closed segment is
+  /// returned again only when it was replaced (a tool that finished, a text
+  /// that was trimmed or blanked); an open one also when its buffer grew.
+  Map<int, Map<String, dynamic>> takeChangedSegments() {
+    final changed = <int, Map<String, dynamic>>{};
     for (var i = 0; i < _segments.length; i++) {
       final source = _segments[i];
-      final isOpen = i == _openTextIndex || _openToolBufs.containsKey(i);
-      if (i < encoded.length && !isOpen && identical(from[i], source)) {
+      final openLength = i == _openTextIndex
+          ? _openTextBuf.length
+          : _openToolBufs[i]?.length;
+      if (i < _flushedFrom.length &&
+          identical(_flushedFrom[i], source) &&
+          _flushedOpenLength[i] == openLength) {
         continue;
       }
-      final json = materialized(i).toJson();
-      if (i < encoded.length) {
-        encoded[i] = json;
-        from[i] = isOpen ? null : source;
+      changed[i] = materialized(i).toJson();
+      if (i < _flushedFrom.length) {
+        _flushedFrom[i] = source;
       } else {
-        encoded.add(json);
-        from.add(isOpen ? null : source);
+        _flushedFrom.add(source);
+      }
+      if (openLength == null) {
+        _flushedOpenLength.remove(i);
+      } else {
+        _flushedOpenLength[i] = openLength;
       }
     }
-    return List<Map<String, dynamic>>.of(encoded);
+    return changed;
+  }
+
+  /// Forgets what was handed out, so the next [takeChangedSegments] returns
+  /// every segment again: the recovery after a flush that failed to write.
+  void forgetFlushed() {
+    _flushedFrom.clear();
+    _flushedOpenLength.clear();
   }
 
   /// The trailing error/violation prose, or null when the turn recovered.

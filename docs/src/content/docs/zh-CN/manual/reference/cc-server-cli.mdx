@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: 无界面服务器的每一个标志、环境变量、子命令和数据目录路径。
 slug: zh-CN/手册/参考/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 每个进程标志都可以通过命令行标志或环境变量设置；优先级依次是标志、环境变量、默认值。提供商凭据是例外——见[提供商应用与 Connect](#提供商应用与-connect)。
@@ -165,12 +165,16 @@ sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 
 默认数据目录在 macOS 上是 `~/Library/Application Support/control-center`，在 Windows 上是 `%APPDATA%\control-center`，其他平台上则是 `$XDG_DATA_HOME/control-center`（否则为 `~/.local/share/control-center`）。只有当主目录和应用数据目录都无法解析时，才会使用相对于当前工作目录的 `.cc_server`。
 
+服务器会将数据目录设为仅其自身账户可访问（`0700`）。当它无法做到这一点时，或当 `global.db` 已损坏或由较新版本写入时，或当其身份文件无法读取时，它会拒绝启动（exit code `78`）。
+
 | 路径                              | 内容                                                                     |
 | --------------------------------- | ------------------------------------------------------------------------ |
 | `global.db`                       | 工作区注册表、用户、已配对设备、新闻流和机群队列                          |
-| `<workspaceId>/workspace.db`      | 每个工作区一个数据库——智能体、空间、工单、记忆、代码图                    |
+| `<workspaceId>/workspace.db`      | 每个工作区一个数据库——智能体、空间、工单、记忆                    |
+| `<workspaceId>/code_index.db` | 该工作区的代码图。缺失时重建，从不备份 |
+| `pre_upgrade/`、`<workspaceId>/pre_upgrade/` | 更新改变格式前数据库的最新两份副本 |
 | `<workspaceId>/chat_credentials/` | 聊天机器人令牌，以明文 JSON 保存，因此会随工作区一起迁移                  |
-| `secrets.json`                    | 配对密钥、Connect 安装密钥、提供商应用、人们的登录（通过 Connect 完成时为封存的）、SSO（`0600`） |
+| `secrets.json`                    | 配对密钥、Connect 安装密钥、提供商应用、人们的登录（通过 Connect 完成时为封存的）、webhook 密钥、SSO（`0600`） |
 | `backups/<timestamp>/`            | 一份安装快照——`manifest.json`、`global.db` 以及每个工作区的副本          |
 | `backups/exports/`                | 单工作区导出，`<workspaceId>-<timestamp>.db`                              |
 | `backups/transfer/`               | 备份下载和上传的暂存区；由写入它的路由负责清理                            |

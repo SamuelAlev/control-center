@@ -2,7 +2,7 @@
 title: Arkitektur
 description: Hvordan Control Center er strukturert med en tynnklient- og servermodell, funksjonsorientert Clean Architecture og porter og adaptere.
 slug: nb-NO/handbok/konsepter/arkitektur
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Oversikt
@@ -99,9 +99,9 @@ Appens komposisjonsrot (`di/providers.dart`) binder klientsideporter til impleme
 **Drift** (SQLite), delt i to databaser, begge i `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — en kort liste over virkelig serveromfattende tabeller: arbeidsområderegisteret, brukere/innstillinger/sammenkoplede enheter, SSO-tilkoblinger, installasjonsomfattende serverinnstillinger, administrerte handlingspolicyer (en installasjonsomfattende innstramming som bare kan stramme inn arbeidsområdenes tillatelsesregler), nyhetsstrømmen per bruker, flåkøen (workere/jobber/plasseringslogg), indeksen `workspace_routes` før autentisering og installasjonsmetadata. Oppstart åpner bare denne filen, så oppstartskostnaden holder seg flat uansett hvor mye historikk arbeidsområdene samler opp. Å legge til en tabell her er en isolasjonsbeslutning som en ratchet-test tvinger deg til å begrunne.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — én _katalog_ per arbeidsområde, som inneholder én SQLite-fil pluss alt annet som bare hører til det arbeidsområdet, slik at arbeidstrærne og agentfilene til en samtale ligger ved siden av databasen og slettes sammen med den. Nesten alt ligger her: agenter, områder, saker, minne, pipelines, møter, kodegrafen, gjennomganger, repoer. Filer åpnes ved behov ved første berøring gjennom `WorkspaceDatabaseManager.of(workspaceId)` og betaler sin egen `quick_check`, FTS-/trigger-installasjon og `vector_init` da.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — én _katalog_ per arbeidsområde, som inneholder én SQLite-fil pluss alt annet som bare hører til det arbeidsområdet, slik at arbeidstrærne og agentfilene til en samtale ligger ved siden av databasen og slettes sammen med den. Nesten alt ligger her: agenter, områder, saker, minne, pipelines, møter, gjennomganger, repoer. Kodegrafen er en egen fil i samme katalog, `code_index.db`, som bygges på nytt i stedet for å sikkerhetskopieres. Filer åpnes ved behov ved første berøring gjennom `WorkspaceDatabaseManager.of(workspaceId)` og betaler sin egen `quick_check`, FTS-/trigger-installasjon og `vector_init` da.
 
-Begge halvdelene startet fra en sammenslått v1-baseline — `onCreate` bygger gjeldende skjema — med migrasjonstrinn lagt til bare når en utplassert database må føres videre.
+Ingen av halvdelene har migrasjonstrinn. En ny fil bygges fra tabelldefinisjonene. En fil fra en eldre versjon kopieres først til side (`pre_upgrade/`) og føres deretter til de samme definisjonene når den åpnes, slik at en ny installasjon og en oppdatert ender opp med samme skjema. En fil som en nyere versjon skrev, avvises.
 
 Fordi ett arbeidsområde er én fil, er eksport av et arbeidsområde én enkelt `VACUUM INTO`-setning (`workspace.export`), ikke en tabell-for-tabell-dump; `workspace.import` tar i bruk en slik fil og bruker den innebygde `workspace_meta` til å skille en gjenopptatt egen fil fra en som kom fra en annen installasjon.
 

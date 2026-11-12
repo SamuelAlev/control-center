@@ -87,8 +87,8 @@ void main() {
           ),
           state: PlanNodeRunState.running,
           estimate: const PlanNodeEstimate(
-            costCentsLow: 120,
-            costCentsHigh: 480,
+            costMicrosLow: 1200000,
+            costMicrosHigh: 4800000,
             sampleSize: 7,
             blastRadiusFiles: 14,
           ),

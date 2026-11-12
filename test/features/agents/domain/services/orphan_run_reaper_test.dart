@@ -63,10 +63,8 @@ class _FakeTicketRepository implements TicketRepository {
 }
 
 class _FakeRunLogRepoForBudget implements AgentRunLogRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<AgentRunLog?> activeRunForAgent(
     String workspaceId,
@@ -93,14 +91,10 @@ class _FakeRunLogRepoForBudget implements AgentRunLogRepository {
   }
 
   @override
-  Stream<List<AgentRunLog>> watchAll() async* {
-    yield [];
-  }
+  Future<List<AgentRunLog>> nonTerminal() async => [];
 
   @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  Stream<List<AgentRunLog>> watchRecent(int limit) => Stream.value([]);
 
   @override
   Stream<List<AgentRunLog>> watchByConversation(
@@ -175,6 +169,15 @@ class _FakeBudgetEnforcement extends BudgetEnforcementService {
     checked = true;
     return block;
   }
+}
+
+/// Serves a scan snapshot taken before the runs finished on their own.
+class _StaleScanRunLogs extends FakeAgentRunLogRepository {
+  _StaleScanRunLogs(this._snapshot);
+  final List<AgentRunLog> _snapshot;
+
+  @override
+  Future<List<AgentRunLog>> nonTerminal() async => _snapshot;
 }
 
 AgentRunLog _makeRun({
@@ -362,6 +365,39 @@ void main() {
         await reaper.reap();
 
         expect(ticketWorkflow.failedTicketIds, containsAll(['t-a', 't-b']));
+      },
+    );
+
+    test(
+      'leaves a run that finished after the scan untouched',
+      timeout: const Timeout.factor(2),
+      () async {
+        final scanned = _makeRun(id: 'r-raced', pid: null, ticketId: 't-r');
+        final repo = _StaleScanRunLogs([scanned]);
+        final finishedAt = DateTime(2025, 6, 1, 0, 5);
+        repo.seed(
+          scanned.copyWith(
+            status: RunStatus.completed,
+            completedAt: finishedAt,
+            summary: 'done',
+          ),
+        );
+        ticketRepo.seed(_makeTicket(id: 't-r'));
+        reaper = OrphanRunReaper(
+          runLogRepo: repo,
+          ticketRepo: ticketRepo,
+          ticketWorkflow: ticketWorkflow,
+          processControl: processControl,
+        );
+
+        await reaper.reap();
+
+        final stored = await repo.getById('ws-1', 'r-raced');
+        expect(stored!.status, RunStatus.completed);
+        expect(stored.summary, 'done');
+        expect(stored.completedAt, finishedAt);
+        expect(stored.errorFamily, isNull);
+        expect(ticketWorkflow.failedTicketIds, isEmpty);
       },
     );
 

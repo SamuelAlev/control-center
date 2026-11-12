@@ -72,8 +72,8 @@ class DelegationGuards {
   /// Refuses when the delegator's inherited budget envelope is exhausted —
   /// delegation bills the *delegator's* remaining budget and cannot mint more
   /// (governance hard-stops apply transitively).
-  GuardResult checkBudgetEnvelope(int remainingCents) {
-    if (remainingCents <= 0) {
+  GuardResult checkBudgetEnvelope(int remainingMicros) {
+    if (remainingMicros <= 0) {
       return const GuardResult.deny(
         "Delegation refused: the delegator's budget envelope is exhausted "
         '(delegation cannot mint budget).',
@@ -92,7 +92,7 @@ class DelegationGuards {
     required String targetAgentId,
     required AutonomyLevel delegatorAutonomy,
     required AutonomyLevel requestedAutonomy,
-    required int remainingBudgetCents,
+    required int remainingBudgetMicros,
   }) {
     final depth = checkDepth(chainDepth);
     if (!depth.allowed) {
@@ -106,7 +106,7 @@ class DelegationGuards {
     if (!autonomy.allowed) {
       return autonomy;
     }
-    return checkBudgetEnvelope(remainingBudgetCents);
+    return checkBudgetEnvelope(remainingBudgetMicros);
   }
 }
 

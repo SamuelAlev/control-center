@@ -2,7 +2,7 @@
 title: Backup și restaurare
 description: Fă un snapshot al instalării, mută un spațiu de lucru între mașini, restaurează un spațiu de lucru sau toate, și păstrează copii în altă parte.
 slug: ro-RO/manual/ghiduri-practice/backup-si-restaurare
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Acest ghid acoperă cele cinci lucruri pe care oamenii le fac de fapt cu backup-urile:
@@ -43,17 +43,10 @@ Ambele artefacte sunt **doar baze de date**:
 - Un **snapshot de instalare** este un director cu marcă de timp: `manifest.json`, `global.db` și un `<workspaceId>/workspace.db` pentru fiecare spațiu de lucru.
 - Un **export de spațiu de lucru** este acel singur fișier `workspace.db`.
 
-Baza de date a unui spațiu de lucru este întregul spațiu de lucru: conversațiile,
-jurnalele rulărilor, indexul de cod, legăturile cu repository-urile, definițiile
-de medii și membrii. Ea conține și token-urile webhook ale pipeline-urilor și
-secretele webhook ale sincronizării de tichete, în formă citibilă. Păstrează un
-backup descărcat sau un export al spațiului de lucru la fel cum păstrezi un secret.
-Nu conține autentificările la provideri, cheile dispozitivelor sau secretele
-utilizatorilor; acestea trăiesc în baza de date globală și în magazinul de secrete
-al serverului.
+Baza de date a unui spațiu de lucru este întregul spațiu de lucru: conversațiile, jurnalele rulărilor, legăturile cu repository-urile, definițiile de medii și membrii. Nu conține secrete: token-urile webhook ale pipeline-urilor, secretele webhook ale sincronizării de tichete, autentificările la provideri, cheile dispozitivelor și secretele utilizatorilor trăiesc în baza de date globală și în magazinul de secrete al serverului. Este totuși tot ce a spus și a făcut spațiul de lucru, așa că păstrează un backup sau un export descărcat la fel de privat ca spațiul de lucru însuși. Indexul de cod este un fișier separat, alături de baza de date, `code_index.db`. Niciun backup nu îl include; serverul îl reconstruiește.
 
 Niciunul nu include restul directorului de date: `secrets.json` (chei de asociere,
-acreditări de provider, SSO), `blobs/` al unui spațiu de lucru (imagini lipite în mesaje),
+acreditări de provider, secretele webhook, SSO), `blobs/` al unui spațiu de lucru (imagini lipite în mesaje),
 `skills/`, `agents/`, `chat_credentials/`, audio-ul întâlnirilor înregistrate sau
 imaginile de rig. O parte din asta este de unică folosință, iar o parte nu —
 [tabelul complet este în referință](/ro-RO/manual/referinta/backup/#ce-nu-conține-un-backup),
@@ -69,17 +62,11 @@ Serverul rulează în tot acest timp. Fiecare fișier este scris cu `VACUUM INTO
 consistent față de o bază de date activă, așa că nu există fereastră de mentenanță și nu
 e nevoie să oprești agenții.
 
-Fiecare rând din listă arată marca de timp, dimensiunea pe disc, câte spații de lucru au
-fost capturate și dacă snapshot-ul este **Complet** sau **Incomplet**. Incomplet
-înseamnă că manifestul lipsește sau numește fișiere care nu sunt acolo — un backup
-întrerupt de o cădere sau de un disc plin. Acestea sunt totuși listate intenționat: un
-snapshot pe care nu îl vezi este unul despre care crezi că îl ai. Un snapshot incomplet
-nu poate restaura o instalare întreagă, dar fișierele de spațiu de lucru pe care le
-conține pot fi totuși adoptate unul câte unul.
+Fiecare rând din listă arată marca de timp, dimensiunea pe disc, câte spații de lucru au fost capturate și dacă snapshot-ul este **Complet** sau **Neverificat**. Fiecare copie este verificată după ce este scrisă, iar manifestul înregistrează dimensiunea și suma de control a acesteia. Neverificat înseamnă că serverul nu poate garanta snapshot-ul: manifestul lipsește sau nu poate fi citit, ori un fișier pe care îl numește lipsește sau are altă dimensiune. Acesta este un backup întrerupt de o cădere sau de un disc plin, ori unul făcut înainte ca snapshot-urile să înregistreze sumele de control. Acestea sunt totuși listate intenționat: un snapshot pe care nu îl vezi este unul despre care crezi că îl ai. Un snapshot neverificat nu poate restaura o instalare întreagă, dar fișierele de spațiu de lucru pe care le conține pot fi încă restaurate unul câte unul.
 
-Un rând poate spune de asemenea **_n_ spații de lucru necaptate**. Acesta este un spațiu
-de lucru înregistrat, dar în care nu s-a scris niciodată (nu există încă un fișier), sau
-unul a cărui copiere a eșuat — verifică jurnalul serverului.
+Un rând poate spune de asemenea **_n_ spații de lucru necaptate**. Acesta este un spațiu de lucru înregistrat, dar în care nu s-a scris niciodată (nu există încă un fișier), unul a cărui bază de date este deteriorată (o copie deteriorată nu se ia niciodată), sau unul a cărui copiere a eșuat — verifică jurnalul serverului.
+
+Un snapshot sau un backup programat marcat ca **Ultima copie bună** păstrează cea mai recentă copie bună a unui spațiu de lucru a cărui bază de date a fost între timp deteriorată. Curățarea programată nu îl atinge, iar ștergerea lui cere confirmare, până când spațiul de lucru respectiv este restaurat.
 
 ## Programează backup-uri de spațiu de lucru și retenția
 
@@ -107,7 +94,7 @@ backup-urile.
 
 Extinde un rând pentru a vedea fiecare backup, cele mai noi primele:
 
-- **Restaurează** înlocuiește baza de date actuală a spațiului de lucru cu acest backup. Exportă mai întâi spațiul de lucru dacă s-ar putea să ai nevoie să anulezi operația. Necesită proprietarul serverului, care trebuie să fie și proprietarul spațiului de lucru.
+- **Restaurează** înlocuiește baza de date actuală a spațiului de lucru cu acest backup. Baza de date înlocuită se păstrează în această listă, sub un nume care se termină în `-pre-restore`, ca să poți reveni. Necesită proprietarul serverului, care trebuie să fie și proprietarul spațiului de lucru.
 - **Descarcă** salvează fișierul pe mașina pe care o folosești. Backup-ul rămâne pe server.
 - **Copiază calea** copiază locația lui de pe server.
 - **Șterge** elimină definitiv acest backup, după ce tastezi numele spațiului de lucru. Necesită **proprietar**.
@@ -127,7 +114,7 @@ așa cum este descris în
 
 ## Șterge un snapshot de instalare
 
-La **Snapshot-uri de instalare**, extinde snapshot-ul, inclusiv unul incomplet, și
+La **Snapshot-uri de instalare**, extinde snapshot-ul, inclusiv unul neverificat, și
 folosește **Șterge snapshotul** în secțiunea de pericol. Confirmă-i numele. Întregul
 director al snapshot-ului este eliminat definitiv de pe server; descarcă-l mai întâi dacă
 ai nevoie de o copie. Un pipeline de backup de spațiu de lucru nu șterge niciodată aceste
@@ -169,22 +156,14 @@ Dacă ambele servere sunt aceeași mașină la care stai, **Salvează pe server*
 **Salvează pe server** de pe sursă, apoi calea fișierului din **Fișier bază de date a spațiului de lucru** și **Importă** pe destinație fac același lucru fără drumul dus-întors; calea respectivă se rezolvă pe hostul serverului.
 
 :::caution[Importul înlocuiește tot]
-Importul suprascrie tot ce conține în prezent spațiul de lucru țintă și nu poate fi
-anulat. Exportă mai întâi ținta dacă conține ceva ce s-ar putea să vrei înapoi.
+Importul înlocuiește tot ce conține în prezent spațiul de lucru țintă. Baza de date înlocuită se păstrează sub **Copii de rezervă programate**, cu un nume care se termină în `-pre-restore`; restaureaz-o ca să revii.
 :::
 
-Două lucruri sunt permise și înregistrate în jurnal, în loc să fie refuzate: importul unui
-fișier al cărui id de spațiu de lucru înregistrat diferă de cel al țintei (așa duplici un
-spațiu de lucru sau îl restaurezi sub un id nou) și importul unui fișier dintr-o **altă
-instalare**. În al doilea caz, dispozitivele asociate și id-urile de utilizator ale
-fișierului aparțin instalării din care provine și nu se vor rezolva pe aceasta — datele
-proprii ale spațiului de lucru sunt intacte, dar reverifică apartenența după ce îl adopți.
+Un fișier dintr-un alt spațiu de lucru sau dintr-o **altă instalare** este acceptat: așa duplici un spațiu de lucru, îl restaurezi sub un id nou sau îl predai altcuiva. Id-urile de utilizator dintr-o altă instalare nu se rezolvă pe aceasta — datele proprii ale spațiului de lucru sunt intacte, dar reverifică apartenența după ce îl adopți.
 
-Token-urile botului de chat și autentificările providerilor stau în afara bazei de date,
-deci instalarea primitoare le reconectează pe ale sale. Fișierul conține însă
-token-urile webhook ale pipeline-urilor și secretele webhook ale sincronizării de
-tichete ale spațiului de lucru, deci un spațiu de lucru pe care îl predai altcuiva
-le predă și pe acestea. Rotește-le după aceea, dacă destinatarul nu ar trebui să le aibă.
+Un fișier restaurat nu poate acorda nimic singur pe acest server. Permisiunile pe care le transporta dincolo de apartenența obișnuită sunt scoase și listate sub **Reținute din copiile restaurate** în partea de sus a paginii: reguli de acțiune care permit agenților să acționeze fără aprobare sau după una, căi pe care o sandbox le poate rula, acces la repository-uri peste simplul citit, roluri peste membru și invitații deschise către aceste roluri. **Acceptă** le acordă din nou; **Respinge** le elimină. Aprobările de a rula o definiție de mediu pe gazdă sunt șterse, așa că aprobă din nou acele definiții. Cine restaurează păstrează sau primește rolul de proprietar.
+
+Token-urile botului de chat, autentificările la provideri și secretele webhook stau în afara bazei de date, deci instalarea primitoare le conectează pe ale sale. Trigger-ele webhook și webhook-urile de sincronizare a tichetelor sosesc fără secretele lor și nu primesc nimic pe alt server până nu le salvezi din nou acolo, ceea ce dă fiecărui trigger un URL nou.
 
 ## Restaurează un spațiu de lucru dintr-un snapshot
 
@@ -196,7 +175,7 @@ Ai nevoie să fii proprietarul serverului și proprietarul spațiului de lucru.
 
 Aceasta este aceeași operațiune ca un import, îndreptată spre copia din snapshot a
 fișierului acelui spațiu de lucru — în mod deliberat, ca să nu existe un al doilea
-mecanism care ar putea trata diferit același fișier.
+mecanism care ar putea trata diferit același fișier. Copia este mai întâi verificată după suma de control înregistrată de snapshot.
 
 Un rând poate spune **Nu mai e pe acest server**, cu **Restaurează** dezactivat:
 snapshot-ul conține un spațiu de lucru pe care această instalare nu îl mai are. Readu-l
@@ -204,6 +183,10 @@ manual — creează un spațiu de lucru (doar proprietarul serverului poate), ap
 `<snapshot path>/<old workspace id>/workspace.db` și apasă **Importă**. Snapshot-ul extins își arată propria
 **Cale pe server** într-un câmp de copiere, iar titlul rândului este id-ul vechiului
 spațiu de lucru, așa că ai ambele jumătăți ale acelei căi în față.
+
+## Restaurarea unui spațiu de lucru deteriorat
+
+Un spațiu de lucru a cărui bază de date nu trece verificarea de integritate devine doar pentru citire: totul rămâne citibil, iar fiecare modificare este refuzată. Membrii văd **Acest spațiu de lucru este doar pentru citire** în partea de sus a spațiului de lucru, proprietarul serverului îl vede sub **Necesită atenția ta** pe această pagină, iar cel mai recent backup care conține o copie bună este păstrat ca **Ultima copie bună**. Restaurează spațiul de lucru din acea copie, așa cum este descris mai sus, ca să permită din nou modificări. Baza de date deteriorată este păstrată ca backup `-pre-restore`.
 
 ## Restaurează o instalare întreagă
 
@@ -332,7 +315,7 @@ systemd, și sincronizează `DEST` în afara hostului după aceea. `VACUUM INTO`
 SQLite 3.27 sau mai nou.
 
 Scrie-l **în afara** `<dataDir>/backups/`. Un director făcut manual acolo nu are
-`manifest.json`, așa că aplicația l-ar lista ca pe un snapshot incomplet, iar lista ar
+`manifest.json`, așa că aplicația l-ar lista ca pe un snapshot neverificat, iar lista ar
 înceta să mai fie o evidență onestă a ceea ce a produs serverul însuși.
 
 ### Curăță snapshot-urile vechi ale întregii instalări
@@ -380,9 +363,11 @@ sunt stocate.
 | „Doar proprietarul serverului poate restaura copiile de rezervă. Le poți descărca în continuare.” | Restaurarea înlocuiește baza de date a unui spațiu de lucru pe hostul serverului, deci doar proprietarul serverului restaurează. Descarcă backup-ul și cere-i lui |
 | „Acest server nu are o suprafață de backup.”                              | Hostul nu are conectat niciun port de backup — un server demo. Operațiunile lipsesc, în loc să fie refuzate                          |
 | „Fișierul e mai mare decât acceptă serverul.”                            | Încărcările sunt limitate la 8 GiB. Pune fișierul pe hostul serverului și introdu calea lui în **Fișier bază de date a spațiului de lucru**           |
-| Import refused: not a Control Center workspace database                  | Fișierul nu are niciun rând `workspace_meta` — nu este un export de spațiu de lucru sau este trunchiat. Nu s-a înlocuit nimic             |
-| Un snapshot este listat **Incomplet**                                    | Manifestul lui lipsește sau numește fișiere absente. Fă unul nou; între timp, adoptă din el fișierele individuale de spațiu de lucru |
-| Un snapshot spune că nu au fost capturate spații de lucru                | În acele spații de lucru nu s-a scris niciodată sau copierea lor a eșuat. Verifică jurnalul serverului                                  |
+| Restaurarea este refuzată și nu se înlocuiește nimic | Fișierul nu a trecut o verificare, iar mesajul arată care: nu este o bază de date de spațiu de lucru, este deteriorat, diferă de suma de control înregistrată de snapshot-ul lui, l-a scris o versiune mai nouă a serverului, sau webhook-urile ori invitațiile lui aparțin deja altui spațiu de lucru de pe acest server. Folosește o altă copie sau actualizează mai întâi serverul |
+| Un snapshot este listat ca **Neverificat** | Nu s-a terminat niciodată, sau a fost făcut înainte ca snapshot-urile să înregistreze sumele de control. Fă unul nou; între timp, restaurează din el fișierele individuale de spațiu de lucru |
+| Un snapshot spune că nu au fost capturate spații de lucru                | În acele spații de lucru nu s-a scris niciodată, sunt deteriorate sau copierea lor a eșuat. Verifică jurnalul serverului                                  |
+| Un spațiu de lucru afișează **Acest spațiu de lucru este doar pentru citire** | Baza lui de date nu a trecut o verificare de integritate. Nimic din ea nu poate fi modificat până când proprietarul serverului nu o restaurează dintr-un backup |
+| Webhook-urile încetează să mai sosească după ce un spațiu de lucru trece pe alt server | Secretele webhook nu călătoresc odată cu baza de date. Salvează din nou fiecare trigger webhook și fiecare conexiune de sincronizare a tichetelor pe noul server, apoi trimite expeditorului noul URL |
 | O instalare restaurată nu are acreditări de forge sau SSO                | `secrets.json` nu este într-un snapshot. Restaurează-l de unde l-ai păstrat sau reconectează providerii                     |
 | Unui spațiu de lucru restaurat îi lipsesc imaginile lipite               | Blob-urile stau lângă baza de date, nu în ea. Copiază și `<workspaceId>/blobs/`                                     |
 

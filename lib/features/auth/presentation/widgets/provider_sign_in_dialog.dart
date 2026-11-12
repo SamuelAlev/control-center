@@ -9,6 +9,7 @@ import 'package:control_center/features/auth/presentation/widgets/sign_in_dialog
 import 'package:control_center/features/auth/presentation/widgets/sign_in_setup_action.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,7 +128,7 @@ class _ProviderSignInDialogState extends ConsumerState<ProviderSignInDialog> {
       if (mounted) {
         setState(() {
           _starting = false;
-          _beginError = describeSignInStartError(e);
+          _beginError = failureMessage(AppLocalizations.of(context), e);
         });
       }
     }

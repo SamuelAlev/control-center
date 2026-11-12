@@ -1,6 +1,7 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_memory_beliefs_workspaceId', columns: {#workspaceId})
 /// Workspace-scoped harmonized beliefs emitted by cross-agent SHMR.
 class MemoryBeliefsTable extends Table {
   /// Unique belief identifier.
@@ -22,18 +23,33 @@ class MemoryBeliefsTable extends Table {
   RealColumn get harmonyScore => real().withDefault(const Constant(0.0))();
 
   /// JSON array of source fact ids.
-  TextColumn get provenanceFactIds =>
-      text().withDefault(const Constant('[]'))();
+  TextColumn get provenanceFactIds => text()
+      .check(
+        // ignore: recursive_getters
+        isJsonArray(provenanceFactIds),
+      )
+      .withDefault(const Constant('[]'))();
 
   /// JSON array of contributing agent ids.
-  TextColumn get provenanceAgentIds =>
-      text().withDefault(const Constant('[]'))();
+  TextColumn get provenanceAgentIds => text()
+      .check(
+        // ignore: recursive_getters
+        isJsonArray(provenanceAgentIds),
+      )
+      .withDefault(const Constant('[]'))();
 
-  /// The cluster this belief came from.
+  /// The cluster this belief came from. No foreign key: clusters exist only
+  /// for the length of a harmonization pass.
   TextColumn get clusterId => text()();
 
-  /// What harmonization did: `create`, `update`, or `dampen`.
-  TextColumn get action => text().withDefault(const Constant('create'))();
+  /// What harmonization did: `create`, `update`, or `dampen`
+  /// (`MemoryBelief.actions`).
+  TextColumn get action => text()
+      .check(
+        // ignore: recursive_getters
+        action.isIn(SpacesStoredValues.beliefAction),
+      )
+      .withDefault(const Constant('create'))();
 
   /// When created.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

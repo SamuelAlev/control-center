@@ -1,0 +1,173 @@
+{
+ "user_version": 12,
+ "objects": [
+  {
+   "type": "table",
+   "name": "_sqliteai_vector",
+   "tbl_name": "_sqliteai_vector",
+   "sql": "CREATE TABLE _sqliteai_vector (tblname TEXT, colname TEXT, key TEXT, value ANY, PRIMARY KEY(tblname, colname, key))"
+  },
+  {
+   "type": "table",
+   "name": "workspaces",
+   "tbl_name": "workspaces",
+   "sql": "CREATE TABLE \"workspaces\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"logo_path\" TEXT NULL, \"owner_user_id\" TEXT NULL, \"secret_exclude_globs\" TEXT NOT NULL DEFAULT '[]', \"review_concurrency\" INTEGER NOT NULL DEFAULT 3, \"auto_publish_review\" INTEGER NOT NULL DEFAULT 0 CHECK (\"auto_publish_review\" IN (0, 1)), \"position\" INTEGER NOT NULL DEFAULT 0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"deleted_at\" INTEGER NULL, \"github_app_id\" TEXT NOT NULL DEFAULT '', \"connect_mode\" TEXT NOT NULL DEFAULT 'inherit', \"connect_url\" TEXT NOT NULL DEFAULT '', PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "users",
+   "tbl_name": "users",
+   "sql": "CREATE TABLE \"users\" (\"id\" TEXT NOT NULL, \"handle\" TEXT NOT NULL, \"display_name\" TEXT NOT NULL, \"email\" TEXT NULL, \"avatar_ref\" TEXT NULL, \"git_author_name\" TEXT NULL, \"git_author_email\" TEXT NULL, \"sso_subject\" TEXT NULL, \"sso_issuer\" TEXT NULL, \"deactivated_at\" INTEGER NULL, \"onboarding_finished_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"email_verified\" INTEGER NOT NULL DEFAULT 0 CHECK (\"email_verified\" IN (0, 1)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "user_preferences",
+   "tbl_name": "user_preferences",
+   "sql": "CREATE TABLE \"user_preferences\" (\"user_id\" TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE, \"key\" TEXT NOT NULL, \"value\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"user_id\", \"key\"))"
+  },
+  {
+   "type": "table",
+   "name": "paired_devices",
+   "tbl_name": "paired_devices",
+   "sql": "CREATE TABLE \"paired_devices\" (\"id\" TEXT NOT NULL, \"user_id\" TEXT NULL, \"workspace_id\" TEXT NULL, \"label\" TEXT NOT NULL, \"platform\" TEXT NOT NULL DEFAULT 'web', \"psk_ref\" TEXT NOT NULL, \"remote_fingerprint\" TEXT NULL, \"status\" TEXT NOT NULL DEFAULT 'pendingConfirm', \"paired_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"last_seen_at\" INTEGER NULL, \"expires_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "rss_feeds",
+   "tbl_name": "rss_feeds",
+   "sql": "CREATE TABLE \"rss_feeds\" (\"id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE, \"name\" TEXT NOT NULL, \"url\" TEXT NOT NULL, \"description\" TEXT NOT NULL DEFAULT '', \"icon_url\" TEXT NOT NULL DEFAULT '', \"user_agent\" TEXT NOT NULL DEFAULT '', \"enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"enabled\" IN (0, 1)), \"last_fetched_at\" INTEGER NULL, \"last_error\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "rss_articles",
+   "tbl_name": "rss_articles",
+   "sql": "CREATE TABLE \"rss_articles\" (\"id\" TEXT NOT NULL, \"feed_id\" TEXT NOT NULL REFERENCES rss_feeds (id) ON DELETE CASCADE, \"guid\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"link\" TEXT NOT NULL, \"summary\" TEXT NOT NULL DEFAULT '', \"image_url\" TEXT NOT NULL DEFAULT '', \"author\" TEXT NOT NULL DEFAULT '', \"published_at\" INTEGER NULL, \"saved\" INTEGER NOT NULL DEFAULT 0 CHECK (\"saved\" IN (0, 1)), \"read\" INTEGER NOT NULL DEFAULT 0 CHECK (\"read\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workers",
+   "tbl_name": "workers",
+   "sql": "CREATE TABLE \"workers\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"caps_json\" TEXT NOT NULL DEFAULT '{}', \"platform\" TEXT NOT NULL DEFAULT 'unknown', \"credential_ref\" TEXT NULL, \"paired_device_id\" TEXT NULL, \"protocol_version\" INTEGER NOT NULL DEFAULT 0, \"status\" TEXT NOT NULL DEFAULT 'offline', \"last_heartbeat_at\" INTEGER NULL, \"registered_by\" TEXT NULL, \"drained_at\" INTEGER NULL, \"revoked_at\" INTEGER NULL, \"last_error\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "jobs",
+   "tbl_name": "jobs",
+   "sql": "CREATE TABLE \"jobs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL, \"spec_json\" TEXT NOT NULL DEFAULT '{}', \"required_caps_json\" TEXT NOT NULL DEFAULT '[]', \"preferred_caps_json\" TEXT NOT NULL DEFAULT '[]', \"status\" TEXT NOT NULL DEFAULT 'queued', \"worker_id\" TEXT NULL, \"pinned_worker_id\" TEXT NULL, \"lease_expires_at\" INTEGER NULL, \"priority\" INTEGER NOT NULL DEFAULT 0, \"submitted_by\" TEXT NULL, \"cost_cents\" INTEGER NOT NULL DEFAULT 0, \"attempts\" INTEGER NOT NULL DEFAULT 0, \"max_attempts\" INTEGER NOT NULL DEFAULT 1, \"last_acked_seq\" INTEGER NOT NULL DEFAULT 0, \"result_json\" TEXT NULL, \"error\" TEXT NULL, \"agent_id\" TEXT NULL, \"conversation_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"leased_at\" INTEGER NULL, \"started_at\" INTEGER NULL, \"finished_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "placement_log",
+   "tbl_name": "placement_log",
+   "sql": "CREATE TABLE \"placement_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"job_id\" TEXT NOT NULL, \"worker_id\" TEXT NULL, \"decision\" TEXT NOT NULL DEFAULT 'queued', \"reason\" TEXT NOT NULL DEFAULT '', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_routes",
+   "tbl_name": "workspace_routes",
+   "sql": "CREATE TABLE \"workspace_routes\" (\"kind\" TEXT NOT NULL, \"key_hash\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"kind\", \"key_hash\"))"
+  },
+  {
+   "type": "table",
+   "name": "server_meta",
+   "tbl_name": "server_meta",
+   "sql": "CREATE TABLE \"server_meta\" (\"key\" TEXT NOT NULL, \"value\" TEXT NOT NULL, PRIMARY KEY (\"key\"))"
+  },
+  {
+   "type": "table",
+   "name": "server_settings",
+   "tbl_name": "server_settings",
+   "sql": "CREATE TABLE \"server_settings\" (\"key\" TEXT NOT NULL, \"value\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"key\"))"
+  },
+  {
+   "type": "table",
+   "name": "sso_connections",
+   "tbl_name": "sso_connections",
+   "sql": "CREATE TABLE \"sso_connections\" (\"id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL, \"enabled\" INTEGER NOT NULL DEFAULT 0 CHECK (\"enabled\" IN (0, 1)), \"issuer\" TEXT NOT NULL DEFAULT '', \"client_id\" TEXT NOT NULL DEFAULT '', \"groups_claim\" TEXT NOT NULL DEFAULT 'groups', \"idp_metadata_xml\" TEXT NOT NULL DEFAULT '', \"sp_entity_id\" TEXT NOT NULL DEFAULT '', \"email_attribute\" TEXT NOT NULL DEFAULT 'email', \"display_name_attribute\" TEXT NOT NULL DEFAULT 'displayName', \"groups_attribute\" TEXT NOT NULL DEFAULT 'groups', \"default_role\" TEXT NOT NULL DEFAULT 'member', \"group_role_map\" TEXT NOT NULL DEFAULT '{}', \"auto_member\" INTEGER NOT NULL DEFAULT 1 CHECK (\"auto_member\" IN (0, 1)), \"allow_jit\" INTEGER NOT NULL DEFAULT 1 CHECK (\"allow_jit\" IN (0, 1)), \"allow_idp_initiated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"allow_idp_initiated\" IN (0, 1)), \"want_response_signed\" INTEGER NOT NULL DEFAULT 0 CHECK (\"want_response_signed\" IN (0, 1)), \"clock_skew_seconds\" INTEGER NOT NULL DEFAULT 90, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_users_handle",
+   "tbl_name": "users",
+   "sql": "CREATE UNIQUE INDEX idx_users_handle ON users (handle)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rss_articles_feedId_guid",
+   "tbl_name": "rss_articles",
+   "sql": "CREATE UNIQUE INDEX idx_rss_articles_feedId_guid ON rss_articles (feed_id, guid)"
+  },
+  {
+   "type": "index",
+   "name": "idx_workers_status",
+   "tbl_name": "workers",
+   "sql": "CREATE INDEX idx_workers_status ON workers (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_jobs_workspace_status",
+   "tbl_name": "jobs",
+   "sql": "CREATE INDEX idx_jobs_workspace_status ON jobs (workspace_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_jobs_worker_status",
+   "tbl_name": "jobs",
+   "sql": "CREATE INDEX idx_jobs_worker_status ON jobs (worker_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_jobs_lease_expiry",
+   "tbl_name": "jobs",
+   "sql": "CREATE INDEX idx_jobs_lease_expiry ON jobs (lease_expires_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_placement_log_job",
+   "tbl_name": "placement_log",
+   "sql": "CREATE INDEX idx_placement_log_job ON placement_log (job_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_placement_log_workspace",
+   "tbl_name": "placement_log",
+   "sql": "CREATE INDEX idx_placement_log_workspace ON placement_log (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_users_sso_subject",
+   "tbl_name": "users",
+   "sql": "CREATE UNIQUE INDEX idx_users_sso_subject ON users(sso_issuer, sso_subject) WHERE sso_issuer IS NOT NULL AND sso_subject IS NOT NULL"
+  },
+  {
+   "type": "table",
+   "name": "managed_action_policies",
+   "tbl_name": "managed_action_policies",
+   "sql": "CREATE TABLE \"managed_action_policies\" (\"id\" TEXT NOT NULL, \"action_class\" TEXT NULL, \"command_prefix\" TEXT NULL, \"decision\" TEXT NOT NULL DEFAULT 'prompt', \"enforcement\" TEXT NULL, \"constraint_json\" TEXT NULL, \"updated_by\" TEXT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"action_class\", \"command_prefix\"))"
+  },
+  {
+   "type": "table",
+   "name": "invite_secure_routes",
+   "tbl_name": "invite_secure_routes",
+   "sql": "CREATE TABLE invite_secure_routes (route_id TEXT PRIMARY KEY NOT NULL, code_hash TEXT NOT NULL, workspace_id TEXT NOT NULL)"
+  },
+  {
+   "type": "table",
+   "name": "environment_slot_leases",
+   "tbl_name": "environment_slot_leases",
+   "sql": "CREATE TABLE \"environment_slot_leases\" (\"block\" INTEGER NOT NULL, \"first_port\" INTEGER NOT NULL, \"size\" INTEGER NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"definition_id\" TEXT NOT NULL, \"pool_key\" TEXT NULL, \"pool_slot\" INTEGER NULL, \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"block\"), UNIQUE (\"pool_key\", \"pool_slot\"), UNIQUE (\"workspace_id\", \"space_id\", \"definition_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "server_audit",
+   "tbl_name": "server_audit",
+   "sql": "CREATE TABLE \"server_audit\" (\"id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"device_id\" TEXT NULL, \"ip\" TEXT NULL, \"op\" TEXT NOT NULL, \"arg_names\" TEXT NOT NULL, \"outcome\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_server_audit_created",
+   "tbl_name": "server_audit",
+   "sql": "CREATE INDEX idx_server_audit_created ON server_audit (created_at)"
+  }
+ ]
+}

@@ -252,7 +252,7 @@ void main() {
       scorecardJson: '{"pass": 0.75}',
       passRate: 0.75,
       status: 'done',
-      costCents: 100,
+      costMicros: 100,
       triggeredBy: 'ci',
       jobId: 'job-1',
       createdAt: createdAt,
@@ -270,7 +270,7 @@ void main() {
       expect(r.scorecardJson, '{"pass": 0.75}');
       expect(r.passRate, 0.75);
       expect(r.status, 'done');
-      expect(r.costCents, 100);
+      expect(r.costMicros, 100);
       expect(r.triggeredBy, 'ci');
       expect(r.jobId, 'job-1');
       expect(r.createdAt, createdAt);
@@ -287,7 +287,7 @@ void main() {
         batchSize: 1,
         passRate: 0,
         status: 'queued',
-        costCents: 0,
+        costMicros: 0,
         triggeredBy: 'manual',
         createdAt: createdAt,
       );
@@ -309,7 +309,7 @@ void main() {
       expect(c.scorecardJson.value, '{"pass": 0.75}');
       expect(c.passRate.value, 0.75);
       expect(c.status.value, 'done');
-      expect(c.costCents.value, 100);
+      expect(c.costMicros.value, 100);
       expect(c.triggeredBy.value, 'ci');
       expect(c.jobId.value, 'job-1');
       expect(c.createdAt.value, createdAt);
@@ -465,7 +465,7 @@ extension on EvalRunsTableCompanion {
     scorecardJson: scorecardJson.present ? scorecardJson.value : null,
     passRate: passRate.value,
     status: status.value,
-    costCents: costCents.value,
+    costMicros: costMicros.value,
     triggeredBy: triggeredBy.value,
     jobId: jobId.present ? jobId.value : null,
     createdAt: createdAt.value,

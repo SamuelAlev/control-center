@@ -247,6 +247,8 @@ class DemoProfile {
     'workspace.export',
     // Names backup files on the server's disk; the demo keeps none.
     'workspace.listBackups',
+    // What an imported file claimed; the demo imports none.
+    'workspace.importHolds.list',
     // CROSS-WORKSPACE BY DESIGN lookups with no membership gate at the
     // dispatcher: rows of EVERY visitor's workspace pass through them, and
     // only the handler's per-row membership filter stands between visitors.
@@ -598,6 +600,7 @@ class DemoProfile {
     'workspace.create',
     'workspace.delete',
     'workspace.import',
+    'workspace.importHolds.resolve',
     'workspace.deleteBackup',
     'workspace.reorder',
     'workspace.setReposForWorkspace',
@@ -700,7 +703,7 @@ class DemoProfile {
     'agentGoalRuns.watchForWorkspace',
     'agent_run_log.watchActiveByConversation',
     'agent_run_log.watchActiveBySpace',
-    'agent_run_log.watchAll',
+    'agent_run_log.watchActiveByWorkspace',
     'agent_run_log.watchByAgent',
     'agent_run_log.watchByConversation',
     'agent_run_log.watchBySpace',

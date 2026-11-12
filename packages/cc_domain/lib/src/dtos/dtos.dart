@@ -11,6 +11,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart'
     show AgentRole;
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/fonts/domain/entities/font_family_info.dart'
     show FontFamilyInfo;
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart'
@@ -118,6 +119,7 @@ class WorkspaceDto {
     this.deletedAt,
     this.createdAt,
     this.updatedAt,
+    this.storageState,
   });
 
   factory WorkspaceDto.fromJson(Map<String, dynamic> json) => WorkspaceDto(
@@ -143,6 +145,7 @@ class WorkspaceDto {
     updatedAt: json['updated_at'] is String
         ? DateTime.tryParse(json['updated_at'] as String)
         : null,
+    storageState: json['storage_state'] as String?,
   );
 
   final String id;
@@ -175,6 +178,10 @@ class WorkspaceDto {
   final DateTime? deletedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// `ok` / `read_only` on a `workspace.watchAll` row; null elsewhere. Read
+  /// only: [toJson] never sends it, the server alone decides it.
+  final String? storageState;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -383,7 +390,7 @@ class AgentDto {
     this.effort,
     this.contextSize,
     this.role,
-    this.monthlyBudgetCents = 0,
+    this.monthlyBudgetMicros = 0,
     this.silenceTimeoutMinutes,
     this.maxConcurrentTasks = 1,
     this.visibility = 'workspace',
@@ -411,7 +418,7 @@ class AgentDto {
     effort: json['effort'] as String?,
     contextSize: (json['context_size'] as num?)?.toInt(),
     role: json['role'] as String?,
-    monthlyBudgetCents: (json['monthly_budget_cents'] as num?)?.toInt() ?? 0,
+    monthlyBudgetMicros: (json['monthly_budget_micros'] as num?)?.toInt() ?? 0,
     silenceTimeoutMinutes: (json['silence_timeout_minutes'] as num?)?.toInt(),
     maxConcurrentTasks: (json['max_concurrent_tasks'] as num?)?.toInt() ?? 1,
     visibility: json['visibility'] as String? ?? 'workspace',
@@ -436,7 +443,7 @@ class AgentDto {
   final String? effort;
   final int? contextSize;
   final String? role;
-  final int monthlyBudgetCents;
+  final int monthlyBudgetMicros;
   final int? silenceTimeoutMinutes;
 
   /// Governance capability profile (PRD 09).
@@ -465,7 +472,7 @@ class AgentDto {
     'effort': ?effort,
     'context_size': ?contextSize,
     'role': ?role,
-    'monthly_budget_cents': monthlyBudgetCents,
+    'monthly_budget_micros': monthlyBudgetMicros,
     'silence_timeout_minutes': ?silenceTimeoutMinutes,
     'max_concurrent_tasks': maxConcurrentTasks,
     'visibility': visibility,
@@ -1130,21 +1137,22 @@ class ArticleDto {
 /// workspace-scoped entity); `last_read_at` is null when the space has never
 /// been opened under the user.
 class SpaceReadDto {
-  SpaceReadDto({required this.spaceId, this.lastReadAt});
+  SpaceReadDto({required this.spaceId, this.lastRead});
 
   factory SpaceReadDto.fromJson(Map<String, dynamic> json) => SpaceReadDto(
     spaceId: json['space_id'] as String? ?? '',
-    lastReadAt: json['last_read_at'] as String?,
+    lastRead: FeedPosition.fromJson(json['last_read']),
   );
 
   final String spaceId;
 
-  /// ISO-8601 read-cursor timestamp, or null when never set.
-  final String? lastReadAt;
+  /// The read cursor (position of the newest message seen), or null when
+  /// never set.
+  final FeedPosition? lastRead;
 
   Map<String, dynamic> toJson() => {
     'space_id': spaceId,
-    if (lastReadAt != null) 'last_read_at': lastReadAt,
+    'last_read': ?lastRead?.toJson(),
   };
 }
 
@@ -1536,7 +1544,7 @@ class ActionPolicyRuleDto {
 /// usage dashboard. Mirrors `costSummaryToWire` in the host catalog.
 class CostSummaryDto {
   CostSummaryDto({
-    required this.totalUsd,
+    required this.totalMicros,
     required this.requestCount,
     this.windowStart,
     this.nextResetAt,
@@ -1545,19 +1553,20 @@ class CostSummaryDto {
   });
 
   factory CostSummaryDto.fromJson(Map<String, dynamic> json) => CostSummaryDto(
-    totalUsd: (json['total_usd'] as num?)?.toDouble() ?? 0,
+    totalMicros: (json['total_micros'] as num?)?.toInt() ?? 0,
     requestCount: (json['request_count'] as num?)?.toInt() ?? 0,
     windowStart: json['window_start'] as String?,
     nextResetAt: json['next_reset_at'] as String?,
     byProvider: ((json['by_provider'] as Map?) ?? const {}).map(
-      (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+      (k, v) => MapEntry(k.toString(), (v as num).toInt()),
     ),
     byModel: ((json['by_model'] as Map?) ?? const {}).map(
-      (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+      (k, v) => MapEntry(k.toString(), (v as num).toInt()),
     ),
   );
 
-  final double totalUsd;
+  /// Total spent in the window, in micro-dollars.
+  final int totalMicros;
   final int requestCount;
 
   /// ISO-8601 window start.
@@ -1566,11 +1575,14 @@ class CostSummaryDto {
   /// ISO-8601 nearest quota reset, when known.
   final String? nextResetAt;
 
-  final Map<String, double> byProvider;
-  final Map<String, double> byModel;
+  /// Spend per provider id, in micro-dollars.
+  final Map<String, int> byProvider;
+
+  /// Spend per `providerId/modelId`, in micro-dollars.
+  final Map<String, int> byModel;
 
   Map<String, dynamic> toJson() => {
-    'total_usd': totalUsd,
+    'total_micros': totalMicros,
     'request_count': requestCount,
     'window_start': ?windowStart,
     'next_reset_at': ?nextResetAt,
@@ -1605,7 +1617,6 @@ class AgentRunLogDto {
     this.thoughtTokens = 0,
     this.cachedReadTokens = 0,
     this.cachedWriteTokens = 0,
-    this.estimatedCostCents = 0,
     this.costMicros = 0,
     this.costBasis,
     this.childCostMicros = 0,
@@ -1621,7 +1632,6 @@ class AgentRunLogDto {
     this.liveness,
     this.errorFamily,
     this.lastOutputAt,
-    this.continuationSummary,
     this.contextSnapshotJson,
     this.pipelineRunId,
     this.pipelineStepId,
@@ -1656,7 +1666,6 @@ class AgentRunLogDto {
     thoughtTokens: (json['thought_tokens'] as num?)?.toInt() ?? 0,
     cachedReadTokens: (json['cached_read_tokens'] as num?)?.toInt() ?? 0,
     cachedWriteTokens: (json['cached_write_tokens'] as num?)?.toInt() ?? 0,
-    estimatedCostCents: (json['estimated_cost_cents'] as num?)?.toInt() ?? 0,
     costMicros: (json['cost_micros'] as num?)?.toInt() ?? 0,
     costBasis: json['cost_basis'] as String?,
     childCostMicros: (json['child_cost_micros'] as num?)?.toInt() ?? 0,
@@ -1678,7 +1687,6 @@ class AgentRunLogDto {
     liveness: json['liveness'] as String?,
     errorFamily: json['error_family'] as String?,
     lastOutputAt: json['last_output_at'] as String?,
-    continuationSummary: json['continuation_summary'] as String?,
     contextSnapshotJson: json['context_snapshot_json'] as String?,
     pipelineRunId: json['pipeline_run_id'] as String?,
     pipelineStepId: json['pipeline_step_id'] as String?,
@@ -1716,7 +1724,6 @@ class AgentRunLogDto {
   final int thoughtTokens;
   final int cachedReadTokens;
   final int cachedWriteTokens;
-  final int estimatedCostCents;
 
   /// Exact cost in micro-USD when a provider reported one; 0 when unknown.
   final int costMicros;
@@ -1754,7 +1761,6 @@ class AgentRunLogDto {
   final String? liveness;
   final String? errorFamily;
   final String? lastOutputAt;
-  final String? continuationSummary;
   final String? contextSnapshotJson;
   final String? pipelineRunId;
   final String? pipelineStepId;
@@ -1792,7 +1798,6 @@ class AgentRunLogDto {
     'thought_tokens': thoughtTokens,
     'cached_read_tokens': cachedReadTokens,
     'cached_write_tokens': cachedWriteTokens,
-    'estimated_cost_cents': estimatedCostCents,
     'cost_micros': costMicros,
     'cost_basis': ?costBasis,
     'child_cost_micros': childCostMicros,
@@ -1808,7 +1813,6 @@ class AgentRunLogDto {
     'liveness': ?liveness,
     'error_family': ?errorFamily,
     'last_output_at': ?lastOutputAt,
-    'continuation_summary': ?continuationSummary,
     'context_snapshot_json': ?contextSnapshotJson,
     'pipeline_run_id': ?pipelineRunId,
     'pipeline_step_id': ?pipelineStepId,
@@ -2207,8 +2211,8 @@ class OrchestrationDto {
     this.pipelineRunId,
     this.teamId,
     this.projectId,
-    this.estimatedCostCents,
-    this.maxCostCents,
+    this.estimatedCostMicros,
+    this.maxCostMicros,
     this.hiredAgentIds = const [],
     this.approvedNodeKeys,
     this.errorMessage,
@@ -2232,8 +2236,8 @@ class OrchestrationDto {
         pipelineRunId: json['pipeline_run_id'] as String?,
         teamId: json['team_id'] as String?,
         projectId: json['project_id'] as String?,
-        estimatedCostCents: (json['estimated_cost_cents'] as num?)?.toInt(),
-        maxCostCents: (json['max_cost_cents'] as num?)?.toInt(),
+        estimatedCostMicros: (json['estimated_cost_micros'] as num?)?.toInt(),
+        maxCostMicros: (json['max_cost_micros'] as num?)?.toInt(),
         hiredAgentIds:
             (json['hired_agent_ids'] as List?)?.whereType<String>().toList() ??
             const [],
@@ -2259,8 +2263,8 @@ class OrchestrationDto {
   final String? pipelineRunId;
   final String? teamId;
   final String? projectId;
-  final int? estimatedCostCents;
-  final int? maxCostCents;
+  final int? estimatedCostMicros;
+  final int? maxCostMicros;
   final List<String> hiredAgentIds;
 
   /// Null approves the whole plan; a non-null list tracks partial approval.
@@ -2285,8 +2289,9 @@ class OrchestrationDto {
     if (pipelineRunId != null) 'pipeline_run_id': pipelineRunId,
     if (teamId != null) 'team_id': teamId,
     if (projectId != null) 'project_id': projectId,
-    if (estimatedCostCents != null) 'estimated_cost_cents': estimatedCostCents,
-    if (maxCostCents != null) 'max_cost_cents': maxCostCents,
+    if (estimatedCostMicros != null)
+      'estimated_cost_micros': estimatedCostMicros,
+    if (maxCostMicros != null) 'max_cost_micros': maxCostMicros,
     'hired_agent_ids': hiredAgentIds,
     if (approvedNodeKeys != null) 'approved_node_keys': approvedNodeKeys,
     if (errorMessage != null) 'error_message': errorMessage,

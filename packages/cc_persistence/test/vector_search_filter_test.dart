@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:cc_persistence/cc_persistence.dart';
-import 'package:sqlite3/sqlite3.dart' as sqlite3;
-import 'package:sqlite_vector/sqlite_vector.dart';
 import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
@@ -12,23 +10,17 @@ import 'helpers/test_database.dart';
 /// below the rows a filter drops sit NEARER the query than the rows it keeps:
 /// ranking first and filtering afterwards returns nothing.
 void main() {
-  // Process-global auto-extension, as `openServerDatabase` registers it. It
-  // must be in place before a database's first (lazy) open runs vector_init.
-  setUpAll(() => sqlite3.sqlite3.loadSqliteVectorExtension());
-
   late WorkspaceDatabase db;
+  late CodeIndexDatabase codeIndex;
 
-  setUp(() async {
+  setUp(() {
     db = createTestDatabase();
-    for (final id in ['repo1', 'repo2']) {
-      await db.repoDao.upsertRepo(
-        ReposTableCompanion.insert(id: id, name: id, path: '/tmp/$id'),
-      );
-    }
+    codeIndex = createTestCodeIndexDatabase();
   });
 
   tearDown(() async {
     await db.close();
+    await codeIndex.close();
   });
 
   /// A 384-d vector on axis 0, tilted toward axis 1 by [tilt]; its distance
@@ -37,29 +29,40 @@ void main() {
     ..[0] = 1
     ..[1] = tilt;
 
-  CodeSymbolsTableCompanion symbol(
+  /// Writes embedded symbols: each id with its tilt.
+  Future<void> upsertSymbols(
+    List<({String id, String repoId, double tilt, String? checkoutId})> rows,
+  ) async {
+    await codeIndex.codeGraphDao.upsertSymbols([
+      for (final r in rows)
+        CodeSymbolsTableCompanion.insert(
+          id: r.id,
+          repoId: r.repoId,
+          checkoutId: Value(r.checkoutId),
+          kind: 'method',
+          name: r.id,
+          qualifiedName: 'A.${r.id}',
+          filePath: 'a.dart',
+          language: 'dart',
+          startLine: 1,
+          endLine: 2,
+        ),
+    ]);
+    await codeIndex.codeGraphDao.putEmbeddings({
+      for (final r in rows) r.id: vec(r.tilt).buffer.asUint8List(),
+    });
+  }
+
+  ({String id, String repoId, double tilt, String? checkoutId}) symbol(
     String id, {
     required String repoId,
     required double tilt,
     String? checkoutId,
-  }) => CodeSymbolsTableCompanion.insert(
-    id: id,
-    workspaceId: 'ws1',
-    repoId: repoId,
-    checkoutId: Value(checkoutId),
-    kind: 'method',
-    name: id,
-    qualifiedName: 'A.$id',
-    filePath: 'a.dart',
-    language: 'dart',
-    startLine: 1,
-    endLine: 2,
-    embedding: Value(vec(tilt).buffer.asUint8List()),
-  );
+  }) => (id: id, repoId: repoId, tilt: tilt, checkoutId: checkoutId);
 
   test('a repo ranked below another repo in the file still gets its hits, '
       'nearest first', () async {
-    await db.codeGraphDao.upsertSymbols([
+    await upsertSymbols([
       symbol('r2_a', repoId: 'repo2', tilt: 0),
       symbol('r2_b', repoId: 'repo2', tilt: 0.01),
       symbol('r2_c', repoId: 'repo2', tilt: 0.02),
@@ -67,8 +70,7 @@ void main() {
       symbol('r1_near', repoId: 'repo1', tilt: 0.5),
     ]);
 
-    final hits = await db.codeGraphDao.searchVector(
-      'ws1',
+    final hits = await codeIndex.codeGraphDao.searchVector(
       'repo1',
       vec(0),
       limit: 2,
@@ -77,28 +79,13 @@ void main() {
   });
 
   test("a worktree's delta does not crowd out the linked checkout", () async {
-    // The worktree registry row the checkout partition hangs off (FK target).
-    await db
-        .into(db.isolatedReposTable)
-        .insert(
-          IsolatedReposTableCompanion.insert(
-            id: 'wt1',
-            workspaceId: 'ws1',
-            spaceId: 'ch1',
-            repoId: 'repo1',
-            path: '/wt/repo1',
-            branch: 'pr-42',
-            sourcePath: '/tmp/repo1',
-          ),
-        );
-    await db.codeGraphDao.upsertSymbols([
+    await upsertSymbols([
       symbol('wt_a', repoId: 'repo1', tilt: 0, checkoutId: 'wt1'),
       symbol('wt_b', repoId: 'repo1', tilt: 0.01, checkoutId: 'wt1'),
       symbol('linked', repoId: 'repo1', tilt: 0.5),
     ]);
 
-    final hits = await db.codeGraphDao.searchVector(
-      'ws1',
+    final hits = await codeIndex.codeGraphDao.searchVector(
       'repo1',
       vec(0),
       limit: 1,
@@ -107,7 +94,8 @@ void main() {
   });
 
   test('superseded memory facts do not crowd out live ones', () async {
-    MemoryFactsTableCompanion fact(String id, double tilt, {String? by}) =>
+    Future<void> fact(String id, double tilt, {String? by}) async {
+      await db.memoryFactDao.upsert(
         MemoryFactsTableCompanion.insert(
           id: id,
           workspaceId: 'ws-1',
@@ -115,11 +103,14 @@ void main() {
           topic: 'deploy',
           content: 'deployment runbook $id',
           supersededBy: Value(by),
-          embedding: Value(vec(tilt).buffer.asUint8List()),
-        );
-    await db.memoryFactDao.upsert(fact('f-old', 0, by: 'f-live'));
-    await db.memoryFactDao.upsert(fact('f-older', 0.01, by: 'f-old'));
-    await db.memoryFactDao.upsert(fact('f-live', 0.5));
+        ),
+      );
+      await db.memoryFactDao.putEmbedding(id, vec(tilt).buffer.asUint8List());
+    }
+
+    await fact('f-old', 0, by: 'f-live');
+    await fact('f-older', 0.01, by: 'f-old');
+    await fact('f-live', 0.5);
 
     final hits = await db.memoryFactDao.searchVector('ws-1', vec(0), limit: 1);
     expect(hits.map((f) => f.id), ['f-live']);

@@ -2,7 +2,7 @@
 title: Glossário
 description: Definições dos termos-chave usados em todo o Control Center.
 slug: pt-PT/manual/referencia/glossario
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (uma VM em recinto — o único backend com uma fronteira de kernel, aplicado a terminais interativos), native (Seatbelt próprio do sistema no macOS, bubblewrap no Linux e no WSL2) ou none. Sondado uma vez no arranque; native envolve o despacho de agentes quando está disponível. O Windows não tem backend nativo e o Linux precisa de bwrap e de socat; num anfitrião assim só arrancam as execuções do proprietário do servidor, sem envolvente, e as dos restantes são recusadas. --sandbox off faz com que as execuções de todos os membros fiquem sem envolvente.'],
 ['Rig', 'Uma máquina descartável que um agente conduz em tempo real: um navegador ou desktop Linux em recinto, um emulador Android ou Simulator iOS gerido pelo anfitrião, ou um terminal em recinto. Observada em direto através do seu próprio canal de resolução total, com a assunção de controlo imposta no servidor. Com âmbito de uma conversa, para que o separador humano e a ferramenta do agente se dirijam à mesma máquina.'],
 ['Recinto', 'A propriedade de isolamento mais forte disponível para rigs suportados por VM: uma fronteira de kernel, um disco sobreposto descartável, um portão de rede que nega por predefinição e um broker de credenciais. Os rigs Android e iOS são descartáveis, mas usam a rede gerida pelo anfitrião, pelo que não reivindicam esta fronteira. Conduzir qualquer rig usa a classe de barreira enclosureControl.'],
-['RunCost', 'Contagem de tokens e de custo (tokens de entrada, tokens de saída, custo estimado em cêntimos) de uma única execução de agente.'],
+['RunCost', 'Contagem de tokens e de custo (tokens de entrada, tokens de saída, custo estimado em microdólares) de uma única execução de agente.'],
 ['WakeReason', 'Porque é que um agente foi despachado. Seis valores: mensagem do utilizador, atribuição de ticket, novo despacho de recuperação após uma falha, ticket filho concluído, heartbeat de acompanhamento agendado e passo de pipeline.'],
 ['SandboxPort', 'Gere o ciclo de vida da sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Emite credenciais com âmbito limitado para o arranque da sandbox (um token de um único repositório para o ambiente de um agente, de escrita apenas para o caminho de push no servidor) e liberta-as ao desmontar.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Recinto**: A fronteira mais forte dos rigs suportados por VM — uma fronteira de kernel, um disco sobreposto descartável, um portão de rede que nega por predefinição e um broker de credenciais. Os rigs Android e iOS são descartáveis, mas usam a rede gerida pelo anfitrião e não reivindicam esta fronteira. Conduzir qualquer rig usa a classe de barreira `enclosureControl`.
 
-**RunCost**: Contagem de tokens e de custo (tokens de entrada, tokens de saída, custo estimado em cêntimos) de uma única execução de agente.
+**RunCost**: Contagem de tokens e de custo (tokens de entrada, tokens de saída, custo estimado em microdólares) de uma única execução de agente.
 
 **WakeReason**: Porque é que um agente foi despachado. Seis valores: mensagem do utilizador, atribuição de ticket, novo despacho de recuperação após uma falha, ticket filho concluído, heartbeat de acompanhamento agendado e passo de pipeline.
 

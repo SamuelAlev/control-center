@@ -180,7 +180,7 @@ class DaoEvalsRepository implements EvalsRepository {
     required String status,
     String? scorecardJson,
     double? passRate,
-    int? costCents,
+    int? costMicros,
     DateTime? startedAt,
     DateTime? finishedAt,
   }) => _dao(workspaceId).updateRunResult(
@@ -189,7 +189,7 @@ class DaoEvalsRepository implements EvalsRepository {
     status: status,
     scorecardJson: scorecardJson,
     passRate: passRate,
-    costCents: costCents,
+    costMicros: costMicros,
     startedAt: startedAt,
     finishedAt: finishedAt,
   );

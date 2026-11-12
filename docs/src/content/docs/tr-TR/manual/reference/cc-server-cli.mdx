@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Headless sunucunun her bayrağı, ortam değişkeni, alt komutu ve veri dizini yolu.
 slug: tr-TR/kilavuz/referans/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Her süreç bayrağı bir CLI bayrağı ya da bir ortam değişkeni alır; önce bayrak,
@@ -238,12 +238,16 @@ Windows'ta `%APPDATA%\control-center`, diğer yerlerde
 Geçerli çalışma dizinine göreli bir `.cc_server` yalnızca hiçbir ev ya da
 uygulama verisi dizini çözümlenemediğinde kullanılır.
 
+Sunucu veri dizinini kendi hesabına özel tutar (`0700`). Bunu yapamazsa, `global.db` hasarlıysa ya da daha yeni bir sürüm tarafından yazılmışsa veya kimlik dosyası okunamıyorsa başlamayı reddeder (çıkış kodu `78`).
+
 | Yol                               | İçerik                                                                          |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Çalışma alanı kaydı, kullanıcılar, eşleştirilmiş cihazlar, haber akışı ve filo kuyruğu |
-| `<workspaceId>/workspace.db`      | Çalışma alanı başına bir veritabanı — ajanlar, alanlar, biletler, bellek, kod grafiği |
+| `<workspaceId>/workspace.db`      | Çalışma alanı başına bir veritabanı — ajanlar, alanlar, biletler, bellek |
+| `<workspaceId>/code_index.db`     | Bu çalışma alanının kod grafiği. Eksikse yeniden oluşturulur, hiçbir zaman yedeklenmez |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Bir güncelleme biçimini değiştirmeden önceki veritabanının en yeni iki kopyası |
 | `<workspaceId>/chat_credentials/` | Sohbet botu belirteçleri, düz JSON olarak; böylece çalışma alanıyla birlikte taşınırlar |
-| `secrets.json`                    | Eşleştirme anahtarları, Connect kurulum anahtarı, sağlayıcı uygulamaları, kişilerin oturum açmaları (Connect üzerinden yapıldıysa mühürlü), SSO (`0600`) |
+| `secrets.json`                    | Eşleştirme anahtarları, Connect kurulum anahtarı, sağlayıcı uygulamaları, kişilerin oturum açmaları (Connect üzerinden yapıldıysa mühürlü), webhook sırları, SSO (`0600`) |
 | `backups/<timestamp>/`            | Bir kurulum anlık görüntüsü — `manifest.json`, `global.db` ve her çalışma alanının bir kopyası |
 | `backups/exports/`                | Tek çalışma alanı dışa aktarımları, `<workspaceId>-<timestamp>.db`              |
 | `backups/transfer/`               | Yedek indirme ve yüklemeleri için hazırlık alanı; onu yazan rota tarafından temizlenir |

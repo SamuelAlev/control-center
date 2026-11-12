@@ -18,6 +18,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/app_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -92,7 +93,7 @@ class TicketsScreen extends ConsumerWidget {
                   child: boardAsync.when(
                     loading: () => const Center(child: CcSpinner()),
                     error: (e, _) =>
-                        _EmptyState(message: l10n.failedWithError('$e')),
+                        _EmptyState(message: failureMessage(l10n, e)),
                     data: (board) {
                       final empty = board.values.every((c) => c.isEmpty);
                       if (empty) {

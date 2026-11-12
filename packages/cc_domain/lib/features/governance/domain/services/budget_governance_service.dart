@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/events/observability_events.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/services/activity_logger.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_lifecycle_status.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/agents/domain/services/budget_policy_service.dart';
 import 'package:cc_domain/features/governance/domain/entities/budget_incident.dart';
@@ -28,19 +29,19 @@ class BudgetDecision {
   /// Creates a [BudgetDecision].
   const BudgetDecision({
     required this.outcome,
-    required this.spentCents,
-    required this.budgetCents,
+    required this.spentMicros,
+    required this.budgetMicros,
     this.incident,
   });
 
   /// What the evaluation concluded.
   final BudgetOutcome outcome;
 
-  /// Cents spent in the current window.
-  final int spentCents;
+  /// Micro-dollars spent in the current window.
+  final int spentMicros;
 
   /// The budget ceiling (0 means unlimited — outcome is always [BudgetOutcome.ok]).
-  final int budgetCents;
+  final int budgetMicros;
 
   /// The incident recorded, when one was raised.
   final BudgetIncident? incident;
@@ -55,7 +56,7 @@ class BudgetDecision {
 /// (it stops being dispatchable) and a hard [BudgetIncident] is recorded. A
 /// soft-threshold crossing records a warning incident without pausing. Cost is
 /// the per-agent monthly spend; the effective ceiling is the agent's linked
-/// [BudgetPolicy] (when set) or its own `monthlyBudgetCents`.
+/// [BudgetPolicy] (when set) or its own `monthlyBudgetMicros`.
 class BudgetGovernanceService {
   /// Creates a [BudgetGovernanceService].
   BudgetGovernanceService({
@@ -87,14 +88,14 @@ class BudgetGovernanceService {
     if (agent == null || agent.workspaceId != workspaceId) {
       return const BudgetDecision(
         outcome: BudgetOutcome.ok,
-        spentCents: 0,
-        budgetCents: 0,
+        spentMicros: 0,
+        budgetMicros: 0,
       );
     }
 
     // Resolve the effective ceiling + soft threshold from a linked policy or
     // the agent's own monthly budget.
-    var budgetCents = agent.monthlyBudgetCents;
+    var budgetMicros = agent.monthlyBudgetMicros;
     var softPercent = 80;
     var hardStopEnabled = true;
     String? policyId;
@@ -102,33 +103,33 @@ class BudgetGovernanceService {
     if (policyRef != null) {
       final policy = await _budgets.getPolicyById(workspaceId, policyRef);
       if (policy != null) {
-        budgetCents = policy.monthlyBudgetCents;
+        budgetMicros = policy.monthlyBudgetMicros;
         softPercent = policy.softThresholdPercent;
         hardStopEnabled = policy.hardStopEnabled;
         policyId = policy.id;
       }
     }
 
-    if (budgetCents <= 0) {
+    if (budgetMicros <= 0) {
       return BudgetDecision(
         outcome: BudgetOutcome.ok,
-        spentCents: 0,
-        budgetCents: budgetCents,
+        spentMicros: 0,
+        budgetMicros: budgetMicros,
       );
     }
 
-    final spent = await _enforcement.currentMonthSpentCents(
+    final spent = await _enforcement.currentMonthSpentMicros(
       workspaceId,
       agentId,
     );
 
-    if (spent >= budgetCents && hardStopEnabled) {
+    if (spent >= budgetMicros && hardStopEnabled) {
       final incident = await _recordIncident(
         workspaceId: workspaceId,
         policyId: policyId,
         agentId: agentId,
         spent: spent,
-        budget: budgetCents,
+        budget: budgetMicros,
         isHardStop: true,
         reason: 'budget_exhausted',
       );
@@ -138,31 +139,31 @@ class BudgetGovernanceService {
           workspaceId: workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
-          spentCents: spent,
-          budgetCents: budgetCents,
+          spentMicros: spent,
+          budgetMicros: budgetMicros,
           isHardStop: true,
           occurredAt: DateTime.now(),
         ),
       );
       CcDomainLog.warning(
-        '$_tag: hard stop for $agentId ($spent/$budgetCents cents) — paused',
+        '$_tag: hard stop for $agentId (${formatUsdMicros(spent)}/${formatUsdMicros(budgetMicros)}) — paused',
       );
       return BudgetDecision(
         outcome: BudgetOutcome.hardStop,
-        spentCents: spent,
-        budgetCents: budgetCents,
+        spentMicros: spent,
+        budgetMicros: budgetMicros,
         incident: incident,
       );
     }
 
-    final softCents = budgetCents * softPercent ~/ 100;
-    if (spent >= softCents) {
+    final softMicros = budgetMicros * softPercent ~/ 100;
+    if (spent >= softMicros) {
       final incident = await _recordIncident(
         workspaceId: workspaceId,
         policyId: policyId,
         agentId: agentId,
         spent: spent,
-        budget: budgetCents,
+        budget: budgetMicros,
         isHardStop: false,
         reason: 'soft_threshold',
       );
@@ -171,24 +172,24 @@ class BudgetGovernanceService {
           workspaceId: workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
-          spentCents: spent,
-          budgetCents: budgetCents,
+          spentMicros: spent,
+          budgetMicros: budgetMicros,
           isHardStop: false,
           occurredAt: DateTime.now(),
         ),
       );
       return BudgetDecision(
         outcome: BudgetOutcome.softWarning,
-        spentCents: spent,
-        budgetCents: budgetCents,
+        spentMicros: spent,
+        budgetMicros: budgetMicros,
         incident: incident,
       );
     }
 
     return BudgetDecision(
       outcome: BudgetOutcome.ok,
-      spentCents: spent,
-      budgetCents: budgetCents,
+      spentMicros: spent,
+      budgetMicros: budgetMicros,
     );
   }
 
@@ -207,8 +208,8 @@ class BudgetGovernanceService {
       policyId: policyId,
       scopeType: 'agent',
       scopeId: agentId,
-      spentCents: spent,
-      budgetCents: budget,
+      spentMicros: spent,
+      budgetMicros: budget,
       isHardStop: isHardStop,
       reason: reason,
       triggeredAt: DateTime.now(),
@@ -220,7 +221,7 @@ class BudgetGovernanceService {
       entityType: 'agent',
       entityId: agentId,
       workspaceId: workspaceId,
-      details: '$spent/$budget cents',
+      details: '${formatUsdMicros(spent)}/${formatUsdMicros(budget)}',
     );
     return incident;
   }

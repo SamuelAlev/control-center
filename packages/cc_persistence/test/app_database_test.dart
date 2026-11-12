@@ -29,12 +29,12 @@ void main() {
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'index' AND "
             "name IN ('idx_conversation_messages_space_created', "
-            "'idx_agent_run_logs_ws_agent_started')",
+            "'idx_agent_run_logs_agent_started')",
           )
           .get();
       final names = rows.map((r) => r.read<String>('name')).toSet();
       expect(names, contains('idx_conversation_messages_space_created'));
-      expect(names, contains('idx_agent_run_logs_ws_agent_started'));
+      expect(names, contains('idx_agent_run_logs_agent_started'));
     });
 
     test('baseline onCreate builds the meetings tables', () async {
@@ -87,14 +87,23 @@ void main() {
     test('baseline onCreate builds the FTS5 contentless indexes', () async {
       final db = createTestDatabase();
       addTearDown(db.close);
-      final tables = await db
-          .customSelect(
-            "SELECT name FROM sqlite_master WHERE type = 'table' "
-            "AND name IN ('memory_facts_fts', 'code_symbols_fts')",
-          )
-          .get();
-      final names = tables.map((r) => r.read<String>('name')).toSet();
-      expect(names, containsAll(['memory_facts_fts', 'code_symbols_fts']));
+      final codeIndex = createTestCodeIndexDatabase();
+      addTearDown(codeIndex.close);
+      Future<Set<String>> ftsTables(DatabaseConnectionUser of) async => {
+        for (final row
+            in await of
+                .customSelect(
+                  "SELECT name FROM sqlite_master WHERE type = 'table' "
+                  "AND name GLOB '*_fts'",
+                )
+                .get())
+          row.read<String>('name'),
+      };
+      expect(await ftsTables(db), {
+        'memory_facts_fts',
+        'conversation_messages_fts',
+      });
+      expect(await ftsTables(codeIndex), {'code_symbols_fts'});
     });
 
     test('the workspace-half DAOs are accessible', () {
@@ -139,9 +148,9 @@ void main() {
       await db.close();
     });
 
-    test('agentDao watchAllLogs returns empty', () async {
+    test('agentDao watchRecentLogs returns empty', () async {
       final db = createTestDatabase();
-      final logs = await db.agentDao.watchAllLogs().first;
+      final logs = await db.agentDao.watchRecentLogs(10).first;
       expect(logs, isEmpty);
       await db.close();
     });
@@ -196,7 +205,11 @@ void main() {
     test('messagingDao insert space', () async {
       final db = createTestDatabase();
       await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-1', name: 'General'),
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: 'ch-1',
+          name: 'General',
+        ),
       );
       final spaces = await db.messagingDao.watchSpaces().first;
       expect(spaces.length, 1);
@@ -289,26 +302,6 @@ void main() {
       final article = await db.rssDao.getArticleById('user-1', 'nonexistent');
       expect(article, isNull);
       await db.close();
-    });
-  });
-
-  group('MigrationStep', () {
-    test('creates with from, to and migrate function', () {
-      final step = MigrationStep(10, 11, (Migrator m) async {});
-      expect(step.from, 10);
-      expect(step.to, 11);
-      expect(step.migrate, isNotNull);
-    });
-
-    test('from is less than to for normal migrations', () {
-      final step = MigrationStep(5, 10, (Migrator m) async {});
-      expect(step.from, lessThan(step.to));
-    });
-
-    test('consecutive steps chain correctly', () {
-      final step1 = MigrationStep(8, 9, (Migrator m) async {});
-      final step2 = MigrationStep(9, 10, (Migrator m) async {});
-      expect(step1.to, equals(step2.from));
     });
   });
 }

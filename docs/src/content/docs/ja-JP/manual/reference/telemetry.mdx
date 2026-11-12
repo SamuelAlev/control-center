@@ -2,7 +2,7 @@
 title: 利用状況の分析
 description: 利用状況の分析がオンのときに Control Center が記録する内容、誰が決めるのか、そして決して送信されないもの。
 slug: ja-JP/マニュアル/リファレンス/利用状況の分析
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center は **仮名化された利用イベント** を [Umami](https://umami.is) のインスタンスに送信できます。利用状況の分析は **サーバーのオペレーターがオンにするまでオフ** です。この設定はサーバーに属し、そのサーバーに接続するすべてのクライアント (デスクトップアプリ、Web アプリ、スマートフォン、そしてサーバー自身) に適用されます。
@@ -109,7 +109,7 @@ Umami はさらに、リクエストの IP アドレス (アドレス自体は�
 | `skill_action` | `action` (`install`、`update`、`uninstall`、`source_added`、`source_removed`)、`skill_id`、`blocked` | ワークスペースのスキルが変更されたとき |
 | `orchestration_decided` | `decision` (`approved`、`cancelled`)、`workspace_id`、`orchestration_id` | オーケストレーションの提案に返答したとき |
 | `plan_decided` | `decision` (`approved`、`rejected`)、`plan_id`、`workspace_id`、`partial`、`node_count` | プランが承認または却下されたとき (スマートフォン) |
-| `goal_started` | `kind` (`goal`、`loop`)、`workspace_id`、`space_id`、`conversation_id`、`agent_id`、`budget_cents`、`accepted` | 監督付きのゴールまたはループを開始したとき (スマートフォン) |
+| `goal_started` | `kind` (`goal`、`loop`)、`workspace_id`、`space_id`、`conversation_id`、`agent_id`、`budget_micros`、`accepted` | 監督付きのゴールまたはループを開始したとき (スマートフォン) |
 | `conversation_created` | `workspace_id`、`space_id`、`conversation_id`、`source` (`new`、`fork`) | 会話が作成またはフォークされたとき |
 | `conversation_rewound` | `conversation_id` | 以前のメッセージから会話を続けたとき |
 | `space_archived` | `workspace_id`、`space_id` | スペースがアーカイブされたとき |
@@ -128,7 +128,7 @@ Umami はさらに、リクエストの IP アドレス (アドレス自体は�
 | `agent_run_completed` | `agent_id`、`workspace_id`、`conversation_id`、`run_id`、`status`、`error_family`、`role`、`adapter`、`model`、`effort`、`task_family`、`subagent`、`pipeline`、`resumed_native_session`、`duration_ms`、`time_to_first_token_ms`、`input_tokens`、`output_tokens`、`thought_tokens`、`cache_read_tokens`、`cache_write_tokens`、`output_rejections`、`cost_usd` | エージェントの実行が終了したとき |
 | `agent_awaiting_input` | `kind` (`approval`、`question`、`credential`)、`workspace_id`、`agent_id`、`conversation_id` | エージェントが停止して人を待っているとき |
 | `agent_action_blocked` | `workspace_id`、`agent_id`、`space_id`、`source` | アクションポリシーがエージェントのアクションを拒否したとき |
-| `pipeline_run_finished` | `outcome` (`completed`、`failed`、`cancelled`)、`workspace_id`、`pipeline_run_id`、`template_id`、`trigger`、`duration_ms`、`active_ms`、`attempt_count`、`template_version`、`cost_cents`、`tokens`、`dry_run`、`sub_pipeline` | パイプラインの実行が終了したとき。`trigger` は `manual`、実行を開始したイベントの種類、または名前付きトリガーの場合はその種類 (`webhook`) だけになります |
+| `pipeline_run_finished` | `outcome` (`completed`、`failed`、`cancelled`)、`workspace_id`、`pipeline_run_id`、`template_id`、`trigger`、`duration_ms`、`active_ms`、`attempt_count`、`template_version`、`cost_micros`、`tokens`、`dry_run`、`sub_pipeline` | パイプラインの実行が終了したとき。`trigger` は `manual`、実行を開始したイベントの種類、または名前付きトリガーの場合はその種類 (`webhook`) だけになります |
 | `pull_request_published` | `workspace_id`、`pr_id` | スペースからプルリクエストが公開されたとき |
 | `pull_request_merged` | `workspace_id`、`pr_id`、`agent_id` | エージェントが作成したプルリクエストがマージされたとき |
 | `meeting_recorded` | `workspace_id`、`meeting_id`、`transcript_chars` | ミーティングの録音が保存されたとき |
@@ -142,7 +142,7 @@ Umami はさらに、リクエストの IP アドレス (アドレス自体は�
 | `skill_updated` | `workspace_id`、`skill_id`、`origin`、`scan_verdict` | ワークスペースのスキルがインストール、更新、またはディスク上で変更されたとき |
 | `calendar_auth_expired` | `workspace_id` | カレンダーの接続に再サインインが必要になったとき |
 | `calendar_meeting_starting_soon` | `workspace_id`、`calendar_event_id`、`has_meeting_link`、`lead_s` | カレンダーのイベントがまもなく始まるとき |
-| `budget_threshold_crossed` | `scope_type`、`scope_id`、`spent_cents`、`budget_cents`、`hard_stop` | 支出が予算のしきい値を超えたとき |
+| `budget_threshold_crossed` | `scope_type`、`scope_id`、`spent_micros`、`budget_micros`、`hard_stop` | 支出が予算のしきい値を超えたとき |
 | `pull_request_review_requested` | `workspace_id`、`repo_id` | 追跡中の PR でレビューが依頼されたとき |
 | `pull_request_review_decision_changed` | `workspace_id`、`repo_id`、`decision`、`reviewers_remaining` | 追跡中の PR のレビュー判定が変わったとき |
 | `external_pull_request_merged` | `workspace_id`、`repo_id` | エージェント以外が作成した PR が、リンク済みのリポジトリでマージされたとき |

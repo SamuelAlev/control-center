@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:cc_persistence/database/tables/work_products_table.dart';
 import 'package:drift/drift.dart';
 
@@ -8,10 +9,12 @@ import 'package:drift/drift.dart';
 /// that targets a stale base can be rejected (optimistic concurrency) and the
 /// full history enables restore-to-revision (undo). Revisions cascade-delete
 /// with their parent work product.
-@TableIndex(
-  name: 'idx_work_product_revisions_product',
-  columns: {#workProductId},
-)
+///
+/// A revision number is unique within its work product: two writers that
+/// computed the same next number cannot both land, and the second write is
+/// refused as a concurrency conflict. That key is also the index the
+/// newest-first history reads use.
+@TableIndex(name: 'idx_work_product_revisions_base', columns: {#baseRevisionId})
 class WorkProductRevisionsTable extends Table {
   /// Unique revision identifier.
   TextColumn get id => text()();
@@ -31,12 +34,21 @@ class WorkProductRevisionsTable extends Table {
 
   /// The revision this one was edited from (optimistic-concurrency base), or
   /// null for the first revision.
-  TextColumn get baseRevisionId => text().nullable()();
+  /// `SET NULL`: history keeps a revision whose base is gone.
+  TextColumn get baseRevisionId => text().nullable().references(
+    WorkProductRevisionsTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
-  /// Actor type that authored the revision (`user`, `agent`, `system`).
-  TextColumn get authorType => text().withDefault(const Constant('agent'))();
+  /// Actor type that authored the revision: an `ActorKind` wire name.
+  TextColumn get authorType => text()
+      // ignore: recursive_getters
+      .check(authorType.isIn(AgentsStoredValues.actorKind))
+      .withDefault(const Constant('agent'))();
 
-  /// Identifier of the authoring actor, if known.
+  /// Identifier of the authoring actor, if known. No foreign key: a user id
+  /// lives in `global.db`.
   TextColumn get authorId => text().nullable()();
 
   /// Optional short summary of what changed.
@@ -50,4 +62,9 @@ class WorkProductRevisionsTable extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {workProductId, revisionNumber},
+  ];
 }

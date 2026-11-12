@@ -63,8 +63,8 @@ class BudgetThresholdCrossed implements DomainEvent {
     required this.workspaceId,
     required this.scopeType,
     required this.scopeId,
-    required this.spentCents,
-    required this.budgetCents,
+    required this.spentMicros,
+    required this.budgetMicros,
     required this.isHardStop,
     required this.occurredAt,
   });
@@ -79,11 +79,11 @@ class BudgetThresholdCrossed implements DomainEvent {
   /// Identifier within the scope.
   final String scopeId;
 
-  /// Amount spent in cents.
-  final int spentCents;
+  /// Amount spent in micro-dollars.
+  final int spentMicros;
 
-  /// Budget limit in cents.
-  final int budgetCents;
+  /// Budget limit in micro-dollars.
+  final int budgetMicros;
 
   /// Whether this is a hard stop or a warning.
   final bool isHardStop;

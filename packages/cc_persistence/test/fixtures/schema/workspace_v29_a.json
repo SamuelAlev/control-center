@@ -1,0 +1,2369 @@
+{
+ "user_version": 29,
+ "objects": [
+  {
+   "type": "table",
+   "name": "_sqliteai_vector",
+   "tbl_name": "_sqliteai_vector",
+   "sql": "CREATE TABLE _sqliteai_vector (tblname TEXT, colname TEXT, key TEXT, value ANY, PRIMARY KEY(tblname, colname, key))"
+  },
+  {
+   "type": "table",
+   "name": "repos",
+   "tbl_name": "repos",
+   "sql": "CREATE TABLE \"repos\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"path\" TEXT NOT NULL, \"forge\" TEXT NOT NULL DEFAULT 'github', \"remote_owner\" TEXT NOT NULL DEFAULT '', \"remote_name\" TEXT NOT NULL DEFAULT '', \"position\" INTEGER NOT NULL DEFAULT 0, \"linked_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"linked_by_user_id\" TEXT NOT NULL DEFAULT '', \"forge_repo_id\" TEXT NOT NULL DEFAULT '', PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agents",
+   "tbl_name": "agents",
+   "sql": "CREATE TABLE \"agents\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"agent_md_path\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"reports_to\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"skills\" TEXT NOT NULL, \"persona\" TEXT NULL, \"system_prompt\" TEXT NULL, \"adapter_id\" TEXT NULL, \"model_id\" TEXT NULL, \"strict_mode\" INTEGER NOT NULL DEFAULT 0 CHECK (\"strict_mode\" IN (0, 1)), \"effort\" TEXT NULL, \"context_size\" INTEGER NULL, \"command_policy_json\" TEXT NOT NULL DEFAULT '', \"role\" TEXT NULL, \"monthly_budget_cents\" INTEGER NOT NULL DEFAULT 0, \"silence_timeout_minutes\" INTEGER NULL, \"max_concurrent_tasks\" INTEGER NOT NULL DEFAULT 1, \"visibility\" TEXT NOT NULL DEFAULT 'workspace', \"lifecycle_status\" TEXT NOT NULL DEFAULT 'active', \"budget_policy_id\" TEXT NULL, \"runtime_profile_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_run_logs",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE TABLE \"agent_run_logs\" (\"id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"workspace_id\" TEXT NULL, \"conversation_id\" TEXT NULL, \"ticket_id\" TEXT NULL, \"space_id\" TEXT NULL, \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"completed_at\" INTEGER NULL, \"status\" TEXT NOT NULL DEFAULT 'pending', \"summary\" TEXT NULL, \"adapter\" TEXT NULL, \"model_id\" TEXT NULL, \"pid\" INTEGER NULL, \"log_path\" TEXT NULL, \"input_tokens\" INTEGER NOT NULL DEFAULT 0, \"output_tokens\" INTEGER NOT NULL DEFAULT 0, \"thought_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_read_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_write_tokens\" INTEGER NOT NULL DEFAULT 0, \"estimated_cost_cents\" INTEGER NOT NULL DEFAULT 0, \"agent_role\" TEXT NULL, \"duration_ms\" INTEGER NULL, \"time_to_first_token_ms\" INTEGER NULL, \"liveness_class\" TEXT NULL, \"error_family\" TEXT NULL, \"error_code\" TEXT NULL, \"pipeline_run_id\" TEXT NULL, \"pipeline_step_id\" TEXT NULL, \"memory_reads\" INTEGER NOT NULL DEFAULT 0, \"memory_writes\" INTEGER NOT NULL DEFAULT 0, \"code_graph_calls\" INTEGER NOT NULL DEFAULT 0, \"last_output_at\" INTEGER NULL, \"continuation_summary\" TEXT NULL, \"context_snapshot_json\" TEXT NULL, \"expected_output_schema\" TEXT NULL, \"output_contract_mode\" TEXT NULL DEFAULT 'strict', \"output_json\" TEXT NULL, \"output_rejections\" INTEGER NOT NULL DEFAULT 0, \"retry_of_run_id\" TEXT NULL, \"retry_attempt\" INTEGER NOT NULL DEFAULT 0, \"parent_run_id\" TEXT NULL, \"spawn_tool_call_id\" TEXT NULL, \"cost_micros\" INTEGER NOT NULL DEFAULT 0, \"cost_basis\" TEXT NULL, \"child_cost_micros\" INTEGER NOT NULL DEFAULT 0, \"effort\" TEXT NULL, \"task_family\" TEXT NULL, \"native_session_id\" TEXT NULL, \"resumed_native_session\" INTEGER NOT NULL DEFAULT 0 CHECK (\"resumed_native_session\" IN (0, 1)), \"latency_json\" TEXT NULL, \"verification_status\" TEXT NULL, \"verification_json\" TEXT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_goal_runs",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE TABLE \"agent_goal_runs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL, \"user_text\" TEXT NOT NULL, \"kind\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'active', \"deadline_at\" INTEGER NULL, \"cost_cap_cents\" INTEGER NOT NULL, \"cost_cents\" INTEGER NOT NULL DEFAULT 0, \"max_runs\" INTEGER NULL, \"run_count\" INTEGER NOT NULL DEFAULT 0, \"active_run_id\" TEXT NULL, \"consecutive_failures\" INTEGER NOT NULL DEFAULT 0, \"requested_by_user_id\" TEXT NULL, \"summary\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pull_requests",
+   "tbl_name": "pull_requests",
+   "sql": "CREATE TABLE \"pull_requests\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_url\" TEXT NULL, \"pr_number\" INTEGER NULL, \"title\" TEXT NOT NULL, \"body\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'draft', \"diff_summary\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"merged_at\" INTEGER NULL, \"closed_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_drafts",
+   "tbl_name": "review_drafts",
+   "sql": "CREATE TABLE \"review_drafts\" (\"id\" TEXT NOT NULL, \"owner\" TEXT NOT NULL, \"repo\" TEXT NOT NULL, \"pr_number\" INTEGER NOT NULL, \"comment_text\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "caches",
+   "tbl_name": "caches",
+   "sql": "CREATE TABLE \"caches\" (\"workspace_id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL, \"key\" TEXT NOT NULL, \"payload\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"workspace_id\", \"kind\", \"key\"))"
+  },
+  {
+   "type": "table",
+   "name": "spaces",
+   "tbl_name": "spaces",
+   "sql": "CREATE TABLE \"spaces\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"workspace_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"mode\" TEXT NOT NULL DEFAULT 'chat', \"pipeline_run_id\" TEXT NULL, \"provisioning_status\" TEXT NOT NULL DEFAULT 'ready', \"provisioning_step\" TEXT NULL, \"kind\" TEXT NOT NULL DEFAULT 'topic', \"no_repos\" INTEGER NOT NULL DEFAULT 0 CHECK (\"no_repos\" IN (0, 1)), \"archived_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversations",
+   "tbl_name": "conversations",
+   "sql": "CREATE TABLE \"conversations\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"title\" TEXT NOT NULL DEFAULT '', \"status\" TEXT NOT NULL DEFAULT 'active', \"anchor_message_id\" TEXT REFERENCES conversation_messages(id) ON DELETE CASCADE, \"created_by_principal_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"leaf_message_id\" TEXT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_participants",
+   "tbl_name": "space_participants",
+   "sql": "CREATE TABLE \"space_participants\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"principal_id\" TEXT NOT NULL, \"participant_type\" TEXT NOT NULL DEFAULT 'agent', \"role\" TEXT NOT NULL DEFAULT 'member', \"joined_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"last_read_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_repos",
+   "tbl_name": "space_repos",
+   "sql": "CREATE TABLE \"space_repos\" (\"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"branch\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"space_id\", \"repo_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_notes",
+   "tbl_name": "space_notes",
+   "sql": "CREATE TABLE \"space_notes\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"content_markdown\" TEXT NOT NULL DEFAULT '', \"updated_by_principal\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"version\" INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"space_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_autonomy",
+   "tbl_name": "space_autonomy",
+   "sql": "CREATE TABLE \"space_autonomy\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"agent_id\" TEXT NOT NULL, \"autonomy_level\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"space_id\", \"agent_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TABLE \"conversation_messages\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"sender_id\" TEXT NOT NULL, \"sender_type\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"message_type\" TEXT NOT NULL DEFAULT 'text', \"metadata\" TEXT NULL, \"compacted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"compacted\" IN (0, 1)), \"reverted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"reverted\" IN (0, 1)), \"reverted_at\" INTEGER NULL, \"embedding\" BLOB NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"parent_message_id\" TEXT NULL, content_chars INTEGER NOT NULL DEFAULT 0, transcript_chars INTEGER NOT NULL DEFAULT 0, \"list_metadata\" TEXT NULL, \"context_tokens\" INTEGER NULL, \"context_window_tokens\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "message_reactions",
+   "tbl_name": "message_reactions",
+   "sql": "CREATE TABLE \"message_reactions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"message_id\" TEXT NOT NULL REFERENCES conversation_messages (id) ON DELETE CASCADE, \"principal_id\" TEXT NOT NULL, \"principal_type\" TEXT NOT NULL, \"emoji\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"message_id\", \"principal_id\", \"emoji\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_spaces",
+   "tbl_name": "review_spaces",
+   "sql": "CREATE TABLE \"review_spaces\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"pr_number\" INTEGER NOT NULL, \"repo_full_name\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'requested', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "activity_log",
+   "tbl_name": "activity_log",
+   "sql": "CREATE TABLE \"activity_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NULL, \"actor_type\" TEXT NOT NULL, \"actor_id\" TEXT NULL REFERENCES agents (id) ON DELETE SET NULL, \"action\" TEXT NOT NULL, \"entity_type\" TEXT NOT NULL, \"entity_id\" TEXT NULL, \"details\" TEXT NULL, \"run_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "budget_policy",
+   "tbl_name": "budget_policy",
+   "sql": "CREATE TABLE \"budget_policy\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL DEFAULT '', \"scope_type\" TEXT NOT NULL, \"scope_id\" TEXT NOT NULL, \"monthly_budget_cents\" INTEGER NOT NULL DEFAULT 0, \"soft_threshold_percent\" INTEGER NOT NULL DEFAULT 80, \"hard_stop_enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"hard_stop_enabled\" IN (0, 1)), \"spent_cents\" INTEGER NOT NULL DEFAULT 0, \"status\" TEXT NOT NULL DEFAULT 'active', \"period_start\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"period_end\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_working_memory",
+   "tbl_name": "agent_working_memory",
+   "sql": "CREATE TABLE \"agent_working_memory\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"content\" TEXT NOT NULL DEFAULT '', \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_domains",
+   "tbl_name": "memory_domains",
+   "sql": "CREATE TABLE \"memory_domains\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"label\" TEXT NOT NULL, \"description\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"created_by_role\" TEXT NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TABLE \"memory_facts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"domain\" TEXT NOT NULL, \"topic\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"source_observation_ids\" TEXT NOT NULL DEFAULT '[]', \"confidence\" REAL NOT NULL DEFAULT 1.0, \"superseded_by\" TEXT NULL, \"authored_by_agent_id\" TEXT NULL, \"authored_by_role\" TEXT NULL, \"memory_type\" TEXT NOT NULL DEFAULT 'fact', \"veracity\" TEXT NOT NULL DEFAULT 'stated', \"valid_until\" INTEGER NULL, \"recall_count\" INTEGER NOT NULL DEFAULT 0, \"last_recalled_at\" INTEGER NULL, \"temporal_tags\" TEXT NULL, \"mention_count\" INTEGER NOT NULL DEFAULT 1, \"embedding\" BLOB NULL, \"binary_embedding\" BLOB NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_policies",
+   "tbl_name": "memory_policies",
+   "sql": "CREATE TABLE \"memory_policies\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"domain\" TEXT NOT NULL, \"rule\" TEXT NOT NULL, \"source_fact_ids\" TEXT NOT NULL DEFAULT '[]', \"required_role\" TEXT NULL, \"active\" INTEGER NOT NULL DEFAULT 1 CHECK (\"active\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_access_grants",
+   "tbl_name": "memory_access_grants",
+   "sql": "CREATE TABLE \"memory_access_grants\" (\"workspace_id\" TEXT NOT NULL, \"agent_role\" TEXT NOT NULL, \"memory_domain\" TEXT NOT NULL, \"permission\" TEXT NOT NULL DEFAULT 'read', PRIMARY KEY (\"workspace_id\", \"agent_role\", \"memory_domain\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_conflicts",
+   "tbl_name": "memory_conflicts",
+   "sql": "CREATE TABLE \"memory_conflicts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"fact_a_id\" TEXT NOT NULL, \"fact_b_id\" TEXT NOT NULL, \"conflict_type\" TEXT NOT NULL DEFAULT 'contradiction', \"resolution\" TEXT NULL, \"winning_fact_id\" TEXT NULL, \"resolved_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "episodic_edges",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE TABLE \"episodic_edges\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"source_fact_id\" TEXT NOT NULL, \"target_fact_id\" TEXT NOT NULL, \"edge_type\" TEXT NOT NULL, \"weight\" REAL NOT NULL DEFAULT 1.0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "working_memory_items",
+   "tbl_name": "working_memory_items",
+   "sql": "CREATE TABLE \"working_memory_items\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL, \"session_id\" TEXT NULL, \"content\" TEXT NOT NULL, \"memory_type\" TEXT NOT NULL DEFAULT 'observation', \"veracity\" TEXT NOT NULL DEFAULT 'inferred', \"importance\" REAL NOT NULL DEFAULT 0.5, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"expires_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_consolidation_log",
+   "tbl_name": "memory_consolidation_log",
+   "sql": "CREATE TABLE \"memory_consolidation_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NULL, \"items_considered\" INTEGER NOT NULL DEFAULT 0, \"facts_created\" INTEGER NOT NULL DEFAULT 0, \"facts_updated\" INTEGER NOT NULL DEFAULT 0, \"conflicts_detected\" INTEGER NOT NULL DEFAULT 0, \"evicted\" INTEGER NOT NULL DEFAULT 0, \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"finished_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_beliefs",
+   "tbl_name": "memory_beliefs",
+   "sql": "CREATE TABLE \"memory_beliefs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"topic\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"confidence\" REAL NOT NULL DEFAULT 0.5, \"harmony_score\" REAL NOT NULL DEFAULT 0.0, \"provenance_fact_ids\" TEXT NOT NULL DEFAULT '[]', \"provenance_agent_ids\" TEXT NOT NULL DEFAULT '[]', \"cluster_id\" TEXT NOT NULL, \"action\" TEXT NOT NULL DEFAULT 'create', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_runs",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE TABLE \"pipeline_runs\" (\"id\" TEXT NOT NULL, \"template_id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'pending', \"state_json\" TEXT NOT NULL DEFAULT '{}', \"trigger_event_type\" TEXT NULL, \"trigger_payload_json\" TEXT NULL, \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"attempt_started_at\" INTEGER NULL, \"finished_at\" INTEGER NULL, \"active_ms\" INTEGER NOT NULL DEFAULT 0, \"last_resumed_at\" INTEGER NULL, \"error_message\" TEXT NULL, \"error_stack_trace\" TEXT NULL, \"dedup_key\" TEXT NULL, \"parent_pipeline_run_id\" TEXT NULL, \"parent_step_id\" TEXT NULL, \"template_version\" INTEGER NOT NULL DEFAULT 1, \"attempt_count\" INTEGER NOT NULL DEFAULT 1, \"total_cost_cents\" INTEGER NOT NULL DEFAULT 0, \"total_tokens\" INTEGER NOT NULL DEFAULT 0, \"dry_run\" INTEGER NOT NULL DEFAULT 0 CHECK (\"dry_run\" IN (0, 1)), \"template_snapshot_json\" TEXT NULL, \"is_projection\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_projection\" IN (0, 1)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_step_runs",
+   "tbl_name": "pipeline_step_runs",
+   "sql": "CREATE TABLE \"pipeline_step_runs\" (\"id\" TEXT NOT NULL, \"pipeline_run_id\" TEXT NOT NULL REFERENCES pipeline_runs (id) ON DELETE CASCADE, \"step_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'pending', \"input_json\" TEXT NULL, \"output_json\" TEXT NULL, \"space_id\" TEXT NULL, \"error_message\" TEXT NULL, \"error_stack_trace\" TEXT NULL, \"attempt_count\" INTEGER NOT NULL DEFAULT 0, \"attempt_history\" TEXT NOT NULL DEFAULT '[]', \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"finished_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_templates",
+   "tbl_name": "pipeline_templates",
+   "sql": "CREATE TABLE \"pipeline_templates\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"nodes_json\" TEXT NOT NULL DEFAULT '[]', \"edges_json\" TEXT NOT NULL DEFAULT '[]', \"inputs_json\" TEXT NOT NULL DEFAULT '[]', \"is_enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"is_enabled\" IN (0, 1)), \"is_built_in\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_built_in\" IN (0, 1)), \"max_parallel_runs\" INTEGER NULL, \"version\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"workspace_id\", \"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "pipeline_triggers",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE TABLE \"pipeline_triggers\" (\"id\" TEXT NOT NULL, \"event_type\" TEXT NOT NULL, \"template_id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"enabled\" INTEGER NOT NULL DEFAULT 0 CHECK (\"enabled\" IN (0, 1)), \"cron_expression\" TEXT NULL, \"timezone\" TEXT NULL, \"next_run_at\" INTEGER NULL, \"webhook_token\" TEXT NULL, \"event_filters_json\" TEXT NOT NULL DEFAULT '{}', \"match_json\" TEXT NOT NULL DEFAULT '{}', \"last_fired_at\" INTEGER NULL, \"catch_up_policy\" TEXT NOT NULL DEFAULT 'catchUpLatestOnly', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"armed_by_user_ids\" TEXT NOT NULL DEFAULT '[]', PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "tickets",
+   "tbl_name": "tickets",
+   "sql": "CREATE TABLE \"tickets\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"provider\" TEXT NOT NULL DEFAULT 'local', \"external_key\" TEXT NULL, \"url\" TEXT NULL, \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"priority\" INTEGER NOT NULL DEFAULT 0, \"labels\" TEXT NOT NULL DEFAULT '[]', \"status\" TEXT NOT NULL DEFAULT 'open', \"raw_status\" TEXT NULL, \"external_synced_at\" INTEGER NULL, \"parent_ticket_id\" TEXT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"project_id\" TEXT NULL, \"assigned_agent_id\" TEXT NULL, \"assignee_type\" TEXT NOT NULL DEFAULT 'agent', \"created_by_type\" TEXT NOT NULL DEFAULT 'system', \"created_by_id\" TEXT NULL, \"assigned_team_id\" TEXT NULL, \"delegated_by_agent_id\" TEXT NULL, \"delegation_depth\" INTEGER NOT NULL DEFAULT 0, \"delegation_root_ticket_id\" TEXT NULL, \"space_id\" TEXT NULL, \"error_message\" TEXT NULL, \"linked_pr_ids\" TEXT NOT NULL DEFAULT '[]', \"metadata\" TEXT NOT NULL DEFAULT '{}', \"version\" INTEGER NOT NULL DEFAULT 0, \"origin_kind\" TEXT NOT NULL DEFAULT 'manual', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"started_at\" INTEGER NULL, \"blocked_at\" INTEGER NULL, \"cancelled_at\" INTEGER NULL, \"completed_at\" INTEGER NULL, \"finished_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_collaborators",
+   "tbl_name": "ticket_collaborators",
+   "sql": "CREATE TABLE \"ticket_collaborators\" (\"id\" TEXT NOT NULL, \"ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"principal_id\" TEXT NOT NULL, \"collaborator_type\" TEXT NOT NULL DEFAULT 'agent', \"role\" TEXT NOT NULL DEFAULT 'collaborator', \"joined_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_links",
+   "tbl_name": "ticket_links",
+   "sql": "CREATE TABLE \"ticket_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"source_ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"target_ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"type\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "projects",
+   "tbl_name": "projects",
+   "sql": "CREATE TABLE \"projects\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"color\" TEXT NOT NULL DEFAULT 'gray', \"status\" TEXT NOT NULL DEFAULT 'active', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "teams",
+   "tbl_name": "teams",
+   "sql": "CREATE TABLE \"teams\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NULL, \"leader_id\" TEXT NULL, \"instructions\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "team_members",
+   "tbl_name": "team_members",
+   "sql": "CREATE TABLE \"team_members\" (\"team_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL, \"role\" TEXT NOT NULL DEFAULT 'member', PRIMARY KEY (\"team_id\", \"agent_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "isolated_repos",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE TABLE \"isolated_repos\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"path\" TEXT NOT NULL, \"branch\" TEXT NOT NULL, \"backend\" TEXT NOT NULL DEFAULT 'rift', \"source_path\" TEXT NOT NULL, \"ticket_id\" TEXT NULL, \"linked_ticket_vendor\" TEXT NULL, \"linked_ticket_external_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "code_symbols",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE TABLE \"code_symbols\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"checkout_id\" TEXT NULL REFERENCES isolated_repos (id) ON DELETE CASCADE, \"kind\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"qualified_name\" TEXT NOT NULL, \"file_path\" TEXT NOT NULL, \"language\" TEXT NOT NULL, \"start_line\" INTEGER NOT NULL, \"end_line\" INTEGER NOT NULL, \"signature\" TEXT NOT NULL DEFAULT '', \"docstring\" TEXT NULL, \"parent_name\" TEXT NULL, \"embedding\" BLOB NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "code_edges",
+   "tbl_name": "code_edges",
+   "sql": "CREATE TABLE \"code_edges\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"checkout_id\" TEXT NULL REFERENCES isolated_repos (id) ON DELETE CASCADE, \"source_symbol_id\" TEXT NOT NULL, \"source_file_path\" TEXT NOT NULL DEFAULT '', \"target_symbol_id\" TEXT NULL, \"target_name\" TEXT NULL, \"kind\" TEXT NOT NULL, \"metadata\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "code_files",
+   "tbl_name": "code_files",
+   "sql": "CREATE TABLE \"code_files\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"checkout_id\" TEXT NULL REFERENCES isolated_repos (id) ON DELETE CASCADE, \"path\" TEXT NOT NULL, \"content_hash\" TEXT NOT NULL, \"symbol_count\" INTEGER NOT NULL DEFAULT 0, \"language\" TEXT NOT NULL DEFAULT '', \"indexed_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "code_index_checkpoints",
+   "tbl_name": "code_index_checkpoints",
+   "sql": "CREATE TABLE \"code_index_checkpoints\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"checkout_id\" TEXT NULL REFERENCES isolated_repos (id) ON DELETE CASCADE, \"head_sha\" TEXT NOT NULL, \"worktree_digest\" TEXT NOT NULL, \"indexer_fingerprint\" TEXT NOT NULL, \"generation\" INTEGER NOT NULL DEFAULT 0, \"base_generation\" INTEGER NOT NULL DEFAULT 0, \"indexed_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meetings",
+   "tbl_name": "meetings",
+   "sql": "CREATE TABLE \"meetings\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"title_is_custom\" INTEGER NOT NULL DEFAULT 0 CHECK (\"title_is_custom\" IN (0, 1)), \"status\" TEXT NOT NULL DEFAULT 'recording', \"source_app\" TEXT NULL, \"user_notes\" TEXT NOT NULL DEFAULT '', \"enhanced_notes\" TEXT NULL, \"summary_instructions\" TEXT NULL, \"summary\" TEXT NULL, \"audio_path\" TEXT NULL, \"mode\" TEXT NOT NULL DEFAULT 'remote', \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"ended_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_transcript_segments",
+   "tbl_name": "meeting_transcript_segments",
+   "sql": "CREATE TABLE \"meeting_transcript_segments\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"speaker\" TEXT NOT NULL, \"speaker_label\" TEXT NULL, \"speaker_name_override\" TEXT NULL, \"content\" TEXT NOT NULL, \"start_ms\" INTEGER NOT NULL, \"end_ms\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_action_items",
+   "tbl_name": "meeting_action_items",
+   "sql": "CREATE TABLE \"meeting_action_items\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"owner\" TEXT NULL, \"done\" INTEGER NOT NULL DEFAULT 0 CHECK (\"done\" IN (0, 1)), \"ticket_id\" TEXT NULL, \"sort_order\" INTEGER NOT NULL DEFAULT 0, \"is_manual\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_manual\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_decisions",
+   "tbl_name": "meeting_decisions",
+   "sql": "CREATE TABLE \"meeting_decisions\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"sort_order\" INTEGER NOT NULL DEFAULT 0, \"is_manual\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_manual\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_speakers",
+   "tbl_name": "meeting_speakers",
+   "sql": "CREATE TABLE \"meeting_speakers\" (\"id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"channel\" TEXT NOT NULL, \"label\" TEXT NOT NULL, \"display_name\" TEXT NULL, \"embedding\" TEXT NULL, \"enrolled_profile_name\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "calendar_accounts",
+   "tbl_name": "calendar_accounts",
+   "sql": "CREATE TABLE \"calendar_accounts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"provider_id\" TEXT NOT NULL DEFAULT 'google', \"account_email\" TEXT NOT NULL, \"display_name\" TEXT NULL, \"last_synced_at\" INTEGER NULL, \"auth_expired_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"user_id\" TEXT NOT NULL DEFAULT '', PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "calendar_events",
+   "tbl_name": "calendar_events",
+   "sql": "CREATE TABLE \"calendar_events\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"account_id\" TEXT NOT NULL REFERENCES calendar_accounts (id) ON DELETE CASCADE, \"external_event_id\" TEXT NOT NULL, \"calendar_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"location\" TEXT NULL, \"start_time\" INTEGER NOT NULL, \"end_time\" INTEGER NOT NULL, \"is_all_day\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_all_day\" IN (0, 1)), \"attendees_json\" TEXT NOT NULL DEFAULT '[]', \"meeting_url\" TEXT NULL, \"status\" TEXT NOT NULL DEFAULT 'confirmed', \"recurring_event_id\" TEXT NULL, \"alerted_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "calendar_sources",
+   "tbl_name": "calendar_sources",
+   "sql": "CREATE TABLE \"calendar_sources\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"account_id\" TEXT NOT NULL REFERENCES calendar_accounts (id) ON DELETE CASCADE, \"calendar_id\" TEXT NOT NULL, \"summary\" TEXT NOT NULL, \"background_color\" TEXT NULL, \"primary\" INTEGER NOT NULL DEFAULT 0 CHECK (\"primary\" IN (0, 1)), \"writable\" INTEGER NOT NULL DEFAULT 0 CHECK (\"writable\" IN (0, 1)), \"sync_token\" TEXT NULL, \"sync_token_minted_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "meeting_calendar_links",
+   "tbl_name": "meeting_calendar_links",
+   "sql": "CREATE TABLE \"meeting_calendar_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"meeting_id\" TEXT NOT NULL REFERENCES meetings (id) ON DELETE CASCADE, \"calendar_event_id\" TEXT NOT NULL REFERENCES calendar_events (id) ON DELETE CASCADE, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "voice_profiles",
+   "tbl_name": "voice_profiles",
+   "sql": "CREATE TABLE \"voice_profiles\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"display_name\" TEXT NOT NULL, \"embedding\" TEXT NOT NULL, \"sample_count\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "orchestrations",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE TABLE \"orchestrations\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"parent_ticket_id\" TEXT NULL, \"space_id\" TEXT NULL, \"orchestrator_agent_id\" TEXT NULL, \"status\" TEXT NOT NULL DEFAULT 'proposed', \"proposal_json\" TEXT NOT NULL, \"revision\" INTEGER NOT NULL DEFAULT 1, \"approved_revision\" INTEGER NULL, \"pipeline_template_id\" TEXT NULL, \"pipeline_run_id\" TEXT NULL, \"team_id\" TEXT NULL, \"project_id\" TEXT NULL, \"estimated_cost_cents\" INTEGER NULL, \"max_cost_cents\" INTEGER NULL, \"hired_agent_ids_json\" TEXT NOT NULL DEFAULT '[]', \"approved_node_keys_json\" TEXT NULL, \"error_message\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"completed_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "orchestration_revisions",
+   "tbl_name": "orchestration_revisions",
+   "sql": "CREATE TABLE \"orchestration_revisions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"orchestration_id\" TEXT NOT NULL REFERENCES orchestrations (id) ON DELETE CASCADE, \"revision\" INTEGER NOT NULL, \"proposal_json\" TEXT NOT NULL, \"authored_by\" TEXT NOT NULL, \"author_kind\" TEXT NOT NULL DEFAULT 'user', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"orchestration_id\", \"revision\"))"
+  },
+  {
+   "type": "table",
+   "name": "plan_documents",
+   "tbl_name": "plan_documents",
+   "sql": "CREATE TABLE \"plan_documents\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL, \"plan_json\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'proposed', \"revision\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "playbooks",
+   "tbl_name": "playbooks",
+   "sql": "CREATE TABLE \"playbooks\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NOT NULL DEFAULT '', \"params_schema_json\" TEXT NOT NULL DEFAULT '[]', \"source_proposal_json\" TEXT NOT NULL, \"version\" INTEGER NOT NULL DEFAULT 1, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_cohorts",
+   "tbl_name": "review_cohorts",
+   "sql": "CREATE TABLE \"review_cohorts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"cohort_key\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"summary_markdown\" TEXT NOT NULL DEFAULT '', \"order_index\" INTEGER NOT NULL DEFAULT 0, \"impact_score\" INTEGER NOT NULL DEFAULT 0, \"derivation\" TEXT NOT NULL DEFAULT 'path', \"file_paths_json\" TEXT NOT NULL DEFAULT '[]', \"layers_json\" TEXT NOT NULL DEFAULT '[]', \"diagrams_json\" TEXT NOT NULL DEFAULT '[]', \"insights_json\" TEXT NOT NULL DEFAULT '{}', \"head_sha\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"cohort_key\"))"
+  },
+  {
+   "type": "table",
+   "name": "api_contract_snapshots",
+   "tbl_name": "api_contract_snapshots",
+   "sql": "CREATE TABLE \"api_contract_snapshots\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"spec_path\" TEXT NOT NULL, \"before_json\" TEXT NOT NULL DEFAULT '{}', \"after_json\" TEXT NOT NULL DEFAULT '{}', \"changes_json\" TEXT NOT NULL DEFAULT '[]', \"derived\" INTEGER NOT NULL DEFAULT 0 CHECK (\"derived\" IN (0, 1)), \"head_sha\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"spec_path\"))"
+  },
+  {
+   "type": "table",
+   "name": "visual_diff_snapshots",
+   "tbl_name": "visual_diff_snapshots",
+   "sql": "CREATE TABLE \"visual_diff_snapshots\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"component_key\" TEXT NOT NULL, \"component_title\" TEXT NOT NULL DEFAULT '', \"status\" TEXT NOT NULL DEFAULT 'changed', \"variants_json\" TEXT NOT NULL DEFAULT '[]', \"head_sha\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"component_key\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_axis_results",
+   "tbl_name": "review_axis_results",
+   "sql": "CREATE TABLE \"review_axis_results\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"axis\" TEXT NOT NULL, \"verdict\" TEXT NOT NULL, \"findings_count\" INTEGER NOT NULL DEFAULT 0, \"gated\" INTEGER NOT NULL DEFAULT 0 CHECK (\"gated\" IN (0, 1)), \"confidence\" REAL NOT NULL DEFAULT 1.0, \"note\" TEXT NOT NULL DEFAULT '', \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"axis\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_dependency_diffs",
+   "tbl_name": "review_dependency_diffs",
+   "sql": "CREATE TABLE \"review_dependency_diffs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"file_path\" TEXT NOT NULL, \"ecosystem\" TEXT NOT NULL, \"base_sha\" TEXT NULL, \"head_sha\" TEXT NULL, \"diff_json\" TEXT NOT NULL DEFAULT '{}', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"pr_external_id\", \"file_path\"))"
+  },
+  {
+   "type": "table",
+   "name": "review_run_snapshots",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE TABLE \"review_run_snapshots\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"pr_external_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"head_sha\" TEXT NULL, \"finalized_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"verdict_json\" TEXT NOT NULL DEFAULT '{}', \"fingerprints_json\" TEXT NOT NULL DEFAULT '[]', \"stats_json\" TEXT NOT NULL DEFAULT '{}', PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "provider_policies",
+   "tbl_name": "provider_policies",
+   "sql": "CREATE TABLE \"provider_policies\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"action\" TEXT NOT NULL DEFAULT 'provider.use', \"resource\" TEXT NOT NULL, \"effect\" TEXT NOT NULL, \"layer\" TEXT NOT NULL DEFAULT 'workspace', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "goals",
+   "tbl_name": "goals",
+   "sql": "CREATE TABLE \"goals\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"parent_goal_id\" TEXT NULL, \"level\" TEXT NOT NULL DEFAULT 'company', \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"status\" TEXT NOT NULL DEFAULT 'active', \"owner_agent_id\" TEXT NULL, \"team_id\" TEXT NULL, \"target_ticket_id\" TEXT NULL, \"progress\" INTEGER NOT NULL DEFAULT 0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "budget_incidents",
+   "tbl_name": "budget_incidents",
+   "sql": "CREATE TABLE \"budget_incidents\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"policy_id\" TEXT NULL, \"scope_type\" TEXT NOT NULL, \"scope_id\" TEXT NOT NULL, \"spent_cents\" INTEGER NOT NULL, \"budget_cents\" INTEGER NOT NULL, \"is_hard_stop\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_hard_stop\" IN (0, 1)), \"reason\" TEXT NOT NULL, \"triggered_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "approvals",
+   "tbl_name": "approvals",
+   "sql": "CREATE TABLE \"approvals\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"description\" TEXT NULL, \"kind\" TEXT NOT NULL DEFAULT 'custom', \"status\" TEXT NOT NULL DEFAULT 'pending', \"requested_by_actor_type\" TEXT NOT NULL DEFAULT 'agent', \"requested_by_id\" TEXT NULL, \"linked_ticket_ids\" TEXT NOT NULL DEFAULT '[]', \"linked_entity_type\" TEXT NULL, \"linked_entity_id\" TEXT NULL, \"decided_by_actor_type\" TEXT NULL, \"decided_by_id\" TEXT NULL, \"decision_reason\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"decided_at\" INTEGER NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "approval_comments",
+   "tbl_name": "approval_comments",
+   "sql": "CREATE TABLE \"approval_comments\" (\"id\" TEXT NOT NULL, \"approval_id\" TEXT NOT NULL REFERENCES approvals (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"author_type\" TEXT NOT NULL DEFAULT 'user', \"author_id\" TEXT NULL, \"body\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "work_products",
+   "tbl_name": "work_products",
+   "sql": "CREATE TABLE \"work_products\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"ticket_id\" TEXT NULL, \"agent_id\" TEXT NULL, \"title\" TEXT NOT NULL, \"artifact_type\" TEXT NOT NULL DEFAULT 'document', \"current_revision_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "work_product_revisions",
+   "tbl_name": "work_product_revisions",
+   "sql": "CREATE TABLE \"work_product_revisions\" (\"id\" TEXT NOT NULL, \"work_product_id\" TEXT NOT NULL REFERENCES work_products (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"revision_number\" INTEGER NOT NULL, \"content\" TEXT NOT NULL, \"base_revision_id\" TEXT NULL, \"author_type\" TEXT NOT NULL DEFAULT 'agent', \"author_id\" TEXT NULL, \"summary\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_runtime_state",
+   "tbl_name": "agent_runtime_state",
+   "sql": "CREATE TABLE \"agent_runtime_state\" (\"agent_id\" TEXT NOT NULL REFERENCES agents (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"reported_status\" TEXT NOT NULL DEFAULT 'offline', \"last_heartbeat_at\" INTEGER NULL, \"current_run_id\" TEXT NULL, \"note\" TEXT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"agent_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "runtime_profiles",
+   "tbl_name": "runtime_profiles",
+   "sql": "CREATE TABLE \"runtime_profiles\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"protocol_family\" TEXT NOT NULL DEFAULT 'cli', \"command\" TEXT NOT NULL, \"fixed_args_json\" TEXT NOT NULL DEFAULT '[]', \"description\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "team_activity_log",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE TABLE \"team_activity_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"team_id\" TEXT NOT NULL, \"ticket_id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL, \"leader_id\" TEXT NULL, \"member_id\" TEXT NULL, \"summary\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "webhook_deliveries",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE TABLE \"webhook_deliveries\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"trigger_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"signature_status\" TEXT NOT NULL, \"dedupe_key\" TEXT NULL, \"dedupe_source\" TEXT NULL, \"event_action\" TEXT NULL, \"raw_body\" TEXT NULL, \"headers_json\" TEXT NOT NULL DEFAULT '{}', \"response_status\" INTEGER NULL, \"response_body\" TEXT NULL, \"run_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "cron_executions",
+   "tbl_name": "cron_executions",
+   "sql": "CREATE TABLE \"cron_executions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"trigger_id\" TEXT NOT NULL, \"planned_at\" INTEGER NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'fired', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_sync_configs",
+   "tbl_name": "ticket_sync_configs",
+   "sql": "CREATE TABLE \"ticket_sync_configs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"vendor\" TEXT NOT NULL, \"vendor_project_id\" TEXT NOT NULL DEFAULT '', \"direction\" TEXT NOT NULL DEFAULT 'bidirectional', \"field_mapping\" TEXT NOT NULL DEFAULT '{}', \"credential_ref\" TEXT NULL, \"webhook_secret\" TEXT NULL, \"enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"enabled\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_sync_links",
+   "tbl_name": "ticket_sync_links",
+   "sql": "CREATE TABLE \"ticket_sync_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"ticket_id\" TEXT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE, \"vendor\" TEXT NOT NULL, \"external_id\" TEXT NOT NULL, \"external_key\" TEXT NULL, \"external_url\" TEXT NULL, \"last_synced_at\" INTEGER NULL, \"last_direction\" TEXT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_sync_log",
+   "tbl_name": "ticket_sync_log",
+   "sql": "CREATE TABLE \"ticket_sync_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"ticket_id\" TEXT NULL, \"vendor\" TEXT NOT NULL, \"direction\" TEXT NOT NULL, \"outcome\" TEXT NOT NULL, \"message\" TEXT NULL, \"dedupe_key\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "ticket_write_ledger",
+   "tbl_name": "ticket_write_ledger",
+   "sql": "CREATE TABLE \"ticket_write_ledger\" (\"workspace_id\" TEXT NOT NULL, \"write_id\" TEXT NOT NULL, \"operation\" TEXT NOT NULL, \"result_json\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"workspace_id\", \"write_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "write_ledger",
+   "tbl_name": "write_ledger",
+   "sql": "CREATE TABLE \"write_ledger\" (\"workspace_id\" TEXT NOT NULL, \"idempotency_key\" TEXT NOT NULL, \"op_name\" TEXT NOT NULL, \"result_json\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"workspace_id\", \"idempotency_key\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_members",
+   "tbl_name": "workspace_members",
+   "sql": "CREATE TABLE \"workspace_members\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"role\" TEXT NOT NULL DEFAULT 'member', \"invited_by\" TEXT NULL, \"joined_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"display_name\" TEXT NULL, \"email\" TEXT NULL, \"git_author_name\" TEXT NULL, \"git_author_email\" TEXT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_invites",
+   "tbl_name": "workspace_invites",
+   "sql": "CREATE TABLE \"workspace_invites\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"code_hash\" TEXT NOT NULL, \"role\" TEXT NOT NULL DEFAULT 'member', \"repo_grants_json\" TEXT NOT NULL DEFAULT '{}', \"created_by\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"expires_at\" INTEGER NOT NULL, \"used_at\" INTEGER NULL, \"used_by\" TEXT NULL, \"revoked_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "user_activity",
+   "tbl_name": "user_activity",
+   "sql": "CREATE TABLE \"user_activity\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"action\" TEXT NOT NULL, \"target_type\" TEXT NULL, \"target_id\" TEXT NULL, \"device_id\" TEXT NULL, \"ip\" TEXT NULL, \"country_code\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"details\" TEXT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_member_repo_grants",
+   "tbl_name": "workspace_member_repo_grants",
+   "sql": "CREATE TABLE \"workspace_member_repo_grants\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"level\" TEXT NOT NULL DEFAULT 'read', \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "session_recordings",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE TABLE \"session_recordings\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"run_log_id\" TEXT NOT NULL, \"agent_id\" TEXT NULL, \"conversation_id\" TEXT NULL, \"config_hash\" TEXT NOT NULL, \"hash_version\" INTEGER NOT NULL DEFAULT 1, \"events_ref\" TEXT NULL, \"cassette_ref\" TEXT NULL, \"fixture_ref\" TEXT NULL, \"event_count\" INTEGER NOT NULL DEFAULT 0, \"title\" TEXT NOT NULL DEFAULT '', \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "golden_sessions",
+   "tbl_name": "golden_sessions",
+   "sql": "CREATE TABLE \"golden_sessions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL, \"recording_id\" TEXT NOT NULL, \"mode\" TEXT NOT NULL DEFAULT 'deterministic', \"name\" TEXT NOT NULL DEFAULT '', \"enabled\" INTEGER NOT NULL DEFAULT 1 CHECK (\"enabled\" IN (0, 1)), \"last_status\" TEXT NOT NULL DEFAULT 'unknown', \"last_scorecard_json\" TEXT NULL, \"blessed_by\" TEXT NULL, \"blessed_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "eval_suites",
+   "tbl_name": "eval_suites",
+   "sql": "CREATE TABLE \"eval_suites\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"description\" TEXT NOT NULL DEFAULT '', \"task_json\" TEXT NOT NULL DEFAULT '{}', \"fixture_ref\" TEXT NULL, \"fixture_sha\" TEXT NULL, \"graders_json\" TEXT NOT NULL DEFAULT '[]', \"default_batch_size\" INTEGER NOT NULL DEFAULT 1, \"is_starter\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_starter\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "eval_runs",
+   "tbl_name": "eval_runs",
+   "sql": "CREATE TABLE \"eval_runs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"suite_id\" TEXT NOT NULL, \"config_hash\" TEXT NOT NULL, \"batch_size\" INTEGER NOT NULL DEFAULT 1, \"scorecard_json\" TEXT NULL, \"pass_rate\" REAL NOT NULL DEFAULT 0.0, \"status\" TEXT NOT NULL DEFAULT 'queued', \"cost_cents\" INTEGER NOT NULL DEFAULT 0, \"triggered_by\" TEXT NOT NULL DEFAULT 'manual', \"job_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"started_at\" INTEGER NULL, \"finished_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "agent_config_versions",
+   "tbl_name": "agent_config_versions",
+   "sql": "CREATE TABLE \"agent_config_versions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"agent_id\" TEXT NOT NULL, \"config_hash\" TEXT NOT NULL, \"hash_version\" INTEGER NOT NULL DEFAULT 1, \"config_json\" TEXT NOT NULL DEFAULT '{}', \"status\" TEXT NOT NULL DEFAULT 'live', \"scorecard_json\" TEXT NULL, \"promoted_by\" TEXT NULL, \"promoted_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"agent_id\", \"config_hash\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_scan_results",
+   "tbl_name": "skill_scan_results",
+   "sql": "CREATE TABLE \"skill_scan_results\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"content_hash\" TEXT NOT NULL, \"rules_version\" INTEGER NOT NULL DEFAULT 1, \"verdict\" TEXT NOT NULL DEFAULT 'quarantine', \"findings_json\" TEXT NOT NULL DEFAULT '[]', \"manifest_json\" TEXT NOT NULL DEFAULT '{}', \"llm_reviewed\" INTEGER NOT NULL DEFAULT 0 CHECK (\"llm_reviewed\" IN (0, 1)), \"skill_ref\" TEXT NULL, \"scanned_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"content_hash\", \"rules_version\"))"
+  },
+  {
+   "type": "table",
+   "name": "action_policies",
+   "tbl_name": "action_policies",
+   "sql": "CREATE TABLE \"action_policies\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"scope_type\" TEXT NOT NULL, \"scope_id\" TEXT NOT NULL DEFAULT '', \"action_class\" TEXT NULL, \"command_prefix\" TEXT NULL, \"decision\" TEXT NOT NULL DEFAULT 'prompt', \"provenance\" TEXT NOT NULL DEFAULT 'user', \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"constraint_json\" TEXT NULL, \"expires_at\" INTEGER NULL, \"enforcement\" TEXT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"scope_type\", \"scope_id\", \"action_class\", \"command_prefix\"))"
+  },
+  {
+   "type": "table",
+   "name": "run_transcripts",
+   "tbl_name": "run_transcripts",
+   "sql": "CREATE TABLE \"run_transcripts\" (\"run_id\" TEXT NOT NULL REFERENCES agent_run_logs (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"segments_json\" TEXT NOT NULL DEFAULT '[]', \"segment_count\" INTEGER NOT NULL DEFAULT 0, \"transcript_chars\" INTEGER NOT NULL DEFAULT 0, \"outcome\" TEXT NULL, \"complete\" INTEGER NOT NULL DEFAULT 0 CHECK (\"complete\" IN (0, 1)), \"started_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"run_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "chat_space_links",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE TABLE \"chat_space_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"provider\" TEXT NOT NULL, \"external_team_id\" TEXT NOT NULL DEFAULT '', \"external_channel_id\" TEXT NOT NULL, \"external_thread_id\" TEXT NULL, \"cc_space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"created_by_user_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"last_activity_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "chat_user_links",
+   "tbl_name": "chat_user_links",
+   "sql": "CREATE TABLE \"chat_user_links\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"provider\" TEXT NOT NULL, \"external_team_id\" TEXT NOT NULL DEFAULT '', \"external_user_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"method\" TEXT NOT NULL DEFAULT 'code', \"linked_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_meta",
+   "tbl_name": "workspace_meta",
+   "sql": "CREATE TABLE \"workspace_meta\" (\"id\" INTEGER NOT NULL DEFAULT 0, \"workspace_id\" TEXT NOT NULL, \"install_id\" TEXT NOT NULL, \"created_with_schema_version\" INTEGER NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_settings",
+   "tbl_name": "workspace_settings",
+   "sql": "CREATE TABLE \"workspace_settings\" (\"workspace_id\" TEXT NOT NULL, \"key\" TEXT NOT NULL, \"value\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"workspace_id\", \"key\"))"
+  },
+  {
+   "type": "table",
+   "name": "notification_feed",
+   "tbl_name": "notification_feed",
+   "sql": "CREATE TABLE \"notification_feed\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"method\" TEXT NOT NULL, \"params_json\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "notification_read_marks",
+   "tbl_name": "notification_read_marks",
+   "sql": "CREATE TABLE \"notification_read_marks\" (\"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"last_seen_at\" INTEGER NULL, \"cleared_before\" INTEGER NULL, PRIMARY KEY (\"workspace_id\", \"user_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "notification_item_states",
+   "tbl_name": "notification_item_states",
+   "sql": "CREATE TABLE \"notification_item_states\" (\"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"item_id\" TEXT NOT NULL, \"read_at\" INTEGER NULL, \"dismissed_at\" INTEGER NULL, PRIMARY KEY (\"workspace_id\", \"user_id\", \"item_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "rig_sessions",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE TABLE \"rig_sessions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"surface\" TEXT NOT NULL, \"backend\" TEXT NOT NULL, \"phase\" TEXT NOT NULL DEFAULT 'provisioning', \"status_detail\" TEXT NULL, \"close_reason\" TEXT NULL, \"spec_json\" TEXT NOT NULL DEFAULT '{}', \"display_width\" INTEGER NULL, \"display_height\" INTEGER NULL, \"current_url\" TEXT NULL, \"conversation_id\" TEXT NULL, \"agent_id\" TEXT NULL, \"worker_id\" TEXT NULL, \"created_by\" TEXT NOT NULL, \"controller\" TEXT NULL, \"control_held_since\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"ready_at\" INTEGER NULL, \"last_activity_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"closed_at\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "rig_action_log",
+   "tbl_name": "rig_action_log",
+   "sql": "CREATE TABLE \"rig_action_log\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"rig_id\" TEXT NOT NULL, \"seq\" INTEGER NOT NULL, \"verb\" TEXT NOT NULL, \"args_json\" TEXT NOT NULL DEFAULT '{}', \"summary\" TEXT NOT NULL DEFAULT '', \"actor\" TEXT NOT NULL, \"is_take_over\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_take_over\" IN (0, 1)), \"is_error\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_error\" IN (0, 1)), \"result_text\" TEXT NULL, \"image_hash\" TEXT NULL, \"duration_ms\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"rig_id\", \"seq\"))"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_data",
+   "tbl_name": "memory_facts_fts_data",
+   "sql": "CREATE TABLE 'memory_facts_fts_data'(id INTEGER PRIMARY KEY, block BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_idx",
+   "tbl_name": "memory_facts_fts_idx",
+   "sql": "CREATE TABLE 'memory_facts_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_docsize",
+   "tbl_name": "memory_facts_fts_docsize",
+   "sql": "CREATE TABLE 'memory_facts_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts_config",
+   "tbl_name": "memory_facts_fts_config",
+   "sql": "CREATE TABLE 'memory_facts_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "code_symbols_fts_data",
+   "tbl_name": "code_symbols_fts_data",
+   "sql": "CREATE TABLE 'code_symbols_fts_data'(id INTEGER PRIMARY KEY, block BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "code_symbols_fts_idx",
+   "tbl_name": "code_symbols_fts_idx",
+   "sql": "CREATE TABLE 'code_symbols_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "code_symbols_fts_docsize",
+   "tbl_name": "code_symbols_fts_docsize",
+   "sql": "CREATE TABLE 'code_symbols_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "code_symbols_fts_config",
+   "tbl_name": "code_symbols_fts_config",
+   "sql": "CREATE TABLE 'code_symbols_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_data",
+   "tbl_name": "conversation_messages_fts_data",
+   "sql": "CREATE TABLE 'conversation_messages_fts_data'(id INTEGER PRIMARY KEY, block BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_idx",
+   "tbl_name": "conversation_messages_fts_idx",
+   "sql": "CREATE TABLE 'conversation_messages_fts_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_docsize",
+   "tbl_name": "conversation_messages_fts_docsize",
+   "sql": "CREATE TABLE 'conversation_messages_fts_docsize'(id INTEGER PRIMARY KEY, sz BLOB)"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts_config",
+   "tbl_name": "conversation_messages_fts_config",
+   "sql": "CREATE TABLE 'conversation_messages_fts_config'(k PRIMARY KEY, v) WITHOUT ROWID"
+  },
+  {
+   "type": "table",
+   "name": "skill_sources",
+   "tbl_name": "skill_sources",
+   "sql": "CREATE TABLE \"skill_sources\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"owner\" TEXT NOT NULL, \"repo\" TEXT NOT NULL, \"url\" TEXT NOT NULL, \"description\" TEXT NOT NULL DEFAULT '', \"default_branch\" TEXT NOT NULL DEFAULT '', \"star_count\" INTEGER NOT NULL DEFAULT 0, \"skill_count\" INTEGER NOT NULL DEFAULT 0, \"last_synced_at\" INTEGER NULL, \"last_error\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"owner\", \"repo\"))"
+  },
+  {
+   "type": "table",
+   "name": "sandbox_exec_grants",
+   "tbl_name": "sandbox_exec_grants",
+   "sql": "CREATE TABLE \"sandbox_exec_grants\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"path\" TEXT NOT NULL, \"decision\" TEXT NOT NULL DEFAULT 'deny', \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"path\"))"
+  },
+  {
+   "type": "table",
+   "name": "approval_routing_policies",
+   "tbl_name": "approval_routing_policies",
+   "sql": "CREATE TABLE \"approval_routing_policies\" (\"workspace_id\" TEXT NOT NULL, \"policy_json\" TEXT NOT NULL, \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"workspace_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "guard_decisions",
+   "tbl_name": "guard_decisions",
+   "sql": "CREATE TABLE \"guard_decisions\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"seq\" INTEGER NOT NULL, \"occurred_at\" INTEGER NOT NULL, \"actor_type\" TEXT NOT NULL, \"actor_id\" TEXT NOT NULL, \"on_behalf_of_user_id\" TEXT NULL, \"delegation_chain_id\" TEXT NULL, \"delegation_depth\" INTEGER NULL, \"space_id\" TEXT NULL, \"run_id\" TEXT NULL, \"device_id\" TEXT NULL, \"ip\" TEXT NULL, \"surface\" TEXT NOT NULL, \"action_name\" TEXT NOT NULL, \"action_classes\" TEXT NOT NULL DEFAULT '[]', \"permission\" TEXT NULL, \"args_digest\" TEXT NULL, \"constraint_summary\" TEXT NULL, \"decision\" TEXT NOT NULL, \"enforcement\" TEXT NULL, \"source_scope\" TEXT NULL, \"rule_id\" TEXT NULL, \"prompted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"prompted\" IN (0, 1)), \"responder_user_id\" TEXT NULL, \"override_reason\" TEXT NULL, \"correlation_id\" TEXT NULL, \"prev_hash\" TEXT NOT NULL, \"entry_hash\" TEXT NOT NULL, \"kind\" TEXT NOT NULL DEFAULT 'decision', PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"seq\"))"
+  },
+  {
+   "type": "table",
+   "name": "workspace_roles",
+   "tbl_name": "workspace_roles",
+   "sql": "CREATE TABLE \"workspace_roles\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"base_preset\" TEXT NOT NULL, \"denied_permissions\" TEXT NOT NULL DEFAULT '[]', \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"name\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_agents_workspaceId",
+   "tbl_name": "agents",
+   "sql": "CREATE INDEX idx_agents_workspaceId ON agents (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agents_workspace_name",
+   "tbl_name": "agents",
+   "sql": "CREATE UNIQUE INDEX idx_agents_workspace_name ON agents (workspace_id, name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_workspaceId",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_workspaceId ON agent_run_logs (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_agentId",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_agentId ON agent_run_logs (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_ticket",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_ticket ON agent_run_logs (ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_status",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_status ON agent_run_logs (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_pipelineRun",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_pipelineRun ON agent_run_logs (pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_parentRun",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_parentRun ON agent_run_logs (parent_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_workspaceId",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_workspaceId ON agent_goal_runs (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_goal_runs_agent_status",
+   "tbl_name": "agent_goal_runs",
+   "sql": "CREATE INDEX idx_agent_goal_runs_agent_status ON agent_goal_runs (workspace_id, agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pull_requests_workspaceId",
+   "tbl_name": "pull_requests",
+   "sql": "CREATE INDEX idx_pull_requests_workspaceId ON pull_requests (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_spaces_workspaceId",
+   "tbl_name": "spaces",
+   "sql": "CREATE INDEX idx_spaces_workspaceId ON spaces (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversations_spaceId",
+   "tbl_name": "conversations",
+   "sql": "CREATE INDEX idx_conversations_spaceId ON conversations (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversations_workspaceId",
+   "tbl_name": "conversations",
+   "sql": "CREATE INDEX idx_conversations_workspaceId ON conversations (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_participants_spaceId",
+   "tbl_name": "space_participants",
+   "sql": "CREATE INDEX idx_space_participants_spaceId ON space_participants (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_repos_spaceId",
+   "tbl_name": "space_repos",
+   "sql": "CREATE INDEX idx_space_repos_spaceId ON space_repos (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_notes_workspaceId",
+   "tbl_name": "space_notes",
+   "sql": "CREATE INDEX idx_space_notes_workspaceId ON space_notes (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_autonomy_workspaceId",
+   "tbl_name": "space_autonomy",
+   "sql": "CREATE INDEX idx_space_autonomy_workspaceId ON space_autonomy (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_message_reactions_workspaceId",
+   "tbl_name": "message_reactions",
+   "sql": "CREATE INDEX idx_message_reactions_workspaceId ON message_reactions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_message_reactions_message",
+   "tbl_name": "message_reactions",
+   "sql": "CREATE INDEX idx_message_reactions_message ON message_reactions (message_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_messageType",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_messageType ON conversation_messages (message_type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_spaceId",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_spaceId ON conversation_messages (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_conversationId",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_conversationId ON conversation_messages (conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_spaces_workspaceId",
+   "tbl_name": "review_spaces",
+   "sql": "CREATE INDEX idx_review_spaces_workspaceId ON review_spaces (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_spaces_prExternalId",
+   "tbl_name": "review_spaces",
+   "sql": "CREATE INDEX idx_review_spaces_prExternalId ON review_spaces (pr_external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_agent",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_agent ON activity_log (actor_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_entity",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_entity ON activity_log (entity_type, entity_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_created",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_created ON activity_log (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_activity_log_workspace",
+   "tbl_name": "activity_log",
+   "sql": "CREATE INDEX idx_activity_log_workspace ON activity_log (workspace_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_budget_policies_workspaceId",
+   "tbl_name": "budget_policy",
+   "sql": "CREATE INDEX idx_budget_policies_workspaceId ON budget_policy (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_working_memory_workspaceId",
+   "tbl_name": "agent_working_memory",
+   "sql": "CREATE INDEX idx_agent_working_memory_workspaceId ON agent_working_memory (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_working_memory_agentId",
+   "tbl_name": "agent_working_memory",
+   "sql": "CREATE INDEX idx_agent_working_memory_agentId ON agent_working_memory (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_domains_workspaceId",
+   "tbl_name": "memory_domains",
+   "sql": "CREATE INDEX idx_memory_domains_workspaceId ON memory_domains (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_domains_name",
+   "tbl_name": "memory_domains",
+   "sql": "CREATE UNIQUE INDEX idx_memory_domains_name ON memory_domains (workspace_id, name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_facts_supersededBy",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE INDEX idx_memory_facts_supersededBy ON memory_facts (superseded_by)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_facts_workspaceId",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE INDEX idx_memory_facts_workspaceId ON memory_facts (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_facts_topic",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE INDEX idx_memory_facts_topic ON memory_facts (topic)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_facts_domain",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE INDEX idx_memory_facts_domain ON memory_facts (domain)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_policies_workspaceId",
+   "tbl_name": "memory_policies",
+   "sql": "CREATE INDEX idx_memory_policies_workspaceId ON memory_policies (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_conflicts_workspaceId",
+   "tbl_name": "memory_conflicts",
+   "sql": "CREATE INDEX idx_memory_conflicts_workspaceId ON memory_conflicts (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_conflicts_factA",
+   "tbl_name": "memory_conflicts",
+   "sql": "CREATE INDEX idx_memory_conflicts_factA ON memory_conflicts (fact_a_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_episodic_edges_workspaceId",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE INDEX idx_episodic_edges_workspaceId ON episodic_edges (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_episodic_edges_source",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE INDEX idx_episodic_edges_source ON episodic_edges (source_fact_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_episodic_edges_target",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE INDEX idx_episodic_edges_target ON episodic_edges (target_fact_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_episodic_edges_triple",
+   "tbl_name": "episodic_edges",
+   "sql": "CREATE UNIQUE INDEX uq_episodic_edges_triple ON episodic_edges (workspace_id, source_fact_id, target_fact_id, edge_type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_working_memory_items_workspaceId",
+   "tbl_name": "working_memory_items",
+   "sql": "CREATE INDEX idx_working_memory_items_workspaceId ON working_memory_items (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_working_memory_items_agent",
+   "tbl_name": "working_memory_items",
+   "sql": "CREATE INDEX idx_working_memory_items_agent ON working_memory_items (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_consolidation_log_workspaceId",
+   "tbl_name": "memory_consolidation_log",
+   "sql": "CREATE INDEX idx_memory_consolidation_log_workspaceId ON memory_consolidation_log (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_memory_beliefs_workspaceId",
+   "tbl_name": "memory_beliefs",
+   "sql": "CREATE INDEX idx_memory_beliefs_workspaceId ON memory_beliefs (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_status",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_status ON pipeline_runs (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_workspaceId",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_workspaceId ON pipeline_runs (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_templateId",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_templateId ON pipeline_runs (template_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_step_runs_pipelineRunId",
+   "tbl_name": "pipeline_step_runs",
+   "sql": "CREATE INDEX idx_pipeline_step_runs_pipelineRunId ON pipeline_step_runs (pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_step_runs_status",
+   "tbl_name": "pipeline_step_runs",
+   "sql": "CREATE INDEX idx_pipeline_step_runs_status ON pipeline_step_runs (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_templates_isBuiltIn",
+   "tbl_name": "pipeline_templates",
+   "sql": "CREATE INDEX idx_pipeline_templates_isBuiltIn ON pipeline_templates (is_built_in)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_templates_workspaceId",
+   "tbl_name": "pipeline_templates",
+   "sql": "CREATE INDEX idx_pipeline_templates_workspaceId ON pipeline_templates (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_pipeline_triggers",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE UNIQUE INDEX uq_pipeline_triggers ON pipeline_triggers (workspace_id, event_type, template_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_triggers_enabled_eventType",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE INDEX idx_pipeline_triggers_enabled_eventType ON pipeline_triggers (enabled, event_type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_triggers_webhookToken",
+   "tbl_name": "pipeline_triggers",
+   "sql": "CREATE INDEX idx_pipeline_triggers_webhookToken ON pipeline_triggers (webhook_token)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_workspace_status",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_workspace_status ON tickets (workspace_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_assignee_status",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_assignee_status ON tickets (assigned_agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_parent",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_parent ON tickets (parent_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_tickets_project",
+   "tbl_name": "tickets",
+   "sql": "CREATE INDEX idx_tickets_project ON tickets (project_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_collaborators_ticketId",
+   "tbl_name": "ticket_collaborators",
+   "sql": "CREATE INDEX idx_ticket_collaborators_ticketId ON ticket_collaborators (ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_collaborators_ticket_agent",
+   "tbl_name": "ticket_collaborators",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_collaborators_ticket_agent ON ticket_collaborators (ticket_id, principal_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_links_source",
+   "tbl_name": "ticket_links",
+   "sql": "CREATE INDEX idx_ticket_links_source ON ticket_links (source_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_links_target",
+   "tbl_name": "ticket_links",
+   "sql": "CREATE INDEX idx_ticket_links_target ON ticket_links (target_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_links_source_target_type",
+   "tbl_name": "ticket_links",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_links_source_target_type ON ticket_links (source_ticket_id, target_ticket_id, type)"
+  },
+  {
+   "type": "index",
+   "name": "idx_projects_workspace_status",
+   "tbl_name": "projects",
+   "sql": "CREATE INDEX idx_projects_workspace_status ON projects (workspace_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_teams_workspaceId",
+   "tbl_name": "teams",
+   "sql": "CREATE INDEX idx_teams_workspaceId ON teams (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_teamMembers_teamId",
+   "tbl_name": "team_members",
+   "sql": "CREATE INDEX idx_teamMembers_teamId ON team_members (team_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_teamMembers_agentId",
+   "tbl_name": "team_members",
+   "sql": "CREATE INDEX idx_teamMembers_agentId ON team_members (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_symbols_workspaceId",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE INDEX idx_code_symbols_workspaceId ON code_symbols (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_symbols_repoId",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE INDEX idx_code_symbols_repoId ON code_symbols (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_symbols_checkoutId",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE INDEX idx_code_symbols_checkoutId ON code_symbols (checkout_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_symbols_filePath",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE INDEX idx_code_symbols_filePath ON code_symbols (file_path)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_symbols_qualifiedName",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE INDEX idx_code_symbols_qualifiedName ON code_symbols (qualified_name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_symbols_kind",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE INDEX idx_code_symbols_kind ON code_symbols (kind)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_edges_workspaceId",
+   "tbl_name": "code_edges",
+   "sql": "CREATE INDEX idx_code_edges_workspaceId ON code_edges (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_edges_repoId",
+   "tbl_name": "code_edges",
+   "sql": "CREATE INDEX idx_code_edges_repoId ON code_edges (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_edges_checkoutId",
+   "tbl_name": "code_edges",
+   "sql": "CREATE INDEX idx_code_edges_checkoutId ON code_edges (checkout_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_edges_source",
+   "tbl_name": "code_edges",
+   "sql": "CREATE INDEX idx_code_edges_source ON code_edges (source_symbol_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_edges_target",
+   "tbl_name": "code_edges",
+   "sql": "CREATE INDEX idx_code_edges_target ON code_edges (target_symbol_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_edges_kind",
+   "tbl_name": "code_edges",
+   "sql": "CREATE INDEX idx_code_edges_kind ON code_edges (kind)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_files_workspaceId",
+   "tbl_name": "code_files",
+   "sql": "CREATE INDEX idx_code_files_workspaceId ON code_files (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_files_repoId",
+   "tbl_name": "code_files",
+   "sql": "CREATE INDEX idx_code_files_repoId ON code_files (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_files_checkoutId",
+   "tbl_name": "code_files",
+   "sql": "CREATE INDEX idx_code_files_checkoutId ON code_files (checkout_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_index_checkpoints_workspaceId",
+   "tbl_name": "code_index_checkpoints",
+   "sql": "CREATE INDEX idx_code_index_checkpoints_workspaceId ON code_index_checkpoints (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_index_checkpoints_repoId",
+   "tbl_name": "code_index_checkpoints",
+   "sql": "CREATE INDEX idx_code_index_checkpoints_repoId ON code_index_checkpoints (repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_index_checkpoints_checkoutId",
+   "tbl_name": "code_index_checkpoints",
+   "sql": "CREATE INDEX idx_code_index_checkpoints_checkoutId ON code_index_checkpoints (checkout_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_isolated_repos_workspaceId",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE INDEX idx_isolated_repos_workspaceId ON isolated_repos (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_isolated_repos_channel",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE INDEX idx_isolated_repos_channel ON isolated_repos (space_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_isolated_repos_ticket",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE INDEX idx_isolated_repos_ticket ON isolated_repos (ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_isolated_repos_unit",
+   "tbl_name": "isolated_repos",
+   "sql": "CREATE UNIQUE INDEX idx_isolated_repos_unit ON isolated_repos (workspace_id, space_id, repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meetings_workspaceId",
+   "tbl_name": "meetings",
+   "sql": "CREATE INDEX idx_meetings_workspaceId ON meetings (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meetings_createdAt",
+   "tbl_name": "meetings",
+   "sql": "CREATE INDEX idx_meetings_createdAt ON meetings (created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_segments_meetingId",
+   "tbl_name": "meeting_transcript_segments",
+   "sql": "CREATE INDEX idx_meeting_segments_meetingId ON meeting_transcript_segments (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_segments_workspaceId",
+   "tbl_name": "meeting_transcript_segments",
+   "sql": "CREATE INDEX idx_meeting_segments_workspaceId ON meeting_transcript_segments (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_action_items_meetingId",
+   "tbl_name": "meeting_action_items",
+   "sql": "CREATE INDEX idx_meeting_action_items_meetingId ON meeting_action_items (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_action_items_workspaceId",
+   "tbl_name": "meeting_action_items",
+   "sql": "CREATE INDEX idx_meeting_action_items_workspaceId ON meeting_action_items (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_decisions_meetingId",
+   "tbl_name": "meeting_decisions",
+   "sql": "CREATE INDEX idx_meeting_decisions_meetingId ON meeting_decisions (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_decisions_workspaceId",
+   "tbl_name": "meeting_decisions",
+   "sql": "CREATE INDEX idx_meeting_decisions_workspaceId ON meeting_decisions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_speakers_meetingId",
+   "tbl_name": "meeting_speakers",
+   "sql": "CREATE INDEX idx_meeting_speakers_meetingId ON meeting_speakers (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_speakers_workspaceId",
+   "tbl_name": "meeting_speakers",
+   "sql": "CREATE INDEX idx_meeting_speakers_workspaceId ON meeting_speakers (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_calendar_accounts_workspaceId",
+   "tbl_name": "calendar_accounts",
+   "sql": "CREATE INDEX idx_calendar_accounts_workspaceId ON calendar_accounts (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_calendar_events_account_external",
+   "tbl_name": "calendar_events",
+   "sql": "CREATE UNIQUE INDEX uq_calendar_events_account_external ON calendar_events (account_id, external_event_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_calendar_events_ws_start",
+   "tbl_name": "calendar_events",
+   "sql": "CREATE INDEX idx_calendar_events_ws_start ON calendar_events (workspace_id, start_time)"
+  },
+  {
+   "type": "index",
+   "name": "idx_calendar_sources_workspaceId",
+   "tbl_name": "calendar_sources",
+   "sql": "CREATE INDEX idx_calendar_sources_workspaceId ON calendar_sources (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_calendar_sources_account_cal",
+   "tbl_name": "calendar_sources",
+   "sql": "CREATE UNIQUE INDEX uq_calendar_sources_account_cal ON calendar_sources (account_id, calendar_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_meeting_calendar_links_meetingId",
+   "tbl_name": "meeting_calendar_links",
+   "sql": "CREATE UNIQUE INDEX uq_meeting_calendar_links_meetingId ON meeting_calendar_links (meeting_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_calendar_links_workspaceId",
+   "tbl_name": "meeting_calendar_links",
+   "sql": "CREATE INDEX idx_meeting_calendar_links_workspaceId ON meeting_calendar_links (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_meeting_calendar_links_eventId",
+   "tbl_name": "meeting_calendar_links",
+   "sql": "CREATE INDEX idx_meeting_calendar_links_eventId ON meeting_calendar_links (calendar_event_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_voice_profiles_workspaceId",
+   "tbl_name": "voice_profiles",
+   "sql": "CREATE INDEX idx_voice_profiles_workspaceId ON voice_profiles (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_voice_profiles_ws_name",
+   "tbl_name": "voice_profiles",
+   "sql": "CREATE UNIQUE INDEX uq_voice_profiles_ws_name ON voice_profiles (workspace_id, display_name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_workspace",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_workspace ON orchestrations (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_parentTicket",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_parentTicket ON orchestrations (parent_ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_pipelineRun",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_pipelineRun ON orchestrations (pipeline_run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestrations_status",
+   "tbl_name": "orchestrations",
+   "sql": "CREATE INDEX idx_orchestrations_status ON orchestrations (status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestration_revisions_orchestration",
+   "tbl_name": "orchestration_revisions",
+   "sql": "CREATE INDEX idx_orchestration_revisions_orchestration ON orchestration_revisions (orchestration_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_orchestration_revisions_workspace",
+   "tbl_name": "orchestration_revisions",
+   "sql": "CREATE INDEX idx_orchestration_revisions_workspace ON orchestration_revisions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_plan_documents_workspace",
+   "tbl_name": "plan_documents",
+   "sql": "CREATE INDEX idx_plan_documents_workspace ON plan_documents (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_plan_documents_conversation",
+   "tbl_name": "plan_documents",
+   "sql": "CREATE INDEX idx_plan_documents_conversation ON plan_documents (conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_playbooks_workspace",
+   "tbl_name": "playbooks",
+   "sql": "CREATE INDEX idx_playbooks_workspace ON playbooks (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_cohorts_workspace",
+   "tbl_name": "review_cohorts",
+   "sql": "CREATE INDEX idx_review_cohorts_workspace ON review_cohorts (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_cohorts_pr",
+   "tbl_name": "review_cohorts",
+   "sql": "CREATE INDEX idx_review_cohorts_pr ON review_cohorts (pr_external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_api_contract_snapshots_workspace",
+   "tbl_name": "api_contract_snapshots",
+   "sql": "CREATE INDEX idx_api_contract_snapshots_workspace ON api_contract_snapshots (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_api_contract_snapshots_pr",
+   "tbl_name": "api_contract_snapshots",
+   "sql": "CREATE INDEX idx_api_contract_snapshots_pr ON api_contract_snapshots (pr_external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_visual_diff_snapshots_workspace",
+   "tbl_name": "visual_diff_snapshots",
+   "sql": "CREATE INDEX idx_visual_diff_snapshots_workspace ON visual_diff_snapshots (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_visual_diff_snapshots_pr",
+   "tbl_name": "visual_diff_snapshots",
+   "sql": "CREATE INDEX idx_visual_diff_snapshots_pr ON visual_diff_snapshots (pr_external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_axis_results_workspace",
+   "tbl_name": "review_axis_results",
+   "sql": "CREATE INDEX idx_review_axis_results_workspace ON review_axis_results (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_axis_results_pr",
+   "tbl_name": "review_axis_results",
+   "sql": "CREATE INDEX idx_review_axis_results_pr ON review_axis_results (pr_external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_dependency_diffs_workspace",
+   "tbl_name": "review_dependency_diffs",
+   "sql": "CREATE INDEX idx_review_dependency_diffs_workspace ON review_dependency_diffs (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_dependency_diffs_pr",
+   "tbl_name": "review_dependency_diffs",
+   "sql": "CREATE INDEX idx_review_dependency_diffs_pr ON review_dependency_diffs (pr_external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_run_snapshots_workspace",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE INDEX idx_review_run_snapshots_workspace ON review_run_snapshots (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_run_snapshots_pr",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE INDEX idx_review_run_snapshots_pr ON review_run_snapshots (pr_external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_review_run_snapshots_pr_time",
+   "tbl_name": "review_run_snapshots",
+   "sql": "CREATE INDEX idx_review_run_snapshots_pr_time ON review_run_snapshots (workspace_id, pr_external_id, finalized_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_provider_policies_workspaceId",
+   "tbl_name": "provider_policies",
+   "sql": "CREATE INDEX idx_provider_policies_workspaceId ON provider_policies (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_goals_workspaceId",
+   "tbl_name": "goals",
+   "sql": "CREATE INDEX idx_goals_workspaceId ON goals (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_goals_parent",
+   "tbl_name": "goals",
+   "sql": "CREATE INDEX idx_goals_parent ON goals (parent_goal_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_budget_incidents_workspaceId",
+   "tbl_name": "budget_incidents",
+   "sql": "CREATE INDEX idx_budget_incidents_workspaceId ON budget_incidents (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_budget_incidents_scope",
+   "tbl_name": "budget_incidents",
+   "sql": "CREATE INDEX idx_budget_incidents_scope ON budget_incidents (scope_type, scope_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_approvals_workspaceId",
+   "tbl_name": "approvals",
+   "sql": "CREATE INDEX idx_approvals_workspaceId ON approvals (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_approvals_status",
+   "tbl_name": "approvals",
+   "sql": "CREATE INDEX idx_approvals_status ON approvals (workspace_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_approval_comments_approval",
+   "tbl_name": "approval_comments",
+   "sql": "CREATE INDEX idx_approval_comments_approval ON approval_comments (approval_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_products_workspaceId",
+   "tbl_name": "work_products",
+   "sql": "CREATE INDEX idx_work_products_workspaceId ON work_products (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_products_ticket",
+   "tbl_name": "work_products",
+   "sql": "CREATE INDEX idx_work_products_ticket ON work_products (ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_work_product_revisions_product",
+   "tbl_name": "work_product_revisions",
+   "sql": "CREATE INDEX idx_work_product_revisions_product ON work_product_revisions (work_product_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_runtime_state_workspaceId",
+   "tbl_name": "agent_runtime_state",
+   "sql": "CREATE INDEX idx_agent_runtime_state_workspaceId ON agent_runtime_state (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_runtime_profiles_workspaceId",
+   "tbl_name": "runtime_profiles",
+   "sql": "CREATE INDEX idx_runtime_profiles_workspaceId ON runtime_profiles (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_team_activity_workspace_team",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE INDEX idx_team_activity_workspace_team ON team_activity_log (workspace_id, team_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_team_activity_ticket",
+   "tbl_name": "team_activity_log",
+   "sql": "CREATE INDEX idx_team_activity_ticket ON team_activity_log (ticket_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_webhook_deliveries_workspace",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE INDEX idx_webhook_deliveries_workspace ON webhook_deliveries (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_webhook_deliveries_trigger",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE INDEX idx_webhook_deliveries_trigger ON webhook_deliveries (trigger_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_webhook_deliveries_dedupe",
+   "tbl_name": "webhook_deliveries",
+   "sql": "CREATE INDEX idx_webhook_deliveries_dedupe ON webhook_deliveries (trigger_id, dedupe_key)"
+  },
+  {
+   "type": "index",
+   "name": "idx_cron_executions_workspace",
+   "tbl_name": "cron_executions",
+   "sql": "CREATE INDEX idx_cron_executions_workspace ON cron_executions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_sync_configs_ws_vendor",
+   "tbl_name": "ticket_sync_configs",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_sync_configs_ws_vendor ON ticket_sync_configs (workspace_id, vendor)"
+  },
+  {
+   "type": "index",
+   "name": "uq_ticket_sync_links_ws_ticket_vendor",
+   "tbl_name": "ticket_sync_links",
+   "sql": "CREATE UNIQUE INDEX uq_ticket_sync_links_ws_ticket_vendor ON ticket_sync_links (workspace_id, ticket_id, vendor)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_sync_links_ws_vendor_ext",
+   "tbl_name": "ticket_sync_links",
+   "sql": "CREATE INDEX idx_ticket_sync_links_ws_vendor_ext ON ticket_sync_links (workspace_id, vendor, external_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_sync_log_ws",
+   "tbl_name": "ticket_sync_log",
+   "sql": "CREATE INDEX idx_ticket_sync_log_ws ON ticket_sync_log (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_ticket_sync_log_dedupe",
+   "tbl_name": "ticket_sync_log",
+   "sql": "CREATE INDEX idx_ticket_sync_log_dedupe ON ticket_sync_log (workspace_id, vendor, dedupe_key)"
+  },
+  {
+   "type": "index",
+   "name": "idx_workspace_members_workspaceId",
+   "tbl_name": "workspace_members",
+   "sql": "CREATE INDEX idx_workspace_members_workspaceId ON workspace_members (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_workspace_members_userId",
+   "tbl_name": "workspace_members",
+   "sql": "CREATE INDEX idx_workspace_members_userId ON workspace_members (user_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_workspace_members_workspace_user",
+   "tbl_name": "workspace_members",
+   "sql": "CREATE UNIQUE INDEX uq_workspace_members_workspace_user ON workspace_members (workspace_id, user_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_workspace_invites_workspaceId",
+   "tbl_name": "workspace_invites",
+   "sql": "CREATE INDEX idx_workspace_invites_workspaceId ON workspace_invites (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_workspace_invites_codeHash",
+   "tbl_name": "workspace_invites",
+   "sql": "CREATE UNIQUE INDEX uq_workspace_invites_codeHash ON workspace_invites (code_hash)"
+  },
+  {
+   "type": "index",
+   "name": "idx_user_activity_ws_created",
+   "tbl_name": "user_activity",
+   "sql": "CREATE INDEX idx_user_activity_ws_created ON user_activity (workspace_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_member_repo_grants_ws_user",
+   "tbl_name": "workspace_member_repo_grants",
+   "sql": "CREATE INDEX idx_member_repo_grants_ws_user ON workspace_member_repo_grants (workspace_id, user_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_member_repo_grants_ws_user_repo",
+   "tbl_name": "workspace_member_repo_grants",
+   "sql": "CREATE UNIQUE INDEX uq_member_repo_grants_ws_user_repo ON workspace_member_repo_grants (workspace_id, user_id, repo_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_session_recordings_workspace",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE INDEX idx_session_recordings_workspace ON session_recordings (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_session_recordings_config",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE INDEX idx_session_recordings_config ON session_recordings (config_hash)"
+  },
+  {
+   "type": "index",
+   "name": "idx_session_recordings_runlog",
+   "tbl_name": "session_recordings",
+   "sql": "CREATE INDEX idx_session_recordings_runlog ON session_recordings (run_log_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_golden_sessions_workspace",
+   "tbl_name": "golden_sessions",
+   "sql": "CREATE INDEX idx_golden_sessions_workspace ON golden_sessions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_golden_sessions_agent",
+   "tbl_name": "golden_sessions",
+   "sql": "CREATE INDEX idx_golden_sessions_agent ON golden_sessions (agent_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_eval_suites_workspace",
+   "tbl_name": "eval_suites",
+   "sql": "CREATE INDEX idx_eval_suites_workspace ON eval_suites (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_eval_runs_workspace_suite_config",
+   "tbl_name": "eval_runs",
+   "sql": "CREATE INDEX idx_eval_runs_workspace_suite_config ON eval_runs (workspace_id, suite_id, config_hash)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_config_versions_workspace",
+   "tbl_name": "agent_config_versions",
+   "sql": "CREATE INDEX idx_agent_config_versions_workspace ON agent_config_versions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_config_versions_agent",
+   "tbl_name": "agent_config_versions",
+   "sql": "CREATE INDEX idx_agent_config_versions_agent ON agent_config_versions (agent_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_scan_results_workspace",
+   "tbl_name": "skill_scan_results",
+   "sql": "CREATE INDEX idx_skill_scan_results_workspace ON skill_scan_results (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_scan_results_hash",
+   "tbl_name": "skill_scan_results",
+   "sql": "CREATE INDEX idx_skill_scan_results_hash ON skill_scan_results (content_hash)"
+  },
+  {
+   "type": "index",
+   "name": "idx_action_policies_workspace",
+   "tbl_name": "action_policies",
+   "sql": "CREATE INDEX idx_action_policies_workspace ON action_policies (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_action_policies_scope",
+   "tbl_name": "action_policies",
+   "sql": "CREATE INDEX idx_action_policies_scope ON action_policies (workspace_id, scope_type, scope_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_run_transcripts_workspaceId",
+   "tbl_name": "run_transcripts",
+   "sql": "CREATE INDEX idx_run_transcripts_workspaceId ON run_transcripts (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_channel_links_ws_provider_channel_thread",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_channel_links_ws_provider_channel_thread ON chat_space_links (workspace_id, provider, external_channel_id, external_thread_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_chat_channel_links_ccChannelId",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE INDEX idx_chat_channel_links_ccChannelId ON chat_space_links (cc_space_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_user_links_ws_provider_team_user",
+   "tbl_name": "chat_user_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_user_links_ws_provider_team_user ON chat_user_links (workspace_id, provider, external_team_id, external_user_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_user_links_ws_provider_user",
+   "tbl_name": "chat_user_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_user_links_ws_provider_user ON chat_user_links (workspace_id, provider, user_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_notification_feed_workspace_created",
+   "tbl_name": "notification_feed",
+   "sql": "CREATE INDEX idx_notification_feed_workspace_created ON notification_feed (workspace_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_notification_item_states_user",
+   "tbl_name": "notification_item_states",
+   "sql": "CREATE INDEX idx_notification_item_states_user ON notification_item_states (workspace_id, user_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rig_sessions_workspace",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE INDEX idx_rig_sessions_workspace ON rig_sessions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rig_sessions_phase",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE INDEX idx_rig_sessions_phase ON rig_sessions (workspace_id, phase, last_activity_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rig_sessions_conversation",
+   "tbl_name": "rig_sessions",
+   "sql": "CREATE INDEX idx_rig_sessions_conversation ON rig_sessions (workspace_id, conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_rig_action_log_rig",
+   "tbl_name": "rig_action_log",
+   "sql": "CREATE INDEX idx_rig_action_log_rig ON rig_action_log (workspace_id, rig_id, seq)"
+  },
+  {
+   "type": "index",
+   "name": "uq_tickets_provider_externalKey",
+   "tbl_name": "tickets",
+   "sql": "CREATE UNIQUE INDEX uq_tickets_provider_externalKey ON tickets (provider, external_key) WHERE external_key IS NOT NULL"
+  },
+  {
+   "type": "index",
+   "name": "uq_pipeline_runs_active_dedup",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE UNIQUE INDEX uq_pipeline_runs_active_dedup ON pipeline_runs (template_id, dedup_key) WHERE dedup_key IS NOT NULL AND status IN ('pending','queued','running','suspended')"
+  },
+  {
+   "type": "index",
+   "name": "idx_pipeline_runs_template_status",
+   "tbl_name": "pipeline_runs",
+   "sql": "CREATE INDEX idx_pipeline_runs_template_status ON pipeline_runs (workspace_id, template_id, status, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "uq_cron_executions_slot",
+   "tbl_name": "cron_executions",
+   "sql": "CREATE UNIQUE INDEX uq_cron_executions_slot ON cron_executions (trigger_id, planned_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_space_created",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_space_created ON conversation_messages (space_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_conversation_created",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_conversation_created ON conversation_messages (conversation_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_ws_agent_started",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_ws_agent_started ON agent_run_logs (workspace_id, agent_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_ws_conv_started",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_ws_conv_started ON agent_run_logs (workspace_id, conversation_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_agent_run_logs_started",
+   "tbl_name": "agent_run_logs",
+   "sql": "CREATE INDEX idx_agent_run_logs_started ON agent_run_logs (started_at DESC)"
+  },
+  {
+   "type": "index",
+   "name": "idx_pull_requests_ws_created",
+   "tbl_name": "pull_requests",
+   "sql": "CREATE INDEX idx_pull_requests_ws_created ON pull_requests (workspace_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_symbols_name",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE INDEX idx_code_symbols_name ON code_symbols (name)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_pending_embedding",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_pending_embedding ON conversation_messages (message_type) WHERE embedding IS NULL AND compacted = 0"
+  },
+  {
+   "type": "index",
+   "name": "idx_code_edges_unresolved",
+   "tbl_name": "code_edges",
+   "sql": "CREATE INDEX idx_code_edges_unresolved ON code_edges (workspace_id, repo_id, checkout_id) WHERE target_symbol_id IS NULL"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_space_links_ws_provider_space_thread",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_space_links_ws_provider_space_thread ON chat_space_links (workspace_id, provider, external_channel_id, external_thread_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_chat_space_links_ccSpaceId",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE INDEX idx_chat_space_links_ccSpaceId ON chat_space_links (cc_space_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_chat_space_links_ws_provider_dm",
+   "tbl_name": "chat_space_links",
+   "sql": "CREATE UNIQUE INDEX uq_chat_space_links_ws_provider_dm ON chat_space_links (workspace_id, provider, external_channel_id) WHERE external_thread_id IS NULL"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_sources_workspace",
+   "tbl_name": "skill_sources",
+   "sql": "CREATE INDEX idx_skill_sources_workspace ON skill_sources (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_sandbox_exec_grants_workspace",
+   "tbl_name": "sandbox_exec_grants",
+   "sql": "CREATE INDEX idx_sandbox_exec_grants_workspace ON sandbox_exec_grants (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_guard_decisions_workspace",
+   "tbl_name": "guard_decisions",
+   "sql": "CREATE INDEX idx_guard_decisions_workspace ON guard_decisions (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_guard_decisions_time",
+   "tbl_name": "guard_decisions",
+   "sql": "CREATE INDEX idx_guard_decisions_time ON guard_decisions (workspace_id, occurred_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_workspace_roles_workspace",
+   "tbl_name": "workspace_roles",
+   "sql": "CREATE INDEX idx_workspace_roles_workspace ON workspace_roles (workspace_id)"
+  },
+  {
+   "type": "table",
+   "name": "memory_facts_fts",
+   "tbl_name": "memory_facts_fts",
+   "sql": "CREATE VIRTUAL TABLE memory_facts_fts\n      USING fts5(topic, content, workspace_id, content=memory_facts, content_rowid=rowid)"
+  },
+  {
+   "type": "trigger",
+   "name": "memory_facts_ai",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TRIGGER memory_facts_ai AFTER INSERT ON memory_facts BEGIN\n        INSERT INTO memory_facts_fts(rowid, topic, content, workspace_id)\n        VALUES (new.rowid, new.topic, new.content, new.workspace_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "memory_facts_ad",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TRIGGER memory_facts_ad AFTER DELETE ON memory_facts BEGIN\n        INSERT INTO memory_facts_fts(memory_facts_fts, rowid, topic, content, workspace_id)\n        VALUES ('delete', old.rowid, old.topic, old.content, old.workspace_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "memory_facts_au",
+   "tbl_name": "memory_facts",
+   "sql": "CREATE TRIGGER memory_facts_au AFTER UPDATE ON memory_facts BEGIN\n        INSERT INTO memory_facts_fts(memory_facts_fts, rowid, topic, content, workspace_id)\n        VALUES ('delete', old.rowid, old.topic, old.content, old.workspace_id);\n        INSERT INTO memory_facts_fts(rowid, topic, content, workspace_id)\n        VALUES (new.rowid, new.topic, new.content, new.workspace_id);\n      END"
+  },
+  {
+   "type": "table",
+   "name": "code_symbols_fts",
+   "tbl_name": "code_symbols_fts",
+   "sql": "CREATE VIRTUAL TABLE code_symbols_fts\n      USING fts5(name, qualified_name, signature, docstring, workspace_id, content=code_symbols, content_rowid=rowid)"
+  },
+  {
+   "type": "trigger",
+   "name": "code_symbols_ai",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE TRIGGER code_symbols_ai AFTER INSERT ON code_symbols BEGIN\n        INSERT INTO code_symbols_fts(rowid, name, qualified_name, signature, docstring, workspace_id)\n        VALUES (new.rowid, new.name, new.qualified_name, new.signature, new.docstring, new.workspace_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "code_symbols_ad",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE TRIGGER code_symbols_ad AFTER DELETE ON code_symbols BEGIN\n        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, qualified_name, signature, docstring, workspace_id)\n        VALUES ('delete', old.rowid, old.name, old.qualified_name, old.signature, old.docstring, old.workspace_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "code_symbols_au",
+   "tbl_name": "code_symbols",
+   "sql": "CREATE TRIGGER code_symbols_au AFTER UPDATE ON code_symbols BEGIN\n        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, qualified_name, signature, docstring, workspace_id)\n        VALUES ('delete', old.rowid, old.name, old.qualified_name, old.signature, old.docstring, old.workspace_id);\n        INSERT INTO code_symbols_fts(rowid, name, qualified_name, signature, docstring, workspace_id)\n        VALUES (new.rowid, new.name, new.qualified_name, new.signature, new.docstring, new.workspace_id);\n      END"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages_fts",
+   "tbl_name": "conversation_messages_fts",
+   "sql": "CREATE VIRTUAL TABLE conversation_messages_fts\n      USING fts5(content, space_id, content=conversation_messages, content_rowid=rowid)"
+  },
+  {
+   "type": "trigger",
+   "name": "conversation_messages_ai",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TRIGGER conversation_messages_ai AFTER INSERT ON conversation_messages BEGIN\n        INSERT INTO conversation_messages_fts(rowid, content, space_id)\n        VALUES (new.rowid, new.content, new.space_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "conversation_messages_ad",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TRIGGER conversation_messages_ad AFTER DELETE ON conversation_messages BEGIN\n        INSERT INTO conversation_messages_fts(conversation_messages_fts, rowid, content, space_id)\n        VALUES ('delete', old.rowid, old.content, old.space_id);\n      END"
+  },
+  {
+   "type": "trigger",
+   "name": "conversation_messages_au",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TRIGGER conversation_messages_au\n      AFTER UPDATE OF content, space_id ON conversation_messages BEGIN\n        INSERT INTO conversation_messages_fts(conversation_messages_fts, rowid, content, space_id)\n        VALUES ('delete', old.rowid, old.content, old.space_id);\n        INSERT INTO conversation_messages_fts(rowid, content, space_id)\n        VALUES (new.rowid, new.content, new.space_id);\n      END"
+  },
+  {
+   "type": "table",
+   "name": "todos",
+   "tbl_name": "todos",
+   "sql": "CREATE TABLE \"todos\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"content\" TEXT NOT NULL, \"status\" TEXT NOT NULL DEFAULT 'pending', \"position\" INTEGER NOT NULL DEFAULT 0, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_goals",
+   "tbl_name": "conversation_goals",
+   "sql": "CREATE TABLE \"conversation_goals\" (\"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"workspace_id\" TEXT NOT NULL, \"title\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"conversation_id\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_todos_workspaceId",
+   "tbl_name": "todos",
+   "sql": "CREATE INDEX idx_todos_workspaceId ON todos (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_todos_conversation",
+   "tbl_name": "todos",
+   "sql": "CREATE INDEX idx_todos_conversation ON todos (workspace_id, conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_goals_workspaceId",
+   "tbl_name": "conversation_goals",
+   "sql": "CREATE INDEX idx_conversation_goals_workspaceId ON conversation_goals (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_calendar_accounts_userId",
+   "tbl_name": "calendar_accounts",
+   "sql": "CREATE INDEX idx_calendar_accounts_userId ON calendar_accounts (user_id)"
+  },
+  {
+   "type": "index",
+   "name": "uq_calendar_accounts_ws_user_email",
+   "tbl_name": "calendar_accounts",
+   "sql": "CREATE UNIQUE INDEX uq_calendar_accounts_ws_user_email ON calendar_accounts (workspace_id, user_id, account_email)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_live_activity",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_live_activity ON conversation_messages (space_id, conversation_id, created_at, sender_type) WHERE reverted = 0"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_live_chars",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_live_chars ON conversation_messages (conversation_id, message_type, content_chars, transcript_chars) WHERE reverted = 0 AND compacted = 0"
+  },
+  {
+   "type": "table",
+   "name": "space_stack_entries",
+   "tbl_name": "space_stack_entries",
+   "sql": "CREATE TABLE \"space_stack_entries\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"repo_id\" TEXT NOT NULL REFERENCES repos (id) ON DELETE CASCADE, \"position\" INTEGER NOT NULL, \"branch\" TEXT NOT NULL, \"base_branch\" TEXT NOT NULL, \"pr_number\" INTEGER NULL, \"pr_external_id\" TEXT NULL, \"rewritten\" INTEGER NOT NULL DEFAULT 0 CHECK (\"rewritten\" IN (0, 1)), \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"space_id\", \"repo_id\", \"position\"), UNIQUE (\"workspace_id\", \"space_id\", \"repo_id\", \"branch\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_space_stack_space",
+   "tbl_name": "space_stack_entries",
+   "sql": "CREATE INDEX idx_space_stack_space ON space_stack_entries (workspace_id, space_id)"
+  },
+  {
+   "type": "table",
+   "name": "catalog_components",
+   "tbl_name": "catalog_components",
+   "sql": "CREATE TABLE \"catalog_components\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"type\" TEXT NOT NULL, \"display_name\" TEXT NOT NULL DEFAULT '', \"description\" TEXT NOT NULL DEFAULT '', \"owner\" TEXT NOT NULL DEFAULT '', \"tier\" TEXT NOT NULL, \"lifecycle\" TEXT NOT NULL, \"repo_id\" TEXT NULL REFERENCES repos (id) ON DELETE SET NULL, \"repo_path\" TEXT NOT NULL DEFAULT '', \"source\" TEXT NOT NULL, \"tags\" TEXT NOT NULL DEFAULT '[]', \"links\" TEXT NOT NULL DEFAULT '[]', \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_environments",
+   "tbl_name": "catalog_environments",
+   "sql": "CREATE TABLE \"catalog_environments\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"tier\" TEXT NOT NULL, \"display_name\" TEXT NOT NULL DEFAULT '', \"position\" INTEGER NOT NULL DEFAULT 0, \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_connections",
+   "tbl_name": "catalog_connections",
+   "sql": "CREATE TABLE \"catalog_connections\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"connector_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"display_name\" TEXT NOT NULL DEFAULT '', \"config\" TEXT NOT NULL DEFAULT '{}', \"health_status\" TEXT NOT NULL DEFAULT 'unknown', \"health_account\" TEXT NOT NULL DEFAULT '', \"health_message\" TEXT NOT NULL DEFAULT '', \"health_checked_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"name\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_bindings",
+   "tbl_name": "catalog_bindings",
+   "sql": "CREATE TABLE \"catalog_bindings\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"component_id\" TEXT NOT NULL, \"capability\" TEXT NOT NULL, \"environment_id\" TEXT NULL, \"connection_id\" TEXT NOT NULL, \"target\" TEXT NOT NULL DEFAULT '{}', \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_dependencies",
+   "tbl_name": "catalog_dependencies",
+   "sql": "CREATE TABLE \"catalog_dependencies\" (\"workspace_id\" TEXT NOT NULL, \"component_id\" TEXT NOT NULL, \"depends_on_id\" TEXT NOT NULL, \"note\" TEXT NOT NULL DEFAULT '', \"created_at\" INTEGER NOT NULL, PRIMARY KEY (\"component_id\", \"depends_on_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_deployments",
+   "tbl_name": "catalog_deployments",
+   "sql": "CREATE TABLE \"catalog_deployments\" (\"workspace_id\" TEXT NOT NULL, \"binding_id\" TEXT NOT NULL, \"component_id\" TEXT NOT NULL, \"environment_id\" TEXT NOT NULL, \"connector_id\" TEXT NOT NULL, \"external_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"version\" TEXT NOT NULL DEFAULT '', \"commit_sha\" TEXT NOT NULL DEFAULT '', \"commit_message\" TEXT NOT NULL DEFAULT '', \"branch\" TEXT NOT NULL DEFAULT '', \"triggered_by\" TEXT NOT NULL DEFAULT '', \"url\" TEXT NOT NULL DEFAULT '', \"is_active\" INTEGER NOT NULL DEFAULT 0 CHECK (\"is_active\" IN (0, 1)), \"can_rollback\" INTEGER NOT NULL DEFAULT 0 CHECK (\"can_rollback\" IN (0, 1)), \"can_redeploy\" INTEGER NOT NULL DEFAULT 0 CHECK (\"can_redeploy\" IN (0, 1)), \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, \"finished_at\" INTEGER NULL, \"observed_at\" INTEGER NOT NULL, PRIMARY KEY (\"binding_id\", \"external_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_build_runs",
+   "tbl_name": "catalog_build_runs",
+   "sql": "CREATE TABLE \"catalog_build_runs\" (\"workspace_id\" TEXT NOT NULL, \"binding_id\" TEXT NOT NULL, \"component_id\" TEXT NOT NULL, \"connector_id\" TEXT NOT NULL, \"external_id\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"conclusion\" TEXT NOT NULL DEFAULT 'none', \"workflow_name\" TEXT NOT NULL DEFAULT '', \"workflow_path\" TEXT NOT NULL DEFAULT '', \"title\" TEXT NOT NULL DEFAULT '', \"branch\" TEXT NOT NULL DEFAULT '', \"commit_sha\" TEXT NOT NULL DEFAULT '', \"event\" TEXT NOT NULL DEFAULT '', \"run_number\" INTEGER NOT NULL DEFAULT 0, \"attempt\" INTEGER NOT NULL DEFAULT 1, \"actor\" TEXT NOT NULL DEFAULT '', \"url\" TEXT NOT NULL DEFAULT '', \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, \"observed_at\" INTEGER NOT NULL, PRIMARY KEY (\"binding_id\", \"external_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_runtime_instances",
+   "tbl_name": "catalog_runtime_instances",
+   "sql": "CREATE TABLE \"catalog_runtime_instances\" (\"workspace_id\" TEXT NOT NULL, \"binding_id\" TEXT NOT NULL, \"component_id\" TEXT NOT NULL, \"environment_id\" TEXT NOT NULL, \"connector_id\" TEXT NOT NULL, \"external_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"state\" TEXT NOT NULL, \"health\" TEXT NOT NULL DEFAULT 'none', \"image\" TEXT NOT NULL DEFAULT '', \"ports\" TEXT NOT NULL DEFAULT '[]', \"status_text\" TEXT NOT NULL DEFAULT '', \"started_at\" INTEGER NULL, \"observed_at\" INTEGER NOT NULL, PRIMARY KEY (\"binding_id\", \"external_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_drift",
+   "tbl_name": "catalog_drift",
+   "sql": "CREATE TABLE \"catalog_drift\" (\"workspace_id\" TEXT NOT NULL, \"component_id\" TEXT NOT NULL, \"environment_id\" TEXT NOT NULL, \"deployed_sha\" TEXT NOT NULL, \"reference\" TEXT NOT NULL, \"reference_sha\" TEXT NOT NULL, \"commits_behind\" INTEGER NOT NULL, \"observed_at\" INTEGER NOT NULL, PRIMARY KEY (\"component_id\", \"environment_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_events",
+   "tbl_name": "catalog_events",
+   "sql": "CREATE TABLE \"catalog_events\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"component_id\" TEXT NOT NULL, \"kind\" TEXT NOT NULL, \"environment_id\" TEXT NULL, \"connector_id\" TEXT NOT NULL DEFAULT '', \"ref_id\" TEXT NOT NULL DEFAULT '', \"version\" TEXT NOT NULL DEFAULT '', \"actor\" TEXT NOT NULL DEFAULT '', \"actor_kind\" TEXT NOT NULL DEFAULT 'provider', \"url\" TEXT NOT NULL DEFAULT '', \"message\" TEXT NOT NULL DEFAULT '', \"occurred_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "catalog_sync_states",
+   "tbl_name": "catalog_sync_states",
+   "sql": "CREATE TABLE \"catalog_sync_states\" (\"binding_id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"last_attempt_at\" INTEGER NOT NULL, \"last_success_at\" INTEGER NULL, \"error\" TEXT NOT NULL DEFAULT '', \"consecutive_failures\" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (\"binding_id\"))"
+  },
+  {
+   "type": "index",
+   "name": "uq_catalog_bindings_slot",
+   "tbl_name": "catalog_bindings",
+   "sql": "CREATE UNIQUE INDEX uq_catalog_bindings_slot ON catalog_bindings (workspace_id, component_id, capability, COALESCE(environment_id, ''))"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_bindings_connection",
+   "tbl_name": "catalog_bindings",
+   "sql": "CREATE INDEX idx_catalog_bindings_connection ON catalog_bindings (workspace_id, connection_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_deployments_timeline",
+   "tbl_name": "catalog_deployments",
+   "sql": "CREATE INDEX idx_catalog_deployments_timeline ON catalog_deployments (workspace_id, component_id, environment_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_build_runs_timeline",
+   "tbl_name": "catalog_build_runs",
+   "sql": "CREATE INDEX idx_catalog_build_runs_timeline ON catalog_build_runs (workspace_id, component_id, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_events_timeline",
+   "tbl_name": "catalog_events",
+   "sql": "CREATE INDEX idx_catalog_events_timeline ON catalog_events (workspace_id, component_id, occurred_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_events_time",
+   "tbl_name": "catalog_events",
+   "sql": "CREATE INDEX idx_catalog_events_time ON catalog_events (workspace_id, occurred_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_conversation_messages_context_reading",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE INDEX idx_conversation_messages_context_reading ON conversation_messages (conversation_id, created_at, context_tokens, context_window_tokens) WHERE reverted = 0 AND context_tokens IS NOT NULL"
+  },
+  {
+   "type": "table",
+   "name": "run_call_usages",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE TABLE \"run_call_usages\" (\"id\" TEXT NOT NULL, \"run_id\" TEXT NULL, \"workspace_id\" TEXT NULL, \"conversation_id\" TEXT NULL, \"request_id\" TEXT NOT NULL, \"attempt\" INTEGER NOT NULL DEFAULT 1, \"purpose\" TEXT NOT NULL DEFAULT 'main', \"provider\" TEXT NOT NULL DEFAULT '', \"model_id\" TEXT NOT NULL DEFAULT '', \"input_tokens\" INTEGER NOT NULL DEFAULT 0, \"output_tokens\" INTEGER NOT NULL DEFAULT 0, \"thought_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_read_tokens\" INTEGER NOT NULL DEFAULT 0, \"cached_write_tokens\" INTEGER NOT NULL DEFAULT 0, \"cost_micros\" INTEGER NULL, \"cost_basis\" TEXT NOT NULL DEFAULT 'estimated', \"transport_first_byte_ms\" INTEGER NULL, \"first_model_event_ms\" INTEGER NULL, \"duration_ms\" INTEGER NULL, \"outcome\" TEXT NOT NULL DEFAULT 'success', \"error_code\" TEXT NULL, \"started_at\" INTEGER NOT NULL, \"recorded_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_run_call_usages_runId",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE INDEX idx_run_call_usages_runId ON run_call_usages (run_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_run_call_usages_workspace",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE INDEX idx_run_call_usages_workspace ON run_call_usages (workspace_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_run_call_usages_conversation",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE INDEX idx_run_call_usages_conversation ON run_call_usages (workspace_id, conversation_id)"
+  },
+  {
+   "type": "index",
+   "name": "idx_run_call_usages_started",
+   "tbl_name": "run_call_usages",
+   "sql": "CREATE INDEX idx_run_call_usages_started ON run_call_usages (workspace_id, started_at)"
+  },
+  {
+   "type": "table",
+   "name": "skill_eval_campaigns",
+   "tbl_name": "skill_eval_campaigns",
+   "sql": "CREATE TABLE \"skill_eval_campaigns\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"skill_key\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"payload_json\" TEXT NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_eval_attempts",
+   "tbl_name": "skill_eval_attempts",
+   "sql": "CREATE TABLE \"skill_eval_attempts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"campaign_id\" TEXT NOT NULL REFERENCES skill_eval_campaigns (id), \"ordinal\" INTEGER NOT NULL, \"payload_json\" TEXT NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "skill_eval_policies",
+   "tbl_name": "skill_eval_policies",
+   "sql": "CREATE TABLE \"skill_eval_policies\" (\"workspace_id\" TEXT NOT NULL, \"skill_key\" TEXT NOT NULL, \"enabled\" INTEGER NOT NULL CHECK (\"enabled\" IN (0, 1)), \"payload_json\" TEXT NOT NULL, PRIMARY KEY (\"workspace_id\", \"skill_key\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_campaigns_skill_created",
+   "tbl_name": "skill_eval_campaigns",
+   "sql": "CREATE INDEX idx_skill_eval_campaigns_skill_created ON skill_eval_campaigns (workspace_id, skill_key, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_campaigns_status",
+   "tbl_name": "skill_eval_campaigns",
+   "sql": "CREATE INDEX idx_skill_eval_campaigns_status ON skill_eval_campaigns (workspace_id, status)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_attempts_campaign",
+   "tbl_name": "skill_eval_attempts",
+   "sql": "CREATE INDEX idx_skill_eval_attempts_campaign ON skill_eval_attempts (workspace_id, campaign_id, ordinal)"
+  },
+  {
+   "type": "index",
+   "name": "idx_skill_eval_policies_enabled",
+   "tbl_name": "skill_eval_policies",
+   "sql": "CREATE INDEX idx_skill_eval_policies_enabled ON skill_eval_policies (workspace_id, enabled)"
+  },
+  {
+   "type": "table",
+   "name": "catalog_files",
+   "tbl_name": "catalog_files",
+   "sql": "CREATE TABLE \"catalog_files\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"uploader_user_id\" TEXT NULL, \"name\" TEXT NOT NULL, \"creator_id\" TEXT NULL, \"path\" TEXT NOT NULL, \"media_type\" TEXT NOT NULL, \"bytes\" INTEGER NOT NULL, \"source\" TEXT NOT NULL, \"owned_bytes\" INTEGER NOT NULL DEFAULT 0 CHECK (\"owned_bytes\" IN (0, 1)), \"state\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_files_lifecycle",
+   "tbl_name": "catalog_files",
+   "sql": "CREATE INDEX idx_catalog_files_lifecycle ON catalog_files (state, created_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_catalog_files_path",
+   "tbl_name": "catalog_files",
+   "sql": "CREATE INDEX idx_catalog_files_path ON catalog_files (path)"
+  },
+  {
+   "type": "table",
+   "name": "environment_definitions",
+   "tbl_name": "environment_definitions",
+   "sql": "CREATE TABLE \"environment_definitions\" (\"id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"definition_json\" TEXT NOT NULL, \"source_repo_id\" TEXT NULL, \"source_path\" TEXT NULL, \"approved_blob_hash\" TEXT NULL, \"overrides_json\" TEXT NULL, \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, \"host_approved_by\" TEXT NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "space_environments",
+   "tbl_name": "space_environments",
+   "sql": "CREATE TABLE \"space_environments\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL, \"definition_id\" TEXT NOT NULL, \"name\" TEXT NOT NULL, \"status\" TEXT NOT NULL, \"placement\" TEXT NOT NULL DEFAULT 'host', \"rig_id\" TEXT NULL, \"ports_json\" TEXT NOT NULL DEFAULT '{}', \"endpoints_json\" TEXT NOT NULL DEFAULT '[]', \"components_json\" TEXT NOT NULL DEFAULT '[]', \"options_json\" TEXT NOT NULL DEFAULT '{}', \"warnings_json\" TEXT NOT NULL DEFAULT '[]', \"last_error_json\" TEXT NULL, \"needs_recreate\" INTEGER NOT NULL DEFAULT 0 CHECK (\"needs_recreate\" IN (0, 1)), \"created_by\" TEXT NOT NULL, \"created_at\" INTEGER NOT NULL, \"last_used_at\" INTEGER NOT NULL, PRIMARY KEY (\"id\"), UNIQUE (\"space_id\", \"definition_id\"))"
+  },
+  {
+   "type": "table",
+   "name": "environment_runs",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE TABLE \"environment_runs\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"space_id\" TEXT NULL, \"environment_id\" TEXT NULL, \"definition_id\" TEXT NULL, \"repo_id\" TEXT NULL, \"kind\" TEXT NOT NULL, \"label\" TEXT NULL, \"status\" TEXT NOT NULL, \"started_at\" INTEGER NOT NULL, \"completed_at\" INTEGER NULL, \"exit_code\" INTEGER NULL, \"error\" TEXT NULL, \"output_text\" TEXT NOT NULL DEFAULT '', PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "index",
+   "name": "idx_environment_runs_space",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE INDEX idx_environment_runs_space ON environment_runs (space_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_environment_runs_definition",
+   "tbl_name": "environment_runs",
+   "sql": "CREATE INDEX idx_environment_runs_definition ON environment_runs (definition_id, started_at)"
+  },
+  {
+   "type": "index",
+   "name": "idx_notification_feed_wait_id",
+   "tbl_name": "notification_feed",
+   "sql": "CREATE INDEX idx_notification_feed_wait_id ON notification_feed (json_extract(params_json, '$.wait_id')) WHERE json_valid(params_json)"
+  }
+ ]
+}

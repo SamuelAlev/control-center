@@ -3,7 +3,7 @@ title: Architektura
 description: "Jak je Control Center složený: tenký klient nad serverem, Clean Architecture podle domén a porty s adaptéry."
 dateModified: 2026-09-19
 slug: cs-CZ/prirucka/koncepty/architektura
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Přehled
@@ -100,9 +100,9 @@ Kořen kompozice aplikace (`di/providers.dart`) váže klientské porty na imple
 **Drift** (SQLite), rozdělený do dvou databází, obě v `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) drží krátký seznam tabulek, které jsou opravdu celoserverové: registr pracovních prostorů, uživatelé, předvolby a spárovaná zařízení, připojení SSO, nastavení serveru pro celou instalaci, spravované politiky akcí (zámek na úrovni instalace, který smí guardraily pracovního prostoru jen zpřísnit), kanál novinek pro každého uživatele, fronta flotily (pracovníci, úlohy, záznam umístění), index `workspace_routes` před ověřením a metadata instalace. Start otevře jen tento soubor, takže cena startu zůstává stejná, ať mají pracovní prostory historie kolik chtějí. Tabulka přidaná sem je rozhodnutí o izolaci a západkový test tě nutí ho obhájit.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) je jeden _adresář_ na pracovní prostor. Drží jeden soubor SQLite a všechno ostatní, co patří jen tomu prostoru, takže worktree rozhovoru a soubory agenta leží vedle databáze a mažou se s ní. Tady žije skoro všechno: agenti, prostory, tickety, paměť, pipelines, schůzky, graf kódu, revize, repozitáře. Soubory se otevírají líně při prvním sáhnutí přes `WorkspaceDatabaseManager.of(workspaceId)` a teprve tehdy zaplatí vlastní `quick_check`, instalaci FTS a triggerů a `vector_init`.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) je jeden _adresář_ na pracovní prostor. Drží jeden soubor SQLite a všechno ostatní, co patří jen tomu prostoru, takže worktree rozhovoru a soubory agenta leží vedle databáze a mažou se s ní. Tady žije skoro všechno: agenti, prostory, tickety, paměť, pipelines, schůzky, revize, repozitáře. Graf kódu je druhý soubor ve stejném adresáři, `code_index.db`, který se znovu sestavuje místo zálohování. Soubory se otevírají líně při prvním sáhnutí přes `WorkspaceDatabaseManager.of(workspaceId)` a teprve tehdy zaplatí vlastní `quick_check`, instalaci FTS a triggerů a `vector_init`.
 
-Obě poloviny vyšly ze sloučeného základu v1. `onCreate` staví aktuální schéma a migrační kroky se připojují, jen když je nasazenou databázi potřeba dovést dál.
+Žádná z obou polovin nemá migrační kroky. Nový soubor se sestaví z definic tabulek. Soubor ze starší verze se nejdřív zkopíruje stranou (`pre_upgrade/`) a při otevření se pak přivede k týmž definicím, takže nová i aktualizovaná instalace skončí se stejným schématem. Soubor, který zapsala novější verze, se odmítne.
 
 Pracovní prostor je jeden soubor, takže export je jeden příkaz `VACUUM INTO` (`workspace.export`). Tabulku po tabulce se nevypisuje. `workspace.import` takový soubor převezme a podle vloženého `workspace_meta` pozná vlastní soubor převzatý znovu od souboru, který přišel z jiné instalace.
 

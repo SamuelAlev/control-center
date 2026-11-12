@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/message.dart'
     show MessageType, SenderType;
@@ -8,10 +7,9 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_state_repositories.dart';
 import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart'
     as mention;
-import 'package:cc_persistence/database/daos/cache_dao.dart';
-import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_server_core/src/forge/github_clients.dart' show GitHubLane;
 import 'package:cc_server_core/src/identity/github_login_directory.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart';
@@ -241,8 +239,8 @@ class _PendingReply {
 ///
 /// Every reply rides the workspace's gateway with a `bot` token bounded by
 /// the asking member and starts with [attributed]'s prefix. Outbound: the
-/// run-log id keys a pending-reply cache row; one post-back attempt, then
-/// drop (the answer stays in the space).
+/// run-log id keys a pending reply ([PendingPrReplyRepository]); one
+/// post-back attempt, then drop (the answer stays in the space).
 class GitHubPrConversationBridge implements GitHubPrConversationSink {
   /// Creates a [GitHubPrConversationBridge]. Call [start] to arm the
   /// outbound listener.
@@ -251,17 +249,13 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     required this._loginDirectory,
     required this._messaging,
     required this._messagingRepository,
-    required this._workspaceDbs,
+    required this._pendingReplies,
     required this._startReview,
     required this._ensureSpace,
     required this._defaultAnswerer,
     required this._eventBus,
     this._onWarning,
   });
-
-  /// The caches kind holding a pending outbound reply, keyed by the agent
-  /// run-log id (= the agent turn's message id).
-  static const String pendingReplyCacheKind = 'github_pr_reply';
 
   /// How every automated reply begins, before the asker's login. In the
   /// Connect and user-token lanes a reply is authored by the asking person,
@@ -274,7 +268,10 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   final GitHubLoginDirectory _loginDirectory;
   final MessagingPort _messaging;
   final MessagingRepository _messagingRepository;
-  final WorkspaceDatabaseManager _workspaceDbs;
+
+  /// The reply each dispatched run owes, keyed by its run-log id (= the agent
+  /// turn's message id).
+  final PendingPrReplyRepository _pendingReplies;
   final StartAiReview _startReview;
   final EnsurePrReviewSpace _ensureSpace;
   final DefaultAnswererResolver _defaultAnswerer;
@@ -282,8 +279,6 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   final void Function(String message)? _onWarning;
 
   StreamSubscription<AgentRunCompleted>? _runSub;
-
-  CacheDao _cache(String workspaceId) => _workspaceDbs.of(workspaceId).cacheDao;
 
   /// The dedicated account is the PR-conversation mention. It never changes
   /// the identity used to post replies or guard bot loops; an empty
@@ -730,12 +725,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       isReviewThread: comment.isReviewComment,
       parentCommentId: comment.isReviewComment ? comment.id : null,
     );
-    await _cache(workspaceId).put(
-      workspaceId,
-      pendingReplyCacheKind,
-      runLogId,
-      jsonEncode(pending.toJson()),
-    );
+    await _pendingReplies.save(workspaceId, runLogId, pending.toJson());
     final early = _unclaimedCompletions[runLogId];
     if (early != null) {
       await _consumeSerialized(early.event, workspaceId, runLogId);
@@ -858,24 +848,16 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     String workspaceId,
     String runId,
   ) async {
-    final raw = await _cache(
-      workspaceId,
-    ).read(workspaceId, pendingReplyCacheKind, runId);
+    // Consume first: whatever happens below, this run's reply fires once.
+    final raw = await _pendingReplies.take(workspaceId, runId);
     if (raw == null) {
       return;
     }
     _unclaimedCompletions.remove(runId);
-    // Consume first: whatever happens below, this run's reply fires once.
-    await _cache(
-      workspaceId,
-    ).deleteEntry(workspaceId, pendingReplyCacheKind, runId);
     _PendingReply? pending;
     try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map<String, dynamic>) {
-        pending = _PendingReply.fromJson(decoded);
-      }
-    } on FormatException {
+      pending = _PendingReply.fromJson(raw);
+    } on Object {
       pending = null;
     }
     if (pending == null) {

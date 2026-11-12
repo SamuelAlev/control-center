@@ -2,7 +2,7 @@
 title: Sandaran, eksport dan import
 description: Susun atur snapshot, manifes, setiap operasi sandaran dan laluan pemindahan, serta dengan tepat fail yang terkandung dan tidak terkandung dalam sandaran.
 slug: ms-MY/manual-pengguna/rujukan/sandaran
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Semua yang boleh disalin, diserahkan atau diterima pakai oleh Control Center, dan bentuk
@@ -49,12 +49,11 @@ biasa.
 
 Sandaran ruang kerja berjadual berada secara berasingan di
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Ia tidak merangkumi manifes atau `global.db` dan bukan snapshot pemasangan.
+Setiap satu mempunyai `manifest.json` untuk fail itu sahaja dan tiada `global.db`; ia bukan snapshot pemasangan. Pemulihan menyimpan pangkalan data yang digantikannya di tempat yang sama, sebagai `<timestamp>-pre-restore`.
 Langkah pengekalan pipeline mingguan hanya membuang sandaran ruang kerjanya sendiri
 yang lebih lama daripada usia yang dikonfigurasikan (30 hari secara lalai); snapshot
 pemasangan yang dicipta secara manual tidak pernah termasuk dalam putaran itu.
-`server.listBackups` menyenaraikan snapshot pemasangan sahaja, termasuk yang tidak
-lengkap; `workspace.listBackups` menyenaraikan sandaran berjadual satu ruang kerja.
+`server.listBackups` menyenaraikan snapshot pemasangan sahaja, termasuk yang tidak disahkan; `workspace.listBackups` menyenaraikan sandaran berjadual satu ruang kerja.
 
 Memadam ruang kerja membiarkan direktori ini di tempatnya. Jadual ruang kerja itu berhenti
 bersamanya, jadi tiada lagi yang memutarkan sandaran tersebut, dan ia kekal sehingga
@@ -65,34 +64,40 @@ pemilik pemasangan membuangnya. `server.listOrphanedBackups` melaporkannya.
 
 | Medan                      | Jenis           | Maksud                                                              |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Versi format manifes. Kini `1`                                      |
+| `format`                  | int             | Format manifes. Kini `2`                                      |
 | `created_at`               | ISO-8601 UTC    | Masa snapshot diambil                                               |
-| `global.file`              | string          | Sentiasa `global.db`                                                |
-| `global.schema_version`    | int             | Versi skema `GlobalDatabase` semasa tangkapan                       |
-| `global.bytes`             | int             | Saiz `global.db` yang ditulis                                       |
-| `workspace_schema_version` | int             | Versi skema `WorkspaceDatabase` yang dikongsi setiap fail ruang kerja |
-| `workspaces[]`             | array           | Satu entri bagi setiap ruang kerja yang ditangkap                   |
+| `global` | object | Rekod bagi `global.db`. Tiada dalam sandaran ruang kerja berjadual |
+| `workspaces[]`             | array           | Satu rekod bagi setiap ruang kerja yang ditangkap                   |
 | `workspaces[].workspace_id`| string          | Ruang kerja yang dipegang oleh fail ini                             |
-| `workspaces[].file`        | string          | Laluan relatif kepada akar snapshot, `<workspaceId>/workspace.db`   |
-| `workspaces[].bytes`       | int             | Saiz fail itu                                                       |
-| `skipped_workspaces[]`     | array of string | Ruang kerja yang **tidak** dapat ditangkap oleh sandaran            |
+| `skipped_workspaces[]` | array | Ruang kerja yang **tidak** dapat ditangkap oleh sandaran |
+| `skipped_workspaces[].workspace_id` | string | Ruang kerja yang ditinggalkan |
+| `skipped_workspaces[].reason` | string | `no_file`, `damaged` atau `failed` |
 
-Sesuatu ruang kerja dilangkau apabila ia didaftarkan tetapi belum pernah ditulis ke
-dalamnya (jadi failnya belum wujud), atau apabila `VACUUM INTO`-nya gagal. Sama ada cara,
-snapshot itu tetap selesai dan manifes menamakan apa yang hilang.
+`global` dan setiap rekod `workspaces[]` merekodkan satu fail yang disalin, diukur pada salinan itu selepas ditulis:
+
+| Medan | Jenis | Maksud |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | Laluan relatif kepada akar snapshot: `global.db` atau `<workspaceId>/workspace.db`   |
+| `bytes`       | int             | Saiz salinan                                                       |
+| `sha256` | string | SHA-256 salinan, dalam hex huruf kecil |
+| `quick_check` | string | Keputusan `quick_check` SQLite bagi salinan itu: `ok`, atau dapatannya |
+| `user_version` | int | Versi skema salinan |
+| `application_id` | int | `application_id` SQLite salinan itu |
+
+Ruang kerja dilangkau apabila ia didaftarkan tetapi tidak pernah ditulis ke dalamnya (`no_file`), apabila pangkalan datanya gagal semakan integriti (`damaged`; salinan yang rosak tidak pernah diambil), atau apabila salinannya atau semakan terhadap salinan itu gagal (`failed`). Sama ada cara, snapshot itu tetap selesai dan manifes menamakan apa yang hilang. Manifes ditulis paling akhir.
 
 ### Kelengkapan
 
-`server.listBackups` melaporkan bendera `complete` bagi setiap snapshot. Ia palsu apabila
-manifes tiada atau tidak boleh dihuraikan, apabila `global.db` hilang, atau apabila
-manifes menamakan fail ruang kerja yang tiada pada cakera.
+`server.listBackups` melaporkan bendera `complete` bagi setiap snapshot. Ia palsu apabila manifes tiada, tidak boleh dihuraikan atau dalam format lain, apabila fail yang dinamakannya tiada atau bersaiz lain, atau apabila salinan tidak lulus semakannya. Aplikasi memaparkan snapshot sedemikian sebagai **Tidak disahkan**. Snapshot yang diambil sebelum format `2` berada dalam keadaan itu.
 
-Snapshot yang tidak lengkap masih disenaraikan, kerana snapshot yang tidak dapat dilihat
+Snapshot yang tidak disahkan masih disenaraikan, kerana snapshot yang tidak dapat dilihat
 oleh pengendali ialah snapshot yang mereka percaya mereka miliki. Apabila manifes tidak
 boleh dibaca, penyenaraian berpatah balik kepada susun atur itu sendiri dan melaporkan
 mana-mana fail `<workspaceId>/workspace.db` yang ditemuinya — fail itu kekal boleh
 diterima pakai satu demi satu melalui `workspace.import` walaupun snapshot itu secara
 keseluruhan tidak dapat memulihkan sesuatu pemasangan.
+
+Snapshot atau sandaran berjadual yang disenaraikan membawa `pinned_reason: "last_good_copy"` selagi ia memegang salinan yang disahkan terbaharu bagi ruang kerja yang pangkalan data aktifnya rosak. Langkah pengekalan melangkaunya sehingga ruang kerja itu dipulihkan.
 
 ## Apa yang tidak terkandung dalam sandaran
 
@@ -103,6 +108,7 @@ lebih daripada pangkalan datanya, dan tiada satu pun daripada selebihnya berpind
 | ----------------------------------- | --------------- | -------------------------- |
 | `global.db`                         | Ya              | Tidak                      |
 | `<workspaceId>/workspace.db`        | Ya              | Ya (ia *ialah* fail itu)   |
+| `<workspaceId>/code_index.db`       | Tidak           | Tidak                  |
 | `<workspaceId>/blobs/`              | Tidak           | Tidak                      |
 | `<workspaceId>/skills/`             | Tidak           | Tidak                      |
 | `<workspaceId>/agents/`             | Tidak           | Tidak                      |
@@ -116,20 +122,15 @@ lebih daripada pangkalan datanya, dan tiada satu pun daripada selebihnya berpind
 | `_agent_hooks/`                     | Tidak           | Tidak                      |
 
 Sebahagian daripadanya boleh dibuang — `spaces/` memegang worktree salin-semasa-tulis yang
-disediakan semula daripada repo, `pr_clones/` ialah cache, `models/` dimuat turun semula,
+disediakan semula daripada repo, `pr_clones/` ialah cache, `code_index.db` dibina semula, `models/` dimuat turun semula,
 `rigs/` ialah keadaan mesin. Sebahagiannya tidak: `blobs/` memegang imej yang ditampal
 yang ditunjuk oleh baris dalam pangkalan data, `skills/` dan `agents/` memegang fail yang
 digunakan oleh ejen untuk berjalan, dan `secrets.json` memegang setiap kunci penggandingan,
 kelayakan pembekal dan tetapan SSO pada pemasangan itu. Lihat
 [Sandarkan dan pulihkan](/ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan/#salin-sandaran-keluar-daripada-mesin)
 untuk merangkumi selebihnya.
-:::caution[Pangkalan data ruang kerja memegang rahsia webhook]
-`workspace.db` ialah keseluruhan ruang kerja: perbualan, log larian, indeks kod,
-pautan repositori, definisi persekitaran dan ahli. Ia juga memegang token webhook
-saluran paip dan rahsia webhook penyegerakan tiket dalam bentuk boleh dibaca, jadi
-anggap eksport atau sandaran yang dimuat turun sebagai rahsia. Ia tidak memegang log
-masuk pembekal, kunci peranti atau rahsia pengguna; semuanya berada dalam `global.db`
-dan `secrets.json`.
+:::note[Rahsia kekal di luar pangkalan data]
+`workspace.db` ialah keseluruhan ruang kerja: perbualan, log larian, pautan repositori, definisi persekitaran dan ahli. Token webhook saluran paip dan rahsia webhook penyegerakan tiket berada dalam `secrets.json`: pangkalan data hanya memegang rujukan bagi setiap satu, dan indeks laluan memegang hash berkunci bagi setiap token. Ruang kerja yang dipulihkan pada pemasangan lain oleh itu tidak menerima webhook sehingga pencetusnya disimpan semula di sana. Log masuk pembekal, kunci peranti dan rahsia pengguna berada dalam `global.db` dan `secrets.json`.
 :::
 
 :::note[Token sembang sengaja ditinggalkan]
@@ -156,6 +157,8 @@ seperti pelayan demo.
 | `workspace.deleteBackup` | ubah | Ruang kerja | `owner` | `name` | `{ok}` |
 | `workspace.export`    | baca   | Ruang kerja  | `admin`               | tiada         | `{ok, path}`                   |
 | `workspace.import`    | ubah   | Ruang kerja  | `owner`, dan pemilik pelayan | `source_path` | `{ok, workspace_id}`           |
+| `workspace.importHolds.list` | baca | Ruang kerja | `owner`, dan pemilik pelayan | tiada | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | ubah | Ruang kerja | `owner`, dan pemilik pelayan | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`    | ubah   | Pemasangan*  | `owner`               | `id`          | baris pendaftaran ditandakan dipadam |
 
 * `workspace.delete` tidak berskop kerana baris yang ditandakannya berada dalam daftar
@@ -172,13 +175,15 @@ ruang kerja yang aktif, yang sandarannya kekal di sebalik `workspace.deleteBacku
 peranan ruang kerja itu sendiri. Kedua-dua operasi padam hanya menerima nama direktori cap
 masa yang tersenarai, bukan laluan.
 
+`workspace.importHolds.list` mengembalikan apa yang ditahan oleh import. Setiap penahanan mempunyai `id`, `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` atau `invite`), `payload` yang akan dikembalikannya, `imported_at` dan `source_install_id`. `workspace.importHolds.resolve` dengan `accept: true` memberikannya semula dan dengan `false` membuangnya. `applied` bernilai false apabila sesiapa atau apa sahaja yang menjadi sasaran kebenaran itu tidak lagi berada dalam ruang kerja.
+
 :::note[Snapshot seluruh pemasangan dikawal pemilik pada kedua-dua jalur]
 `server.backupNow`, `server.listBackups`, dan `server.deleteBackup` memerlukan
 **pemilik** pemasangan (`ServerAuthority.serverOwner`), pintu yang sama seperti
 `GET /backup/snapshot`. Sesuatu snapshot menangkap pangkalan data setiap ruang kerja, jadi
 menjadi pentadbir bagi satu ruang kerja tidak cukup untuk menguruskan yang lain. Pemadaman
 hanya menerima nama direktori cap masa yang tersenarai, bukan laluan pelayan sewenang-wenangnya,
-dan membuang keseluruhan snapshot (termasuk snapshot yang tidak lengkap).
+dan membuang keseluruhan snapshot (termasuk snapshot yang tidak disahkan).
 Muat turun eksport dan muat turun sandaran berjadual bagi setiap ruang kerja kekal pada
 pentadbir ruang kerja.
 :::
@@ -190,7 +195,7 @@ repositori dan siapa yang membuatnya, definisi persekitaran yang berjalan pada h
 laluan worktree dan log. Oleh itu kedua-duanya memerlukan pemilik pelayan
 (`ServerAuthority.serverOwner`), yang juga mesti menjadi pemilik ruang kerja itu. Orang
 lain, dan setiap pemanggil pada hos yang tiada pemilik direkodkan, ditolak dengan
-`server_owner_required`. Tiada pencetus atau paparan yang dibawa oleh fail itu diterima pakai.
+`server_owner_required`. Tiada pencetus, paparan, lajur atau kekangan yang dibawa oleh fail itu diterima pakai.
 :::
 
 ### Respons `server.listBackups`
@@ -232,21 +237,21 @@ berbeza terhadap fail yang sama.
 
 ### Pengesahan `workspace.import`
 
-Sebelum apa-apa diganti, fail calon dibuka dalam mod baca sahaja dengan sambungan SQLite
-mentah yang berumur pendek dan baris `workspace_meta`-nya dibaca.
+Sebelum apa-apa diganti, fail calon disalin ke fail pementasan di sebelah sasaran dan disemak di sana. Penolakan tidak menyentuh apa-apa dan membawa jenisnya sebagai `data.kind`.
 
 | Keadaan                                          | Hasil                                                           |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Bukan pangkalan data SQLite yang boleh dibaca, atau tiada `workspace_meta` | Ditolak. Tiada apa-apa disentuh             |
-| Id ruang kerja yang direkodkan ≠ sasaran         | **Dibenarkan**, direkodkan dalam log. Beginilah ruang kerja diduplikasi atau dipulihkan dengan id baharu |
-| Id pemasangan yang direkodkan ≠ pemasangan ini   | **Dibenarkan**, direkodkan dalam log. Peranti berganding dan id penggunanya milik pemasangan itu dan tidak akan diselesaikan di sini |
-| Id ruang kerja tidak sah, atau fail tidak wujud  | Ditolak                                                         |
+| Fail tidak wujud | Ditolak, `import.missing_source` |
+| Bukan pangkalan data SQLite yang boleh dibaca, atau gagal `quick_check` | Ditolak, `import.damaged` |
+| Ia datang daripada snapshot dan SHA-256-nya berbeza daripada manifes | Ditolak, `import.checksum_mismatch` |
+| Versi pelayan yang lebih baharu menulisnya | Ditolak, `import.newer_schema` |
+| `application_id` lain, atau tiada `workspace_meta` | Ditolak, `import.foreign_file` |
+| Ia tidak boleh dibawa ke skema pelayan ini | Ditolak, `import.schema_mismatch` |
+| Webhook atau jemputannya sudah dihalakan ke ruang kerja lain | Ditolak, `import.route_conflict` |
+| Id ruang kerja yang direkodkan ≠ sasaran         | **Dibenarkan**. Barisnya dipetakan semula kepada sasaran. Beginilah ruang kerja diduplikasi atau dipulihkan dengan id baharu |
+| Id pemasangan yang direkodkan ≠ pemasangan ini   | **Dibenarkan**. Id pengguna milik pemasangan itu dan tidak akan diselesaikan di sini |
 
-Setelah diterima, pangkalan data ruang kerja sasaran ditutup dan digugurkan daripada
-pengurus sebelum fail disalin menimpanya (sambungan drift yang terbuka memegang fail itu
-dan `-wal`-nya), kemudian dibuka semula supaya `beforeOpen` memasang semula pencetus FTS
-dan penyegerakan, dan indeks FTS dibina semula — jadual kandungan fail yang diimport
-diisi tetapi indeksnya mungkin sudah basi.
+Setelah diterima, fail pementasan dibawa ke skema pelayan ini dan mesti kemudian sepadan dengannya sepenuhnya. Kebenaran yang tidak boleh diberikan oleh fail kepada dirinya sendiri dikeluarkan daripadanya: kelulusan untuk menjalankan definisi persekitaran pada hos dikosongkan, dan peraturan tindakan yang membenarkan atau meminta, kebenaran pelaksanaan sandbox, kebenaran repositori melangkaui baca, peranan melangkaui ahli dan jemputan kepada peranan tersebut menjadi penahanan untuk disemak oleh pemilik pelayan. Pengimport mengekalkan atau mendapat peranan pemilik. Pangkalan data yang digantikan disimpan sebagai sandaran berjadual dinamakan `<timestamp>-pre-restore`, fail pementasan dinamakan semula ke tempatnya dengan sambungan ruang kerja ditutup, `code_index.db` dipadam untuk dibina semula, dan indeks FTS dibina semula.
 
 ## Laluan pemindahan
 
@@ -277,7 +282,7 @@ direktori sandaran ruang kerja itu sendiri.
 
 | Status | Punca                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Parameter pertanyaan yang diperlukan hilang, nama sandaran tidak sah, atau badan muat naik kosong |
+| `400`  | Parameter pertanyaan yang diperlukan hilang, nama sandaran tidak sah, badan muat naik kosong, atau fail yang dimuat naik ditolak (badannya `{error, kind}` dengan jenis `import.*`) |
 | `403`  | Peranti tidak dikenali atau dibatalkan, tandatangan tidak sah, atau pemanggil tiada peranan itu |
 | `404`  | Tiada port sandaran pada hos ini, atau fail snapshot, sandaran atau ruang kerja yang dinamakan tidak wujud |
 | `405`  | `/backup/restore` dipanggil dengan apa-apa selain `POST`                            |
@@ -320,6 +325,8 @@ terhasil semasa disimpan.
 | Snapshot                       | `<dataDir>/backups/<timestamp>/`                             |
 | Sandaran ruang kerja berjadual | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Eksport ruang kerja            | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Pangkalan data yang digantikan oleh pemulihan | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Pangkalan data seperti sebelum kemas kini menukar formatnya | `<dataDir>/pre_upgrade/` dan `<dataDir>/<workspaceId>/pre_upgrade/`, dua yang terbaharu bagi setiap satu |
 | Pementasan pemindahan          | `<dataDir>/backups/transfer/` — meja kerja, disapu oleh laluan yang menulisnya |
 | Nama arkib snapshot            | `<snapshot directory name>.zip`                              |
 | Had muat naik                  | 8 GiB per muat naik tersulit ke `/backup/restore`            |

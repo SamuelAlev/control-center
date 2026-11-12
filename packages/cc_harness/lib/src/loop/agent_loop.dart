@@ -501,7 +501,7 @@ class LoopGuardConfig {
   /// External budget check, polled at every turn boundary: when it returns
   /// true the loop stops with [LoopDoneReason.budgetExhausted]. Lets the host
   /// impose a budget in units the harness knows nothing about (a priced cost
-  /// cap in cents lives at the dispatch layer, which alone can price usage).
+  /// cap in micro-dollars lives at the dispatch layer, which alone can price usage).
   final bool Function()? externalBudgetExceeded;
 
   /// Soft variant of [externalBudgetExceeded], also polled at every turn

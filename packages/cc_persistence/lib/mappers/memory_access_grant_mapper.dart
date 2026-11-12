@@ -13,10 +13,10 @@ class MemoryAccessGrantMapper {
   MemoryAccessGrant toDomain(db.MemoryAccessGrantsTableData row) {
     return MemoryAccessGrant(
       workspaceId: row.workspaceId,
-      agentRole: AgentRole.tryParse(row.agentRole) ?? AgentRole.general,
+      // The columns' checks admit only these names, as the repository writes.
+      agentRole: AgentRole.values.byName(row.agentRole),
       memoryDomain: row.memoryDomain,
-      permission:
-          MemoryPermission.tryParse(row.permission) ?? MemoryPermission.read,
+      permission: MemoryPermission.values.byName(row.permission),
     );
   }
 }

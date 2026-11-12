@@ -25,7 +25,7 @@ class Agent {
     this.effort,
     this.contextSize,
     this.role,
-    this.monthlyBudgetCents = 0,
+    this.monthlyBudgetMicros = 0,
     this.silenceTimeoutMinutes,
     this.maxConcurrentTasks = 1,
     this.visibility = AgentVisibility.workspace,
@@ -100,8 +100,8 @@ class Agent {
   /// Agent role (e.g. ceo, coder, reviewer). Null when unassigned.
   final AgentRole? role;
 
-  /// Monthly budget in cents. Defaults to zero (unlimited).
-  final int monthlyBudgetCents;
+  /// Monthly budget in micro-dollars. Defaults to zero (unlimited).
+  final int monthlyBudgetMicros;
 
   /// Per-agent silence-timeout override in minutes (1..240). When null the
   /// per-mode default applies at dispatch time.
@@ -118,7 +118,7 @@ class Agent {
   final AgentLifecycleStatus lifecycleStatus;
 
   /// Shared budget policy id this agent draws from, if any. Null means the
-  /// per-agent [monthlyBudgetCents] applies directly.
+  /// per-agent [monthlyBudgetMicros] applies directly.
   final String? budgetPolicyId;
 
   /// Custom runtime profile id backing this agent, if any.
@@ -159,7 +159,7 @@ class Agent {
           effort == other.effort &&
           contextSize == other.contextSize &&
           role == other.role &&
-          monthlyBudgetCents == other.monthlyBudgetCents &&
+          monthlyBudgetMicros == other.monthlyBudgetMicros &&
           silenceTimeoutMinutes == other.silenceTimeoutMinutes &&
           maxConcurrentTasks == other.maxConcurrentTasks &&
           visibility == other.visibility &&
@@ -185,7 +185,7 @@ class Agent {
     effort,
     contextSize,
     role,
-    monthlyBudgetCents,
+    monthlyBudgetMicros,
     silenceTimeoutMinutes,
     maxConcurrentTasks,
     visibility,
@@ -220,7 +220,7 @@ class Agent {
     bool removeContextSize = false,
     AgentRole? role,
     bool removeRole = false,
-    int? monthlyBudgetCents,
+    int? monthlyBudgetMicros,
     int? silenceTimeoutMinutes,
     bool removeSilenceTimeoutMinutes = false,
     int? maxConcurrentTasks,
@@ -250,7 +250,7 @@ class Agent {
       effort: removeEffort ? null : (effort ?? this.effort),
       contextSize: removeContextSize ? null : (contextSize ?? this.contextSize),
       role: removeRole ? null : (role ?? this.role),
-      monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,
+      monthlyBudgetMicros: monthlyBudgetMicros ?? this.monthlyBudgetMicros,
       silenceTimeoutMinutes: removeSilenceTimeoutMinutes
           ? null
           : (silenceTimeoutMinutes ?? this.silenceTimeoutMinutes),

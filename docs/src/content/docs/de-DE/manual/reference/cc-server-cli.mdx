@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Jedes Flag, jede Umgebungsvariable, jeder Unterbefehl und jeder Pfad im Datenverzeichnis des Headless-Servers.
 slug: de-DE/handbuch/referenz/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Jedes Prozess-Flag lässt sich als CLI-Flag oder als Umgebungsvariable setzen; das
@@ -248,12 +248,16 @@ unter macOS, `%APPDATA%\control-center` unter Windows und
 nur genutzt, wenn sich kein Home- oder Anwendungsdatenverzeichnis auflösen
 lässt.
 
+Der Server hält das Datenverzeichnis nur für sein eigenes Konto zugänglich (`0700`). Er startet nicht (Exit-Code `78`), wenn er das nicht sicherstellen kann, wenn `global.db` beschädigt ist oder von einer neueren Version geschrieben wurde, oder wenn seine Identitätsdatei nicht gelesen werden kann.
+
 | Pfad                              | Inhalt                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------- |
 | `global.db`                       | Die Registrierung der Arbeitsbereiche, die Benutzer, die gekoppelten Geräte, der Newsfeed und die Warteschlange der Flotte |
-| `<workspaceId>/workspace.db`      | Eine Datenbank je Arbeitsbereich — Agenten, Bereiche, Tickets, Gedächtnis, der Code-Graph  |
+| `<workspaceId>/workspace.db`      | Eine Datenbank je Arbeitsbereich — Agenten, Bereiche, Tickets, Gedächtnis  |
+| `<workspaceId>/code_index.db`     | Der Code-Graph dieses Arbeitsbereichs. Wird neu aufgebaut, wenn er fehlt, und nie gesichert        |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Die neuesten zwei Kopien einer Datenbank von vor einem Update, das ihr Format änderte |
 | `<workspaceId>/chat_credentials/` | Token der Chatbots, als einfaches JSON, damit sie mit dem Arbeitsbereich mitgehen          |
-| `secrets.json`                    | Kopplungsschlüssel, der Installationsschlüssel für Connect, Anbieter-Apps, die Anmeldungen der Personen (versiegelt, wenn über Connect erfolgt), SSO (`0600`) |
+| `secrets.json`                    | Kopplungsschlüssel, der Installationsschlüssel für Connect, Anbieter-Apps, die Anmeldungen der Personen (versiegelt, wenn über Connect erfolgt), Webhook-Geheimnisse, SSO (`0600`) |
 | `backups/<timestamp>/`            | Ein Installations-Snapshot — `manifest.json`, `global.db` und eine Kopie jedes Arbeitsbereichs |
 | `backups/exports/`                | Exporte einzelner Arbeitsbereiche, `<workspaceId>-<timestamp>.db`                           |
 | `backups/transfer/`               | Zwischenlager für Backup-Downloads und -Uploads; aufgeräumt von der Route, die hineinschreibt |

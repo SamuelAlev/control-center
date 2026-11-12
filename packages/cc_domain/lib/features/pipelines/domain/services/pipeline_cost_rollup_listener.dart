@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 
@@ -54,12 +56,14 @@ class PipelineCostRollupListener {
       if (log == null || pipelineRunId == null) {
         return;
       }
-      final cents = log.cost.estimatedCostCents;
+      final micros = log.cost.costMicros;
       final tokens = log.cost.totalTokens;
-      if (cents == 0 && tokens == 0) {
+      if (micros == 0 && tokens == 0) {
         return;
       }
-      await runRepository.incrementCost(pipelineRunId, cents, tokens);
+      await runRepository.incrementCost(pipelineRunId, micros, tokens);
+    } on DeletedWorkspaceException {
+      // The run outlived its workspace: there is no pipeline run to add to.
     } on Object catch (e, st) {
       CcDomainLog.error('PipelineCostRollup: cost rollup failed', e, st);
     }

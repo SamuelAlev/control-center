@@ -2,7 +2,7 @@
 title: Yedekleme, dışa ve içe aktarma
 description: Anlık görüntü düzeni, manifest, her yedekleme işlemi ve aktarım rotası ile bir yedeğin hangi dosyaları içerdiği ve içermediği.
 slug: tr-TR/kilavuz/referans/yedekleme
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Control Center'ın kopyalayabileceği, devredebileceği ya da devralabileceği her şey ve
@@ -47,11 +47,11 @@ ve düz bir dize olarak kronolojik sıralanır.
 
 Zamanlanmış çalışma alanı yedekleri ayrı bir yerde,
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` yolunda
-yaşar. Bir manifest ya da `global.db` içermezler ve kurulum anlık görüntüsü değildirler.
+yaşar. Her biri yalnızca o dosya için bir `manifest.json` içerir, `global.db` içermez; kurulum anlık görüntüsü değildirler. Bir geri yükleme, yerine geçtiği veritabanını aynı yerde, `<timestamp>-pre-restore` olarak tutar.
 Haftalık pipeline'ın saklama adımı, yalnızca kendi çalışma alanının yapılandırılmış
 yaşından (varsayılan olarak 30 gün) eski yedeklerini kaldırır; elle oluşturulan kurulum
 anlık görüntüleri o adım tarafından hiçbir zaman rotasyona tabi tutulmaz.
-`server.listBackups` yalnızca kurulum anlık görüntülerini listeler, eksik olanlar dahil;
+`server.listBackups` yalnızca kurulum anlık görüntülerini listeler, doğrulanmamış olanlar dahil;
 `workspace.listBackups` bir çalışma alanının zamanlanmış yedeklerini listeler.
 
 Bir çalışma alanını silmek bu dizini yerinde bırakır. Çalışma alanının programı onunla
@@ -63,33 +63,39 @@ sahibi kaldırana kadar kalırlar. `server.listOrphanedBackups` bunları bildiri
 
 | Alan                       | Tür             | Anlamı                                                              |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Manifest biçim sürümü. Şu anda `1`                                  |
+| `format`                   | int             | Manifest biçimi. Şu anda `2`                                        |
 | `created_at`               | ISO-8601 UTC    | Anlık görüntünün alındığı zaman                                     |
-| `global.file`              | string          | Her zaman `global.db`                                               |
-| `global.schema_version`    | int             | Yakalama anındaki `GlobalDatabase` şema sürümü                      |
-| `global.bytes`             | int             | Yazılan `global.db` dosyasının boyutu                               |
-| `workspace_schema_version` | int             | Her çalışma alanı dosyasında ortak olan `WorkspaceDatabase` şema sürümü |
-| `workspaces[]`             | array           | Yakalanan her çalışma alanı için bir girdi                          |
+| `global`                   | object          | `global.db` kaydı. Zamanlanmış bir çalışma alanı yedeğinde bulunmaz |
+| `workspaces[]`             | array           | Yakalanan her çalışma alanı için bir kayıt                          |
 | `workspaces[].workspace_id`| string          | Bu dosyanın tuttuğu çalışma alanı                                   |
-| `workspaces[].file`        | string          | Anlık görüntü köküne göre yol, `<workspaceId>/workspace.db`         |
-| `workspaces[].bytes`       | int             | O dosyanın boyutu                                                   |
-| `skipped_workspaces[]`     | array of string | Yedeğin **yakalayamadığı** çalışma alanları                         |
+| `skipped_workspaces[]`     | array           | Yedeğin **yakalayamadığı** çalışma alanları                         |
+| `skipped_workspaces[].workspace_id` | string | Dışarıda bırakılan çalışma alanı |
+| `skipped_workspaces[].reason` | string       | `no_file`, `damaged` veya `failed`                                  |
 
-Bir çalışma alanı, kayıtlı olduğu hâlde hiç yazılmamışsa (yani henüz bir dosya yoksa) ya
-da `VACUUM INTO` işlemi başarısız olduysa atlanır. Her iki durumda da anlık görüntü yine
-tamamlanır ve manifest neyin eksik olduğunu adlandırır.
+`global` ile `workspaces[]` içindeki her kayıt, yazıldıktan sonra kopya üzerinde ölçülen tek bir dosyayı kaydeder:
+
+| Alan             | Tür    | Anlamı                                                                         |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`                     | string          | Anlık görüntü köküne göre yol: `global.db` veya `<workspaceId>/workspace.db` |
+| `bytes`                    | int             | Kopyanın boyutu                                                     |
+| `sha256`                   | string          | Kopyanın SHA-256 değeri, küçük harfli onaltılık biçimde             |
+| `quick_check`              | string          | SQLite’ın `quick_check` komutunun kopya için verdiği sonuç: `ok` ya da bulgu |
+| `user_version`             | int             | Kopyanın şema sürümü                                                |
+| `application_id`           | int             | Kopyanın SQLite `application_id` değeri                             |
+
+Bir çalışma alanı, kayıtlı olduğu hâlde hiç yazılmamışsa (`no_file`), veritabanı bütünlük denetimini geçemiyorsa (`damaged`; hasarlı bir kopya asla alınmaz) ya da kopyası veya o kopyanın denetimi başarısız olduysa (`failed`) atlanır. Her durumda anlık görüntü yine tamamlanır ve manifest neyin eksik olduğunu adlandırır. Manifest en son yazılır.
 
 ### Tamlık
 
-`server.listBackups` her anlık görüntü için bir `complete` bayrağı bildirir. Bu bayrak,
-manifest yoksa ya da ayrıştırılamıyorsa, `global.db` eksikse veya manifest diskte olmayan
-bir çalışma alanı dosyasını adlandırıyorsa false olur.
+`server.listBackups` her anlık görüntü için bir `complete` bayrağı bildirir. Bu bayrak, manifest yoksa, ayrıştırılamıyorsa ya da başka bir biçimdeyse, adlandırdığı bir dosya eksikse ya da farklı bir boyuttaysa veya bir kopya denetimini geçemediyse false olur. Uygulama böyle bir anlık görüntüyü **Doğrulanmadı** olarak gösterir. Biçim `2`’den önce alınan anlık görüntüler bu durumdadır.
 
-Eksik bir anlık görüntü yine de listelenir; çünkü bir operatörün göremediği bir anlık
+Doğrulanmamış bir anlık görüntü yine de listelenir; çünkü bir operatörün göremediği bir anlık
 görüntü, sahip olduğuna inandığı anlık görüntüdür. Manifest okunamadığında liste, düzenin
 kendisine geri düşer ve bulduğu `<workspaceId>/workspace.db` dosyalarını bildirir —
 anlık görüntü bir bütün olarak bir kurulumu geri yükleyemese de bunlar `workspace.import`
 üzerinden tek tek sahiplenilebilir.
+
+Listelenen bir anlık görüntü ya da zamanlanmış yedek, canlı veritabanı hasarlı olan bir çalışma alanının en yeni doğrulanmış kopyasını tuttuğu sürece `pinned_reason: "last_good_copy"` taşır. Saklama adımı, o çalışma alanı geri yüklenene kadar onu atlar.
 
 ## Bir yedeğin içermedikleri
 
@@ -100,6 +106,7 @@ fazlasını tutar ve geri kalanın hiçbiri taşınmaz:
 | ----------------------------------- | ---------------- | ------------------------------- |
 | `global.db`                         | Evet             | Hayır                           |
 | `<workspaceId>/workspace.db`        | Evet             | Evet (dosyanın *kendisi* odur)  |
+| `<workspaceId>/code_index.db`       | Hayır           | Hayır                  |
 | `<workspaceId>/blobs/`              | Hayır            | Hayır                           |
 | `<workspaceId>/skills/`             | Hayır            | Hayır                           |
 | `<workspaceId>/agents/`             | Hayır            | Hayır                           |
@@ -112,21 +119,9 @@ fazlasını tutar ve geri kalanın hiçbiri taşınmaz:
 | `rigs/`                             | Hayır            | Hayır                           |
 | `_agent_hooks/`                     | Hayır            | Hayır                           |
 
-Bunun bir kısmı gözden çıkarılabilir — `spaces/` depolar üzerinden yeniden sağlanan
-kopyala-üzerine-yaz çalışma ağaçlarını tutar, `pr_clones/` bir önbellektir, `models/`
-yeniden indirilir, `rigs/` makine durumudur. Bir kısmı ise değildir: `blobs/`
-veritabanındaki satırların işaret ettiği yapıştırılmış görselleri tutar, `skills/` ve
-`agents/` bir ajanın çalıştığı dosyaları tutar ve `secrets.json` kurulumdaki her eşleme
-anahtarını, sağlayıcı kimlik bilgisini ve SSO ayarını tutar. Geri kalanı kapsamak için
-[Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/#yedekleri-makinenin-dışına-kopyalama)
-sayfasına bakın.
-:::caution[Çalışma alanı veritabanı webhook sırlarını tutar]
-`workspace.db` çalışma alanının bütünüdür: sohbetler, çalıştırma günlükleri, kod
-indeksi, depo bağlantıları, ortam tanımları ve üyeler. Ayrıca çalışma alanının
-pipeline webhook token'larını ve ticket-sync webhook sırlarını okunabilir biçimde
-tutar; bu yüzden indirilen bir dışa aktarımı ya da yedeği bir sır gibi ele alın.
-Hiçbir sağlayıcı oturum açmasını, cihaz anahtarını ya da kullanıcı sırrını tutmaz;
-bunlar `global.db` ve `secrets.json` içindedir.
+Bunların bir kısmı gözden çıkarılabilir — `spaces/` depolar üzerinden yeniden sağlanan kopyala-üzerine-yaz çalışma ağaçlarını tutar, `pr_clones/` bir önbellektir, `code_index.db` yeniden oluşturulur, `models/` yeniden indirilir, `rigs/` makine durumudur. Bir kısmı ise değildir: `blobs/` veritabanındaki satırların işaret ettiği yapıştırılmış görselleri tutar, `skills/` ve `agents/` bir ajanın çalıştığı dosyaları tutar ve `secrets.json` kurulumdaki her eşleme anahtarını, sağlayıcı kimlik bilgisini ve SSO ayarını tutar. Geri kalanı kapsamak için [Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/#yedekleri-makinenin-dışına-kopyalama) sayfasına bakın.
+:::note[Sırlar veritabanlarının dışında kalır]
+`workspace.db` çalışma alanının bütünüdür: sohbetler, çalıştırma günlükleri, depo bağlantıları, ortam tanımları ve üyeler. Pipeline webhook token’ları ve ticket-sync webhook sırları `secrets.json` içindedir: veritabanı her birine bir referans tutar, yönlendirme dizini ise her token’ın anahtarlı bir özetini (hash) tutar. Bu yüzden başka bir kurulumda geri yüklenen bir çalışma alanı, tetikleyicileri orada yeniden kaydedilene kadar hiçbir webhook almaz. Sağlayıcı oturum açmaları, cihaz anahtarları ve kullanıcı sırları `global.db` ve `secrets.json` içindedir.
 :::
 
 :::note[Sohbet token'ları bilinçli olarak geride kalır]
@@ -153,6 +148,8 @@ olarak eksiktirler.
 | `workspace.deleteBackup` | mutate | Çalışma alanı | `owner` | `name` | `{ok}` |
 | `workspace.export`    | read   | Çalışma alanı  | `admin`                | yok           | `{ok, path}`                  |
 | `workspace.import`    | mutate | Çalışma alanı  | `owner`, ayrıca kurulum sahibi | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | read | Çalışma alanı | `owner`, ayrıca kurulum sahibi | yok | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutate | Çalışma alanı | `owner`, ayrıca kurulum sahibi | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`    | mutate | Kurulum*       | `owner`                | `id`          | kayıt defteri satırı silinmiş olarak işaretlenir |
 
 * `workspace.delete` kapsamsızdır; çünkü işaretlediği satır genel kayıt defterinde yaşar.
@@ -169,13 +166,15 @@ reddeder; onun yedekleri `workspace.deleteBackup` ve o çalışma alanının ken
 arkasında kalır. Her iki silme işlemi de yol değil, yalnızca listelenmiş bir zaman damgası
 dizin adı kabul eder.
 
+`workspace.importHolds.list`, bir içe aktarmanın geri tuttuklarını döndürür. Her tutulanın bir `id`’si, bir `kind` değeri (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` veya `invite`), geri koyacağı `payload`, `imported_at` ve `source_install_id` vardır. `accept: true` ile çağrılan `workspace.importHolds.resolve` onu yeniden verir, `false` ile çağrıldığında düşürür. `applied`, verilen yetkinin hedefi olan kişi ya da şey artık çalışma alanında değilse false olur.
+
 :::note[Tüm kurulumun anlık görüntüsü her iki hatta da sahip kapısından geçer]
 `server.backupNow`, `server.listBackups` ve `server.deleteBackup`, `GET /backup/snapshot`
 ile aynı kapıdan, yani kurulum **sahibi** (`ServerAuthority.serverOwner`) koşulundan
 geçer. Bir anlık görüntü her çalışma alanının veritabanını yakalar; dolayısıyla bir
 çalışma alanının yöneticisi olmak diğerlerini yönetmeye yetmez. Silme, rastgele bir
 sunucu yolunu değil, yalnızca listede görünen zaman damgalı dizin adını kabul eder ve
-anlık görüntünün tamamını (eksik olanlar dahil) kaldırır. Çalışma alanı başına
+anlık görüntünün tamamını (doğrulanmamış olanlar dahil) kaldırır. Çalışma alanı başına
 dışa aktarma ve zamanlanmış yedek indirmeleri yalnızca çalışma alanı yöneticisinde kalır.
 :::
 
@@ -186,7 +185,7 @@ yaptığı, ana makinede çalışan ortam tanımları, worktree ve log yolları.
 ikisi de kurulum sahibini (`ServerAuthority.serverOwner`) gerektirir; sahibin aynı
 zamanda çalışma alanının sahibi de olması gerekir. Başkaları ve kaydedilmiş bir
 sahibi olmayan ana makinedeki her çağıran `server_owner_required` ile reddedilir.
-Dosyanın getirdiği hiçbir tetikleyici ya da görünüm benimsenmez.
+Dosyanın getirdiği hiçbir tetikleyici, görünüm, sütun veya kısıt benimsenmez.
 :::
 
 ### `server.listBackups` yanıtı
@@ -228,21 +227,21 @@ sapamaz.
 
 ### `workspace.import` doğrulaması
 
-Herhangi bir şeyin yerine yenisi konmadan önce, aday dosya kısa ömürlü ham bir SQLite
-bağlantısıyla salt okunur olarak açılır ve `workspace_meta` satırı okunur.
+Herhangi bir şeyin yerine yenisi konmadan önce aday dosya, hedefin yanında bir hazırlık dosyasına kopyalanır ve orada denetlenir. Reddetme hiçbir şeye dokunmaz ve türünü `data.kind` olarak taşır.
 
 | Koşul                                            | Sonuç                                                           |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Okunabilir bir SQLite veritabanı değil ya da `workspace_meta` yok | Reddedilir. Hiçbir şeye dokunulmaz            |
-| Kayıtlı çalışma alanı kimliği ≠ hedef            | **İzin verilir**, günlüğe yazılır. Bir çalışma alanı yeni bir kimlik altında böyle çoğaltılır ya da geri yüklenir |
-| Kayıtlı kurulum kimliği ≠ bu kurulum             | **İzin verilir**, günlüğe yazılır. Eşlenmiş cihazları ve kullanıcı kimlikleri o kuruluma aittir ve burada çözümlenmez |
-| Geçersiz çalışma alanı kimliği ya da dosya yok   | Reddedilir                                                      |
+| Dosya mevcut değil | Reddedilir, `import.missing_source` |
+| Okunabilir bir SQLite veritabanı değil ya da `quick_check` denetimini geçemiyor | Reddedilir, `import.damaged` |
+| Bir anlık görüntüden geliyor ve SHA-256 değeri manifestinkinden farklı | Reddedilir, `import.checksum_mismatch` |
+| Sunucunun daha yeni bir sürümü yazdı | Reddedilir, `import.newer_schema` |
+| Başka bir `application_id`, ya da `workspace_meta` yok | Reddedilir, `import.foreign_file` |
+| Bu sunucunun şemasına getirilemez | Reddedilir, `import.schema_mismatch` |
+| Webhook’ları ya da davetleri zaten başka bir çalışma alanına yönlendiriliyor | Reddedilir, `import.route_conflict` |
+| Kayıtlı çalışma alanı kimliği ≠ hedef            | **İzin verilir**. Satırları hedefe göre yeniden anahtarlanır. Bir çalışma alanı yeni bir kimlik altında böyle çoğaltılır ya da geri yüklenir |
+| Kayıtlı kurulum kimliği ≠ bu kurulum             | **İzin verilir**. Kullanıcı kimlikleri o kuruluma aittir ve burada çözümlenmez |
 
-Kabul edildiğinde, hedef çalışma alanının veritabanı kapatılır ve dosya üzerine
-kopyalanmadan önce yöneticiden düşürülür (açık bir drift bağlantısı dosyayı ve `-wal`
-dosyasını tutar); ardından `beforeOpen` FTS ve senkronizasyon tetikleyicilerini yeniden
-kursun diye yeniden açılır ve FTS dizinleri yeniden oluşturulur — içe aktarılan bir
-dosyanın içerik tabloları doludur ama dizini eskimiş olabilir.
+Kabul edildiğinde hazırlık dosyası bu sunucunun şemasına getirilir ve sonra tam olarak onunla eşleşmelidir. Bir dosyanın kendisine veremeyeceği yetkiler ondan çıkarılır: ana makinede bir ortam tanımını çalıştırma onayları temizlenir; izin veren ya da onay isteyen eylem kuralları, sandbox çalıştırma yetkileri, okumanın ötesindeki depo yetkileri, üyeden yüksek roller ve bu rollere davetler, sunucu sahibinin gözden geçirmesi için tutulanlara dönüşür. İçe aktarıcı, sahip rolünü korur ya da alır. Yerine konan veritabanı `<timestamp>-pre-restore` adıyla bir zamanlanmış yedek olarak tutulur, hazırlık dosyası çalışma alanının bağlantıları kapalıyken yerine taşınır, yeniden oluşturulmak üzere `code_index.db` silinir ve FTS dizinleri yeniden oluşturulur.
 
 ## Aktarım rotaları
 
@@ -272,7 +271,7 @@ olmalıdır.
 
 | Durum | Neden                                                                              |
 | ----- | ----------------------------------------------------------------------------------- |
-| `400` | Gerekli bir sorgu parametresi eksik, bir yedek adı geçersiz ya da bir yükleme gövdesi boş |
+| `400`  | Gerekli bir sorgu parametresi eksik, bir yedek adı geçersiz, bir yükleme gövdesi boş ya da yüklenen dosya reddedildi (gövde `{error, kind}` biçiminde, `import.*` türünde bir kind ile) |
 | `403` | Bilinmeyen ya da iptal edilmiş cihaz, hatalı imza veya çağıranda gerekli rolün olmaması |
 | `404` | Bu makinede yedekleme portu yok ya da adı geçen anlık görüntü, yedek veya çalışma alanı dosyası mevcut değil |
 | `405` | `/backup/restore` rotasının `POST` dışında bir yöntemle çağrılması                   |
@@ -313,6 +312,8 @@ cihazı, hedef imzasını ve geçerli çalışma alanı ya da kurulum rolünü g
 | Anlık görüntüler           | `<dataDir>/backups/<timestamp>/`                             |
 | Zamanlanmış çalışma alanı yedekleri | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Çalışma alanı dışa aktarımları | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db` |
+| Geri yükleme tarafından değiştirilen veritabanı | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Bir güncelleme biçimlerini değiştirmeden önceki veritabanları | `<dataDir>/pre_upgrade/` ve `<dataDir>/<workspaceId>/pre_upgrade/`, her birinin en yeni ikisi |
 | Aktarım hazırlama          | `<dataDir>/backups/transfer/` — bir çalışma tezgâhı; onu yazan rota tarafından süpürülür |
 | Anlık görüntü arşiv adı    | `<snapshot directory name>.zip`                              |
 | Yükleme üst sınırı         | `/backup/restore` rotasına yapılan her şifrelenmiş yükleme başına 8 GiB |

@@ -2,7 +2,7 @@
 title: Agentconfiguratie
 description: Elk veld van de agent-entiteit en de enums die hij gebruikt.
 slug: nl-NL/handleiding/referentie/agentconfiguratie
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Deze referentie somt elk veld van de agent-entiteit op, plus de enums en vlaggen die hij gebruikt. Zie [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/) voor een stap-voor-stap doorloop van het maken of bewerken van een agent in de app.
@@ -26,17 +26,17 @@ Deze referentie somt elk veld van de agent-entiteit op, plus de enums en vlaggen
 | `effort`                | `String?`              | Nee     | Id van het redeneerniveau (bijv. `'low'`, `'xhigh'`), afkomstig uit de `thinkingLevels` van het geselecteerde model                                                                                 |
 | `contextSize`           | `int?`                 | Nee     | Maximale grootte van het contextvenster                                                                                                                                                             |
 | `role`                  | `AgentRole?`           | Nee     | Agentrol                                                                                                                                                                                            |
-| `monthlyBudgetCents`    | `int`                  | Nee     | Maandelijks uitgavenplafond in centen (standaard `0`, onbeperkt)                                                                                                                                    |
+| `monthlyBudgetMicros`    | `int`                  | Nee     | Maandelijks uitgavenplafond in microdollar (standaard `0`, onbeperkt)                                                                                                                                    |
 | `silenceTimeoutMinutes` | `int?`                 | Nee     | Overschrijving van de stiltetime-out in minuten; moet null zijn of tussen 1–240 liggen (met een assert in de constructor)                                                                          |
 | `maxConcurrentTasks`    | `int`                  | Nee     | Standaard `1`. Capaciteitsgetal dat het aanwezigheidsmodel rapporteert (lopende en wachtende aantallen worden ermee vergeleken)                                                                     |
 | `visibility`            | `AgentVisibility`      | Nee     | Standaard `workspace`                                                                                                                                                                               |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Nee     | Governancestatus (standaard `active`). Geschreven door de hard-stop van het budget en weergegeven in het organigram en op de aanwezigheidslijst. Dispatch accepteert nog steeds werk van een agent met `paused` |
-| `budgetPolicyId`        | `String?`              | Nee     | Id van het gedeelde budgetbeleid; is die null, dan geldt `monthlyBudgetCents` direct                                                                                                                |
+| `budgetPolicyId`        | `String?`              | Nee     | Id van het gedeelde budgetbeleid; is die null, dan geldt `monthlyBudgetMicros` direct                                                                                                                |
 | `runtimeProfileId`      | `String?`              | Nee     | Id van het aangepaste runtimeprofiel                                                                                                                                                                |
 | `createdAt`             | `DateTime`             | Ja      | Tijdstip van aanmaken                                                                                                                                                                               |
 
 `name` en `title` mogen beide niet leeg zijn (met een assert in de constructor).
-Een standaard `monthlyBudgetCents` van `0` betekent onbeperkt. Schrijf een
+Een standaard `monthlyBudgetMicros` van `0` betekent onbeperkt. Schrijf een
 plafond met `agents.upsert`.
 
 ## Enum AgentRole

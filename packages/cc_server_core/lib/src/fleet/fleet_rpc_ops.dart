@@ -43,7 +43,7 @@ Map<String, dynamic> jobToWire(Job j) => {
   'pinnedWorkerId': j.pinnedWorkerId,
   'workerId': j.workerId,
   'leaseExpiresAt': j.leaseExpiresAt?.toIso8601String(),
-  'costCents': j.costCents,
+  'costMicros': j.costMicros,
   'attempts': j.attempts,
   'maxAttempts': j.maxAttempts,
   'error': j.error,
@@ -288,11 +288,12 @@ List<RepoOp> buildFleetWorkerOps({
             .cast<Map<dynamic, dynamic>>();
         var lastAcked = 0;
         String? jobId;
+        String? workerId;
         for (final raw in frames) {
           final frame = WorkerEventFrame.fromJson(raw.cast<String, dynamic>());
           // Authz (PRD 20 §5): a device may only stream events for a job leased
           // to a worker it owns — never inject into another workspace's run.
-          await _assertDeviceOwnsJob(
+          workerId = await _assertDeviceOwnsJob(
             fleetRepository,
             ctx.deviceId,
             frame.jobId,
@@ -300,9 +301,12 @@ List<RepoOp> buildFleetWorkerOps({
           jobId = frame.jobId;
           lastAcked = remoteRegistry.pushEvent(frame);
         }
-        if (jobId != null) {
+        if (jobId != null && workerId != null) {
+          // Renewed only for the worker that streamed: a lease that moved on
+          // (reaped and re-leased elsewhere) is not extended by the old one.
           await fleetRepository.renewLease(
             jobId,
+            workerId,
             DateTime.now().add(const Duration(minutes: 2)),
             lastAckedSeq: lastAcked,
           );
@@ -378,7 +382,9 @@ Future<void> _assertDeviceOwnsWorker(
 /// Asserts the calling [deviceId] owns the worker the job identified by [jobId]
 /// is leased to. Guards the event/completion push paths (which are keyed by job
 /// id) so a device cannot inject into another workspace's run.
-Future<void> _assertDeviceOwnsJob(
+/// Checks that [deviceId] owns the worker [jobId] is leased to, and returns
+/// that worker's id.
+Future<String> _assertDeviceOwnsJob(
   FleetRepository repo,
   String deviceId,
   String jobId,
@@ -389,6 +395,7 @@ Future<void> _assertDeviceOwnsJob(
     throw const AuthException('Not authorized to stream this job.');
   }
   await _assertDeviceOwnsWorker(repo, deviceId, workerId);
+  return workerId;
 }
 
 Future<List<Job>> _allJobs(FleetRepository repo, String workspaceId) async {

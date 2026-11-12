@@ -19,13 +19,31 @@ class ServerAuditDao extends DatabaseAccessor<GlobalDatabase>
   /// keeping `global.db` small.
   static const kept = 20000;
 
-  /// Appends [entry] and drops whatever falls past [kept], in one transaction.
+  /// How many appends share one prune. The table holds at most [kept] plus
+  /// this many rows between prunes; pruning on every append would cost a
+  /// delete statement per audited call.
+  static const pruneEvery = 100;
+
+  /// Appends left before the next prune. Zero at start, so the first append
+  /// of a process trims whatever an earlier one left past the cap.
+  int _appendsUntilPrune = 0;
+
+  /// Appends [entry]; every [pruneEvery]th append also drops the rows past
+  /// [kept], in the same transaction.
+  ///
+  /// The prune is bounded by rowid, which follows append order: everything at
+  /// or below the newest rowid minus [kept] goes, an index range delete rather
+  /// than a sort of the whole table.
   Future<void> append(ServerAuditTableCompanion entry) => transaction(() async {
     await into(serverAuditTable).insert(entry);
+    if (_appendsUntilPrune > 0) {
+      _appendsUntilPrune--;
+      return;
+    }
+    _appendsUntilPrune = pruneEvery - 1;
     await customUpdate(
-      'DELETE FROM server_audit WHERE rowid IN '
-      '(SELECT rowid FROM server_audit ORDER BY created_at DESC, rowid DESC '
-      'LIMIT -1 OFFSET ?)',
+      'DELETE FROM server_audit WHERE rowid <= '
+      '(SELECT MAX(rowid) FROM server_audit) - ?',
       variables: [Variable.withInt(kept)],
       updates: {serverAuditTable},
       updateKind: UpdateKind.delete,

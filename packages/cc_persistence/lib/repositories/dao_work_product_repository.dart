@@ -1,3 +1,4 @@
+import 'package:cc_domain/cc_domain.dart' show ConcurrencyConflictException;
 import 'package:cc_domain/features/governance/domain/entities/work_product.dart';
 import 'package:cc_domain/features/governance/domain/repositories/work_product_repository.dart';
 import 'package:cc_persistence/database/daos/work_product_dao.dart';
@@ -70,8 +71,19 @@ class DaoWorkProductRepository implements WorkProductRepository {
     return row == null ? null : _mapper.revisionToDomain(row);
   }
 
+  /// Inserts [revision], refusing it with a [ConcurrencyConflictException]
+  /// when another writer already stored the same revision number for the
+  /// work product (the unique `(work_product_id, revision_number)` key).
   @override
-  Future<void> addRevision(WorkProductRevision revision) => _dao(
-    revision.workspaceId,
-  ).insertRevision(_mapper.revisionToCompanion(revision));
+  Future<void> addRevision(WorkProductRevision revision) async {
+    final inserted = await _dao(
+      revision.workspaceId,
+    ).insertRevision(_mapper.revisionToCompanion(revision));
+    if (!inserted) {
+      throw ConcurrencyConflictException(
+        'Work product ${revision.workProductId} already has revision '
+        '${revision.revisionNumber}.',
+      );
+    }
+  }
 }

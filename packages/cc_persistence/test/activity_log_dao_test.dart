@@ -24,7 +24,7 @@ void main() {
   }) => db.activityLogDao.insertEntry(
     ActivityLogTableCompanion.insert(
       id: id,
-      workspaceId: Value(ws),
+      workspaceId: ws,
       actorType: 'agent',
       action: action,
       entityType: entityType,

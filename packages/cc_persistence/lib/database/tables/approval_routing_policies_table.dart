@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
 import 'package:drift/drift.dart';
 
 /// Per-workspace approval routing policy (never age-pruned — unlike `caches`).
@@ -10,8 +11,9 @@ class ApprovalRoutingPoliciesTable extends Table {
   /// The owning workspace (one policy per workspace file).
   TextColumn get workspaceId => text()();
 
-  /// The `ApprovalRoutingPolicy` JSON.
-  TextColumn get policyJson => text()();
+  /// The `ApprovalRoutingPolicy` JSON object.
+  // ignore: recursive_getters
+  TextColumn get policyJson => text().check(isJsonObject(policyJson))();
 
   /// When the policy was last written.
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();

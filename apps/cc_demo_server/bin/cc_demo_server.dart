@@ -42,6 +42,11 @@ Future<void> _run(List<String> args) async {
     // what to do instead and end the process.
     stderr.writeln(e.message);
     exit(78);
+  } on ServerBootRefusal catch (e) {
+    // A data dir others can read, an identity file that cannot be read: the
+    // operator has to resolve it, and the message says how.
+    stderr.writeln(e.message);
+    exit(78);
   } on SocketException catch (e) {
     stderr.writeln(
       'cc_demo_server: cannot start — ${e.osError?.message ?? e.message} '

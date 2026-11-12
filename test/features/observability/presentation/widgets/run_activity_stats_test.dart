@@ -10,7 +10,7 @@ void main() {
     WidgetTester tester, {
     RunCost? cost,
     int toolCount = 0,
-    int childCostCents = 0,
+    int childCostMicros = 0,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -25,7 +25,7 @@ void main() {
             body: RunActivityStatBar(
               cost: cost,
               toolCount: toolCount,
-              childCostCents: childCostCents,
+              childCostMicros: childCostMicros,
             ),
           ),
         ),
@@ -40,7 +40,7 @@ void main() {
       cost: const RunCost(
         inputTokens: 1000,
         outputTokens: 500,
-        estimatedCostCents: 250,
+        costMicros: 2500000,
         durationMs: 9000,
       ),
       toolCount: 3,
@@ -60,7 +60,7 @@ void main() {
     // context occupancy — so the bar must not claim otherwise.
     await pump(
       tester,
-      cost: const RunCost(inputTokens: 700000, estimatedCostCents: 10),
+      cost: const RunCost(inputTokens: 700000, costMicros: 100000),
     );
 
     expect(find.text('context window'), findsNothing);
@@ -68,10 +68,7 @@ void main() {
   });
 
   testWidgets('an unpriced run reports unknown cost, not free', (tester) async {
-    await pump(
-      tester,
-      cost: const RunCost(inputTokens: 705900, estimatedCostCents: 0),
-    );
+    await pump(tester, cost: const RunCost(inputTokens: 705900, costMicros: 0));
 
     // 705.9k tokens for "$0.00" reads as broken; the model's pricing simply
     // was not resolvable.
@@ -96,8 +93,8 @@ void main() {
   testWidgets('delegated spend is surfaced on the cost tile', (tester) async {
     await pump(
       tester,
-      cost: const RunCost(estimatedCostCents: 100),
-      childCostCents: 250,
+      cost: const RunCost(costMicros: 1000000),
+      childCostMicros: 2500000,
     );
 
     expect(find.textContaining('delegated'), findsOneWidget);

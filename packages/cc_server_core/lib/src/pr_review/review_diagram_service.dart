@@ -8,7 +8,7 @@ import 'package:cc_persistence/cc_persistence.dart';
 /// dropped — so a diagram is a view of verified edges, never prose with arrows.
 ///
 /// Server-side; depends on [CodeGraphDao] directly for the file-scoped symbol/
-/// edge queries, resolved per call from the workspace's own database file.
+/// edge queries, resolved per call from the workspace's own code index file.
 class ReviewDiagramService {
   /// Creates a [ReviewDiagramService] over the per-workspace databases.
   ReviewDiagramService(this._dbs);
@@ -16,7 +16,7 @@ class ReviewDiagramService {
   final WorkspaceDatabaseManager _dbs;
 
   CodeGraphDao _codeGraph(String workspaceId) =>
-      _dbs.of(workspaceId).codeGraphDao;
+      _dbs.codeIndexOf(workspaceId).codeGraphDao;
 
   static const _verifier = DiagramVerifier();
 
@@ -56,13 +56,13 @@ class ReviewDiagramService {
     }
     final symbols = await _codeGraph(
       workspaceId,
-    ).getSymbolsByFiles(workspaceId, repoId, filePaths);
+    ).getSymbolsByFiles(repoId, filePaths);
     final nameById = {for (final s in symbols) s.id: s.name};
     final parentById = {for (final s in symbols) s.id: s.parentName};
 
     final edges = await _codeGraph(
       workspaceId,
-    ).getResolvedEdgesBySourceFiles(workspaceId, repoId, filePaths);
+    ).getResolvedEdgesBySourceFiles(repoId, filePaths);
     final keys = <String>{};
     for (final e in edges) {
       final fromName = nameById[e.sourceSymbolId];

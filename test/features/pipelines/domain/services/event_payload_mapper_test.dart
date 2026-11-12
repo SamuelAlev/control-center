@@ -199,16 +199,16 @@ void main() {
           workspaceId: 'ws-1',
           scopeType: 'workspace',
           scopeId: 'ws-1',
-          spentCents: 1000,
-          budgetCents: 5000,
+          spentMicros: 10000000,
+          budgetMicros: 50000000,
           isHardStop: false,
           occurredAt: now,
         );
         final payload = EventPayloadMapper.toPayload(event)!;
         expect(payload['scope_type'], 'workspace');
         expect(payload['scope_id'], 'ws-1');
-        expect(payload['spent_cents'], 1000);
-        expect(payload['budget_cents'], 5000);
+        expect(payload['spent_micros'], 10000000);
+        expect(payload['budget_micros'], 50000000);
         expect(payload['is_hard_stop'], isFalse);
         expect(payload['workspace_id'], 'ws-1');
       },
@@ -547,8 +547,8 @@ void main() {
           workspaceId: 'ws-1',
           scopeType: 'workspace',
           scopeId: 'ws-1',
-          spentCents: 100,
-          budgetCents: 500,
+          spentMicros: 1000000,
+          budgetMicros: 5000000,
           isHardStop: false,
           occurredAt: now,
         );

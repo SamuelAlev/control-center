@@ -3,6 +3,7 @@ import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart'
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -17,6 +18,11 @@ void main() {
     // (which read the registry) can see them.
     await seedTestWorkspace(global, dbs, 'ws1', name: 'Workspace 1');
     await seedTestWorkspace(global, dbs, 'ws2', name: 'Workspace 2');
+    for (final ws in ['ws1', 'ws2']) {
+      for (final ticket in ['tick1', 'tick2', 'shared-ticket']) {
+        await seedTicket(dbs.of(ws), ticket);
+      }
+    }
     repository = DaoIsolatedRepoRepository(dbs);
 
     // FK constraint: isolated_repos references repos(id) — and `repos` is now a

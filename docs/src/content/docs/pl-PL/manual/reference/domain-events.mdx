@@ -2,7 +2,7 @@
 title: Zdarzenia domenowe
 description: Pełny katalog 54 zdarzeń domenowych, ich ładunków oraz działających po stronie serwera subskrybentów, którzy je konsumują.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/zdarzenia-domenowe
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Szyna zdarzeń
@@ -112,7 +112,7 @@ Publikowane są tylko przejścia terminalne. Nie ma `PipelineRunStarted` ani zda
 | Zdarzenie                | Ładunek                                                                                                  | Wywoływane, gdy          |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Utworzono wpis dziennika audytu |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Wydatki przekraczają próg |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Wydatki przekraczają próg |
 
 ## Zdarzenia tożsamości i członkostwa
 

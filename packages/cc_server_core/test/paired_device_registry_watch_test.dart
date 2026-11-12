@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:test/test.dart';
 
 import 'helpers/best_effort_delete.dart';
+import 'helpers/seed_platform.dart';
 
 /// Polls until [done], or gives up after [timeout].
 ///
@@ -32,12 +33,13 @@ void main() {
     late Directory tmp;
     late GlobalDatabase db;
 
-    setUp(() {
+    setUp(() async {
       // These tests deliberately open the same file twice — that IS the
       // scenario (a `cc_server pair` process beside a running server).
       driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
       tmp = Directory.systemTemp.createTempSync('paired_device_watch_test');
       db = GlobalDatabase(openGlobalDatabase(dataDir: tmp.path));
+      await seedUser(db, 'owner');
     });
 
     tearDown(() async {
@@ -61,19 +63,18 @@ void main() {
       }
     }
 
-    Future<void> pairFromAnotherProcess(String deviceId) =>
-        fromAnotherProcess(
-          (other) => other.pairedDeviceDao.upsert(
-            PairedDevicesTableCompanion(
-              id: Value(deviceId),
-              userId: const Value('owner'),
-              label: Value('Paired $deviceId'),
-              platform: const Value('web'),
-              pskRef: const Value('file'),
-              status: const Value(PairedDeviceStatus.active),
-            ),
-          ),
-        );
+    Future<void> pairFromAnotherProcess(String deviceId) => fromAnotherProcess(
+      (other) => other.pairedDeviceDao.upsert(
+        PairedDevicesTableCompanion(
+          id: Value(deviceId),
+          userId: const Value('owner'),
+          label: Value('Paired $deviceId'),
+          platform: const Value('web'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+        ),
+      ),
+    );
 
     test('an out-of-process pairing reaches an open watch stream', () async {
       final emissions = <List<PairedDevicesTableData>>[];

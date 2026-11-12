@@ -5,6 +5,7 @@ import 'package:cc_persistence/mappers/work_product_mapper.dart'
     show WorkProductMapper;
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Covers [DaoWorkProductRepository] + [WorkProductMapper] end-to-end: the work
@@ -20,6 +21,9 @@ void main() {
     await seedTestWorkspace(global, dbs, 'w-1');
     await seedTestWorkspace(global, dbs, 'w-2');
     repo = DaoWorkProductRepository(dbs);
+    for (final ws in ['w-1', 'w-2']) {
+      await seedParents(dbs.of(ws), agents: ['a-1'], tickets: ['tk-1']);
+    }
   });
 
   tearDown(() async {

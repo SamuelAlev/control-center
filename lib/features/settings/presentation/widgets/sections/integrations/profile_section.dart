@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,7 +29,7 @@ class ProfileSection extends ConsumerWidget {
           child: Center(child: CcSpinner()),
         ),
         error: (e, _) => Text(
-          l10n.failedWithError('$e'),
+          failureMessage(l10n, e),
           style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
         ),
         // Key by workspace + user so switching workspace reseeds the overlay
@@ -114,7 +115,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
       setState(() => _busy = false);
       CcToastScope.of(
         context,
-      ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     }
   }
 

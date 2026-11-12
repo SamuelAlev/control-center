@@ -28,7 +28,7 @@ void main() {
     String name = 'codebase',
     String label = 'Codebase',
     String? description = 'Code-related facts',
-    String createdByRole = 'architect',
+    String createdByRole = 'coder',
   }) => MemoryDomain(
     id: id,
     workspaceId: workspaceId,
@@ -128,7 +128,7 @@ void main() {
         name: 'security',
         label: 'Security',
         description: 'Security-related facts and policies',
-        createdByRole: 'operator',
+        createdByRole: 'pm',
       );
       await repo.upsert(original);
 

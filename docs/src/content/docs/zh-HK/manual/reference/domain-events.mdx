@@ -2,7 +2,7 @@
 title: 領域事件
 description: 全部 54 個領域事件的完整目錄、它們的載荷，以及消費這些事件的伺服器端訂閱方。
 slug: zh-HK/手冊/參考/領域事件
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## 事件匯流排
@@ -123,7 +123,7 @@ PR 的訊號，每個都攜帶 `forUserId`，讓輪詢能把它們路由給相�
 | 事件                     | 載荷                                                                                                     | 觸發時機                  |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | 建立稽核軌跡項目          |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | 支出超過門檻              |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | 支出超過門檻              |
 
 ## 身分與成員關係事件
 

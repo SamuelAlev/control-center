@@ -21,8 +21,8 @@ AgentGoalRun _goal({
   String userText = 'Keep the changelog current',
   int runCount = 3,
   int? maxRuns = 10,
-  int costCents = 125,
-  int costCapCents = 5000,
+  int costMicros = 1250000,
+  int costCapMicros = 50000000,
   DateTime? updatedAt,
 }) => AgentGoalRun(
   id: id,
@@ -34,9 +34,9 @@ AgentGoalRun _goal({
   kind: kind,
   status: status,
   deadlineAt: DateTime(2026, 7, 6, 9),
-  costCapCents: costCapCents,
+  costCapMicros: costCapMicros,
   maxRuns: maxRuns,
-  costCents: costCents,
+  costMicros: costMicros,
   runCount: runCount,
   updatedAt: updatedAt ?? _t0,
   createdAt: _t0,
@@ -57,8 +57,8 @@ class _FakeGoalRunRepo extends RpcAgentGoalRunRepository {
   Future<void> resumeGoal(
     String workspaceId,
     String goalId, {
-    int? raiseCostCapCents,
-  }) async => calls.add('resume:$workspaceId:$goalId:$raiseCostCapCents');
+    int? raiseCostCapMicros,
+  }) async => calls.add('resume:$workspaceId:$goalId:$raiseCostCapMicros');
 
   @override
   Future<void> cancelGoal(String workspaceId, String goalId) async =>
@@ -204,8 +204,8 @@ void main() {
       goals: [
         _goal(
           status: AgentGoalStatus.budgetExhausted,
-          costCents: 200,
-          costCapCents: 200,
+          costMicros: 2000000,
+          costCapMicros: 2000000,
         ),
       ],
     );
@@ -225,7 +225,7 @@ void main() {
     await tester.pump();
 
     expect(repo.calls, [
-      'resume:ws-1:goal-1:400',
+      'resume:ws-1:goal-1:4000000',
     ], reason: 'resume doubles the exhausted cap');
   });
 

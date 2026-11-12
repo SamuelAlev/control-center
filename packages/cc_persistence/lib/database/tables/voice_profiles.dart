@@ -1,9 +1,9 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_voice_profiles_workspaceId', columns: {#workspaceId})
 @TableIndex(
-  name: 'uq_voice_profiles_ws_name',
-  columns: {#workspaceId, #displayName},
+  name: 'uq_voice_profiles_name',
+  columns: {#displayName},
   unique: true,
 )
 /// Drift table for a persistent, cross-meeting voice profile.
@@ -14,8 +14,8 @@ import 'package:drift/drift.dart';
 /// against these profiles (cosine similarity): a confident match auto-applies
 /// the saved [displayName]; a weaker one surfaces as a rename suggestion.
 ///
-/// Workspace-scoped like all meeting data — the unique `(workspaceId,
-/// displayName)` index enforces one profile per name within a workspace (so
+/// Workspace-scoped like all meeting data — the unique `displayName` index
+/// enforces one profile per name within the workspace this file holds (so
 /// enrollment upserts by name), while the same person can exist independently
 /// in two different workspaces. Profiles never cross the workspace boundary.
 class VoiceProfilesTable extends Table {
@@ -30,7 +30,10 @@ class VoiceProfilesTable extends Table {
 
   /// JSON-encoded representative WeSpeaker embedding (an L2-normalized float
   /// vector) — the running centroid of every sample enrolled for this person.
-  TextColumn get embedding => text()();
+  TextColumn get embedding => text().check(
+    // ignore: recursive_getters
+    isJsonArray(embedding),
+  )();
 
   /// How many speaker samples have been blended into [embedding]. Used to weight
   /// the running-mean update so later samples refine the centroid proportionally.

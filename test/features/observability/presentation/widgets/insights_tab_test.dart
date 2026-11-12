@@ -24,7 +24,7 @@ AgentRunLog _run({
   required String agentId,
   required DateTime startedAt,
   RunStatus status = RunStatus.completed,
-  int costCents = 0,
+  int costMicros = 0,
   int outputTokens = 0,
 }) {
   return AgentRunLog(
@@ -37,7 +37,7 @@ AgentRunLog _run({
     modelId: 'opus',
     cost: RunCost(
       outputTokens: outputTokens,
-      estimatedCostCents: costCents,
+      costMicros: costMicros,
       durationMs: 60000,
     ),
   );
@@ -50,7 +50,7 @@ void main() {
       id: 'r1',
       agentId: 'ceo',
       startedAt: now.subtract(const Duration(hours: 1)),
-      costCents: 150,
+      costMicros: 1500000,
       outputTokens: 1000,
     ),
     _run(
@@ -58,14 +58,14 @@ void main() {
       agentId: 'ceo',
       startedAt: now.subtract(const Duration(hours: 2)),
       status: RunStatus.error,
-      costCents: 50,
+      costMicros: 500000,
       outputTokens: 500,
     ),
     _run(
       id: 'r3',
       agentId: 'reviewer',
       startedAt: now.subtract(const Duration(hours: 26)),
-      costCents: 100,
+      costMicros: 1000000,
       outputTokens: 800,
     ),
   ];

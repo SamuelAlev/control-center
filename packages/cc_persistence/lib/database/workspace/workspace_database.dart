@@ -10,7 +10,6 @@ import 'package:cc_persistence/database/daos/budget_dao.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/daos/calendar_dao.dart';
 import 'package:cc_persistence/database/daos/chat_link_dao.dart';
-import 'package:cc_persistence/database/daos/code_graph_dao.dart';
 import 'package:cc_persistence/database/daos/conversation_dao.dart';
 import 'package:cc_persistence/database/daos/conversation_goal_dao.dart';
 import 'package:cc_persistence/database/daos/cron_execution_dao.dart';
@@ -68,15 +67,18 @@ import 'package:cc_persistence/database/daos/workspace_member_dao.dart';
 import 'package:cc_persistence/database/daos/workspace_role_dao.dart';
 import 'package:cc_persistence/database/daos/workspace_setting_dao.dart';
 import 'package:cc_persistence/database/daos/write_ledger_dao.dart';
-import 'package:cc_persistence/database/migration_steps.dart';
+import 'package:cc_persistence/database/schema/converged_database.dart';
+import 'package:cc_persistence/database/schema/schema_converge.dart';
 import 'package:cc_persistence/database/tables/action_policies_table.dart';
 import 'package:cc_persistence/database/tables/activity_log_table.dart';
 import 'package:cc_persistence/database/tables/agent_goal_runs_table.dart';
 import 'package:cc_persistence/database/tables/agent_run_logs.dart';
+import 'package:cc_persistence/database/tables/agent_run_payloads_table.dart';
 import 'package:cc_persistence/database/tables/agent_runtime_state_table.dart';
 import 'package:cc_persistence/database/tables/agent_working_memory.dart';
 import 'package:cc_persistence/database/tables/agents.dart';
 import 'package:cc_persistence/database/tables/approval_comments_table.dart';
+import 'package:cc_persistence/database/tables/approval_escalations_table.dart';
 import 'package:cc_persistence/database/tables/approval_routing_policies_table.dart';
 import 'package:cc_persistence/database/tables/approvals_table.dart';
 import 'package:cc_persistence/database/tables/budget_incidents_table.dart';
@@ -87,20 +89,24 @@ import 'package:cc_persistence/database/tables/calendar_events.dart';
 import 'package:cc_persistence/database/tables/calendar_sources.dart';
 import 'package:cc_persistence/database/tables/catalog_files_table.dart';
 import 'package:cc_persistence/database/tables/chat_links_tables.dart';
-import 'package:cc_persistence/database/tables/code_edges.dart';
-import 'package:cc_persistence/database/tables/code_files.dart';
-import 'package:cc_persistence/database/tables/code_index_checkpoints.dart';
-import 'package:cc_persistence/database/tables/code_symbols.dart';
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
+import 'package:cc_persistence/database/tables/conversation_activity.dart';
 import 'package:cc_persistence/database/tables/conversation_goals_table.dart';
+import 'package:cc_persistence/database/tables/conversation_message_embeddings_table.dart';
 import 'package:cc_persistence/database/tables/conversation_messages.dart';
 import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:cc_persistence/database/tables/cron_executions_table.dart';
+import 'package:cc_persistence/database/tables/editor_layouts_table.dart';
 import 'package:cc_persistence/database/tables/environment_definitions.dart';
 import 'package:cc_persistence/database/tables/environment_runs.dart';
 import 'package:cc_persistence/database/tables/episodic_edges.dart';
 import 'package:cc_persistence/database/tables/evals_tables.dart';
 import 'package:cc_persistence/database/tables/goals_table.dart';
 import 'package:cc_persistence/database/tables/guard_decisions_table.dart';
+import 'package:cc_persistence/database/tables/imported_authority_holds_table.dart';
 import 'package:cc_persistence/database/tables/isolated_repos.dart';
 import 'package:cc_persistence/database/tables/meeting_action_items.dart';
 import 'package:cc_persistence/database/tables/meeting_calendar_links.dart';
@@ -113,6 +119,7 @@ import 'package:cc_persistence/database/tables/memory_beliefs.dart';
 import 'package:cc_persistence/database/tables/memory_conflicts.dart';
 import 'package:cc_persistence/database/tables/memory_consolidation_log.dart';
 import 'package:cc_persistence/database/tables/memory_domains.dart';
+import 'package:cc_persistence/database/tables/memory_fact_embeddings.dart';
 import 'package:cc_persistence/database/tables/memory_facts.dart';
 import 'package:cc_persistence/database/tables/memory_policies.dart';
 import 'package:cc_persistence/database/tables/message_reactions_table.dart';
@@ -120,11 +127,14 @@ import 'package:cc_persistence/database/tables/notification_feed_table.dart';
 import 'package:cc_persistence/database/tables/notification_item_states_table.dart';
 import 'package:cc_persistence/database/tables/notification_read_marks_table.dart';
 import 'package:cc_persistence/database/tables/orchestrations_table.dart';
+import 'package:cc_persistence/database/tables/pipeline_run_snapshots_table.dart';
 import 'package:cc_persistence/database/tables/pipeline_runs_table.dart';
 import 'package:cc_persistence/database/tables/pipeline_step_runs_table.dart';
 import 'package:cc_persistence/database/tables/pipeline_templates_table.dart';
 import 'package:cc_persistence/database/tables/pipeline_triggers_table.dart';
+import 'package:cc_persistence/database/tables/plan_divergences_table.dart';
 import 'package:cc_persistence/database/tables/plan_studio_tables.dart';
+import 'package:cc_persistence/database/tables/pr_state_tables.dart';
 import 'package:cc_persistence/database/tables/projects_table.dart';
 import 'package:cc_persistence/database/tables/provider_policies.dart';
 import 'package:cc_persistence/database/tables/pull_requests.dart';
@@ -134,7 +144,6 @@ import 'package:cc_persistence/database/tables/review_spaces.dart';
 import 'package:cc_persistence/database/tables/review_studio_tables.dart';
 import 'package:cc_persistence/database/tables/rigs_tables.dart';
 import 'package:cc_persistence/database/tables/run_call_usages_table.dart';
-import 'package:cc_persistence/database/tables/run_transcripts_table.dart';
 import 'package:cc_persistence/database/tables/runtime_profiles_table.dart';
 import 'package:cc_persistence/database/tables/sandbox_exec_grants_table.dart';
 import 'package:cc_persistence/database/tables/skill_scan_results_table.dart';
@@ -145,6 +154,7 @@ import 'package:cc_persistence/database/tables/space_notes_table.dart';
 import 'package:cc_persistence/database/tables/space_participants.dart';
 import 'package:cc_persistence/database/tables/space_repos.dart';
 import 'package:cc_persistence/database/tables/space_stack_entries.dart';
+import 'package:cc_persistence/database/tables/space_state_tables.dart';
 import 'package:cc_persistence/database/tables/spaces.dart';
 import 'package:cc_persistence/database/tables/team_activity_log_table.dart';
 import 'package:cc_persistence/database/tables/teams_table.dart';
@@ -156,6 +166,8 @@ import 'package:cc_persistence/database/tables/ticket_sync_log_table.dart';
 import 'package:cc_persistence/database/tables/ticket_write_ledger_table.dart';
 import 'package:cc_persistence/database/tables/tickets_table.dart';
 import 'package:cc_persistence/database/tables/todos_table.dart';
+import 'package:cc_persistence/database/tables/transcript_segments_table.dart';
+import 'package:cc_persistence/database/tables/transcripts_table.dart';
 import 'package:cc_persistence/database/tables/user_activity_table.dart';
 import 'package:cc_persistence/database/tables/voice_profiles.dart';
 import 'package:cc_persistence/database/tables/webhook_deliveries_table.dart';
@@ -169,8 +181,10 @@ import 'package:cc_persistence/database/tables/workspace_meta_table.dart';
 import 'package:cc_persistence/database/tables/workspace_roles_table.dart';
 import 'package:cc_persistence/database/tables/workspace_settings_table.dart';
 import 'package:cc_persistence/database/tables/write_ledger_table.dart';
-import 'package:cc_persistence/database/workspace/workspace_partial_indexes.dart';
+import 'package:cc_persistence/database/utils/storage_errors.dart';
+import 'package:cc_persistence/src/vector_extension.dart';
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 
 part 'workspace_database.g.dart';
 
@@ -180,11 +194,15 @@ part 'workspace_database.g.dart';
 /// tables, so cross-workspace reads do not compile. `workspaceId` columns are
 /// still written (FTS/self-describing). Multi-workspace reads go through
 /// `CrossWorkspaceQueries` only. Opens lazily on first touch.
+///
+/// The code index derived from the workspace's checkouts is not here: it is
+/// `CodeIndexDatabase`, in `code_index.db` beside this file.
 @DriftDatabase(
   tables: [
     ReposTable,
     AgentsTable,
     AgentRunLogsTable,
+    AgentRunPayloadsTable,
     AgentGoalRunsTable,
     PullRequestsTable,
     ReviewDrafts,
@@ -198,12 +216,15 @@ part 'workspace_database.g.dart';
     SpaceAutonomyTable,
     MessageReactionsTable,
     ConversationMessagesTable,
+    ConversationMessageEmbeddingsTable,
+    ConversationActivityTable,
     ReviewSpacesTable,
     ActivityLogTable,
     BudgetPolicyTable,
     AgentWorkingMemoryTable,
     MemoryDomainsTable,
     MemoryFactsTable,
+    MemoryFactEmbeddingsTable,
     MemoryPoliciesTable,
     MemoryAccessGrantsTable,
     MemoryConflictsTable,
@@ -212,6 +233,7 @@ part 'workspace_database.g.dart';
     MemoryConsolidationLogTable,
     MemoryBeliefsTable,
     PipelineRunsTable,
+    PipelineRunSnapshotsTable,
     PipelineStepRunsTable,
     PipelineTemplatesTable,
     PipelineTriggersTable,
@@ -221,10 +243,6 @@ part 'workspace_database.g.dart';
     ProjectsTable,
     TeamsTable,
     TeamMembersTable,
-    CodeSymbolsTable,
-    CodeEdgesTable,
-    CodeFilesTable,
-    CodeIndexCheckpointsTable,
     IsolatedReposTable,
     SpaceStackEntriesTable,
     MeetingsTable,
@@ -284,7 +302,8 @@ part 'workspace_database.g.dart';
     GuardDecisionsTable,
     WorkspaceRolesTable,
     ConversationGoalsTable,
-    RunTranscriptsTable,
+    TranscriptsTable,
+    TranscriptSegmentsTable,
     ChatSpaceLinksTable,
     ChatUserLinksTable,
     WorkspaceMetaTable,
@@ -299,6 +318,14 @@ part 'workspace_database.g.dart';
     EnvironmentDefinitionsTable,
     SpaceEnvironmentsTable,
     EnvironmentRunsTable,
+    ImportedAuthorityHoldsTable,
+    SpaceTakeoversTable,
+    SpaceCheckersTable,
+    EditorLayoutsTable,
+    PrCodeOwnerReviewersTable,
+    PendingPrRepliesTable,
+    ApprovalEscalationsTable,
+    PlanDivergencesTable,
   ],
   daos: [
     WorkspaceSettingDao,
@@ -329,7 +356,6 @@ part 'workspace_database.g.dart';
     TicketLinkDao,
     ProjectDao,
     TeamDao,
-    CodeGraphDao,
     IsolatedRepoDao,
     SpaceStackDao,
     MeetingDao,
@@ -373,7 +399,7 @@ part 'workspace_database.g.dart';
     EnvironmentDao,
   ],
 )
-class WorkspaceDatabase extends _$WorkspaceDatabase {
+class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
   /// Creates the database for the workspace identified by [workspaceId] over a
   /// host-supplied [QueryExecutor].
   ///
@@ -388,7 +414,12 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     this.onError,
     this.skipIntegrityCheck = false,
     this.onIntegrityChecked,
-  });
+    this.upgradeSnapshotDirectory,
+  }) {
+    // The extension applies to connections opened after it is registered, and
+    // the executor opens on the first statement, so this is early enough.
+    ensureVectorExtensionRegistered();
+  }
 
   /// Creates an in-memory workspace database for testing.
   WorkspaceDatabase.forTesting(super.e, {this.workspaceId = 'test-workspace'})
@@ -396,7 +427,10 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       onWarn = null,
       onError = null,
       skipIntegrityCheck = false,
-      onIntegrityChecked = null;
+      onIntegrityChecked = null,
+      upgradeSnapshotDirectory = null {
+    ensureVectorExtensionRegistered();
+  }
 
   /// Skips the `PRAGMA quick_check` on this open.
   ///
@@ -407,9 +441,10 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// cross-workspace read closes the files it opened.
   final bool skipIntegrityCheck;
 
-  /// Called after a `quick_check` completes (pass or fail), so the manager can
-  /// stop asking for it on later opens of this file.
-  final void Function()? onIntegrityChecked;
+  /// Called after a `quick_check` completes, with null when it passed and
+  /// SQLite's finding when it failed, so the manager can stop asking for the
+  /// check on later opens and can take a damaged workspace out of service.
+  final void Function(String? failure)? onIntegrityChecked;
 
   /// The workspace this database holds.
   ///
@@ -427,608 +462,222 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// logged rather than invisible.
   final String installId;
 
-  /// Warning sink (e.g. a missing optional extension). Host-injected.
+  /// Warning sink (schema convergence, a slow integrity check). Host-injected.
+  @override
   final void Function(String tag, String message)? onWarn;
 
   /// Error sink (e.g. a failed integrity check). Host-injected.
   final void Function(String tag, String message)? onError;
 
+  @override
+  final String? upgradeSnapshotDirectory;
+
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 29;
+  ///
+  /// Bump it whenever the declared schema changes (a table class, an index,
+  /// a constraint): the version differing is what makes an existing file
+  /// converge on its next open. There are no migration steps to write.
+  static const int currentSchemaVersion = 31;
+
+  /// `PRAGMA application_id` of a workspace database: "CCWS".
+  static const int fileApplicationId = 0x43435753;
 
   @override
   int get schemaVersion => currentSchemaVersion;
 
-  /// Writes a consistent, defragmented snapshot of this workspace to [path]
-  /// using `VACUUM INTO`.
-  ///
-  /// Safe on a live WAL database (it takes a read transaction and writes a
-  /// clean copy), so it runs while the server is serving. This is also the
-  /// whole implementation of `workspace.export`: one workspace is one file, so
-  /// exporting it is a single statement rather than a table-by-table dump.
-  Future<void> backupTo(String path) =>
-      customStatement('VACUUM INTO ?', [path]);
+  @override
+  int get applicationId => fileApplicationId;
 
-  /// Workspace schema migrations. Baseline is squashed at v1 (`onCreate`); this
-  /// list starts empty. Pre-squash files are not upgraded — replace them.
-  /// Append a [MigrationStep] and bump [currentSchemaVersion] for new changes.
-  List<MigrationStep> get _migrationSteps => <MigrationStep>[
-    // v1 → v2: skill sources — the GitHub repositories registered as skill
-    // catalogs (the skills.sh registry replacement). Purely additive; a fresh
-    // database already builds the table in `onCreate`, this step carries
-    // existing workspace files forward.
-    MigrationStep(1, 2, (m) async {
-      await m.createTable(skillSourcesTable);
-      await _createIndexIfMissing(m, idxSkillSourcesWorkspace);
-    }),
-    // v2 → v3: the session tree. `conversation_messages.parent_message_id`
-    // turns the message list into a tree and `conversations.leaf_message_id`
-    // names the branch tip, so branching is a pointer move rather than a
-    // delete. Purely additive and both nullable: every existing row is a
-    // linear chain with no parent recorded, which reads exactly as it did
-    // before — the tree is only consulted by the branch/fork/tree paths.
-    MigrationStep(2, 3, (m) async {
-      await _addColumnIfMissing(
-        m,
-        conversationMessagesTable,
-        conversationMessagesTable.parentMessageId,
-      );
-      await _addColumnIfMissing(
-        m,
-        conversationsTable,
-        conversationsTable.leafMessageId,
-      );
-    }),
-    // v3 → v4: no schema change (it added per-repo lifecycle scripts, which
-    // v22 drops).
-    MigrationStep(3, 4, (m) async {}),
-    // v4 → v5: sandbox exec grants. Records whether the operator allowed
-    // running binaries from inside a worktree, which the macOS writable-dir
-    // exec block otherwise denies wholesale. Purely additive; a fresh database
-    // already builds it in `onCreate`, this step carries existing files
-    // forward. An absent row means "not asked yet", so nothing is implied for
-    // workspaces that predate this.
-    MigrationStep(4, 5, (m) async {
-      await m.createTable(sandboxExecGrantsTable);
-      await _createIndexIfMissing(m, idxSandboxExecGrantsWorkspace);
-    }),
-    // v5 → v6: the enterprise permissions batch. Three new tables —
-    // `approval_routing_policies` (the routing policy's durable home; it used
-    // to be a `caches` row the retention sweep deleted after 21 quiet days),
-    // `guard_decisions` (the hash-chained authorization audit spine) and
-    // `workspace_roles` (custom subtractive roles) — plus three nullable
-    // columns on `action_policies` (`constraint_json`, `expires_at`,
-    // `enforcement`) whose NULL reads exactly as the pre-column behavior
-    // (match everything / never expire / hard). Purely additive; a fresh
-    // database builds all of it in `onCreate`.
-    MigrationStep(5, 6, (m) async {
-      await m.createTable(approvalRoutingPoliciesTable);
-      await m.createTable(guardDecisionsTable);
-      await _createIndexIfMissing(m, idxGuardDecisionsWorkspace);
-      await _createIndexIfMissing(m, idxGuardDecisionsTime);
-      await m.createTable(workspaceRolesTable);
-      await _createIndexIfMissing(m, idxWorkspaceRolesWorkspace);
-      await _addColumnIfMissing(
-        m,
-        actionPoliciesTable,
-        actionPoliciesTable.constraintJson,
-      );
-      await _addColumnIfMissing(
-        m,
-        actionPoliciesTable,
-        actionPoliciesTable.expiresAt,
-      );
-      await _addColumnIfMissing(
-        m,
-        actionPoliciesTable,
-        actionPoliciesTable.enforcement,
-      );
-    }),
-    // v6 → v7: no schema change (it pruned unresolved code-graph edges,
-    // which the indexer now prunes itself after every resolution pass).
-    MigrationStep(6, 7, (m) async {}),
-    // v7 → v8: richer user-activity rows. A single conventional target id
-    // could not say which setting changed or which space a rig lived in;
-    // `details` is the sanitized argument snapshot that can.
-    MigrationStep(7, 8, (m) async {
-      await _addColumnIfMissing(
-        m,
-        userActivityTable,
-        userActivityTable.details,
-      );
-    }),
-    // v8 → v9: todos + conversation_goals are keyed by conversation, not
-    // space. Switching conversations in one space used to show the same list
-    // because both tables FK'd `spaces`. No data is carried forward — a
-    // conversation owns its own uuid, so a space-keyed row cannot be mapped
-    // onto one stream without inventing an alias the product no longer has.
-    MigrationStep(8, 9, (m) async {
-      await m.database.customStatement('DROP TABLE IF EXISTS todos');
-      await m.database.customStatement(
-        'DROP TABLE IF EXISTS conversation_goals',
-      );
-      await m.createTable(todosTable);
-      await m.createTable(conversationGoalsTable);
-      await _createIndexIfMissing(m, idxTodosWorkspaceId);
-      await _createIndexIfMissing(m, idxTodosConversation);
-      await _createIndexIfMissing(m, idxConversationGoalsWorkspaceId);
-    }),
-    // v9 → v10: Workspace → Profile is this workspace's overlay. Membership carries
-    // optional display name / email / git author (null inherits the global
-    // User). Calendar accounts gain userId so connecting Google on You is
-    // that member's calendars here, not a shared pool.
-    MigrationStep(9, 10, (m) async {
-      await _addColumnIfMissing(
-        m,
-        workspaceMembersTable,
-        workspaceMembersTable.displayName,
-      );
-      await _addColumnIfMissing(
-        m,
-        workspaceMembersTable,
-        workspaceMembersTable.email,
-      );
-      await _addColumnIfMissing(
-        m,
-        workspaceMembersTable,
-        workspaceMembersTable.gitAuthorName,
-      );
-      await _addColumnIfMissing(
-        m,
-        workspaceMembersTable,
-        workspaceMembersTable.gitAuthorEmail,
-      );
-      await _addColumnIfMissing(
-        m,
-        calendarAccountsTable,
-        calendarAccountsTable.userId,
-      );
-      await m.database.customStatement(
-        'DROP INDEX IF EXISTS uq_calendar_accounts_ws_email',
-      );
-      await _createIndexIfMissing(m, idxCalendarAccountsUserId);
-      await _createIndexIfMissing(m, uqCalendarAccountsWsUserEmail);
-    }),
-    // v10 → v11: sidebar activity indexes. Fresh files build them in
-    // onCreate; this step carries existing workspace files forward. See
-    // [_createConversationActivityIndexes].
-    MigrationStep(10, 11, (m) async {
-      await _createConversationActivityIndexes();
-    }),
-    // v11 → v12: integer character counts for the context meter. Fresh files
-    // build the columns in onCreate; this step carries existing files forward.
-    MigrationStep(11, 12, (m) async {
-      await _addConversationCharColumns();
-      await _createConversationCharIndex();
-    }),
-    // v12 → v13: stored list metadata. Fresh files build the column in
-    // onCreate; this step carries existing files forward.
-    MigrationStep(12, 13, (m) async {
-      await _addColumnIfMissing(
-        m,
-        conversationMessagesTable,
-        conversationMessagesTable.listMetadata,
-      );
-    }),
-    // v13 → v14: stacked branches inside one space's checkout. Fresh files
-    // build the table in onCreate; this step carries existing files forward.
-    // createTable is re-run safe (IF NOT EXISTS) because a rewound
-    // user_version replays every later step against a database that already
-    // has the current tables.
-    MigrationStep(13, 14, (m) async {
-      await m.createTable(spaceStackEntriesTable);
-      await _createIndexIfMissing(m, idxSpaceStackSpace);
-    }),
-    // v14 → v15: the delta sync feed is gone. Drop its triggers before its
-    // tables: a trigger left behind would fail every write to the table it
-    // watches once `sync_changes` no longer exists. See [_dropSyncFeed].
-    MigrationStep(14, 15, (m) async {
-      await _dropSyncFeed();
-    }),
-    // v15 → v16: per-agent sandbox capabilities are gone — the action policy
-    // (allow / ask / deny) is the one permission system. See
-    // [_dropAgentSandboxCapabilities].
-    MigrationStep(15, 16, (m) async {
-      await _dropAgentSandboxCapabilities();
-    }),
-    // v16 → v17: the provider-reported context reading behind the meter.
-    // Nullable and not backfilled: no turn before this version stored one,
-    // and a null reading is what tells the meter to fall back to its
-    // estimate.
-    MigrationStep(16, 17, (m) async {
-      await _addColumnIfMissing(
-        m,
-        conversationMessagesTable,
-        conversationMessagesTable.contextTokens,
-      );
-      await _addColumnIfMissing(
-        m,
-        conversationMessagesTable,
-        conversationMessagesTable.contextWindowTokens,
-      );
-      await _createContextReadingIndex();
-    }),
-    // v17 → v18: precise cost accounting, run-stage latency and independent
-    // verification. All purely additive and nullable/defaulted.
-    MigrationStep(17, 18, (m) async {
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.costMicros,
-      );
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.costBasis,
-      );
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.childCostMicros,
-      );
-      await _addColumnIfMissing(m, agentRunLogsTable, agentRunLogsTable.effort);
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.taskFamily,
-      );
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.nativeSessionId,
-      );
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.resumedNativeSession,
-      );
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.latencyJson,
-      );
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.verificationStatus,
-      );
-      await _addColumnIfMissing(
-        m,
-        agentRunLogsTable,
-        agentRunLogsTable.verificationJson,
-      );
-      await m.createTable(runCallUsagesTable);
-      await _createIndexIfMissing(m, idxRunCallUsagesRunId);
-      await _createIndexIfMissing(m, idxRunCallUsagesWorkspace);
-      await _createIndexIfMissing(m, idxRunCallUsagesConversation);
-      await _createIndexIfMissing(m, idxRunCallUsagesStarted);
-    }),
-    // v18 → v19: workspace-owned skill campaign state, indexed attempts,
-    // and explicit per-skill reevaluation opt-in.
-    MigrationStep(18, 19, (m) async {
-      await _createTableIfMissing(m, skillEvalCampaignsTable);
-      await _createTableIfMissing(m, skillEvalAttemptsTable);
-      await _createTableIfMissing(m, skillEvalPoliciesTable);
-      await _createIndexIfMissing(m, idxSkillEvalCampaignsSkillCreated);
-      await _createIndexIfMissing(m, idxSkillEvalCampaignsStatus);
-      await _createIndexIfMissing(m, idxSkillEvalAttemptsCampaign);
-      await _createIndexIfMissing(m, idxSkillEvalPoliciesEnabled);
-    }),
-    // v19 → v20: durable per-workspace logical file identities.
-    MigrationStep(19, 20, (m) async {
-      await _createTableIfMissing(m, catalogFilesTable);
-      await _createIndexIfMissing(m, idxCatalogFilesLifecycle);
-      await _createIndexIfMissing(m, idxCatalogFilesPath);
-    }),
-    // v20 → v21: space environments.
-    MigrationStep(20, 21, (m) async {
-      await _createTableIfMissing(m, environmentDefinitionsTable);
-      await _createTableIfMissing(m, spaceEnvironmentsTable);
-      await _createTableIfMissing(m, environmentRunsTable);
-      await _createIndexIfMissing(m, idxEnvironmentRunsSpace);
-      await _createIndexIfMissing(m, idxEnvironmentRunsDefinition);
-    }),
-    // v21 → v22: per-repo lifecycle scripts go. A definition is the only
-    // place a worktree task lives, and environment runs the only history.
-    MigrationStep(21, 22, (m) async {
-      await customStatement('DROP TABLE IF EXISTS repo_script_runs');
-      for (final column in const ['setup_script', 'archive_script']) {
-        if (await _reposHasColumn(column)) {
-          await customStatement('ALTER TABLE repos DROP COLUMN $column');
-        }
-      }
-    }),
-    // v22 → v23: a run pins the graph it started with. Also: the wait-id
-    // lookup gets an index, the never-written step branch index goes and
-    // projection runs get an explicit flag.
-    MigrationStep(22, 23, (m) async {
-      await _addColumnIfMissing(
-        m,
-        pipelineRunsTable,
-        pipelineRunsTable.templateSnapshotJson,
-      );
-      await _createNotificationFeedIndexes();
-      await _dropColumnIfPresent('pipeline_step_runs', 'branch_index');
-      await _addColumnIfMissing(
-        m,
-        pipelineRunsTable,
-        pipelineRunsTable.isProjection,
-      );
-    }),
-    // v23 → v24: who armed each trigger, recorded on its runs so they
-    // cannot approve a pull request their agents open. Existing armed
-    // triggers record nobody until an admin saves them again.
-    MigrationStep(23, 24, (m) async {
-      await _addColumnIfMissing(
-        m,
-        pipelineTriggersTable,
-        pipelineTriggersTable.armedByUserIdsJson,
-      );
-    }),
-    // v24 → v25: everyone who armed a trigger, not only the last; the
-    // single-armer column goes.
-    MigrationStep(24, 25, (m) async {
-      await _addColumnIfMissing(
-        m,
-        pipelineTriggersTable,
-        pipelineTriggersTable.armedByUserIdsJson,
-      );
-      await _dropColumnIfPresent('pipeline_triggers', 'armed_by_user_id');
-    }),
-    // v25 → v26: who linked each repository's path. Existing rows record
-    // nobody, so a checkout outside the workspace's own storage is not served
-    // until the server owner links it again.
-    MigrationStep(25, 26, (m) async {
-      await _addColumnIfMissing(m, reposTable, reposTable.linkedByUserId);
-    }),
-    // v26 → v27: the forge's durable id for each linked repository. Existing
-    // rows hold none until the first authorized read of the repository pins
-    // it.
-    MigrationStep(26, 27, (m) async {
-      await _addColumnIfMissing(m, reposTable, reposTable.forgeRepoId);
-    }),
-    // v27 → v28: which server owner approved a definition that runs on the
-    // host. Existing rows record nobody, so one that runs there waits for the
-    // server owner to save it again.
-    MigrationStep(27, 28, (m) async {
-      await _addColumnIfMissing(
-        m,
-        environmentDefinitionsTable,
-        environmentDefinitionsTable.hostApprovedBy,
-      );
-    }),
-    // v28 → v29: a run's child rollup is kept in micro-USD only; the cents
-    // column goes.
-    MigrationStep(28, 29, (m) async {
-      await _dropColumnIfPresent('agent_run_logs', 'child_cost_cents');
-    }),
-  ];
+  @override
+  int get lastUnidentifiedVersion => 29;
 
-  /// `ALTER TABLE … DROP COLUMN` when [column] is still there. Re-run safe:
-  /// dropping a missing column throws and would keep the workspace from
-  /// opening.
-  Future<void> _dropColumnIfPresent(String table, String column) async {
-    final columns = await customSelect('PRAGMA table_info($table)').get();
-    if (columns.any((row) => row.read<String>('name') == column)) {
-      await customStatement('ALTER TABLE $table DROP COLUMN $column');
-    }
-  }
+  @override
+  String get identityTable => 'workspace_meta';
 
-  Future<bool> _reposHasColumn(String name) async {
-    final columns = await customSelect('PRAGMA table_info(repos)').get();
-    return columns.any((row) => row.read<String>('name') == name);
-  }
+  @override
+  String get databaseLabel => 'workspace $workspaceId';
 
-  Future<void> _createTableIfMissing(
-    Migrator m,
-    TableInfo<Table, dynamic> table,
-  ) async {
-    final existing = await customSelect(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
-      variables: [Variable<String>(table.actualTableName)],
-    ).get();
-    if (existing.isEmpty) {
-      await m.createTable(table);
-    }
-  }
+  /// Every row in this file belongs to [workspaceId], so a row that lost or
+  /// never had its `workspace_id` gets this one.
+  @override
+  Map<String, Object> get convergeFills => {'workspace_id': workspaceId};
 
-  /// Creates [index] unless the file already has it.
-  ///
-  /// Same reasoning as [_addColumnIfMissing]: a re-entered step must not throw
-  /// on work a previous attempt already did.
-  Future<void> _createIndexIfMissing(Migrator m, Index index) async {
-    final existing = await customSelect(
-      "SELECT name FROM sqlite_master WHERE type = 'index' AND name = ?",
-      variables: [Variable<String>(index.entityName)],
-    ).get();
-    if (existing.isEmpty) {
-      await m.createIndex(index);
-    }
-  }
+  static Future<SchemaSnapshot>? _declaredSchema;
 
-  /// Adds [column] to [table] unless the file already has it.
-  ///
-  /// **Why every step has to be safe to re-run.** A migration is not atomic
-  /// across statements: a crash (or a rewound `user_version`) can leave a file
-  /// that has some of a step's changes and not others, and drift only stamps
-  /// the new version when the whole `onUpgrade` returns. A bare
-  /// `ALTER TABLE ADD COLUMN` on a column that is already there throws, the
-  /// version is never stamped, and the workspace then fails to open FOREVER —
-  /// a far worse outcome than the missing column the step was adding.
-  Future<void> _addColumnIfMissing(
-    Migrator m,
-    TableInfo<Table, dynamic> table,
-    GeneratedColumn<Object> column,
-  ) async {
-    final existing = await customSelect(
-      'PRAGMA table_info(${table.actualTableName})',
-    ).get();
-    final present = existing.any(
-      (row) => row.read<String>('name') == column.name,
+  /// The schema a fresh workspace file holds, read once per process from an
+  /// in-memory instance.
+  static Future<SchemaSnapshot> declaredSchema() =>
+      _declaredSchema ??= _readDeclaredSchema();
+
+  static Future<SchemaSnapshot> _readDeclaredSchema() async {
+    final db = WorkspaceDatabase(
+      NativeDatabase.memory(),
+      workspaceId: 'declared-schema',
     );
-    if (!present) {
-      await m.addColumn(table, column);
+    try {
+      return await SchemaSnapshot.read(db);
+    } on Object {
+      _declaredSchema = null;
+      rethrow;
+    } finally {
+      await db.close();
     }
   }
 
   @override
+  Future<SchemaSnapshot> loadDeclaredSchema() => declaredSchema();
+
+  /// Writes a consistent, defragmented snapshot of this workspace to [path]
+  /// using `VACUUM INTO`, on this database's own connection.
+  ///
+  /// Safe on a live WAL database (it takes a read transaction and writes a
+  /// clean copy). For a file on disk prefer `snapshotDatabaseFile`, which
+  /// copies on a connection of its own so nothing queues behind the copy;
+  /// this is what an in-memory database has.
+  Future<void> backupTo(String path) =>
+      customStatement('VACUUM INTO ?', [path]);
+
+  /// Everything a fresh file holds besides the FTS indexes `beforeOpen`
+  /// installs: the declared tables with their indexes (partial and
+  /// expression indexes included, each declared on its table class) and the
+  /// row naming the workspace.
+  Future<void> _createDeclaredSchema(Migrator m) async {
+    await m.createAll();
+    await into(workspaceMetaTable).insert(
+      WorkspaceMetaTableCompanion.insert(
+        workspaceId: workspaceId,
+        installId: installId,
+        createdWithSchemaVersion: schemaVersion,
+        createdAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (Migrator m) async {
-      await m.createAll();
-      await _createFts5Tables();
-      await _createTicketIndexes();
-      await createPipelineIndexes(this);
-      await createCronIndexes(this);
-      await _createHotPathIndexes();
-      await createChatIndexes(this);
-      await into(workspaceMetaTable).insert(
-        WorkspaceMetaTableCompanion.insert(
-          workspaceId: workspaceId,
-          installId: installId,
-          createdWithSchemaVersion: schemaVersion,
-          createdAt: Value(DateTime.now()),
-        ),
-        mode: InsertMode.insertOrReplace,
-      );
-    },
-    onUpgrade: (Migrator m, int from, int to) async {
-      for (final step in _migrationSteps) {
-        if (from < step.to) {
-          await step.migrate(m);
-        }
-      }
-    },
+    onCreate: (Migrator m) => createFresh(() => _createDeclaredSchema(m)),
+    onUpgrade: (Migrator m, int from, int to) => upgradeByConverging(from, to),
     beforeOpen: (_) async {
-      await customStatement('PRAGMA foreign_keys = ON');
-      await customStatement('PRAGMA journal_mode = WAL');
-      // Wait up to 5s for a lock instead of failing a contended write
-      // immediately with SQLITE_BUSY. The server runs background reconcilers
-      // (orphan-run reaper, sync, pipeline resume) concurrently with live
-      // writes; WAL lets readers proceed, but two writers still contend and
-      // without this a reconciler tick can abort a user write outright.
-      await customStatement('PRAGMA busy_timeout = 5000');
-      // WAL + synchronous=NORMAL. FULL fsyncs every commit; a message send
-      // writes the row and the FTS index, and those fsyncs
-      // are what push a loopback action past a frame. NORMAL syncs at
-      // checkpoint time: an app crash does not lose committed transactions,
-      // a power loss can lose the ones not yet checkpointed. That is the
-      // setting SQLite recommends for WAL.
-      // temp_store=MEMORY keeps sorts and transient indexes off disk.
-      // mmap_size caps how much of the file can be faulted into RAM. Those
-      // pages stay resident while the connection is open; 8MB matches the
-      // page cache so one workspace cannot also pin a 64MB window.
-      await customStatement('PRAGMA synchronous = NORMAL');
-      await customStatement('PRAGMA temp_store = MEMORY');
-      await customStatement('PRAGMA mmap_size = 8388608');
-      // Cap the per-connection page cache at 8MB (negative = KiB units) and
-      // let SQLite hand cache memory back to the OS under pressure. This bound
-      // matters more than it used to: N open workspaces means N caches, so an
-      // unbounded per-connection cache would multiply.
-      await customStatement('PRAGMA cache_size = -8192');
-      // Bound the WAL file so a long-running server doesn't accumulate an
-      // unbounded -wal that gets mmapped/paged in on every checkpoint.
-      await customStatement('PRAGMA journal_size_limit = 67108864');
+      await applyConnectionPragmas();
+      await verifyIdentity();
+      // The integrity check comes before anything below that writes. A
+      // damaged file takes no more writes: every one would be laid on top of
+      // the damage and carried into the next snapshot.
+      if (await _foundDamaged()) {
+        await customStatement('PRAGMA query_only = ON');
+        try {
+          await _initVectorIndex();
+        } on Object catch (error) {
+          onError?.call(
+            'WorkspaceDatabase',
+            'vector index unavailable for damaged workspace $workspaceId: '
+                '${error.runtimeType}',
+          );
+        }
+        return;
+      }
       // vector_init builds the sqlite_vector extension's PER-CONNECTION,
       // in-memory context — it is NOT persisted in the database file. It must
       // therefore run on EVERY open, not just onCreate: an existing database
       // reopened after a restart otherwise has no context and every
-      // vector KNN query fails with "unable to retrieve context"
-      // (semantic/hybrid search silently degraded to keyword-only for the
-      // whole session). beforeOpen runs after onCreate/onUpgrade, so the
-      // tables always exist by now.
+      // vector KNN query fails with "unable to retrieve context".
+      // beforeOpen runs after onCreate/onUpgrade, so the tables always exist
+      // by now. A failure fails the open: the extension is a required native.
       await _initVectorIndex();
       // FTS5 external-content tables + their sync triggers. Idempotent
       // (everything is IF NOT EXISTS) and installed on every open rather than
       // only in `onCreate`: a trigger lost for any reason (maintenance, a
-      // hand-run migration, a restored backup, an imported workspace file) is
-      // otherwise never rebuilt and the failure is silent — inserts stop
-      // reaching the index and search just returns less and less.
-      await _createFts5Tables();
-      // Corruption check on open — `quick_check`, NOT `integrity_check`.
-      //
-      // `integrity_check` verifies every b-tree page in the file, so its cost scales with the
-      // whole database: on a 2.6GB graph-heavy DB it took 21s warm (worse cold).
-      // `quick_check` catches the corruption that actually happens (bad page structure, broken
-      // indexes) while skipping the exhaustive cross-page work — 2.8s on that same file.
-      // Splitting the database moved this off the boot path entirely: it is now paid per
-      // workspace, on first touch of that workspace, against a file holding one workspace's
-      // history instead of every workspace's.
-      if (skipIntegrityCheck) {
-        return;
-      }
-      final startedAt = DateTime.now();
-      final result = await customSelect('PRAGMA quick_check').get();
-      final status = result.first.read<String>('quick_check');
-      if (status != 'ok') {
-        onError?.call(
-          'WorkspaceDatabase',
-          'SQLite quick_check failed for workspace $workspaceId: $status',
-        );
-      }
-      onIntegrityChecked?.call();
-      final elapsed = DateTime.now().difference(startedAt);
-      if (elapsed > const Duration(seconds: 2)) {
-        onWarn?.call(
-          'WorkspaceDatabase',
-          'quick_check took ${elapsed.inMilliseconds}ms for workspace '
-              '$workspaceId — this workspace is large enough that opening it '
-              'is a visible pause',
-        );
-      }
+      // schema convergence, an adopted file) is otherwise never rebuilt and
+      // the failure is silent — inserts stop reaching the index and search
+      // just returns less and less.
+      final createdFts = await _createFts5Tables();
+      await _rebuildStaleFtsIndexes(createdFts);
+      await optimize(onOpen: true);
     },
   );
 
-  /// Removes the delta sync feed's triggers and tables from a file created
-  /// before v15.
+  /// Runs the corruption check of this open and reports its outcome through
+  /// [onIntegrityChecked]. True when SQLite found the file damaged.
   ///
-  /// Every statement is IF EXISTS, so a re-entered step (see
-  /// [_addColumnIfMissing]) and a file that never had the feed both pass.
-  Future<void> _dropSyncFeed() async {
-    const tables = [
-      'tickets',
-      'spaces',
-      'conversations',
-      'conversation_messages',
-      'space_participants',
-      'space_notes',
-      'message_reactions',
-    ];
-    for (final table in tables) {
-      for (final op in const ['insert', 'update', 'delete']) {
-        await customStatement('DROP TRIGGER IF EXISTS trg_sync_${table}_$op');
-      }
+  /// `quick_check`, NOT `integrity_check`. `integrity_check` verifies every
+  /// b-tree page against every index entry, so its cost scales with the whole
+  /// database: on a 2.6GB graph-heavy file it took 21s warm (worse cold).
+  /// `quick_check` catches the corruption that actually happens (bad page
+  /// structure, broken b-trees) while skipping the exhaustive cross-checks:
+  /// 2.8s on that same file. It is paid per workspace, on first touch of that
+  /// workspace, never at boot.
+  Future<bool> _foundDamaged() async {
+    if (skipIntegrityCheck) {
+      return false;
     }
-    await customStatement('DROP INDEX IF EXISTS idx_sync_changes_ws_seq');
-    await customStatement('DROP TABLE IF EXISTS sync_changes');
-    await customStatement('DROP TABLE IF EXISTS sync_sequences');
-  }
-
-  /// Drops `agents.sandbox_capabilities_json`. Re-run safe: a file that already
-  /// lost the column (a crash after the drop, a rewound `user_version`) is left
-  /// alone, because `DROP COLUMN` on a missing column throws and would keep the
-  /// workspace from opening.
-  Future<void> _dropAgentSandboxCapabilities() async {
-    final columns = await customSelect('PRAGMA table_info(agents)').get();
-    if (columns.any(
-      (row) => row.read<String>('name') == 'sandbox_capabilities_json',
-    )) {
-      await customStatement(
-        'ALTER TABLE agents DROP COLUMN sandbox_capabilities_json',
+    final startedAt = DateTime.now();
+    final status = await _quickCheck();
+    final damaged = status != 'ok';
+    if (damaged) {
+      onError?.call(
+        'WorkspaceDatabase',
+        'SQLite quick_check failed for workspace $workspaceId: $status',
       );
     }
+    onIntegrityChecked?.call(damaged ? status : null);
+    final elapsed = DateTime.now().difference(startedAt);
+    if (elapsed > const Duration(seconds: 2)) {
+      onWarn?.call(
+        'WorkspaceDatabase',
+        'quick_check took ${elapsed.inMilliseconds}ms for workspace '
+            '$workspaceId — this workspace is large enough that opening it '
+            'is a visible pause',
+      );
+    }
+    return damaged;
   }
 
-  /// Creates the FTS5 indexes and their sync triggers.
+  /// `PRAGMA quick_check`'s finding: `ok`, or what it reported.
   ///
-  /// Both indexes keep their `workspace_id` column even though a file now holds
-  /// exactly one workspace: the column maps to the content table's own
-  /// `workspace_id`, so FTS5 `rebuild` stays valid and dropping it would be a
-  /// schema change for no gain. The MATCH-level workspace filter
-  /// (`toWorkspaceScopedFtsMatch`) is now belt-and-braces rather than the
-  /// isolation mechanism.
-  Future<void> _createFts5Tables() async {
+  /// Damage bad enough stops the check itself: SQLite then fails the
+  /// statement with "database disk image is malformed" instead of returning
+  /// a finding. That is the same verdict, so it is returned as one.
+  Future<String> _quickCheck() async {
+    try {
+      final result = await customSelect('PRAGMA quick_check').get();
+      return result.first.read<String>('quick_check');
+    } on Object catch (error) {
+      if (storageFailureOf(error) != StorageFailure.damaged) {
+        rethrow;
+      }
+      return sqliteCauseOf(error)?.message ??
+          'database disk image is malformed';
+    }
+  }
+
+  /// The FTS5 indexes of this file and the table each one indexes.
+  static const Map<String, String> _ftsContentTables = {
+    'memory_facts_fts': 'memory_facts',
+    'conversation_messages_fts': 'conversation_messages',
+  };
+
+  Future<bool> _hasSchemaObject(String name) async => (await customSelect(
+    'SELECT 1 FROM sqlite_master WHERE name = ?',
+    variables: [Variable.withString(name)],
+  ).get()).isNotEmpty;
+
+  /// Creates the FTS5 indexes and their sync triggers, and returns the names
+  /// of the indexes this call had to create.
+  ///
+  /// `memory_facts_fts` keeps its `workspace_id` column even though a file
+  /// now holds exactly one workspace: the column maps to the content table's
+  /// own `workspace_id`, so FTS5 `rebuild` stays valid. The MATCH-level
+  /// workspace filter (`toWorkspaceScopedFtsMatch`) is belt-and-braces rather
+  /// than the isolation mechanism. The code index lives in its own file
+  /// (`CodeIndexDatabase`).
+  Future<Set<String>> _createFts5Tables() async {
+    final created = <String>{
+      for (final name in _ftsContentTables.keys)
+        if (!await _hasSchemaObject(name)) name,
+    };
     await customStatement('''
       CREATE VIRTUAL TABLE IF NOT EXISTS memory_facts_fts
       USING fts5(topic, content, workspace_id, content=memory_facts, content_rowid=rowid)
@@ -1053,34 +702,11 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         VALUES (new.rowid, new.topic, new.content, new.workspace_id);
       END
     ''');
-    await customStatement('''
-      CREATE VIRTUAL TABLE IF NOT EXISTS code_symbols_fts
-      USING fts5(name, qualified_name, signature, docstring, workspace_id, content=code_symbols, content_rowid=rowid)
-    ''');
-    await customStatement('''
-      CREATE TRIGGER IF NOT EXISTS code_symbols_ai AFTER INSERT ON code_symbols BEGIN
-        INSERT INTO code_symbols_fts(rowid, name, qualified_name, signature, docstring, workspace_id)
-        VALUES (new.rowid, new.name, new.qualified_name, new.signature, new.docstring, new.workspace_id);
-      END
-    ''');
-    await customStatement('''
-      CREATE TRIGGER IF NOT EXISTS code_symbols_ad AFTER DELETE ON code_symbols BEGIN
-        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, qualified_name, signature, docstring, workspace_id)
-        VALUES ('delete', old.rowid, old.name, old.qualified_name, old.signature, old.docstring, old.workspace_id);
-      END
-    ''');
-    await customStatement('''
-      CREATE TRIGGER IF NOT EXISTS code_symbols_au AFTER UPDATE ON code_symbols BEGIN
-        INSERT INTO code_symbols_fts(code_symbols_fts, rowid, name, qualified_name, signature, docstring, workspace_id)
-        VALUES ('delete', old.rowid, old.name, old.qualified_name, old.signature, old.docstring, old.workspace_id);
-        INSERT INTO code_symbols_fts(rowid, name, qualified_name, signature, docstring, workspace_id)
-        VALUES (new.rowid, new.name, new.qualified_name, new.signature, new.docstring, new.workspace_id);
-      END
-    ''');
     // In-space message search (§8.4). Scoped by `space_id` — messages have
     // no `workspace_id` column (they belong to a space, which does), so the
     // search RPC validates space ownership and MATCHes with `space_id = ?`.
     await _createSpaceMessagesFts();
+    return created;
   }
 
   /// Creates the `conversation_messages_fts` external-content FTS5 index + its
@@ -1103,10 +729,12 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       END
     ''');
     // `OF content, space_id` — the only two columns this index covers.
-    // Without it, an embedding-only UPDATE (the backfill writes one per
-    // message, 200 per batch) still ran a delete+insert of UNCHANGED text
-    // through FTS5. Any statement that writes either indexed column still
-    // fires, so the index cannot drift.
+    // A streaming turn rewrites its row's meter columns on every flush and
+    // its metadata whenever the turn changes state; without the column list
+    // each of those ran a delete+insert of UNCHANGED text through FTS5.
+    // (Embeddings no longer touch the row at all: they live in
+    // `conversation_message_embeddings`.) Any statement that writes either
+    // indexed column still fires, so the index cannot drift.
     await customStatement('''
       CREATE TRIGGER IF NOT EXISTS conversation_messages_au
       AFTER UPDATE OF content, space_id ON conversation_messages BEGIN
@@ -1118,196 +746,40 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     ''');
   }
 
+  /// Rebuilds the FTS indexes whose content may no longer match them.
+  ///
+  /// An external-content index addresses rows by rowid and is fed by
+  /// triggers. It is stale when it was just created over existing rows
+  /// ([created]), when the convergence rebuilt its content table (rows that
+  /// broke a constraint were left behind without a delete trigger firing), or
+  /// when the file was rewritten whole: SQLite does not promise that `VACUUM`
+  /// keeps the rowids of a table without an integer primary key.
+  Future<void> _rebuildStaleFtsIndexes(Set<String> created) async {
+    final rebuilt = lastConvergeReport?.rebuiltTables.toSet() ?? const {};
+    for (final MapEntry(key: index, value: content)
+        in _ftsContentTables.entries) {
+      if (created.contains(index) ||
+          fileWasRewritten ||
+          rebuilt.contains(content)) {
+        await customStatement("INSERT INTO $index($index) VALUES('rebuild')");
+      }
+    }
+  }
+
   /// Rebuilds every FTS5 index from its content table.
   ///
-  /// Needed after a bulk copy that bypassed the triggers — which is exactly what
-  /// `workspace.import` does when it adopts a file.
+  /// Needed after anything that changed rows without the triggers seeing it
+  /// or that may have renumbered rowids: adopting a file written by
+  /// `VACUUM INTO` (a snapshot, an export) is the standing case.
   Future<void> rebuildFtsIndexes() async {
-    for (final index in const [
-      'memory_facts_fts',
-      'code_symbols_fts',
-      'conversation_messages_fts',
-    ]) {
+    for (final index in _ftsContentTables.keys) {
       await customStatement("INSERT INTO $index($index) VALUES('rebuild')");
     }
   }
 
   Future<void> _initVectorIndex() async {
-    await _initVectorIndexFor('memory_facts');
-    await _initVectorIndexFor('code_symbols');
-  }
-
-  Future<void> _initVectorIndexFor(String table) async {
-    try {
-      await customStatement(
-        "SELECT vector_init('$table', 'embedding', 'type=FLOAT32,dimension=384')",
-      );
-    } on Exception catch (e) {
-      onWarn?.call(
-        'WorkspaceDatabase',
-        'sqlite_vector extension unavailable, skipping vector index for $table: $e',
-      );
+    for (final table in workspaceVectorTables) {
+      await customStatement(vectorInitStatement(table));
     }
-  }
-
-  /// Creates the partial-unique index that prevents duplicate remote mirrors
-  /// (local tickets have a null `external_key`, so the index is partial).
-  ///
-  /// Partial indexes carry a `WHERE` clause, so they cannot be expressed as a
-  /// `@TableIndex` on the table class and `createAll()` won't build them — they
-  /// are created here from `onCreate` instead.
-  Future<void> _createTicketIndexes() async {
-    await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS uq_tickets_provider_externalKey '
-      'ON tickets (provider, external_key) WHERE external_key IS NOT NULL',
-    );
-  }
-
-  /// Partial indexes for the sidebar activity watch.
-  ///
-  /// That watch re-runs on every conversation-message write, including a
-  /// streaming transcript flush. The maxima only need ids, time and sender,
-  /// so they must not drag each row's metadata (the transcript) off disk.
-  /// The question count is the one predicate that reads metadata. It filters
-  /// on `message_type`, which already has an index, so that pass only touches
-  /// user-question rows.
-  Future<void> _createConversationActivityIndexes() async {
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_live_activity '
-      'ON conversation_messages ('
-      'space_id, conversation_id, created_at, sender_type'
-      ') WHERE reverted = 0',
-    );
-  }
-
-  /// Adds the meter's integer columns when a re-entered v12 step finds them
-  /// missing. A bare `ADD COLUMN` throws if a previous attempt already added
-  /// them, and that throw leaves the file stuck below the new version.
-  Future<void> _addConversationCharColumns() async {
-    final rows = await customSelect(
-      "PRAGMA table_info('conversation_messages')",
-    ).get();
-    final present = rows.map((row) => row.read<String>('name')).toSet();
-    if (!present.contains('content_chars')) {
-      await customStatement(
-        'ALTER TABLE conversation_messages ADD COLUMN content_chars '
-        'INTEGER NOT NULL DEFAULT 0',
-      );
-    }
-    if (!present.contains('transcript_chars')) {
-      await customStatement(
-        'ALTER TABLE conversation_messages ADD COLUMN transcript_chars '
-        'INTEGER NOT NULL DEFAULT 0',
-      );
-    }
-  }
-
-  /// Covering index for [MessagingDao.conversationCharCountsSql].
-  ///
-  /// The partial predicate matches the meter's filter, so the sum never
-  /// reads message bodies or transcript JSON.
-  Future<void> _createConversationCharIndex() async {
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_live_chars '
-      'ON conversation_messages ('
-      'conversation_id, message_type, content_chars, transcript_chars'
-      ') WHERE reverted = 0 AND compacted = 0',
-    );
-  }
-
-  /// Covering index for [MessagingDao.latestContextReadingSql].
-  ///
-  /// Partial on the rows that carry a reading, so it holds one entry per
-  /// agent turn rather than one per message, and ordered so the newest is the
-  /// first entry the lookup reads.
-  Future<void> _createContextReadingIndex() async {
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_context_reading '
-      'ON conversation_messages ('
-      'conversation_id, created_at, context_tokens, context_window_tokens'
-      ') WHERE reverted = 0 AND context_tokens IS NOT NULL',
-    );
-  }
-
-  /// Composite indexes for hot filter+sort paths single-column indexes miss
-  /// (space/conversation message history, agent run logs, PRs). `IF NOT EXISTS`.
-  Future<void> _createHotPathIndexes() async {
-    await _createConversationActivityIndexes();
-    await _createNotificationFeedIndexes();
-    await _createConversationCharIndex();
-    await _createContextReadingIndex();
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_space_created '
-      'ON conversation_messages (space_id, created_at)',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_conversation_created '
-      'ON conversation_messages (conversation_id, created_at)',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_agent_run_logs_ws_agent_started '
-      'ON agent_run_logs (workspace_id, agent_id, started_at)',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_agent_run_logs_ws_conv_started '
-      'ON agent_run_logs (workspace_id, conversation_id, started_at)',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_agent_run_logs_started '
-      'ON agent_run_logs (started_at DESC)',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_pull_requests_ws_created '
-      'ON pull_requests (workspace_id, created_at)',
-    );
-    // Reference resolution matches an import/reference name against BOTH
-    // `name` and `qualified_name`. Only the latter had an index, so the `name`
-    // half of that OR was a scan of the symbol table — and because import URIs
-    // into external packages can never resolve, `countUnresolvedEdges > 0` is
-    // permanently true and every incremental run pays it.
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_code_symbols_name '
-      'ON code_symbols (name)',
-    );
-    // Partial index for the embedding backfill's "what is left?" query
-    // (`WHERE embedding IS NULL AND compacted = 0 … LIMIT 200`). Without it
-    // that scans an unindexed column, so as the backlog drains each batch
-    // scans an ever-longer prefix of rows that ARE already embedded. A partial
-    // index holds only the pending rows: it shrinks as the backlog does and is
-    // empty — free to maintain — once the backfill finishes.
-    //
-    // Indexed on `message_type` because the query also filters it, and NOT on
-    // `workspace_id`: `conversation_messages` has no such column (a message
-    // belongs to a space, which belongs to the workspace, and a file now holds
-    // exactly one workspace anyway).
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_conversation_messages_pending_embedding '
-      'ON conversation_messages (message_type) '
-      'WHERE embedding IS NULL AND compacted = 0',
-    );
-    // Partial index over unresolved code-graph edges: the indexer probes
-    // "any pending references for this partition?" before loading anything,
-    // and this keeps that probe O(unresolved) instead of a repo-range scan.
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_code_edges_unresolved '
-      'ON code_edges (workspace_id, repo_id, checkout_id) '
-      'WHERE target_symbol_id IS NULL',
-    );
-  }
-
-  /// Expression index for [NotificationFeedDao.resolveAgentWait].
-  ///
-  /// That UPDATE runs inside the serialized feed write chain whenever a wait
-  /// ends. Without the index it decoded the JSON of every awaiting-input row
-  /// to find the one carrying the wait id. Partial on `json_valid` (the same
-  /// guard the UPDATE carries, so the planner can use it) so a malformed row
-  /// can never fail an insert by making `json_extract` throw.
-  Future<void> _createNotificationFeedIndexes() async {
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_notification_feed_wait_id '
-      'ON notification_feed ('
-      "json_extract(params_json, '\$.${NotificationFeedDao.waitIdKey}')"
-      ') WHERE json_valid(params_json)',
-    );
   }
 }

@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Każda flaga, zmienna środowiskowa, podpolecenie i ścieżka katalogu danych serwera headless.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Każde ustawienie procesu można podać flagą CLI albo zmienną środowiskową;
@@ -235,12 +235,16 @@ w macOS, `%APPDATA%\control-center` w Windows oraz `$XDG_DATA_HOME/control-cente
 bieżącego katalogu `.cc_server` jest używany tylko wtedy, gdy nie da się rozwiązać
 żadnego katalogu domowego ani katalogu danych aplikacji.
 
+Serwer utrzymuje katalog danych prywatny dla swojego konta (`0700`). Odmawia startu (kod wyjścia `78`), gdy nie może tego zapewnić, gdy `global.db` jest uszkodzona albo zapisana przez nowszą wersję, albo gdy nie da się odczytać jego pliku tożsamości.
+
 | Ścieżka                           | Zawartość                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Rejestr obszarów roboczych, użytkownicy, sparowane urządzenia, newsfeed i kolejka floty |
-| `<workspaceId>/workspace.db`      | Jedna baza danych na obszar roboczy — agenci, przestrzenie, zgłoszenia, pamięć, graf kodu |
+| `<workspaceId>/workspace.db`      | Jedna baza danych na obszar roboczy — agenci, przestrzenie, zgłoszenia, pamięć |
+| `<workspaceId>/code_index.db`     | Graf kodu tego obszaru roboczego. Odbudowywany, gdy go brakuje, nigdy nie jest kopiowany zapasowo |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Dwie najnowsze kopie bazy danych sprzed aktualizacji, która zmieniła jej format |
 | `<workspaceId>/chat_credentials/` | Tokeny botów czatu jako zwykły JSON, dzięki czemu podróżują razem z obszarem roboczym |
-| `secrets.json`                    | Klucze parowania, klucz instalacji Connect, aplikacje dostawców, logowania ludzi (zapieczętowane, gdy powstały przez Connect), SSO (`0600`) |
+| `secrets.json`                    | Klucze parowania, klucz instalacji Connect, aplikacje dostawców, logowania ludzi (zapieczętowane, gdy powstały przez Connect), sekrety webhooków, SSO (`0600`) |
 | `backups/<timestamp>/`            | Jedna migawka instalacji — `manifest.json`, `global.db` i kopia każdego obszaru roboczego |
 | `backups/exports/`                | Eksporty pojedynczego obszaru roboczego, `<workspaceId>-<timestamp>.db`         |
 | `backups/transfer/`               | Obszar przejściowy dla pobieranych i wysyłanych kopii zapasowych; czyszczony przez trasę, która do niego zapisuje |

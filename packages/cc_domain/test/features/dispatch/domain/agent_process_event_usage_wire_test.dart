@@ -18,7 +18,6 @@ void main() {
           thoughtTokens: 88,
           cachedReadTokens: 900,
           cachedWriteTokens: 150,
-          estimatedCostCents: 7,
           costMicros: 71234,
           costBasis: CostBasis.subscription,
         ),
@@ -47,7 +46,6 @@ void main() {
       expect(decoded.usage.thoughtTokens, 88);
       expect(decoded.usage.cachedReadTokens, 900);
       expect(decoded.usage.cachedWriteTokens, 150);
-      expect(decoded.usage.estimatedCostCents, 7);
       expect(decoded.usage.costMicros, 71234);
       expect(decoded.usage.costBasis, CostBasis.subscription);
       expect(decoded.durationMs, 4321);
@@ -80,7 +78,7 @@ void main() {
       expect(wire['thoughtTokens'], 0);
       expect(wire['cachedReadTokens'], 0);
       expect(wire['cachedWriteTokens'], 0);
-      expect(wire['estimatedCostCents'], 0);
+      expect(wire['costMicros'], 0);
       // Optional attribution stays absent rather than being fabricated.
       expect(wire.containsKey('durationMs'), isFalse);
       expect(wire.containsKey('provider'), isFalse);

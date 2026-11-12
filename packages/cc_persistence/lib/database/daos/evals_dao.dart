@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/evals/domain/entities/skill_evaluation_campaign.dart';
+import 'package:cc_domain/features/evals/domain/value_objects/eval_stored_values.dart';
 import 'package:cc_persistence/database/tables/evals_tables.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
@@ -139,7 +140,7 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
             ..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id)))
           .write(
             GoldenSessionsTableCompanion(
-              lastStatus: Value(status),
+              lastStatus: Value(GoldenStatus.parse(status).wire),
               lastScorecardJson: Value(scorecardJson),
             ),
           );
@@ -236,7 +237,7 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
     required String status,
     String? scorecardJson,
     double? passRate,
-    int? costCents,
+    int? costMicros,
     DateTime? startedAt,
     DateTime? finishedAt,
   }) =>
@@ -244,16 +245,16 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
             ..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id)))
           .write(
             EvalRunsTableCompanion(
-              status: Value(status),
+              status: Value(EvalRunStatus.parse(status).wire),
               scorecardJson: scorecardJson == null
                   ? const Value.absent()
                   : Value(scorecardJson),
               passRate: passRate == null
                   ? const Value.absent()
                   : Value(passRate),
-              costCents: costCents == null
+              costMicros: costMicros == null
                   ? const Value.absent()
-                  : Value(costCents),
+                  : Value(costMicros),
               startedAt: startedAt == null
                   ? const Value.absent()
                   : Value(startedAt),
@@ -325,7 +326,7 @@ class EvalsDao extends DatabaseAccessor<WorkspaceDatabase>
             ..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id)))
           .write(
             AgentConfigVersionsTableCompanion(
-              status: Value(status),
+              status: Value(AgentConfigVersionStatus.parse(status).wire),
               promotedBy: promotedBy == null
                   ? const Value.absent()
                   : Value(promotedBy),

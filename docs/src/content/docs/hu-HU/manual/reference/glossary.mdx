@@ -2,7 +2,7 @@
 title: Szójegyzék
 description: A Control Centerben használt kulcsfontosságú kifejezések meghatározásai.
 slug: hu-HU/kezikonyv/referencia/szojegyzek
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (egy elzárt VM — az egyetlen háttérrendszer kernelhatárral, az interaktív terminálokra alkalmazva), native (operációs rendszer natív Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n) vagy none. Indításkor egyszer vizsgáljuk; a native behúzza az ügynökindítást, ahol elérhető. A Windowsnak nincs natív háttérrendszere, a Linuxnak pedig bwrap és socat kell; ilyen gazdagépen csak a szerver tulajdonosának futtatásai indulnak el, beburkolás nélkül, a többieket pedig visszautasítjuk. A --sandbox off minden tag ügynökét beburkolás nélkül futtatja.'],
 ['Rig', 'Egy eldobható gép, amelyet egy ügynök valós időben vezet: elzárt böngésző vagy Linux asztal, gazdagép által kezelt Android-emulátor vagy iOS-szimulátor, vagy elzárt terminál. Élőben figyelhető a saját teljes felbontású sávján, a szerveroldalon kikényszerített átvétellel. Egy beszélgetéshez kötött, így az emberi fül és az ügynök eszköze egy gépet címez meg.'],
 ['Elszigetelt környezet', 'A VM-alapú állomások számára elérhető erősebb elszigetelési tulajdonság: kernelhatár, eldobható overlay-lemez, alapértelmezésben elzáró hálózati kapu és hitelesítőadat-ügynök. Az Android- és iOS-állomások eldobhatók, de gazdagép által kezelt hálózatot használnak, ezért nem tartanak igényt erre a határra. Bármely állomás vezetése az enclosureControl korlátosztályt használja.'],
-['RunCost', 'Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség centre) egyetlen ügynökfutásra.'],
+['RunCost', 'Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség mikrodollárban) egyetlen ügynökfutásra.'],
 ['WakeReason', 'Miért indult el egy ügynök. Hat érték: felhasználói üzenet, jegy-hozzárendelés, helyreállítási újraindítás hiba után, gyermekjegy befejeződött, ütemezett utánkövető szívverés és pipeline-lépés.'],
 ['SandboxPort', 'A homokozó életciklusát kezeli (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Hatáskörrel ellátott hitelesítő adatokat bocsát ki a homokozó indításához (egyetlen repóra szóló tokent az ügynök környezetébe, írásra csak a szerveroldali push-útvonal számára), és felszabadítja őket a lebontáskor.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Elszigetelt környezet**: A VM-alapú állomások erősebb határvonala — kernelhatár, eldobható overlay-lemez, alapértelmezésben elzáró hálózati kapu és hitelesítőadat-ügynök. Az Android- és iOS-állomások eldobhatók, de gazdagép által kezelt hálózatot használnak, és nem tartanak igényt erre a határra. Bármely állomás vezetése az `enclosureControl` korlátosztályt használja.
 
-**RunCost**: Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség centre) egyetlen ügynökfutásra.
+**RunCost**: Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség mikrodollárban) egyetlen ügynökfutásra.
 
 **WakeReason**: Miért indult el egy ügynök. Hat érték: felhasználói üzenet, jegy-hozzárendelés, helyreállítási újraindítás hiba után, gyermekjegy befejeződött, ütemezett utánkövető szívverés és pipeline-lépés.
 

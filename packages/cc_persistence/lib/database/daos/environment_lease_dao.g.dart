@@ -4,6 +4,8 @@ part of 'environment_lease_dao.dart';
 
 // ignore_for_file: type=lint
 mixin _$EnvironmentLeaseDaoMixin on DatabaseAccessor<GlobalDatabase> {
+  $UsersTableTable get usersTable => attachedDatabase.usersTable;
+  $WorkspacesTableTable get workspacesTable => attachedDatabase.workspacesTable;
   $EnvironmentSlotLeasesTableTable get environmentSlotLeasesTable =>
       attachedDatabase.environmentSlotLeasesTable;
   EnvironmentLeaseDaoManager get managers => EnvironmentLeaseDaoManager(this);
@@ -12,6 +14,13 @@ mixin _$EnvironmentLeaseDaoMixin on DatabaseAccessor<GlobalDatabase> {
 class EnvironmentLeaseDaoManager {
   final _$EnvironmentLeaseDaoMixin _db;
   EnvironmentLeaseDaoManager(this._db);
+  $$UsersTableTableTableManager get usersTable =>
+      $$UsersTableTableTableManager(_db.attachedDatabase, _db.usersTable);
+  $$WorkspacesTableTableTableManager get workspacesTable =>
+      $$WorkspacesTableTableTableManager(
+        _db.attachedDatabase,
+        _db.workspacesTable,
+      );
   $$EnvironmentSlotLeasesTableTableTableManager
   get environmentSlotLeasesTable =>
       $$EnvironmentSlotLeasesTableTableTableManager(

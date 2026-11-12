@@ -38,7 +38,7 @@ void main() {
         'batchSize': 50,
         'passRate': 0.85,
         'status': 'done',
-        'costCents': 100,
+        'costMicros': 100,
         'triggeredBy': 'ci',
         'createdAt': '2026-01-01T00:00:00.000',
         'scorecardJson': '{}',
@@ -49,7 +49,7 @@ void main() {
       expect(r.batchSize, 50);
       expect(r.passRate, 0.85);
       expect(r.status, 'done');
-      expect(r.costCents, 100);
+      expect(r.costMicros, 100);
       expect(r.triggeredBy, 'ci');
       expect(r.scorecardJson, '{}');
     });

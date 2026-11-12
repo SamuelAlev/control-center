@@ -3,38 +3,38 @@
 /// trivially-testable function.
 class SpendPoint {
   /// Creates a spend point.
-  const SpendPoint({required this.at, required this.costCents});
+  const SpendPoint({required this.at, required this.costMicros});
 
   /// When the spend occurred (the run's start time).
   final DateTime at;
 
-  /// The estimated cost in cents.
-  final int costCents;
+  /// The estimated cost in micro-dollars.
+  final int costMicros;
 }
 
 /// A month-end spend projection for one budget scope (agent or workspace).
 class BudgetForecast {
   /// Creates a [BudgetForecast].
   const BudgetForecast({
-    required this.spentCents,
-    required this.budgetCents,
-    required this.dailyBurnCents,
-    required this.projectedMonthEndCents,
+    required this.spentMicros,
+    required this.budgetMicros,
+    required this.dailyBurnMicros,
+    required this.projectedMonthEndMicros,
     required this.willExceed,
     this.projectedExhaustion,
   });
 
-  /// Cents spent so far in the current calendar month.
-  final int spentCents;
+  /// Micro-dollars spent so far in the current calendar month.
+  final int spentMicros;
 
   /// The budget ceiling (0 = unlimited → [willExceed] is always false).
-  final int budgetCents;
+  final int budgetMicros;
 
-  /// Average spend per day over the look-back window (cents/day).
-  final double dailyBurnCents;
+  /// Average spend per day over the look-back window (micro-dollars/day).
+  final double dailyBurnMicros;
 
   /// Projected total spend by month-end at the current burn rate.
-  final int projectedMonthEndCents;
+  final int projectedMonthEndMicros;
 
   /// Whether the projection exceeds a (non-zero) budget.
   final bool willExceed;
@@ -45,12 +45,12 @@ class BudgetForecast {
   final DateTime? projectedExhaustion;
 
   /// Remaining headroom before the ceiling (negative once over).
-  int get remainingCents => budgetCents - spentCents;
+  int get remainingMicros => budgetMicros - spentMicros;
 }
 
 /// Projects month-end spend for a budget scope from its recent burn rate
 /// (FINDINGS §16.1). Pure: pass the scope's [spend] events, the reference
-/// instant [now] and the [budgetCents] ceiling.
+/// instant [now] and the [budgetMicros] ceiling.
 ///
 /// - "Spent this month" sums spend since the 1st (in [now]'s calendar).
 /// - Burn rate = spend in the last [lookbackDays] days ÷ [lookbackDays].
@@ -60,7 +60,7 @@ class BudgetForecast {
 BudgetForecast forecastBudget({
   required List<SpendPoint> spend,
   required DateTime now,
-  required int budgetCents,
+  required int budgetMicros,
   int lookbackDays = 7,
 }) {
   if (lookbackDays <= 0) {
@@ -79,22 +79,22 @@ BudgetForecast forecastBudget({
   var recentSpend = 0;
   for (final p in spend) {
     if (!p.at.isBefore(monthStart)) {
-      spentThisMonth += p.costCents;
+      spentThisMonth += p.costMicros;
     }
     // Window is (now - lookbackDays, now] — strict at the far edge so N
     // consecutive daily points give exactly N days of burn, not N+1.
     if (p.at.isAfter(lookbackStart) && !p.at.isAfter(now)) {
-      recentSpend += p.costCents;
+      recentSpend += p.costMicros;
     }
   }
 
   final dailyBurn = recentSpend / lookbackDays;
   final projected = spentThisMonth + (dailyBurn * daysRemaining).round();
-  final willExceed = budgetCents > 0 && projected > budgetCents;
+  final willExceed = budgetMicros > 0 && projected > budgetMicros;
 
   DateTime? exhaustion;
-  if (budgetCents > 0) {
-    final headroom = budgetCents - spentThisMonth;
+  if (budgetMicros > 0) {
+    final headroom = budgetMicros - spentThisMonth;
     if (headroom <= 0) {
       // Already at/over the ceiling.
       exhaustion = now;
@@ -107,10 +107,10 @@ BudgetForecast forecastBudget({
   }
 
   return BudgetForecast(
-    spentCents: spentThisMonth,
-    budgetCents: budgetCents,
-    dailyBurnCents: dailyBurn,
-    projectedMonthEndCents: projected,
+    spentMicros: spentThisMonth,
+    budgetMicros: budgetMicros,
+    dailyBurnMicros: dailyBurn,
+    projectedMonthEndMicros: projected,
     willExceed: willExceed,
     projectedExhaustion: exhaustion,
   );

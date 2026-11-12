@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/insights_providers.dart';
@@ -132,12 +133,7 @@ class _RunRow extends StatelessWidget {
 
     Widget numCell(String text, double width) => SizedBox(
       width: width,
-      child: Text(
-        text,
-        style: numStyle,
-        textAlign: TextAlign.end,
-        maxLines: 1,
-      ),
+      child: Text(text, style: numStyle, textAlign: TextAlign.end, maxLines: 1),
     );
 
     return Semantics(
@@ -211,7 +207,7 @@ class _RunRow extends StatelessWidget {
                   64,
                 ),
                 numCell(fmtTokens(cost.totalTokens), 56),
-                numCell(fmtCents(cost.estimatedCostCents), 64),
+                numCell(fmtMicros(cost.costMicros), 64),
               ],
             ),
           );

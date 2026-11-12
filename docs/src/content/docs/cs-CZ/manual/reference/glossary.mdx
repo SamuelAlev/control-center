@@ -2,7 +2,7 @@
 title: Slovník
 description: Definice klíčových pojmů, které se v Control Center používají.
 slug: cs-CZ/prirucka/referencni-prirucka/slovnik
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), native (nativní Seatbelt operačního systému na macOS, bubblewrap na Linuxu a WSL2) nebo none. Při startu se osondá jednou; native obalí odeslání agenta, když je k dispozici. Windows nativní backend nemá a Linux potřebuje bwrap a socat, takže na takovém hostiteli startují jen běhy vlastníka serveru bez obalu a ostatní se odmítnou; --sandbox off spustí agenty všech členů bez obalu.'],
 ['Stanice', 'Jednorázový stroj, který agent řídí v reálném čase: uzavřený prohlížeč nebo linuxová plocha, emulátor Androidu nebo simulátor iOS spravovaný hostitelem, nebo uzavřený terminál. Sleduje se živě po vlastním kanálu v plném rozlišení a převzetí vynucuje server. V rozsahu konverzace, takže záložka člověka i nástroj agenta míří na jeden stroj.'],
 ['Izolované prostředí', 'Silnější izolace, kterou mají stanice na virtuálním stroji: hranice jádra, jednorázový překryvový disk, síťová brána s výchozím odmítnutím a broker přihlašovacích údajů. Stanice pro Android a iOS jsou jednorázové, ale síť jim spravuje hostitel, takže tuhle hranici nenárokují. Řízení jakékoli stanice používá třídu guardrailu enclosureControl.'],
-['RunCost', 'Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v centech) jednoho běhu agenta.'],
+['RunCost', 'Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v mikrodolarech) jednoho běhu agenta.'],
 ['WakeReason', 'Proč se agent odeslal. Šest hodnot: zpráva uživatele, přiřazení ticketu, opětovné odeslání při obnově po selhání, dokončení dceřiného ticketu, naplánovaný kontrolní tep a krok pipeline.'],
 ['SandboxPort', 'Řídí životní cyklus sandboxu (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Vystavuje vymezená pověření pro spuštění sandboxu (token pro jediný repozitář do prostředí agenta, se zápisem jen pro cestu pushe na serveru) a při úklidu je uvolní.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Izolované prostředí**: Silnější hranice stanice na virtuálním stroji: hranice jádra, jednorázový překryvový disk, síťová brána s výchozím odmítnutím a broker přihlašovacích údajů. Stanice pro Android a iOS jsou jednorázové, ale síť jim spravuje hostitel a tuhle hranici nenárokují. Řízení jakékoli stanice používá třídu guardrailu `enclosureControl`.
 
-**RunCost**: Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v centech) jednoho běhu agenta.
+**RunCost**: Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v mikrodolarech) jednoho běhu agenta.
 
 **WakeReason**: Proč se agent odeslal. Šest hodnot: zpráva uživatele, přiřazení ticketu, opětovné odeslání při obnově po selhání, dokončení dceřiného ticketu, naplánovaný kontrolní tep a krok pipeline.
 

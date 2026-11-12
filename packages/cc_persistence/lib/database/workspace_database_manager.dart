@@ -5,10 +5,16 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
+import 'package:cc_persistence/database/code_index/code_index_database.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
+import 'package:cc_persistence/database/schema/converged_database.dart';
+import 'package:cc_persistence/database/utils/storage_errors.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/src/server_database.dart';
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:drift/src/runtime/executor/stream_queries.dart';
 
 /// Hands out per-workspace DBs at `<dataDir>/<workspaceId>/workspace.db`.
@@ -24,6 +30,19 @@ import 'package:drift/src/runtime/executor/stream_queries.dart';
 /// runs once per file per process ([_integrityChecked]). [openCount] past
 /// [softOpenLimit] is logged; [executorFactory] is injectable for a future
 /// shared DriftIsolate.
+///
+/// A workspace the registry marks deleted has no database: [of] refuses its
+/// id ([DeletedWorkspaceException]) instead of creating an empty file under
+/// it. A file whose `quick_check` failed stays readable and takes no writes
+/// ([integrityFailure]).
+///
+/// Each workspace also has a code index, `code_index.db` beside its
+/// database, handed out by [codeIndexOf]. The two open independently (search
+/// does not open the workspace's data, a message read does not open the
+/// index) but share one lease: activity on either keeps both open, and idle
+/// closing, [close] and [dropAndClose] take both. A code index that is
+/// damaged, foreign or newer than this build is replaced by an empty one
+/// rather than refused or put in read-only mode.
 class WorkspaceDatabaseManager {
   /// Creates a manager rooted at [dataDir].
   ///
@@ -31,24 +50,39 @@ class WorkspaceDatabaseManager {
   /// and is the registry consulted by [allWorkspaceIds]. [executorFactory] defaults
   /// to [openWorkspaceDatabase] and exists so tests can hand out in-memory
   /// executors (and so a future shared-isolate strategy is a one-line swap).
-  /// [idleAfter] turns on idle closing; [clock] is the time source for that
-  /// check (tests pass a fake).
+  /// [codeIndexExecutorFactory] does the same for [codeIndexOf]: it defaults
+  /// to [openCodeIndexDatabase], or to in-memory executors when
+  /// [executorFactory] was given. [idleAfter] turns on idle closing; [clock]
+  /// is the time source for that check (tests pass a fake).
   WorkspaceDatabaseManager({
     required String dataDir,
     required this._global,
     QueryExecutor Function(String workspaceId)? executorFactory,
+    QueryExecutor Function(String workspaceId)? codeIndexExecutorFactory,
     this.onWarn,
     this.onError,
+    this.onIntegrityFailure,
     this.idleAfter,
     DateTime Function()? clock,
   }) : _dataDir = dataDir,
        _clock = clock ?? DateTime.now,
+       _fileBacked = executorFactory == null,
+       _codeIndexFileBacked =
+           executorFactory == null && codeIndexExecutorFactory == null,
        executorFactory =
            executorFactory ??
            ((workspaceId) => openWorkspaceDatabase(
              dataDir: dataDir,
              workspaceId: workspaceId,
-           )) {
+           )),
+       codeIndexExecutorFactory =
+           codeIndexExecutorFactory ??
+           (executorFactory != null
+               ? ((_) => NativeDatabase.memory())
+               : ((workspaceId) => openCodeIndexDatabase(
+                   dataDir: dataDir,
+                   workspaceId: workspaceId,
+                 ))) {
     final idle = idleAfter;
     if (idle != null) {
       final tick = idle < const Duration(seconds: 15)
@@ -62,15 +96,27 @@ class WorkspaceDatabaseManager {
 
   final String _dataDir;
   final GlobalDatabase _global;
+
+  /// Whether workspaces open real files under [_dataDir] (the default
+  /// executor). Tests hand out in-memory executors, which have no file to
+  /// copy before an upgrade.
+  final bool _fileBacked;
+
+  /// Whether code indexes open real files (the default executor), so a
+  /// damaged one is replaced by deleting it.
+  final bool _codeIndexFileBacked;
   final Map<String, WorkspaceDatabase> _open = {};
+  final Map<String, CodeIndexDatabase> _openCodeIndexes = {};
+
+  /// One per workspace with either file open, shared by both.
   final Map<String, _WorkspaceLease> _leases = {};
 
-  /// Idle files taken out of [_open] and not closed yet.
+  /// Idle pairs taken out of [_open] / [_openCodeIndexes] and not closed yet.
   ///
-  /// [of] in that window puts the same instance back. Closing it while it
-  /// was still cached handed the caller a connection this method then closed.
-  final Map<String, ({WorkspaceDatabase db, _WorkspaceLease lease})> _closing =
-      {};
+  /// [of] or [codeIndexOf] in that window puts the same instances back.
+  /// Closing them while they were still cached handed the caller a connection
+  /// this method then closed.
+  final Map<String, _ParkedFiles> _closing = {};
   final DateTime Function() _clock;
   Timer? _idleTimer;
   bool _evicting = false;
@@ -108,14 +154,33 @@ class WorkspaceDatabaseManager {
   /// bytes and gets checked again.
   final Set<String> _integrityChecked = {};
 
+  /// Workspaces whose `quick_check` failed in this process, with SQLite's
+  /// finding. Such a file keeps serving reads and takes no writes.
+  final Map<String, String> _integrityFailures = {};
+
+  /// Code indexes whose `quick_check` passed in this process. Like
+  /// [_integrityChecked], cleared only by [dropAndClose].
+  final Set<String> _codeIndexChecked = {};
+
+  /// Ids the registry marks deleted. [of] refuses them.
+  final Set<String> _deletedIds = {};
+
   /// Builds the [QueryExecutor] for one workspace. Injectable for tests.
   final QueryExecutor Function(String workspaceId) executorFactory;
+
+  /// Builds the [QueryExecutor] for one workspace's code index. Injectable
+  /// for tests.
+  final QueryExecutor Function(String workspaceId) codeIndexExecutorFactory;
 
   /// Warning sink, forwarded to each [WorkspaceDatabase].
   final void Function(String tag, String message)? onWarn;
 
   /// Error sink, forwarded to each [WorkspaceDatabase].
   final void Function(String tag, String message)? onError;
+
+  /// Called once per process for each workspace whose `quick_check` fails,
+  /// with SQLite's finding, so the host can tell the server owner.
+  final void Function(String workspaceId, String finding)? onIntegrityFailure;
 
   /// Number of open workspace databases past which [onWarn] fires.
   ///
@@ -161,18 +226,73 @@ class WorkspaceDatabaseManager {
     _installId = minted;
   }
 
+  /// Loads the ids the registry marks deleted, so [of] can refuse them
+  /// without an asynchronous lookup.
+  ///
+  /// Call once during boot, before any workspace is touched, with
+  /// [loadInstallId].
+  Future<void> loadDeletedWorkspaces() async {
+    final all = await _global.workspaceRegistryDao.allIdsIncludingDeleted();
+    final live = (await _global.workspaceRegistryDao.liveIds()).toSet();
+    _deletedIds
+      ..clear()
+      ..addAll(all.where((id) => !live.contains(id)));
+  }
+
+  /// Records that the registry now marks [workspaceId] deleted. Called by the
+  /// code that soft-deletes the registry row, before it drops the files.
+  void markDeleted(String workspaceId) => _deletedIds.add(workspaceId);
+
+  /// Records that [workspaceId] is registered and live again.
+  void markLive(String workspaceId) => _deletedIds.remove(workspaceId);
+
+  /// Whether the registry marks [workspaceId] deleted.
+  bool isDeleted(String workspaceId) => _deletedIds.contains(workspaceId);
+
+  /// Removes what is left on disk under a deleted workspace's id.
+  ///
+  /// Deleting a workspace removes its directory. Anything found there later
+  /// was written by something that opened the id after the delete, and a
+  /// deleted workspace keeps no files. Returns the ids that had a directory.
+  Future<List<String>> removeFilesOfDeletedWorkspaces() async {
+    final removed = <String>[];
+    for (final id in _deletedIds.toList()) {
+      if (!isValidWorkspaceId(id)) {
+        continue;
+      }
+      final dir = Directory(workspaceDirPath(_dataDir, id));
+      if (!dir.existsSync()) {
+        continue;
+      }
+      await dropAndClose(id);
+      removed.add(id);
+    }
+    return removed;
+  }
+
+  /// SQLite's finding for [workspaceId] when its `quick_check` failed in this
+  /// process, or null. A workspace with a finding is read-only: its
+  /// connection refuses writes, and the gates above answer with a refusal
+  /// people can read instead of letting the write fail in SQLite.
+  String? integrityFailure(String workspaceId) =>
+      _integrityFailures[workspaceId];
+
+  /// Every workspace with a failed `quick_check` in this process.
+  Map<String, String> get integrityFailures =>
+      Map.unmodifiable(_integrityFailures);
+
   /// The database for [workspaceId], opening (lazily) or reusing as needed.
   ///
   /// Synchronous by design — see the class docs. Throws [ArgumentError] on an
   /// id that isn't a legal path segment, loudly, because the alternative is
-  /// writing a workspace's data to a path an attacker chose.
+  /// writing a workspace's data to a path an attacker chose. Throws
+  /// [DeletedWorkspaceException] for an id the registry marks deleted: opening
+  /// it would create an empty database under a workspace that no longer
+  /// exists.
   WorkspaceDatabase of(String workspaceId) => _resolve(workspaceId);
 
   WorkspaceDatabase _resolve(String workspaceId, {bool transient = false}) {
-    final closing = _closing.remove(workspaceId);
-    if (closing != null) {
-      _reclaim(workspaceId, closing.db, closing.lease);
-    }
+    _reclaimParked(workspaceId);
     final cached = _open[workspaceId];
     if (cached != null) {
       _leases[workspaceId]?.touch();
@@ -183,16 +303,13 @@ class WorkspaceDatabaseManager {
       }
       return cached;
     }
-    if (!isValidWorkspaceId(workspaceId)) {
-      throw ArgumentError.value(
-        workspaceId,
-        'workspaceId',
-        'not a valid workspace id (must be a safe single path segment)',
-      );
-    }
-    final lease = _WorkspaceLease(_clock);
+    _requireOpenable(workspaceId);
+    final lease = _leases.putIfAbsent(
+      workspaceId,
+      () => _WorkspaceLease(_clock),
+    )..touch();
     final watches = _LeaseStreamQueryStore();
-    lease.watches = watches;
+    lease.workspaceWatches = watches;
     final db = WorkspaceDatabase(
       DatabaseConnection(
         _ActivityExecutor(executorFactory(workspaceId), lease),
@@ -202,11 +319,17 @@ class WorkspaceDatabaseManager {
       installId: _installId ?? 'unknown',
       onWarn: onWarn,
       onError: onError,
-      skipIntegrityCheck: _integrityChecked.contains(workspaceId),
-      onIntegrityChecked: () => _integrityChecked.add(workspaceId),
+      // A file that failed is checked again on every open: the check is what
+      // puts a new connection in read-only mode.
+      skipIntegrityCheck:
+          _integrityChecked.contains(workspaceId) &&
+          !_integrityFailures.containsKey(workspaceId),
+      onIntegrityChecked: (failure) => _recordIntegrity(workspaceId, failure),
+      upgradeSnapshotDirectory: _fileBacked
+          ? workspaceUpgradeSnapshotDir(_dataDir, workspaceId)
+          : null,
     );
     _open[workspaceId] = db;
-    _leases[workspaceId] = lease;
     if (transient) {
       _transientOnly.add(workspaceId);
     }
@@ -219,6 +342,111 @@ class WorkspaceDatabaseManager {
       );
     }
     return db;
+  }
+
+  /// Throws unless [workspaceId] may be opened: a legal path segment the
+  /// registry does not mark deleted.
+  void _requireOpenable(String workspaceId) {
+    if (!isValidWorkspaceId(workspaceId)) {
+      throw ArgumentError.value(
+        workspaceId,
+        'workspaceId',
+        'not a valid workspace id (must be a safe single path segment)',
+      );
+    }
+    if (_deletedIds.contains(workspaceId)) {
+      throw DeletedWorkspaceException(workspaceId);
+    }
+  }
+
+  /// The code index of [workspaceId] (`code_index.db` beside its database),
+  /// opening (lazily) or reusing as needed.
+  ///
+  /// Synchronous and validated like [of], and refuses a deleted workspace the
+  /// same way. Opening it does not open the workspace's database. The file is
+  /// derived data: when its first open finds it damaged (`quick_check`, or
+  /// SQLite failing to read it), written by another application, or written
+  /// by a newer build, it is deleted and created again empty, with a warning,
+  /// and the statement that opened it runs against the new file. The indexer
+  /// then fills every partition again, since none has a checkpoint.
+  CodeIndexDatabase codeIndexOf(String workspaceId) {
+    _reclaimParked(workspaceId);
+    final cached = _openCodeIndexes[workspaceId];
+    if (cached != null) {
+      _leases[workspaceId]?.touch();
+      return cached;
+    }
+    _requireOpenable(workspaceId);
+    final lease = _leases.putIfAbsent(
+      workspaceId,
+      () => _WorkspaceLease(_clock),
+    )..touch();
+    final watches = _LeaseStreamQueryStore();
+    lease.codeIndexWatches = watches;
+    final db = CodeIndexDatabase(
+      DatabaseConnection(
+        _ActivityExecutor(
+          _ReplaceableExecutor(
+            open: () => codeIndexExecutorFactory(workspaceId),
+            discard: () => _deleteCodeIndexFiles(workspaceId),
+            onReplaced: (reason) => onWarn?.call(
+              'WorkspaceDatabaseManager',
+              'code index of workspace $workspaceId could not be used '
+                  '(${describeStorageError(reason) ?? reason}); replaced it '
+                  'with an empty one, which the indexer fills again',
+            ),
+          ),
+          lease,
+        ),
+        streamQueries: watches,
+      ),
+      workspaceId: workspaceId,
+      onWarn: onWarn,
+      skipIntegrityCheck: _codeIndexChecked.contains(workspaceId),
+      onIntegrityChecked: () => _codeIndexChecked.add(workspaceId),
+    );
+    _openCodeIndexes[workspaceId] = db;
+    return db;
+  }
+
+  /// Deletes [workspaceId]'s code index file and its sidecars, for a file
+  /// that cannot be used. Nothing to delete for in-memory code indexes: the
+  /// next executor is a fresh database already.
+  Future<void> _deleteCodeIndexFiles(String workspaceId) async {
+    if (!_codeIndexFileBacked) {
+      return;
+    }
+    final path = codeIndexPathFor(workspaceId);
+    for (final suffix in const ['', '-wal', '-shm', '-journal']) {
+      final file = File('$path$suffix');
+      // The connection's isolate releases its handle a moment after the
+      // close returns, and Windows refuses to unlink an open file.
+      for (var attempt = 0; file.existsSync(); attempt++) {
+        try {
+          file.deleteSync();
+        } on FileSystemException {
+          if (attempt == 4) {
+            rethrow;
+          }
+          await Future<void>.delayed(
+            Duration(milliseconds: 50 * (attempt + 1)),
+          );
+        }
+      }
+    }
+  }
+
+  void _recordIntegrity(String workspaceId, String? failure) {
+    _integrityChecked.add(workspaceId);
+    if (failure == null) {
+      _integrityFailures.remove(workspaceId);
+      return;
+    }
+    final firstReport = !_integrityFailures.containsKey(workspaceId);
+    _integrityFailures[workspaceId] = failure;
+    if (firstReport) {
+      onIntegrityFailure?.call(workspaceId, failure);
+    }
   }
 
   /// Runs [body] against [workspaceId], then closes the file if this call is
@@ -252,16 +480,29 @@ class WorkspaceDatabaseManager {
       } else {
         _transientDepth.remove(workspaceId);
         if (_transientOnly.remove(workspaceId)) {
-          await close(workspaceId);
+          await _closeWorkspaceDatabase(workspaceId);
         }
       }
     }
   }
 
-  /// Closes workspace files that have been idle for [idleAfter].
+  /// Closes the workspace database a fan-out opened, leaving the code index
+  /// alone: the fan-out did not open it, and somebody else may be using it.
+  Future<void> _closeWorkspaceDatabase(String workspaceId) async {
+    final db = _open.remove(workspaceId);
+    if (_openCodeIndexes.containsKey(workspaceId)) {
+      _leases[workspaceId]?.workspaceWatches = null;
+    } else {
+      _leases.remove(workspaceId);
+    }
+    await db?.close();
+  }
+
+  /// Closes workspace files that have been idle for [idleAfter], each
+  /// workspace's database and code index together.
   ///
-  /// A file is idle when nothing is watching it, no statement is in flight,
-  /// and no [useTransiently] call is inside it. Live watches and open
+  /// A pair is idle when nothing is watching either file, no statement is in
+  /// flight on either, and no [useTransiently] call is inside it. Live watches and open
   /// transactions keep their file. No-op when [idleAfter] is null. Safe to
   /// call while a previous pass is still closing files.
   ///
@@ -279,7 +520,7 @@ class WorkspaceDatabaseManager {
     try {
       final now = _clock();
       final victims = <String>[];
-      for (final id in _open.keys) {
+      for (final id in _leases.keys) {
         if (_isIdle(id, now, idle)) {
           victims.add(id);
         }
@@ -290,12 +531,13 @@ class WorkspaceDatabaseManager {
           continue;
         }
         final db = _open.remove(id);
+        final codeIndex = _openCodeIndexes.remove(id);
         final lease = _leases.remove(id);
         _transientOnly.remove(id);
-        if (db == null || lease == null) {
+        if (lease == null || (db == null && codeIndex == null)) {
           continue;
         }
-        _closing[id] = (db: db, lease: lease);
+        _closing[id] = (db: db, codeIndex: codeIndex, lease: lease);
         parked.add(id);
       }
       // Lets an of() or a statement already queued on this event loop take
@@ -308,26 +550,39 @@ class WorkspaceDatabaseManager {
           continue;
         }
         if (_stillInUse(id, closing.lease, idle)) {
-          _reclaim(id, closing.db, closing.lease);
+          _reclaim(id, closing);
           continue;
         }
-        await closing.db.close();
+        await closing.db?.close();
+        await closing.codeIndex?.close();
       }
     } finally {
       _evicting = false;
     }
   }
 
-  /// Puts [db] back in the open set. A second connection for the same id is
-  /// left untouched.
-  void _reclaim(String id, WorkspaceDatabase db, _WorkspaceLease lease) {
-    final current = _open[id];
-    if (current != null && !identical(current, db)) {
-      return;
+  /// Puts [workspaceId]'s parked pair back in the open set, if idle closing
+  /// parked it.
+  void _reclaimParked(String workspaceId) {
+    final parked = _closing.remove(workspaceId);
+    if (parked != null) {
+      _reclaim(workspaceId, parked);
     }
-    _open[id] = db;
-    _leases[id] = lease;
-    lease.touch();
+  }
+
+  /// Puts [parked] back in the open set. Nothing can have opened [id] again
+  /// while it was parked: every open reclaims the parked pair first.
+  void _reclaim(String id, _ParkedFiles parked) {
+    final db = parked.db;
+    if (db != null) {
+      _open[id] = db;
+    }
+    final codeIndex = parked.codeIndex;
+    if (codeIndex != null) {
+      _openCodeIndexes[id] = codeIndex;
+    }
+    _leases[id] = parked.lease;
+    parked.lease.touch();
   }
 
   bool _stillInUse(String workspaceId, _WorkspaceLease lease, Duration idle) {
@@ -348,20 +603,17 @@ class WorkspaceDatabaseManager {
     return now.difference(lease.lastTouch) >= idle;
   }
 
-  /// Every workspace id the server knows about, from the `global.db` registry,
-  /// **including soft-deleted ones** (their directories still exist and still
-  /// need sweeping/backing up).
+  /// Every workspace id the registry has ever recorded, **including
+  /// soft-deleted ones**.
   ///
-  /// The registry, not the filesystem, is the source of truth: a stray directory
-  /// nobody registered must not be silently adopted. [orphanedDatabaseFiles]
-  /// reports those instead.
+  /// For bookkeeping only (telling a registered directory from a stray one in
+  /// [orphanedDatabaseFiles]). Never a list of databases to open: a deleted
+  /// workspace has no files, and [of] refuses its id. Anything that reads or
+  /// maintains workspaces iterates [liveWorkspaceIds].
   Future<List<String>> allWorkspaceIds() =>
       _global.workspaceRegistryDao.allIdsIncludingDeleted();
 
-  /// Every LIVE workspace id — what the read fan-outs use.
-  ///
-  /// Soft-deleted workspaces are excluded because opening their files pays a
-  /// cold open to contribute rows the operator asked to stop seeing.
+  /// Every LIVE workspace id — what fan-outs, sweeps and snapshots iterate.
   Future<List<String>> liveWorkspaceIds() =>
       _global.workspaceRegistryDao.liveIds();
 
@@ -370,6 +622,9 @@ class WorkspaceDatabaseManager {
 
   /// How many workspace databases are open.
   int get openCount => _open.length;
+
+  /// Ids of workspaces whose code index is open.
+  Iterable<String> get openCodeIndexIds => _openCodeIndexes.keys;
 
   /// Creates [workspaceId]'s directory + database eagerly, so a freshly created
   /// workspace has a real database (and its schema) before anything queries it.
@@ -382,28 +637,61 @@ class WorkspaceDatabaseManager {
     return db;
   }
 
-  /// Closes [workspaceId]'s database if open, releasing its isolate.
+  /// Writes a consistent copy of [workspaceId]'s database to [destination]
+  /// (which must not exist).
+  ///
+  /// A file on disk is copied on a connection of its own, so requests in that
+  /// workspace do not queue behind the copy. An in-memory database (tests)
+  /// has only its own connection.
+  Future<void> snapshotTo(String workspaceId, String destination) async {
+    if (_fileBacked && existsOnDisk(workspaceId)) {
+      // Opening first makes sure the file is at the declared schema and that
+      // the copy starts from a file this process has checked.
+      await of(workspaceId).customSelect('SELECT 1').get();
+      await snapshotDatabaseFile(
+        source: pathFor(workspaceId),
+        destination: destination,
+      );
+      return;
+    }
+    await of(workspaceId).backupTo(destination);
+  }
+
+  /// Closes [workspaceId]'s database and code index if open, releasing their
+  /// isolates.
   Future<void> close(String workspaceId) async {
     final open = _open.remove(workspaceId);
+    final codeIndex = _openCodeIndexes.remove(workspaceId);
     final closing = _closing.remove(workspaceId);
     _leases.remove(workspaceId);
     _transientOnly.remove(workspaceId);
     await open?.close();
-    if (closing != null && !identical(closing.db, open)) {
-      await closing.db.close();
+    await codeIndex?.close();
+    if (closing != null) {
+      if (!identical(closing.db, open)) {
+        await closing.db?.close();
+      }
+      if (!identical(closing.codeIndex, codeIndex)) {
+        await closing.codeIndex?.close();
+      }
     }
   }
 
-  /// Closes every open workspace database. Called on server shutdown.
+  /// Closes every open workspace database and code index. Called on server
+  /// shutdown.
   Future<void> closeAll() async {
     _idleTimer?.cancel();
     _idleTimer = null;
-    final dbs = <WorkspaceDatabase>[
+    final dbs = <GeneratedDatabase>{
       ..._open.values,
-      for (final closing in _closing.values)
-        if (!_open.values.contains(closing.db)) closing.db,
-    ];
+      ..._openCodeIndexes.values,
+      for (final closing in _closing.values) ...[
+        ?closing.db,
+        ?closing.codeIndex,
+      ],
+    };
     _open.clear();
+    _openCodeIndexes.clear();
     _leases.clear();
     _closing.clear();
     _transientOnly.clear();
@@ -412,8 +700,8 @@ class WorkspaceDatabaseManager {
     }
   }
 
-  /// Closes [workspaceId] and DELETES its whole directory, then drops its
-  /// pre-auth routes.
+  /// Closes [workspaceId]'s database and code index and DELETES its whole
+  /// directory (both files with it), then drops its pre-auth routes.
   ///
   /// This is what makes deleting a workspace cheap: it is removing a directory,
   /// not cascading forty foreign keys through a database shared with every other
@@ -429,6 +717,8 @@ class WorkspaceDatabaseManager {
     // The file is about to be deleted, so a workspace later created or
     // imported under this id is different bytes and must be checked again.
     _integrityChecked.remove(workspaceId);
+    _integrityFailures.remove(workspaceId);
+    _codeIndexChecked.remove(workspaceId);
     final dir = Directory(workspaceDirPath(_dataDir, workspaceId));
     // Retry before giving up. [close] above returns once drift has been asked
     // to close, but the underlying file handle is released by the background
@@ -470,6 +760,10 @@ class WorkspaceDatabaseManager {
   String pathFor(String workspaceId) =>
       workspaceDatabasePath(_dataDir, workspaceId);
 
+  /// Absolute path of [workspaceId]'s code index file (it may not exist yet).
+  String codeIndexPathFor(String workspaceId) =>
+      codeIndexDatabasePath(_dataDir, workspaceId);
+
   /// Whether [workspaceId] has a database on disk.
   bool existsOnDisk(String workspaceId) =>
       File(workspaceDatabasePath(_dataDir, workspaceId)).existsSync();
@@ -508,17 +802,31 @@ class WorkspaceDatabaseManager {
   }
 }
 
-/// Recency and in-flight state for one open workspace file.
+/// A workspace's database and code index while idle closing has taken them
+/// out of the open set and not closed them yet.
+typedef _ParkedFiles = ({
+  WorkspaceDatabase? db,
+  CodeIndexDatabase? codeIndex,
+  _WorkspaceLease lease,
+});
+
+/// Recency and in-flight state for one workspace's open files: its database
+/// and its code index share one, so activity on either holds both.
 final class _WorkspaceLease {
   _WorkspaceLease(this._clock) : lastTouch = _clock();
 
   final DateTime Function() _clock;
   DateTime lastTouch;
   int _depth = 0;
-  _LeaseStreamQueryStore? watches;
+  _LeaseStreamQueryStore? workspaceWatches;
+  _LeaseStreamQueryStore? codeIndexWatches;
 
-  /// True while a statement, transaction, or table watch is outstanding.
-  bool get isHeld => _depth > 0 || (watches?.hasListeners ?? false);
+  /// True while a statement, transaction, or table watch is outstanding on
+  /// either file.
+  bool get isHeld =>
+      _depth > 0 ||
+      (workspaceWatches?.hasListeners ?? false) ||
+      (codeIndexWatches?.hasListeners ?? false);
 
   void touch() => lastTouch = _clock();
 
@@ -664,6 +972,124 @@ final class _ActivityExecutor implements QueryExecutor {
       hook?.call();
     }
   }
+}
+
+/// The code index's executor: opens the file, and when that open refuses it
+/// (damaged, foreign, newer than this build) discards it and opens a fresh
+/// one, once.
+///
+/// The open is where the decision belongs: [WorkspaceDatabaseManager.codeIndexOf]
+/// is synchronous, and the first statement is what opens the file. Doing it
+/// here means that statement simply runs against the new, empty file.
+final class _ReplaceableExecutor implements QueryExecutor {
+  _ReplaceableExecutor({
+    required QueryExecutor Function() open,
+    required this._discard,
+    required this._onReplaced,
+  }) : _openExecutor = open,
+       _inner = open();
+
+  final QueryExecutor Function() _openExecutor;
+  final Future<void> Function() _discard;
+  final void Function(Object reason) _onReplaced;
+  QueryExecutor _inner;
+  bool _ready = false;
+  Future<bool>? _opening;
+
+  @override
+  SqlDialect get dialect => _inner.dialect;
+
+  @override
+  Future<bool> ensureOpen(QueryExecutorUser user) {
+    if (_ready) {
+      return _inner.ensureOpen(user);
+    }
+    // Concurrent first statements wait for the same open, so a file is
+    // never discarded under a connection another statement is opening.
+    return _opening ??= _openOrReplace(user).whenComplete(() {
+      _opening = null;
+    });
+  }
+
+  Future<bool> _openOrReplace(QueryExecutorUser user) async {
+    try {
+      final opened = await _inner.ensureOpen(user);
+      _ready = true;
+      return opened;
+    } on Object catch (error) {
+      final reason = _reasonToReplace(user, error);
+      if (reason == null) {
+        rethrow;
+      }
+      try {
+        await _inner.close();
+      } on Object {
+        // The connection is being thrown away with its file.
+      }
+      await _discard();
+      if (user is CodeIndexDatabase) {
+        user.clearRefusal();
+      }
+      _inner = _openExecutor();
+      _onReplaced(reason);
+      final opened = await _inner.ensureOpen(user);
+      _ready = true;
+      return opened;
+    }
+  }
+
+  /// Why the file that failed to open should be replaced, or null when the
+  /// failure is not about the file (a full disk, a busy lock).
+  static Object? _reasonToReplace(QueryExecutorUser user, Object error) {
+    if (user is CodeIndexDatabase) {
+      final refusal = user.refusal;
+      if (refusal != null) {
+        return refusal;
+      }
+    }
+    if (error is DatabaseNewerThanBinaryException ||
+        error is ForeignDatabaseFileException ||
+        error is CodeIndexDamagedException ||
+        storageFailureOf(error) == StorageFailure.damaged) {
+      return error;
+    }
+    return null;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    String statement,
+    List<Object?> args,
+  ) => _inner.runSelect(statement, args);
+
+  @override
+  Future<int> runInsert(String statement, List<Object?> args) =>
+      _inner.runInsert(statement, args);
+
+  @override
+  Future<int> runUpdate(String statement, List<Object?> args) =>
+      _inner.runUpdate(statement, args);
+
+  @override
+  Future<int> runDelete(String statement, List<Object?> args) =>
+      _inner.runDelete(statement, args);
+
+  @override
+  Future<void> runCustom(String statement, [List<Object?>? args]) =>
+      _inner.runCustom(statement, args);
+
+  @override
+  Future<void> runBatched(BatchedStatements statements) =>
+      _inner.runBatched(statements);
+
+  @override
+  TransactionExecutor beginTransaction() => _inner.beginTransaction();
+
+  @override
+  QueryExecutor beginExclusive() => _inner.beginExclusive();
+
+  @override
+  Future<void> close() => _inner.close();
 }
 
 /// Holds [_leave] from [beginTransaction] until the transaction ends.

@@ -57,5 +57,6 @@
   "serverPeopleOwnerOnly": "Seul le propriétaire du serveur peut voir tous les comptes et confirmer les adresses courriel.",
   "serverPeopleEmailNotConfirmed": "Courriel non confirmé",
   "serverPeopleConfirmEmail": "Confirmer le courriel",
-  "mcpExternalServersOwnerRunsOnly": "Les serveurs trouvés dans les paramètres d’outils propres à cette machine ne sont disponibles que dans les exécutions que vous lancez ou dont vous êtes responsable. Les exécutions des autres ne les voient jamais, et ils ne sont pas proposés par le point de terminaison MCP de Control Center."
+  "mcpExternalServersOwnerRunsOnly": "Les serveurs trouvés dans les paramètres d’outils propres à cette machine ne sont disponibles que dans les exécutions que vous lancez ou dont vous êtes responsable. Les exécutions des autres ne les voient jamais, et ils ne sont pas proposés par le point de terminaison MCP de Control Center.",
+  "importHoldRepoReview": "{person} peut relire les demandes de tirage dans {repo}"
 }

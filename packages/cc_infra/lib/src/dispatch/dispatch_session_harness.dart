@@ -329,8 +329,7 @@ extension _DispatchSessionHarness on DispatchSession {
       agentDirHostPath,
       agentConfigDir,
     ], hookBase: hookFolder);
-    final sessionCostCapMicros =
-        (costCapCents ?? defaultRunCostCapCents) * 10000;
+    final sessionCostCapMicros = costCapMicros ?? defaultRunCostCapMicros;
     final bool Function()? budgetExceeded = switch (parsedCommand.command) {
       'goal' ||
       'loop' => () => accounting.subtreeCostMicros >= sessionCostCapMicros,
@@ -854,7 +853,6 @@ extension _DispatchSessionHarness on DispatchSession {
           cachedReadTokens: usage.cacheReadTokens,
           cachedWriteTokens: usage.cacheWriteTokens,
           costMicros: record.costMicros ?? 0,
-          estimatedCostCents: ((record.costMicros ?? 0) / 10000).round(),
           costBasis: CostBasis.fromWire(record.costBasis.wire),
         ),
         purpose: domain_purpose.LlmCallPurpose.fromWire(record.purpose.wire),

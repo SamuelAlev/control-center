@@ -32,7 +32,7 @@ class PipelineRun {
     this.parentStepId,
     this.templateVersion = 1,
     this.templateSnapshot,
-    this.totalCostCents = 0,
+    this.totalCostMicros = 0,
     this.totalTokens = 0,
     this.dryRun = false,
     this.isProjection = false,
@@ -130,8 +130,8 @@ class PipelineRun {
   /// list views, which don't carry the graph.
   final PipelineDefinition? templateSnapshot;
 
-  /// Aggregated agent cost for this run, in cents.
-  final int totalCostCents;
+  /// Aggregated agent cost for this run, in micro-dollars.
+  final int totalCostMicros;
 
   /// Aggregated token usage for this run.
   final int totalTokens;
@@ -191,7 +191,7 @@ class PipelineRun {
     Object? lastResumedAt = _kUnset,
     Object? errorMessage = _kUnset,
     Object? errorStackTrace = _kUnset,
-    int? totalCostCents,
+    int? totalCostMicros,
     int? totalTokens,
   }) {
     return PipelineRun(
@@ -223,7 +223,7 @@ class PipelineRun {
       parentStepId: parentStepId,
       templateVersion: templateVersion,
       templateSnapshot: templateSnapshot,
-      totalCostCents: totalCostCents ?? this.totalCostCents,
+      totalCostMicros: totalCostMicros ?? this.totalCostMicros,
       totalTokens: totalTokens ?? this.totalTokens,
       dryRun: dryRun,
       isProjection: isProjection,

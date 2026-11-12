@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/memory_access_grant.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/memory_permission.dart';
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
@@ -258,75 +259,48 @@ void main() {
     });
   });
 
-  group('mapper fallbacks', () {
-    test('unknown agentRole string falls back to general', () async {
+  group('stored names', () {
+    Future<void> insert(String role, String permission) {
       final db = dbs.of('ws-1');
-      await db
+      return db
           .into(db.memoryAccessGrantsTable)
           .insert(
-            const MemoryAccessGrantsTableCompanion(
-              workspaceId: Value('ws-1'),
-              agentRole: Value('nonexistent_role'),
-              memoryDomain: Value('domain'),
-              permission: Value('read'),
+            MemoryAccessGrantsTableCompanion(
+              workspaceId: const Value('ws-1'),
+              agentRole: Value(role),
+              memoryDomain: const Value('domain'),
+              permission: Value(permission),
             ),
           );
+    }
 
-      final results = await repo.getByWorkspace('ws-1');
-      expect(results.length, 1);
-      expect(results.first.agentRole, AgentRole.general);
+    test('a role no agent role names is refused', () async {
+      await expectLater(
+        insert('nonexistent_role', 'read'),
+        throwsA(isA<SqliteException>()),
+      );
     });
 
-    test('unknown permission string falls back to read', () async {
-      final db = dbs.of('ws-1');
-      await db
-          .into(db.memoryAccessGrantsTable)
-          .insert(
-            const MemoryAccessGrantsTableCompanion(
-              workspaceId: Value('ws-1'),
-              agentRole: Value('coder'),
-              memoryDomain: Value('domain'),
-              permission: Value('super_admin'),
-            ),
-          );
-
-      final results = await repo.getByWorkspace('ws-1');
-      expect(results.length, 1);
-      expect(results.first.permission, MemoryPermission.read);
+    test('a permission no level names is refused', () async {
+      await expectLater(
+        insert('coder', 'super_admin'),
+        throwsA(isA<SqliteException>()),
+      );
     });
 
-    test('case-insensitive agentRole matching', () async {
-      final db = dbs.of('ws-1');
-      await db
-          .into(db.memoryAccessGrantsTable)
-          .insert(
-            const MemoryAccessGrantsTableCompanion(
-              workspaceId: Value('ws-1'),
-              agentRole: Value('CODER'),
-              memoryDomain: Value('domain'),
-              permission: Value('write'),
-            ),
-          );
-
+    test('names are stored exactly as the enum spells them', () async {
+      await expectLater(
+        insert('CODER', 'write'),
+        throwsA(isA<SqliteException>()),
+      );
+      await expectLater(
+        insert('reviewer', 'WRITE'),
+        throwsA(isA<SqliteException>()),
+      );
+      await insert('reviewer', 'write');
       final results = await repo.getByWorkspace('ws-1');
-      expect(results.first.agentRole, AgentRole.coder);
-    });
-
-    test('case-insensitive permission matching', () async {
-      final db = dbs.of('ws-1');
-      await db
-          .into(db.memoryAccessGrantsTable)
-          .insert(
-            const MemoryAccessGrantsTableCompanion(
-              workspaceId: Value('ws-1'),
-              agentRole: Value('reviewer'),
-              memoryDomain: Value('domain'),
-              permission: Value('WRITE'),
-            ),
-          );
-
-      final results = await repo.getByWorkspace('ws-1');
-      expect(results.first.permission, MemoryPermission.write);
+      expect(results.single.agentRole, AgentRole.reviewer);
+      expect(results.single.permission, MemoryPermission.write);
     });
   });
 }

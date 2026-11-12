@@ -2,14 +2,14 @@
 title: Kosten beheren
 description: Zie wat je agenten uitgeven, begrens een autonome run en beperk het tokengebruik.
 slug: nl-NL/handleiding/gidsen/kosten-beheren
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Deze gids laat zien hoe je ziet wat agentruns kosten en hoe je een autonome run begrenst.
 
 ## Hoe kosten worden vastgelegd
 
-Elke agentrun schrijft een run-log met zijn invoertokens, uitvoertokens, redeneertokens, tokens voor cachelezingen en cache-schrijfacties, geschatte kosten in centen en de kosten van eventuele subagenten die hij heeft gestart.
+Elke agentrun schrijft een run-log met zijn invoertokens, uitvoertokens, redeneertokens, tokens voor cachelezingen en cache-schrijfacties, geschatte kosten in microdollar (miljoenste deel van een Amerikaanse dollar) en de kosten van eventuele subagenten die hij heeft gestart.
 
 De prijzen komen uit de catalogus van models.dev. Die wordt alleen gebruikt om de modellenlijst te verrijken met prijs en contextvenster — nooit als bron van model-id's. Een model dat de catalogus niet kan beprijzen, registreert **$0**, en runs zonder kosten worden uitgesloten van de samenvatting **Gebruik en kosten**. Een lokaal Ollama-model toont dus helemaal geen uitgaven, al worden zijn tokentellingen nog steeds vastgelegd. Een abonnement met vast tarief (kimi-code, een Claude-abonnement) werkt hetzelfde, maar alleen wanneer de catalogus geen prijs heeft voor het bediende model; heeft hij die wel, dan worden de kosten van de run alsnog tegen die tarieven geschat. Bij een fallbackketen wordt de run beprijsd op basis van het model dat hem daadwerkelijk heeft bediend, niet het opgevraagde model.
 
@@ -78,7 +78,7 @@ Open het run-log in Overzicht (de 50 nieuwste gefilterde runs) en de transcriptl
 
 ## Wat er gebeurt als een budget buiten de normale weg wordt ingesteld
 
-Voor de volledigheid: als `monthlyBudgetCents` of een budgetbeleid rechtstreeks naar een agentrij wordt geschreven:
+Voor de volledigheid: als `monthlyBudgetMicros` of een budgetbeleid rechtstreeks naar een agentrij wordt geschreven:
 
 - Budgetten worden **na** het afronden van een run geëvalueerd, niet vóór de dispatch. Een listener bij het afronden van de run vergelijkt de uitgaven van de agent van deze maand tot nu toe met zijn plafond.
 - Het overschrijden van de zachte drempel (standaard 80%) legt een waarschuwingsincident vast en vuurt een `BudgetThresholdCrossed`-gebeurtenis af waaraan je een pipelinetrigger kunt hangen.

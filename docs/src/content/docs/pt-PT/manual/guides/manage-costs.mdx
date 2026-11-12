@@ -2,14 +2,14 @@
 title: Gerir custos
 description: Veja quanto os seus agentes estão a gastar, limite uma execução autónoma e reduza o consumo de tokens.
 slug: pt-PT/manual/guias/gerir-custos
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Este guia mostra como ver quanto custam as execuções de agentes e como limitar os gastos de uma execução autónoma.
 
 ## Como são registados os custos
 
-Cada execução de agente escreve um registo de execução com os tokens de entrada, os tokens de saída, os tokens de raciocínio, os tokens de leitura de cache e de escrita de cache, um custo estimado em cêntimos e o custo dos subagentes que lançou.
+Cada execução de agente escreve um registo de execução com os tokens de entrada, os tokens de saída, os tokens de raciocínio, os tokens de leitura de cache e de escrita de cache, um custo estimado em microdólares (milionésimos de dólar americano) e o custo dos subagentes que lançou.
 
 Os preços vêm do catálogo models.dev, que serve apenas para enriquecer a lista de modelos com o preço e a janela de contexto — nunca como fonte de identificadores de modelos. Um modelo que o catálogo não consegue cotar fica registado como **$0** e as execuções de custo zero são excluídas do resumo **Uso e custo**. Um modelo Ollama local não mostra, por isso, gasto nenhum, embora as suas contagens de tokens continuem a ser registadas. Um plano de tarifa fixa (kimi-code, uma subscrição Claude) fica na mesma apenas quando o catálogo não tem preço para o modelo servido; se tiver, a execução é estimada com esses valores mesmo assim. Numa cadeia de fallback, a execução é cotada em função do modelo que a serviu de facto, e não daquele que foi pedido.
 
@@ -78,7 +78,7 @@ Abra o registo de execução do Resumo (as 50 execuções filtradas mais recente
 
 ## O que acontece se um orçamento for definido por fora
 
-Para sermos exaustivos, se `monthlyBudgetCents` ou uma política de orçamento forem escritos diretamente numa linha de agente:
+Para sermos exaustivos, se `monthlyBudgetMicros` ou uma política de orçamento forem escritos diretamente numa linha de agente:
 
 - Os orçamentos são avaliados **depois** de a execução terminar, e não antes do despacho. Um ouvinte na conclusão da execução compara o gasto do agente no mês até à data com o seu teto.
 - Ultrapassar o limiar suave (80% por predefinição) regista um incidente de aviso e emite um evento `BudgetThresholdCrossed` ao qual pode associar um disparador de pipeline.

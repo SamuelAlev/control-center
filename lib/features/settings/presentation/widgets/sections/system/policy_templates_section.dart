@@ -7,6 +7,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/settings/providers/governance_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -54,7 +55,7 @@ class _PolicyTemplatesSectionState
     } on Object catch (e) {
       if (mounted) {
         CcToastScope.of(context).show(
-          AppLocalizations.of(context).failedWithError('$e'),
+          failureMessage(AppLocalizations.of(context), e),
           variant: CcToastVariant.danger,
         );
       }

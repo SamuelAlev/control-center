@@ -5,3 +5,14 @@ targets:
         - 'test/**'
         - 'example/**'
         - '**/*.g.dart'
+    builders:
+      drift_dev:
+        options:
+          # What the bundled SQLite can do, so indexes declared as SQL on a
+          # table class (`@TableIndex.sql`) may use JSON functions and the
+          # analyzer checks them against the real dialect.
+          sqlite:
+            version: "3.46"
+            modules:
+              - json1
+              - fts5

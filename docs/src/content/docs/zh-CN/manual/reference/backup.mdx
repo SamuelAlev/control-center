@@ -2,7 +2,7 @@
 title: 备份、导出与导入
 description: 快照的目录布局、清单、每一项备份操作与传输路由，以及备份究竟包含和不包含哪些文件。
 slug: zh-CN/手册/参考/备份
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Control Center 能够复制、移交或接纳的一切，以及每种产物的确切形态。要实际执行一次
@@ -37,12 +37,7 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 的原因。目录名是 UTC 时间戳，其中的 `:` 和 `.` 被替换为 `-`，因此它在 Windows 上对
 文件系统安全，作为普通字符串也能按时间顺序排序。
 
-计划性的工作区备份单独存放在
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`。
-它们既不包含清单，也不包含 `global.db`，并不是安装快照。
-每周流水线的保留步骤只会删除它自己所属工作区中早于所配置期限（默认 30 天）的备份；
-手动创建的安装快照绝不会被该步骤轮换掉。`server.listBackups` 只列出安装快照，
-包括未完成的那些；`workspace.listBackups` 列出单个工作区的定时备份。
+计划性的工作区备份单独存放在 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`。每个备份都为该单一文件包含一个 `manifest.json`，且不包含 `global.db`；它们并不是安装快照。恢复会把它所替换的数据库保留在同一位置，名称为 `<timestamp>-pre-restore`。每周流水线的保留步骤只会删除它自己所属工作区中早于所配置期限（默认 30 天）的备份；手动创建的安装快照绝不会被该步骤轮换掉。`server.listBackups` 只列出安装快照，包括未验证的那些；`workspace.listBackups` 列出单个工作区的定时备份。
 
 删除工作区会保留此目录。工作区的计划随之停止，因此不再有任何机制轮换这些备份，它们会
 一直保留，直到安装所有者将其移除。`server.listOrphanedBackups` 会报告它们。
@@ -52,30 +47,38 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 
 | 字段                       | 类型            | 含义                                                                |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | 清单格式版本。目前为 `1`                                            |
+| `format`                  | int             | 清单格式。目前为 `2`                                            |
 | `created_at`               | ISO-8601 UTC    | 快照的生成时间                                                      |
-| `global.file`              | string          | 始终为 `global.db`                                                  |
-| `global.schema_version`    | int             | 捕获时 `GlobalDatabase` 的 schema 版本                              |
-| `global.bytes`             | int             | 写出的 `global.db` 的大小                                           |
-| `workspace_schema_version` | int             | 每个工作区文件共用的 `WorkspaceDatabase` schema 版本                |
-| `workspaces[]`             | array           | 每个被捕获的工作区一个条目                                          |
+| `global`                   | object          | `global.db` 的记录。计划性工作区备份中不存在此项 |
+| `workspaces[]`             | array           | 每个被捕获的工作区一条记录                                          |
 | `workspaces[].workspace_id`| string          | 该文件所属的工作区                                                  |
-| `workspaces[].file`        | string          | 相对于快照根目录的路径，`<workspaceId>/workspace.db`                |
-| `workspaces[].bytes`       | int             | 该文件的大小                                                        |
-| `skipped_workspaces[]`     | array of string | 备份**未能**捕获的工作区                                            |
+| `skipped_workspaces[]`     | array           | 备份**未能**捕获的工作区 |
+| `skipped_workspaces[].workspace_id` | string | 被略过的工作区 |
+| `skipped_workspaces[].reason` | string | `no_file`、`damaged` 或 `failed` |
 
-当某个工作区已注册但从未被写入过（因此文件尚不存在），或者它的 `VACUUM INTO` 失败
-时，该工作区就会被跳过。无论哪种情况，快照仍会完成，只是清单会指明缺失了什么。
+`global` 以及 `workspaces[]` 中的每个条目各记录一个已复制的文件，测量的是写入之后的副本：
+
+| 字段 | 类型 | 含义 |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | 相对于快照根目录的路径：`global.db` 或 `<workspaceId>/workspace.db`                |
+| `bytes`       | int             | 该副本的大小                                                        |
+| `sha256`         | string | 该副本的 SHA-256，小写十六进制 |
+| `quick_check`    | string | SQLite 的 `quick_check` 对该副本的结论：`ok`，或其发现的问题 |
+| `user_version`   | int    | 该副本的 schema 版本 |
+| `application_id` | int    | 该副本的 SQLite `application_id` |
+
+当某个工作区已注册但从未被写入（`no_file`）、其数据库未通过完整性检查（`damaged`；损坏的副本绝不会被生成），或其副本或该副本的检查失败（`failed`）时，该工作区就会被跳过。无论哪种情况，快照仍会完成，清单会指明缺失了什么。清单最后写入。
 
 ### 完整性
 
-`server.listBackups` 会为每个快照报告一个 `complete` 标志。当清单缺失或无法解析、
-`global.db` 缺失，或者清单指向的工作区文件不在磁盘上时，该标志为 false。
+`server.listBackups` 会为每个快照报告一个 `complete` 标志。当清单缺失、无法解析或格式不同、它所指向的某个文件缺失或大小不同，或某个副本未通过检查时，该标志为 false。应用会将此类快照显示为**未验证**。在格式 `2` 之前生成的快照处于此状态。
 
-未完成的快照仍会被列出，因为运维人员看不到的快照，就是他们自以为拥有的快照。当清单
+未验证的快照仍会被列出，因为运维人员看不到的快照，就是他们自以为拥有的快照。当清单
 无法读取时，列表会退回到目录结构本身，并报告它找到的任何 `<workspaceId>/workspace.db`
 文件——即使整个快照无法恢复一次安装，这些文件仍可以逐个通过 `workspace.import` 被
 接纳。
+
+列出的快照或定时备份在其所属工作区的实时数据库已损坏时，会携带 `pinned_reason: "last_good_copy"`，即它持有该工作区最新的已验证副本。保留步骤会跳过它，直到该工作区被恢复为止。
 
 ## 备份不包含什么
 
@@ -86,6 +89,7 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 | ----------------------------------- | -------------- | ---------------------- |
 | `global.db`                         | 是             | 否                     |
 | `<workspaceId>/workspace.db`        | 是             | 是（它*就是*那个文件） |
+| `<workspaceId>/code_index.db`       | 否             | 否                     |
 | `<workspaceId>/blobs/`              | 否             | 否                     |
 | `<workspaceId>/skills/`             | 否             | 否                     |
 | `<workspaceId>/agents/`             | 否             | 否                     |
@@ -98,13 +102,9 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 | `rigs/`                             | 否             | 否                     |
 | `_agent_hooks/`                     | 否             | 否                     |
 
-其中有些是可丢弃的——`spaces/` 保存的是从仓库重新预配的写时复制工作树，`pr_clones/`
-是缓存，`models/` 可重新下载，`rigs/` 是机器状态。有些则不是：`blobs/` 保存着数据库
-行所指向的粘贴图片，`skills/` 和 `agents/` 保存着智能体运行时使用的文件，而
-`secrets.json` 保存着该安装上的每一个配对密钥、提供商凭据和 SSO 设置。如何覆盖其余
-内容，请参阅[备份与恢复](/zh-CN/手册/操作指南/备份与恢复/#将备份复制到机器之外)。
-:::caution[工作区数据库包含 Webhook 密钥]
-`workspace.db` 是整个工作区：对话、运行日志、代码索引、仓库关联、环境定义和成员。它还以可读形式保存工作区的流水线 Webhook 令牌和工单同步 Webhook 密钥，因此请把下载的导出文件或备份视为机密。它不包含任何提供商登录、设备密钥或用户密钥；这些保存在 `global.db` 和 `secrets.json` 中。
+其中有些是可丢弃的——`spaces/` 保存的是从仓库重新预配的写时复制工作树，`pr_clones/` 是缓存，`code_index.db` 会被重建，`models/` 可重新下载，`rigs/` 是机器状态。有些则不是：`blobs/` 保存着数据库行所指向的粘贴图片，`skills/` 和 `agents/` 保存着智能体运行时使用的文件，而 `secrets.json` 保存着该安装上的每一个配对密钥、提供商凭据和 SSO 设置。如何覆盖其余内容，请参阅[备份与恢复](/zh-CN/手册/操作指南/备份与恢复/#将备份复制到机器之外)。
+:::note[机密不在数据库中]
+`workspace.db` 是整个工作区：对话、运行日志、仓库关联、环境定义和成员。流水线 webhook 令牌和工单同步 webhook 密钥保存在 `secrets.json` 中：数据库保存每一项的引用，路由索引保存每个令牌的带密钥哈希。因此在另一个安装上恢复的工作区，在其触发器于那里重新保存之前不会接收任何 webhook。提供方登录、设备密钥和用户机密保存在 `global.db` 和 `secrets.json` 中。
 :::
 
 :::note[聊天令牌被刻意留在原处]
@@ -129,6 +129,8 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 | `workspace.deleteBackup` | mutate | 工作区 | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | 工作区    | `admin`           | 无            | `{ok, path}`                  |
 | `workspace.import`   | mutate | 工作区    | `owner`，且需要服务器所有者 | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | read | 工作区 | `owner`，且需要服务器所有者 | 无 | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutate | 工作区 | `owner`，且需要服务器所有者 | `hold_id`、`accept` | `{ok, applied}` |
 | `workspace.delete`   | mutate | 安装*     | `owner`           | `id`          | 注册表行被标记为已删除        |
 
 * `workspace.delete` 没有作用范围，是因为它标记的那一行位于全局注册表中；其处理程序
@@ -142,16 +144,18 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 仍由 `workspace.deleteBackup` 和该工作区自身的角色把关。这两个删除操作都只接受列表中的
 时间戳目录名，不接受路径。
 
+`workspace.importHolds.list` 返回导入所暂存的内容。每个暂存项都有 `id`、`kind`（`action_policy`、`sandbox_exec_grant`、`repo_grant`、`membership_role` 或 `invite`）、它将被放回的 `payload`、`imported_at` 和 `source_install_id`。带 `accept: true` 的 `workspace.importHolds.resolve` 会重新授予该权限，带 `false` 则会丢弃它。当该权限所针对的人或对象已不在该工作区中时，`applied` 为 false。
+
 :::note[整个安装的快照在两条通道上都由所有者把关]
 `server.backupNow`、`server.listBackups` 和 `server.deleteBackup` 都要求安装
 **所有者**（`ServerAuthority.serverOwner`），与 `GET /backup/snapshot` 是同一道
 关卡。一份快照会捕获每个工作区的数据库，因此仅仅是一个工作区的管理员，还不足以管理
 其它工作区。删除只接受列表中出现的那个时间戳目录名，而不是任意的服务器路径，并且会
-移除整个快照（包括未完成的快照）。按工作区进行的导出以及定时备份的下载仍然只要求工作区管理员。
+移除整个快照（包括未验证的快照）。按工作区进行的导出以及定时备份的下载仍然只要求工作区管理员。
 :::
 
 :::note[恢复由服务器所有者负责]
-`workspace.import` 和 `POST /backup/restore` 会让服务器接纳一个数据库文件，并把其中的行视为它自己的：仓库关联及其创建者、在主机上运行的环境定义、工作树与日志路径。因此两者都需要服务器所有者（`ServerAuthority.serverOwner`），且该所有者还必须是工作区的所有者。其他任何人，以及在没有记录所有者的主机上的每个调用者，都会被以 `server_owner_required` 拒绝。文件带来的任何触发器或视图都不会被采纳。
+`workspace.import` 和 `POST /backup/restore` 会让服务器接纳一个数据库文件，并把其中的行视为它自己的：仓库关联及其创建者、在主机上运行的环境定义、工作树与日志路径。因此两者都需要服务器所有者（`ServerAuthority.serverOwner`），且该所有者还必须是工作区的所有者。其他任何人，以及在没有记录所有者的主机上的每个调用者，都会被以 `server_owner_required` 拒绝。文件带来的任何触发器、视图、列或约束都不会被采纳。
 :::
 
 ### `server.listBackups` 的响应
@@ -191,20 +195,21 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 
 ### `workspace.import` 的校验
 
-在替换任何内容之前，候选文件会以一个短生命周期的原生 SQLite 连接以只读方式打开，并
-读取它的 `workspace_meta` 行。
+在替换任何内容之前，候选文件会被复制到目标旁边的一个暂存文件中并在那里进行检查。被拒绝时不会触碰任何内容，且其类别会以 `data.kind` 携带。
 
 | 条件                                             | 结果                                                          |
 | ------------------------------------------------ | ------------------------------------------------------------- |
-| 不是可读的 SQLite 数据库，或者没有 `workspace_meta` | 拒绝。不会触碰任何内容                                     |
-| 记录的工作区 id ≠ 目标                            | **允许**，并记录日志。这正是把一个工作区复制或恢复到一个新 id 之下的方式 |
-| 记录的安装 id ≠ 本安装                            | **允许**，并记录日志。它已配对的设备与用户 id 属于那次安装，在这里无法解析 |
-| 工作区 id 无效，或者文件不存在                    | 拒绝                                                          |
+| 文件不存在 | 拒绝，`import.missing_source` |
+| 不是可读的 SQLite 数据库，或未通过 `quick_check` | 拒绝，`import.damaged` |
+| 来自快照，且其 SHA-256 与清单中的不同 | 拒绝，`import.checksum_mismatch` |
+| 服务器的较新版本写入了它 | 拒绝，`import.newer_schema` |
+| 另一个 `application_id`，或没有 `workspace_meta` | 拒绝，`import.foreign_file` |
+| 无法被带入本服务器的 schema | 拒绝，`import.schema_mismatch` |
+| 它的 webhook 或邀请已指向另一个工作区 | 拒绝，`import.route_conflict` |
+| 记录的工作区 id ≠ 目标                            | **允许**。其行会被重新关联到目标。这正是把一个工作区复制或恢复到一个新 id 之下的方式 |
+| 记录的安装 id ≠ 本安装                            | **允许**。它的用户 id 属于那次安装，在这里无法解析 |
 
-一旦接受，目标工作区的数据库会先被关闭并从管理器上卸下，然后才把文件复制覆盖上去
-（一个仍然打开的漂移连接会占用该文件及其 `-wal`），随后再重新打开，好让 `beforeOpen`
-重新装上 FTS 与同步触发器，并重建 FTS 索引——导入文件的内容表是有数据的，但它的索引
-可能已经过期。
+接受之后，暂存文件会被调整为本服务器的 schema，之后必须与其完全一致。文件不得自行授予的权限会被从中取出：在主机上运行环境定义的审批会被清除；允许或需要提示的操作规则、沙箱执行授权、高于只读的仓库授权、高于成员的角色，以及针对这些角色的邀请，会变成供服务器所有者审阅的暂存项。导入者保留或获得所有者角色。被替换的数据库会以名为 `<timestamp>-pre-restore` 的定时备份保留下来；暂存文件在关闭工作区连接的情况下被重命名到位，`code_index.db` 被删除以便重建，FTS 索引也会被重建。
 
 ## 传输路由
 
@@ -229,7 +234,7 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 
 | 状态码 | 原因                                                                                |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | 缺少必需的查询参数、备份名称无效，或者上传正文为空                                    |
+| `400`  | 缺少必需的查询参数、备份名称无效、上传正文为空，或上传的文件被拒绝（正文为 `{error, kind}`，且带有 `import.*` 类别） |
 | `403`  | 设备未知或已吊销、签名错误，或者调用方不具备该角色                                    |
 | `404`  | 此主机上没有备份端口，或者所指的快照、备份或工作区文件不存在                           |
 | `405`  | 用 `POST` 以外的方法调用 `/backup/restore`                                            |
@@ -265,6 +270,8 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 | 快照                     | `<dataDir>/backups/<timestamp>/`                              |
 | 计划性的工作区备份       | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | 工作区导出               | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`      |
+| 被恢复替换掉的数据库 | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| 更新改变其格式之前的数据库 | `<dataDir>/pre_upgrade/` 和 `<dataDir>/<workspaceId>/pre_upgrade/`，各自保留最新的两份 |
 | 传输暂存                 | `<dataDir>/backups/transfer/`——一块临时工作台，由写入它的那条路由负责清扫 |
 | 快照归档文件名           | `<snapshot directory name>.zip`                               |
 | 上传上限                 | 每次加密的 `/backup/restore` 上传 8 GiB                        |

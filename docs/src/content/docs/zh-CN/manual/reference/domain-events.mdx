@@ -2,7 +2,7 @@
 title: 领域事件
 description: 全部 54 个领域事件的完整目录、它们的载荷，以及消费这些事件的服务端订阅方。
 slug: zh-CN/手册/参考/领域事件
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## 事件总线
@@ -112,7 +112,7 @@ sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 | 事件                    | 载荷                                                                                                  | 触发时机                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | 创建了审计跟踪条目 |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | 支出超过阈值   |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | 支出超过阈值   |
 
 ## 身份与成员关系事件
 

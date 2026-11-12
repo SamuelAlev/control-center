@@ -3,7 +3,7 @@ title: Mimari
 description: Control Center’ın ince istemci sunucu modeli, özellik öncelikli Clean Architecture ile portlar ve adaptörler kullanılarak nasıl yapılandırıldığı.
 dateModified: 2026-09-19
 slug: tr-TR/kilavuz/kavramlar/mimari
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Genel bakış
@@ -100,9 +100,9 @@ Tüm istemci durumu için **Riverpod**:
 İki veritabanına bölünmüş **Drift** (SQLite); ikisi de `cc_persistence` içinde:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — gerçekten sunucu geneli olan az sayıda tablo: çalışma alanı kaydı, kullanıcılar/tercihler/eşleştirilmiş aygıtlar, SSO bağlantıları, kurulum geneli sunucu ayarları, yönetilen eylem politikaları (çalışma alanı korumalarını yalnızca sıkılaştırabilen kurulum geneli bir sınırlama), kullanıcı başına haber akışı, filo kuyruğu (worker’lar/işler/yerleştirme günlüğü), kimlik doğrulama öncesi `workspace_routes` dizini ve kurulum meta verileri. Önyükleme yalnızca bu dosyayı açar, böylece çalışma alanları ne kadar geçmiş biriktirirse biriktirsin başlangıç maliyeti sabit kalır. Buraya bir tablo eklemek, bir ratchet testinin gerekçelendirmenizi zorunlu kıldığı bir yalıtım kararıdır.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — her çalışma alanı için bir _dizin_; içinde bir SQLite dosyası artı yalnızca o çalışma alanına ait olan her şeyi barındırır, böylece bir konuşmanın worktree’leri ve ajan dosyaları veritabanının yanında durur ve onunla birlikte silinir. Neredeyse her şey burada yaşar: ajanlar, alanlar, biletler, bellek, pipeline’lar, toplantılar, kod grafiği, incelemeler, depolar. Dosyalar ilk dokunuşta `WorkspaceDatabaseManager.of(workspaceId)` üzerinden tembelce açılır ve o anda kendi `quick_check`, FTS/tetikleyici kurulumu ve `vector_init` işlemlerinin bedelini öder.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — her çalışma alanı için bir _dizin_; içinde bir SQLite dosyası artı yalnızca o çalışma alanına ait olan her şeyi barındırır, böylece bir konuşmanın worktree’leri ve ajan dosyaları veritabanının yanında durur ve onunla birlikte silinir. Neredeyse her şey burada yaşar: ajanlar, alanlar, biletler, bellek, pipeline’lar, toplantılar, incelemeler, depolar. Kod grafiği aynı dizindeki ikinci bir dosyadır, `code_index.db`; yedeklenmek yerine yeniden oluşturulur. Dosyalar ilk dokunuşta `WorkspaceDatabaseManager.of(workspaceId)` üzerinden tembelce açılır ve o anda kendi `quick_check`, FTS/tetikleyici kurulumu ve `vector_init` işlemlerinin bedelini öder.
 
-Her iki yarı da sıkıştırılmış bir v1 temelinden başladı — `onCreate` geçerli şemayı oluşturur — ve göç adımları yalnızca dağıtılmış bir veritabanının ileriye taşınması gerektiğinde eklenir.
+İki yarının da göç adımı yoktur. Yeni bir dosya tablo tanımlarından oluşturulur. Eski bir sürümden gelen dosya önce kenara kopyalanır (`pre_upgrade/`) ve açıldığında aynı tanımlara getirilir; böylece yeni bir kurulum ile güncellenmiş bir kurulum aynı şemayla sonuçlanır. Daha yeni bir sürümün yazdığı dosya reddedilir.
 
 Bir çalışma alanı tek bir dosya olduğundan, bir çalışma alanını dışa aktarmak tablo tablo bir döküm değil, tek bir `VACUUM INTO` deyimidir (`workspace.export`); `workspace.import` böyle bir dosyayı sahiplenir ve gömülü `workspace_meta`yı kullanarak kendi dosyasının yeniden mi sahiplenildiğini yoksa başka bir kurulumdan mı geldiğini ayırt eder.
 

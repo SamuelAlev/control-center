@@ -2,7 +2,7 @@
 title: Säkerhetskopia, export och import
 description: Ögonblicksbildens struktur, manifestet, varje säkerhetskopieringsåtgärd och överföringsväg, och exakt vilka filer en säkerhetskopia innehåller och inte innehåller.
 slug: sv-SE/handbok/referens/sakerhetskopia
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Allt som Control Center kan kopiera, lämna över eller ta över, och den exakta formen på
@@ -47,12 +47,12 @@ Strukturen speglar den levande datakatalogen exakt, vilket är det som gör att 
 
 Schemalagda säkerhetskopior av arbetsytor ligger separat under
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-De innehåller inget manifest och ingen `global.db` och är inte
-installationsögonblicksbilder. Veckopipelinens bevarandesteg tar bara bort
+Var och en har ett `manifest.json` för just den filen och ingen `global.db`; de är inte
+installationsögonblicksbilder. En återställning behåller databasen den ersätter på samma plats, som `<timestamp>-pre-restore`. Veckopipelinens bevarandesteg tar bara bort
 säkerhetskopior från sin egen arbetsyta som är äldre än den konfigurerade åldern
 (30 dagar som standard); manuellt skapade installationsögonblicksbilder roteras
 aldrig av det steget. `server.listBackups` listar bara
-installationsögonblicksbilder, även ofullständiga sådana; `workspace.listBackups` listar
+installationsögonblicksbilder, även overifierade sådana; `workspace.listBackups` listar
 en arbetsytas schemalagda säkerhetskopior.
 
 Att radera en arbetsyta lämnar den här katalogen kvar. Arbetsytans schema stoppas med
@@ -64,34 +64,41 @@ installationens ägare tar bort dem. `server.listOrphanedBackups` rapporterar de
 
 | Fält                      | Typ             | Betydelse                                                           |
 | ------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                 | int             | Manifestets formatversion. För närvarande `1`                       |
+| `format`                 | int             | Manifestformat. För närvarande `2`                       |
 | `created_at`              | ISO-8601 UTC    | När ögonblicksbilden togs                                           |
-| `global.file`             | string          | Alltid `global.db`                                                  |
-| `global.schema_version`   | int             | `GlobalDatabase`-schemaversionen vid kopieringstillfället           |
-| `global.bytes`            | int             | Storleken på den skrivna `global.db`                                |
-| `workspace_schema_version` | int            | Den `WorkspaceDatabase`-schemaversion som delas av varje arbetsytefil |
+| `global`                   | object          | Posten för `global.db`. Saknas i en schemalagd arbetsytesäkerhetskopia |
 | `workspaces[]`            | array           | En post per fångad arbetsyta                                        |
 | `workspaces[].workspace_id`| string         | Arbetsytan som den här filen innehåller                            |
-| `workspaces[].file`       | string          | Sökväg relativt ögonblicksbildens rot, `<workspaceId>/workspace.db` |
-| `workspaces[].bytes`      | int             | Storleken på den filen                                              |
-| `skipped_workspaces[]`    | array of string | Arbetsytor som säkerhetskopian **inte** kunde fånga                 |
+| `skipped_workspaces[]`     | array           | Arbetsytor som säkerhetskopian **inte** kunde fånga                 |
+| `skipped_workspaces[].workspace_id` | string | Arbetsytan som lämnades utanför                                     |
+| `skipped_workspaces[].reason` | string       | `no_file`, `damaged` eller `failed`                                    |
 
-En arbetsyta hoppas över när den är registrerad men aldrig har skrivits till (så det
-finns ingen fil ännu), eller när dess `VACUUM INTO` misslyckades. Hur som helst
-slutförs ändå ögonblicksbilden, och manifestet namnger det som saknas.
+`global` och varje post i `workspaces[]` registrerar en kopierad fil, uppmätt på kopian
+efter att den skrevs:
+
+| Fält             | Typ | Betydelse                                                                      |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`                     | string          | Sökväg relativt ögonblicksbildens rot: `global.db` eller `<workspaceId>/workspace.db` |
+| `bytes`      | int             | Storleken på kopian                                              |
+| `sha256`         | string | SHA-256 för kopian, med små hexadecimala tecken                                |
+| `quick_check`    | string | Vad SQLites `quick_check` sa om kopian: `ok`, eller dess fynd                  |
+| `user_version`   | int    | Schemaversionen för kopian                                                     |
+| `application_id` | int    | SQLite-`application_id` för kopian                                             |
+
+En arbetsyta hoppas över när den är registrerad men aldrig har skrivits till (`no_file`), när dess databas inte klarar integritetskontrollen (`damaged`; en skadad kopia tas aldrig), eller när kopian eller kontrollen av den kopian misslyckades (`failed`). Hur som helst slutförs ögonblicksbilden ändå, och manifestet namnger det som saknas. Manifestet skrivs sist.
 
 ### Fullständighet
 
-`server.listBackups` rapporterar en `complete`-flagga per ögonblicksbild. Den är falsk
-när manifestet saknas eller inte går att tolka, när `global.db` saknas, eller när
-manifestet namnger en arbetsytefil som inte finns på disken.
+`server.listBackups` rapporterar en `complete`-flagga per ögonblicksbild. Den är falsk när manifestet saknas, inte går att tolka eller har ett annat format, när en fil som det namnger saknas eller har en annan storlek, eller när en kopia inte klarade sin kontroll. Appen visar en sådan ögonblicksbild som **Overifierad**. Ögonblicksbilder som togs före format `2` är i det tillståndet.
 
-En ofullständig ögonblicksbild listas ändå, för en ögonblicksbild som en operatör inte
+En overifierad ögonblicksbild listas ändå, för en ögonblicksbild som en operatör inte
 kan se är en ögonblicksbild som operatören tror sig ha. När manifestet inte går att
 läsa faller listningen tillbaka på själva strukturen och rapporterar de
 `<workspaceId>/workspace.db`-filer den hittar – de kan fortfarande tas över var för sig
 via `workspace.import`, även om ögonblicksbilden som helhet inte kan återställa en
 installation.
+
+En listad ögonblicksbild eller schemalagd säkerhetskopia bär `pinned_reason: "last_good_copy"` medan den håller den senaste verifierade kopian av en arbetsyta vars databas är skadad. Bevarandesteget hoppar över den tills arbetsytan har återställts.
 
 ## Vad en säkerhetskopia inte innehåller
 
@@ -102,6 +109,7 @@ databas, och inget av resten följer med:
 | ----------------------------------- | -------------------- | ---------------------- |
 | `global.db`                         | Ja                   | Nej                    |
 | `<workspaceId>/workspace.db`        | Ja                   | Ja (den *är* filen)    |
+| `<workspaceId>/code_index.db`       | Nej                  | Nej                    |
 | `<workspaceId>/blobs/`              | Nej                  | Nej                    |
 | `<workspaceId>/skills/`             | Nej                  | Nej                    |
 | `<workspaceId>/agents/`             | Nej                  | Nej                    |
@@ -114,16 +122,9 @@ databas, och inget av resten följer med:
 | `rigs/`                             | Nej                  | Nej                    |
 | `_agent_hooks/`                     | Nej                  | Nej                    |
 
-En del av det är umbärligt – `spaces/` innehåller copy-on-write-worktrees som
-återskapas från repona, `pr_clones/` är en cache, `models/` laddas ner på nytt, `rigs/`
-är maskintillstånd. En del är det inte: `blobs/` innehåller inklistrade bilder som
-rader i databasen pekar på, `skills/` och `agents/` innehåller filerna som en agent körs
-med, och `secrets.json` innehåller varje parkopplingsnyckel, leverantörsuppgift och
-SSO-inställning i installationen. Se
-[Säkerhetskopiera och återställ](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/#kopiera-säkerhetskopior-bort-från-maskinen)
-för att täcka resten.
-:::caution[En arbetsytedatabas innehåller webhook-hemligheter]
-`workspace.db` är hela arbetsytan: konversationer, körloggar, kodindexet, repolänkar, miljödefinitioner och medlemmar. Den innehåller också arbetsytans pipeline-webhook-tokens och webhook-hemligheter för ärendesynk i läsbar form, så behandla en nedladdad export eller säkerhetskopia som en hemlighet. Den innehåller ingen leverantörsinloggning, enhetsnyckel eller användarhemlighet; de finns i `global.db` och `secrets.json`.
+En del av det är umbärligt – `spaces/` innehåller copy-on-write-worktrees som återskapas från repona, `pr_clones/` är en cache, `code_index.db` byggs om, `models/` laddas ner på nytt, `rigs/` är maskintillstånd. En del är det inte: `blobs/` innehåller inklistrade bilder som rader i databasen pekar på, `skills/` och `agents/` innehåller filerna som en agent körs med, och `secrets.json` innehåller varje parkopplingsnyckel, leverantörsuppgift och SSO-inställning i installationen. Se [Säkerhetskopiera och återställ](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/#kopiera-säkerhetskopior-bort-från-maskinen) för att täcka resten.
+:::note[Hemligheter hålls utanför databaserna]
+`workspace.db` är hela arbetsytan: konversationer, körloggar, repolänkar, miljödefinitioner och medlemmar. Webhook-tokens för pipelinen och webhook-hemligheter för ärendesynk finns i `secrets.json`: databasen innehåller en referens till var och en, och ruttindexet innehåller en nyckelhash av varje token. En arbetsyta som återställs på en annan installation får därför inga webhooks förrän dess triggers har sparats på nytt där. Leverantörsinloggningar, enhetsnycklar och användarhemligheter finns i `global.db` och `secrets.json`.
 :::
 
 :::note[Chattbottens tokens stannar kvar med avsikt]
@@ -150,6 +151,8 @@ säkerhetskopiering är inkopplad, som demoservern.
 | `workspace.deleteBackup` | mutate | Arbetsyta | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Arbetsyta  | `admin`               | inga          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Arbetsyta  | `owner` och serverägaren | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | read | Arbetsyta | `owner` och serverägaren | inga | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutate | Arbetsyta | `owner` och serverägaren | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | mutate | Installation* | `owner`           | `id`          | registerrad markerad som borttagen |
 
 * `workspace.delete` saknar omfattning eftersom raden den markerar ligger i det globala
@@ -166,19 +169,21 @@ aktiv arbetsyta, vars säkerhetskopior förblir bakom `workspace.deleteBackup` o
 arbetsytans egna roller. Båda borttagningsåtgärderna accepterar bara ett listat
 katalognamn med tidsstämpel, inte en sökväg.
 
+`workspace.importHolds.list` returnerar det som en import höll tillbaka. Varje tillbakahållning har ett `id`, en `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` eller `invite`), `payload` som den skulle ha återställt, `imported_at` och `source_install_id`. `workspace.importHolds.resolve` med `accept: true` ger den tillbaka, och med `false` avvisas den. `applied` är false när den eller det som beviljandet gällde inte längre finns i arbetsytan.
+
 :::note[En ögonblicksbild av hela installationen kräver ägare på båda kanalerna]
 `server.backupNow`, `server.listBackups` och `server.deleteBackup` kräver
 installationens **ägare** (`ServerAuthority.serverOwner`), samma grind som
 `GET /backup/snapshot`. En ögonblicksbild fångar varje arbetsytas databas, så
 att vara admin för en arbetsyta räcker inte för att hantera de andra. Borttagning
 accepterar bara det listade tidsstämpelkatalognamnet, inte en godtycklig sökväg
-på servern, och tar bort hela ögonblicksbilden (även ofullständiga sådana).
+på servern, och tar bort hela ögonblicksbilden (även overifierade ögonblicksbilder).
 Export av arbetsyta och nedladdning av schemalagda säkerhetskopior ligger kvar hos
 arbetsytans admin.
 :::
 
 :::note[Återställning tillhör serverägaren]
-`workspace.import` och `POST /backup/restore` gör att servern tar över en databasfil vars rader den sedan behandlar som sina egna: repolänkar och vem som skapade dem, miljödefinitioner som körs på värden, worktree- och loggsökvägar. Därför kräver båda serverägaren (`ServerAuthority.serverOwner`), som också måste vara arbetsytans ägare. Alla andra, och varje anropare på en värd utan någon registrerad ägare, nekas med `server_owner_required`. Ingen trigger eller vy som filen tar med sig tas över.
+`workspace.import` och `POST /backup/restore` gör att servern tar över en databasfil vars rader den sedan behandlar som sina egna: repolänkar och vem som skapade dem, miljödefinitioner som körs på värden, worktree- och loggsökvägar. Därför kräver båda serverägaren (`ServerAuthority.serverOwner`), som också måste vara arbetsytans ägare. Alla andra, och varje anropare på en värd utan någon registrerad ägare, nekas med `server_owner_required`. Ingen trigger, vy, kolumn eller begränsning som filen tar med sig tas över.
 :::
 
 ### Svaret från `server.listBackups`
@@ -219,21 +224,21 @@ importåtgärden, så de två kan inte glida isär till olika behandlingar av sa
 
 ### Validering i `workspace.import`
 
-Innan något ersätts öppnas kandidatfilen skrivskyddat med en kortlivad rå
-SQLite-anslutning, och dess `workspace_meta`-rad läses.
+Innan något ersätts kopieras kandidatfilen till en mellanlagringsfil bredvid målet och kontrolleras där. En avvisning rör ingenting och bär sin typ som `data.kind`.
 
 | Villkor                                          | Resultat                                                        |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Inte en läsbar SQLite-databas, eller ingen `workspace_meta` | Avvisas. Ingenting rörs                                |
-| Registrerat arbetsyte-id ≠ målet                  | **Tillåts**, loggas. Så här dupliceras en arbetsyta eller återställs under ett nytt id |
-| Registrerat installations-id ≠ den här installationen | **Tillåts**, loggas. Dess parkopplade enheter och användar-id:n tillhör den installationen och löses inte upp här |
-| Ogiltigt arbetsyte-id, eller filen finns inte     | Avvisas                                                         |
+| Filen finns inte | Avvisas, `import.missing_source` |
+| Inte en läsbar SQLite-databas, eller den klarar inte `quick_check` | Avvisas, `import.damaged` |
+| Den kommer från en ögonblicksbild, och dess SHA-256 skiljer sig från manifestets | Avvisas, `import.checksum_mismatch` |
+| En nyare version av servern skrev den | Avvisas, `import.newer_schema` |
+| Ett annat `application_id`, eller ingen `workspace_meta` | Avvisas, `import.foreign_file` |
+| Den kan inte föras över till den här serverns schema | Avvisas, `import.schema_mismatch` |
+| Dess webhooks eller inbjudningar dirigeras redan till en annan arbetsyta | Avvisas, `import.route_conflict` |
+| Registrerat arbetsyte-id ≠ målet                  | **Tillåts**. Dess rader nycklas om till målet. Så här dupliceras en arbetsyta eller återställs under ett nytt id |
+| Registrerat installations-id ≠ den här installationen | **Tillåts**. Dess användar-id:n tillhör den installationen och löses inte upp här |
 
-Vid godkännande stängs målarbetsytans databas och tas bort från hanteraren innan filen
-kopieras över den (en öppen driftanslutning håller filen och dess `-wal`), och öppnas
-sedan igen så att `beforeOpen` installerar om FTS- och synkroniseringstriggarna, varefter
-FTS-indexen byggs om – en importerad fils innehållstabeller är ifyllda men dess index kan
-vara inaktuellt.
+Vid godkännande förs den mellanlagrade filen till den här serverns schema och måste sedan stämma exakt med det. Behörigheter som en fil inte får ge sig själv tas bort ur den: godkännanden att köra en miljödefinition på värden rensas, och åtgärdsregler som tillåter eller frågar, sandlådekörningsbehörigheter, repobehörigheter utöver läsning, roller över medlem och inbjudningar till dessa roller blir tillbakahållningar som serverägaren ska granska. Den som importerar behåller eller får ägarrollen. Databasen som ersätts behålls som en schemalagd säkerhetskopia med namnet `<timestamp>-pre-restore`, den mellanlagrade filen flyttas till sin plats med arbetsytans anslutningar stängda, `code_index.db` raderas för att byggas om, och FTS-indexen byggs om.
 
 ## Överföringsvägar
 
@@ -263,7 +268,7 @@ verklig fil i den arbetsytans egen katalog för säkerhetskopior.
 
 | Status | Orsak                                                                               |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | En obligatorisk frågeparameter saknas, ett namn på en säkerhetskopia är ogiltigt, eller så är en uppladdningskropp tom |
+| `400`  | En obligatorisk frågeparameter saknas, ett namn på en säkerhetskopia är ogiltigt, uppladdningskroppen är tom, eller den uppladdade filen avvisades (kroppen är `{error, kind}` med ett `import.*`-kind) |
 | `403`  | Okänd eller återkallad enhet, felaktig signatur, eller så saknar anroparen rollen     |
 | `404`  | Ingen port för säkerhetskopiering på den här värden, eller så finns inte den namngivna ögonblicksbilden, säkerhetskopian eller arbetsytefilen |
 | `405`  | `/backup/restore` anropad med något annat än `POST`                                  |
@@ -304,6 +309,8 @@ säkerhetskopiefilerna i vila.
 | Ögonblicksbilder               | `<dataDir>/backups/<timestamp>/`                             |
 | Schemalagda säkerhetskopior av arbetsytor | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Arbetsytaexporter              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Databas som ersatts av en återställning | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Databaser som de såg ut innan en uppdatering ändrade deras format | `<dataDir>/pre_upgrade/` och `<dataDir>/<workspaceId>/pre_upgrade/`, de två senaste av varje |
 | Mellanlagring för överföringar | `<dataDir>/backups/transfer/` – en arbetsbänk som städas av vägen som skriver till den |
 | Ögonblicksbildens arkivnamn    | `<snapshot directory name>.zip`                              |
 | Övre gräns för uppladdning     | 8 GiB per krypterad `/backup/restore`-uppladdning            |

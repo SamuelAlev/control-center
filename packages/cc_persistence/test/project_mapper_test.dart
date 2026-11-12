@@ -149,26 +149,17 @@ void main() {
     );
 
     test(
-      'fromRow handles unknown color gracefully (defaults to gray)',
+      'the schema refuses a color or status no enum names',
       timeout: const Timeout.factor(2),
       () async {
-        final row = await insertProject(color: 'unknown_color');
-
-        final project = mapper.fromRow(row);
-
-        expect(project.color, ProjectColor.gray);
-      },
-    );
-
-    test(
-      'fromRow handles unknown status gracefully (defaults to active)',
-      timeout: const Timeout.factor(2),
-      () async {
-        final row = await insertProject(status: 'unknown_status');
-
-        final project = mapper.fromRow(row);
-
-        expect(project.status, ProjectStatus.active);
+        await expectLater(
+          insertProject(color: 'unknown_color'),
+          throwsA(anything),
+        );
+        await expectLater(
+          insertProject(id: 'proj-2', status: 'unknown_status'),
+          throwsA(anything),
+        );
       },
     );
 

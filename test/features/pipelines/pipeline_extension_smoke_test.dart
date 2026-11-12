@@ -78,15 +78,15 @@ void main() {
         workspaceId: 'ws-1',
         scopeType: 'workspace',
         scopeId: 'ws-1',
-        spentCents: 1500,
-        budgetCents: 1000,
+        spentMicros: 15000000,
+        budgetMicros: 10000000,
         isHardStop: true,
         occurredAt: DateTime.now(),
       );
       final payload = EventPayloadMapper.toPayload(event);
       expect(payload, isNotNull);
       expect(payload!['scope_type'], 'workspace');
-      expect(payload['spent_cents'], 1500);
+      expect(payload['spent_micros'], 15000000);
       expect(payload['is_hard_stop'], isTrue);
       expect(EventPayloadMapper.dedupKeyFor(event), 'workspace/ws-1');
       expect(

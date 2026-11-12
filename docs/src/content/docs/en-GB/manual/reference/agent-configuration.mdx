@@ -2,7 +2,7 @@
 title: Agent configuration
 description: Every field on the agent entity and the enums it uses.
 slug: en-GB/manual/reference/agent-configuration
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/en-GB/manual/guides/create-agent/).
@@ -26,17 +26,17 @@ This reference lists every field on the agent entity, plus the enums and flags i
 | `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
 | `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
 | `role`                  | `AgentRole?`           | No       | Agent role                                                                                                                                                                                          |
-| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
+| `monthlyBudgetMicros`   | `int`                  | No       | Monthly spending cap in micro-dollars (default `0`, unlimited)                                                                                                                                            |
 | `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
 | `maxConcurrentTasks`    | `int`                  | No       | Default `1`. Capacity figure the presence model reports (running and queued counts are compared against it)                                                                                         |
 | `visibility`            | `AgentVisibility`      | No       | Default `workspace`                                                                                                                                                                                 |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. Dispatch still accepts work from a `paused` agent                          |
-| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
+| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetMicros` applies directly                                                                                                                            |
 | `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id                                                                                                                                                                           |
 | `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
 
 `name` and `title` must both be non-empty (constructor-asserted). Default
-`monthlyBudgetCents` of `0` means unlimited. Write a ceiling with `agents.upsert`.
+`monthlyBudgetMicros` of `0` means unlimited. Write a ceiling with `agents.upsert`.
 
 ## AgentRole enum
 

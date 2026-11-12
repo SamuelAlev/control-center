@@ -15,6 +15,7 @@ import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart'
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,7 +59,7 @@ class RigStart extends ConsumerWidget {
 
     return capabilities.when(
       loading: () => const Center(child: CcSpinner()),
-      error: (e, _) => RigNotice(text: l10n.failedWithError('$e')),
+      error: (e, _) => RigNotice(text: failureMessage(l10n, e)),
       data: (backends) {
         final hosting = _backendFor(backends, surface);
         if (hosting == null) {

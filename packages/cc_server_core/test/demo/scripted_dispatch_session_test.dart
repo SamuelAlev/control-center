@@ -274,9 +274,10 @@ void main() {
     expect(usage.cachedReadTokens, 8200);
     expect(usage.cachedWriteTokens, 1100);
     expect(usage.thoughtTokens, 180);
-    // 12400*3 + 320*15 + 8200*0.3 + 1100*3.75 per million USD -> ~4.9c.
+    // 12400*3 + 320*15 + 8200*0.3 + 1100*3.75 USD per million tokens
+    // -> about 48,585 micro-dollars.
     expect(
-      usage.estimatedCostCents,
+      usage.costMicros,
       greaterThan(0),
       reason: 'an unpriced demo run makes every cost surface read as broken',
     );

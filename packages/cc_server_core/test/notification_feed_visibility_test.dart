@@ -21,6 +21,7 @@ void main() {
     workspaceId: workspaceId,
     method: 'notifications/pr_review_requested',
     params: params,
+    seq: 0,
     createdAt: DateTime.utc(2026, 10, 16),
   );
 
@@ -81,6 +82,7 @@ void main() {
         workspaceId: 'ws-a',
         method: method,
         params: p,
+        seq: 0,
         createdAt: DateTime.utc(2026, 10, 16),
       );
       final items = [

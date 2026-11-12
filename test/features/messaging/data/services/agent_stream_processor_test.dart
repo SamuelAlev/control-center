@@ -218,11 +218,6 @@ class _FakeMessagingRepo implements MessagingRepository {
     String spaceId,
   ) async => [];
   @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
-  }) async => [];
-  @override
   Future<MessagePage> getMessagePage(
     String workspaceId,
     String spaceId,
@@ -360,7 +355,7 @@ class _FakeAgentDispatchService implements AgentDispatchService {
     MentionContext? mentionContext,
     AgentRunRole role = AgentRunRole.main,
     String? parentAgentId,
-    int? costCapCents,
+    int? costCapMicros,
     String? modelOverride,
     List<String> promptImageRefs = const [],
   }) async => throw UnimplementedError();
@@ -722,7 +717,6 @@ void main() {
           usage: const RunUsage(
             inputTokens: 1000,
             outputTokens: 500,
-            estimatedCostCents: 12,
             costMicros: 120000,
           ),
           timestamp: _t(2),
@@ -731,7 +725,7 @@ void main() {
       ]);
       final turn = r.finalCall.metadata!['turn'] as Map<String, dynamic>;
       expect(turn['totalTokens'], 1500);
-      expect(turn['costCents'], 12);
+      expect(turn['costMicros'], 120000);
       expect(turn['durationMs'], isA<int>());
     });
 

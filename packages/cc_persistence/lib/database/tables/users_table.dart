@@ -7,6 +7,13 @@ import 'package:drift/drift.dart';
 /// workspace data is decided by membership, never by mere existence of a user
 /// row.
 @TableIndex(name: 'idx_users_handle', columns: {#handle}, unique: true)
+// One account per `(issuer, subject)` SSO pin; partial, because most users
+// carry neither.
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX idx_users_sso_subject '
+  'ON users (sso_issuer, sso_subject) '
+  'WHERE sso_issuer IS NOT NULL AND sso_subject IS NOT NULL',
+)
 class UsersTable extends Table {
   /// Unique user identifier.
   TextColumn get id => text()();

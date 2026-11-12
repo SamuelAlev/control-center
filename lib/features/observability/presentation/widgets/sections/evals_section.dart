@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/evals_providers.dart';
@@ -142,7 +143,7 @@ class _RunRow extends StatelessWidget {
                 style: CcTypography.caption.copyWith(color: t.textTertiary),
               ),
               Text(
-                fmtCents(run.costCents),
+                fmtMicros(run.costMicros),
                 style: CcTypography.monoNum.copyWith(color: t.textSecondary),
               ),
               Text(

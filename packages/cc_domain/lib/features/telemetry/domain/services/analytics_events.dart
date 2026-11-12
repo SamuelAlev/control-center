@@ -551,14 +551,14 @@ abstract final class AnalyticsEvents {
     required bool accepted,
     String? conversationId,
     String? agentId,
-    int? budgetCents,
+    int? budgetMicros,
   }) => AnalyticsEvent('goal_started', {
     'kind': kind,
     'workspace_id': AnalyticsId(workspaceId),
     'space_id': AnalyticsId(spaceId),
     'conversation_id': AnalyticsId.maybe(conversationId),
     'agent_id': AnalyticsId.maybe(agentId),
-    'budget_cents': budgetCents,
+    'budget_micros': budgetMicros,
     'accepted': accepted,
   });
 
@@ -740,7 +740,7 @@ abstract final class AnalyticsEvents {
     int? activeMs,
     int? attemptCount,
     int? templateVersion,
-    int? costCents,
+    int? costMicros,
     int? tokens,
     bool? dryRun,
     bool? subPipeline,
@@ -754,7 +754,7 @@ abstract final class AnalyticsEvents {
     'active_ms': activeMs,
     'attempt_count': attemptCount,
     'template_version': templateVersion,
-    'cost_cents': costCents,
+    'cost_micros': costMicros,
     'tokens': tokens,
     'dry_run': dryRun,
     'sub_pipeline': subPipeline,
@@ -909,14 +909,14 @@ abstract final class AnalyticsEvents {
   static AnalyticsEvent budgetThresholdCrossed({
     required String scopeType,
     required String scopeId,
-    required int spentCents,
-    required int budgetCents,
+    required int spentMicros,
+    required int budgetMicros,
     required bool hardStop,
   }) => AnalyticsEvent('budget_threshold_crossed', {
     'scope_type': scopeType,
     'scope_id': AnalyticsId(scopeId),
-    'spent_cents': spentCents,
-    'budget_cents': budgetCents,
+    'spent_micros': spentMicros,
+    'budget_micros': budgetMicros,
     'hard_stop': hardStop,
   });
 

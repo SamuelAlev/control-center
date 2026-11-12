@@ -64,3 +64,22 @@ abstract class WorkspaceRepository {
   /// space links and isolated checkouts.
   Future<void> unlinkRepoFromWorkspace(String workspaceId, String repoId);
 }
+
+/// Work was attempted for a workspace that has been deleted.
+///
+/// A deleted workspace has no database, and nothing may open one under its
+/// id: that would leave an empty file the next snapshot carries. A request
+/// that names a deleted workspace is refused with this; work already under
+/// way when the workspace went (a run finishing, a listener reacting to its
+/// last event) has nothing left to do and ends on it.
+final class DeletedWorkspaceException implements Exception {
+  /// Creates the exception for [workspaceId].
+  const DeletedWorkspaceException(this.workspaceId);
+
+  /// The deleted workspace.
+  final String workspaceId;
+
+  @override
+  String toString() =>
+      'DeletedWorkspaceException: workspace $workspaceId was deleted';
+}

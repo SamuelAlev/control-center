@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, pemboleh ubah persekitaran, subperintah dan laluan direktori data bagi pelayan tanpa kepala.
 slug: ms-MY/manual-pengguna/rujukan/cli-cc-server
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Setiap flag proses menerima flag CLI atau pemboleh ubah persekitaran; flag diutamakan,
@@ -219,12 +219,16 @@ Direktori data lalai ialah `~/Library/Application Support/control-center` pada m
 `~/.local/share/control-center`) di tempat lain. `.cc_server` yang relatif kepada cwd hanya
 digunakan apabila tiada direktori rumah atau data apl dapat diselesaikan.
 
+Pelayan memastikan direktori data kekal peribadi kepada akaunnya sendiri (`0700`). Pelayan enggan bermula (kod keluar `78`) apabila ia tidak dapat berbuat demikian, apabila `global.db` rosak atau ditulis oleh versi yang lebih baharu, atau apabila fail identitinya tidak boleh dibaca.
+
 | Laluan                            | Kandungan                                                                     |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Daftar ruang kerja, pengguna, peranti berganding, suapan berita dan barisan armada |
-| `<workspaceId>/workspace.db`      | Satu pangkalan data bagi setiap ruang kerja — ejen, ruang, tiket, memori, graf kod |
+| `<workspaceId>/workspace.db`      | Satu pangkalan data bagi setiap ruang kerja — ejen, ruang, tiket, memori |
+| `<workspaceId>/code_index.db` | Graf kod ruang kerja itu. Dibina semula apabila hilang, tidak pernah disandarkan |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Dua salinan terbaharu pangkalan data daripada sebelum kemas kini menukar formatnya |
 | `<workspaceId>/chat_credentials/` | Token bot sembang, sebagai JSON biasa, supaya ia bergerak bersama ruang kerja   |
-| `secrets.json`                    | Kunci penggandingan, kunci pemasangan Connect, apl pembekal, log masuk pengguna (dimeterai apabila dicipta melalui Connect), SSO (`0600`) |
+| `secrets.json`                    | Kunci penggandingan, kunci pemasangan Connect, apl pembekal, log masuk pengguna (dimeterai apabila dicipta melalui Connect), rahsia webhook, SSO (`0600`) |
 | `backups/<timestamp>/`            | Satu snapshot pemasangan — `manifest.json`, `global.db` dan salinan setiap ruang kerja |
 | `backups/exports/`                | Eksport satu ruang kerja, `<workspaceId>-<timestamp>.db`                         |
 | `backups/transfer/`               | Kawasan persediaan untuk muat turun dan muat naik sandaran; disapu oleh laluan yang menulisnya |

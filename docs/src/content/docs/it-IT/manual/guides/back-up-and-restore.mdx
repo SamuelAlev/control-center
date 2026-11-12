@@ -2,7 +2,7 @@
 title: Backup e ripristino
 description: Scatta un'istantanea dell'installazione, sposta uno spazio di lavoro tra macchine, ripristina un solo spazio di lavoro o tutti quanti, e conserva copie altrove.
 slug: it-IT/manuale/guide/backup-e-ripristino
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Questa guida copre le cinque cose che si fanno davvero con i backup: crearne uno,
@@ -43,10 +43,10 @@ Entrambi gli artefatti sono **solo database**:
 - Un'**istantanea dell'installazione** è una directory con data e ora: `manifest.json`, `global.db` e un `<workspaceId>/workspace.db` per ogni spazio di lavoro.
 - Un'**esportazione dello spazio di lavoro** è quel singolo file `workspace.db`.
 
-Il database di uno spazio di lavoro è l'intero spazio di lavoro: le sue conversazioni, i log delle esecuzioni, l'indice del codice, i collegamenti dei repository, le definizioni degli ambienti e i membri. Contiene anche, in forma leggibile, i token dei webhook delle pipeline e i segreti dei webhook di sincronizzazione dei ticket. Conserva un backup o un'esportazione dello spazio di lavoro scaricati come conserveresti un segreto. Non contiene accessi ai provider, chiavi dei dispositivi né segreti degli utenti: quelli vivono nel database globale e nell'archivio segreti del server.
+Il database di uno spazio di lavoro è l'intero spazio di lavoro: le sue conversazioni, i log delle esecuzioni, i collegamenti dei repository, le definizioni degli ambienti e i membri. Non contiene segreti: i token dei webhook delle pipeline, i segreti dei webhook di sincronizzazione dei ticket, gli accessi ai provider, le chiavi dei dispositivi e i segreti degli utenti stanno nel database globale e nell'archivio segreti del server. È comunque tutto ciò che lo spazio di lavoro ha detto e fatto, quindi conserva un backup o un'esportazione scaricati con la stessa riservatezza dello spazio di lavoro stesso. L'indice del codice è un file separato accanto al database, `code_index.db`. Nessun backup lo include; il server lo ricostruisce.
 
 Nessuno dei due porta con sé il resto della directory dei dati: `secrets.json` (chiavi di
-associazione, credenziali dei fornitori, SSO), i `blobs/` di uno spazio di lavoro (immagini
+associazione, credenziali dei fornitori, segreti dei webhook, SSO), i `blobs/` di uno spazio di lavoro (immagini
 incollate nei messaggi), `skills/`, `agents/`, `chat_credentials/`, l'audio delle riunioni
 registrate o le immagini dei rig. Una parte è usa e getta e una parte no — la
 [tabella completa è nel riferimento](/it-IT/manuale/riferimento/backup/#cosa-non-contiene-un-backup),
@@ -62,17 +62,11 @@ Il server resta in esecuzione per tutto il tempo. Ogni file viene scritto con `V
 che è coerente anche su un database in uso, quindi non c'è alcuna finestra di manutenzione
 né bisogno di fermare gli agenti.
 
-Ogni riga dell'elenco mostra la data e l'ora, la dimensione su disco, quanti spazi di
-lavoro sono stati acquisiti e se l'istantanea è **Completa** o **Incompleta**. Incompleta
-significa che il manifest manca o nomina file che non ci sono — un backup interrotto da un
-crash o da un disco pieno. Vengono comunque elencate di proposito: un'istantanea che non
-vedi è un'istantanea che credi di avere. Un'istantanea incompleta non può ripristinare
-un'intera installazione, ma i file degli spazi di lavoro che contiene si possono ancora
-adottare uno per uno.
+Ogni riga dell'elenco mostra la data e l'ora, la dimensione su disco, quanti spazi di lavoro sono stati acquisiti e se l'istantanea è **Completa** o **Non verificata**. Ogni copia viene controllata dopo la scrittura, e il manifest registra la sua dimensione e la sua checksum. Non verificata significa che il server non può garantire l'istantanea: il suo manifest manca o non è leggibile, oppure un file che elenca è assente o ha cambiato dimensione. Succede con un backup interrotto da un crash o da un disco pieno, o con uno fatto prima che le istantanee registrassero le checksum. Vengono comunque elencate di proposito: un'istantanea che non vedi è un'istantanea che credi di avere. Un'istantanea non verificata non può ripristinare un'intera installazione, ma i file degli spazi di lavoro che contiene si possono ancora ripristinare uno per uno.
 
-Una riga può anche dire **_n_ spazi di lavoro non acquisiti**. È uno spazio di lavoro
-registrato ma in cui non è mai stato scritto nulla (il file non esiste ancora), oppure uno
-la cui copia non è riuscita — controlla il log del server.
+Una riga può anche dire **_n_ spazi di lavoro non acquisiti**. È uno spazio di lavoro registrato ma in cui non è mai stato scritto nulla (il file non esiste ancora), uno il cui database è danneggiato (una copia danneggiata non viene mai acquisita), oppure uno la cui copia non è riuscita — controlla il log del server.
+
+Un'istantanea o un backup pianificato contrassegnato come **Ultima copia valida** conserva la copia valida più recente di uno spazio di lavoro il cui database è stato poi danneggiato. La pulizia pianificata non lo tocca, ed eliminarlo chiede una conferma, finché quello spazio di lavoro non viene ripristinato.
 
 ## Pianifica i backup degli spazi di lavoro e la conservazione
 
@@ -101,7 +95,7 @@ di cui non sei admin lo segnala nella sua riga invece di elencare i backup.
 
 Espandi una riga per vedere ogni backup, dal più recente:
 
-- **Ripristina** sostituisce il database attuale dello spazio di lavoro con questo backup. Esporta prima lo spazio di lavoro se potresti aver bisogno di annullare l'operazione. Richiede il proprietario del server, che deve anche essere proprietario dello spazio di lavoro.
+- **Ripristina** sostituisce il database attuale dello spazio di lavoro con questo backup. Il database sostituito viene conservato in questo elenco, con un nome che termina in `-pre-restore`, così puoi tornare indietro. Richiede il proprietario del server, che deve anche essere proprietario dello spazio di lavoro.
 - **Scarica** salva il file sulla macchina che stai usando. Il backup resta sul server.
 - **Copia percorso** copia la sua posizione sul server.
 - **Elimina** rimuove definitivamente questo backup, dopo che hai digitato il nome dello spazio di lavoro. Richiede **proprietario**.
@@ -120,7 +114,7 @@ recuperarne uno, scaricalo, crea uno spazio di lavoro (solo il proprietario del 
 
 ## Elimina un'istantanea dell'installazione
 
-Sotto **Istantanee dell'installazione**, espandi l'istantanea, anche una incompleta, e usa
+Sotto **Istantanee dell'installazione**, espandi l'istantanea, anche una non verificata, e usa
 **Elimina istantanea** nella zona pericolosa. Conferma il suo nome. L'intera directory
 dell'istantanea viene rimossa definitivamente dal server; scaricala prima se ti serve una
 copia. Una pipeline di backup degli spazi di lavoro non elimina mai queste istantanee.
@@ -162,24 +156,14 @@ poi il percorso del file in **File di database dello spazio di lavoro** e **Impo
 fanno la stessa cosa senza il viaggio di andata e ritorno; quel percorso viene risolto sull'host del server.
 
 :::caution[L'importazione sostituisce tutto]
-Importare sovrascrive tutto ciò che lo spazio di lavoro di destinazione contiene
-attualmente, e non si può annullare. Esporta prima la destinazione se contiene qualcosa che
-potresti voler riavere.
+Importare sostituisce tutto ciò che lo spazio di lavoro di destinazione contiene attualmente. Il database sostituito viene conservato in **Backup pianificati** con un nome che termina in `-pre-restore`; ripristinalo per tornare indietro.
 :::
 
-Due cose sono consentite e registrate invece che rifiutate: importare un file il cui id di
-spazio di lavoro registrato differisce da quello di destinazione (è così che duplichi uno
-spazio di lavoro o lo ripristini sotto un nuovo id), e importare un file da
-un'**installazione diversa**. In questo secondo caso i dispositivi associati e gli id
-utente del file appartengono all'installazione da cui proviene e non si risolveranno su
-questa — i dati dello spazio di lavoro sono intatti, ma ricontrolla l'appartenenza dopo
-averlo adottato.
+Un file proveniente da un altro spazio di lavoro o da un'**installazione diversa** viene accettato: è così che duplichi uno spazio di lavoro, lo ripristini sotto un nuovo id o lo passi a qualcun altro. Gli id utente di un'altra installazione non si risolvono su questa — i dati dello spazio di lavoro sono intatti, ma ricontrolla l'appartenenza dopo averlo adottato.
 
-I token dei bot di chat e gli accessi ai provider vivono fuori dal database, quindi
-l'installazione che lo riceve ricollega i propri. Il file contiene però i token dei
-webhook delle pipeline e i segreti dei webhook di sincronizzazione dei ticket dello
-spazio di lavoro, quindi uno spazio di lavoro che passi a qualcun altro passa anche
-quelli. Ruotali dopo, se il destinatario non dovrebbe averli.
+Un file ripristinato non può concedere nulla da solo su questo server. I permessi che porta oltre la normale appartenenza vengono tolti ed elencati in **Trattenute dalle copie ripristinate** in cima alla pagina: regole d'azione che permettono agli agenti di agire senza approvazione o dopo una, percorsi che una sandbox può eseguire, accesso ai repository oltre la sola lettura, ruoli superiori a membro e inviti aperti a quei ruoli. **Accetta** lo concede di nuovo; **Rifiuta** lo elimina. Le approvazioni per eseguire una definizione di ambiente sull'host vengono annullate, quindi approva di nuovo quelle definizioni. Chi ripristina mantiene o ottiene il ruolo di proprietario.
+
+I token dei bot di chat, gli accessi ai provider e i segreti dei webhook vivono fuori dal database, quindi l'installazione che lo riceve ricollega i propri. I trigger dei webhook e i webhook di sincronizzazione dei ticket arrivano senza i loro segreti e non ricevono nulla su un altro server finché non li salvi di nuovo lì, il che assegna a ogni trigger un nuovo URL.
 
 ## Ripristina un solo spazio di lavoro da un'istantanea
 
@@ -191,7 +175,7 @@ Devi essere il proprietario del server e proprietario dello spazio di lavoro.
 
 È la stessa operazione di un'importazione, puntata sulla copia che l'istantanea contiene
 del file di quello spazio di lavoro — di proposito, così non c'è un secondo meccanismo che
-possa trattare lo stesso file in modo diverso.
+possa trattare lo stesso file in modo diverso. La copia viene prima verificata con la checksum registrata dall'istantanea.
 
 Una riga può dire **Non è più su questo server**, con **Ripristina** disattivato:
 l'istantanea contiene uno spazio di lavoro che questa installazione non ha più. Riportalo
@@ -200,6 +184,10 @@ inserisci `<snapshot path>/<old workspace id>/workspace.db` nel suo campo **File
 espansa mostra il suo **Percorso sul server** in un campo copiabile, e il titolo della riga
 è il vecchio id dello spazio di lavoro, quindi hai entrambe le metà di quel percorso davanti
 a te.
+
+## Ripristinare uno spazio di lavoro danneggiato
+
+Uno spazio di lavoro il cui database non supera il controllo di integrità diventa in sola lettura: tutto resta leggibile e ogni modifica viene rifiutata. I membri vedono **Questo spazio di lavoro è in sola lettura** in cima allo spazio di lavoro, il proprietario del server lo vede sotto **Richiede la tua attenzione** in questa pagina, e il backup più recente che contiene una copia valida viene conservato come **Ultima copia valida**. Ripristina lo spazio di lavoro da quella copia, come descritto sopra, per renderlo di nuovo scrivibile. Il database danneggiato viene conservato come backup `-pre-restore`.
 
 ## Ripristina un'intera installazione
 
@@ -327,7 +315,7 @@ systemd, e poi sincronizza `DEST` fuori dall'host. `VACUUM INTO` richiede SQLite
 successivo.
 
 Scrivilo **fuori** da `<dataDir>/backups/`. Una directory creata a mano lì dentro non ha
-`manifest.json`, quindi l'app la elencherebbe come un'istantanea incompleta e l'elenco
+`manifest.json`, quindi l'app la elencherebbe come un'istantanea non verificata e l'elenco
 smetterebbe di essere un registro onesto di ciò che il server ha prodotto da sé.
 
 ### Elimina le vecchie istantanee dell'intera installazione
@@ -374,9 +362,11 @@ conservati.
 | «Solo il proprietario del server può ripristinare i backup. Puoi comunque scaricarli.» | Il ripristino sostituisce il database di uno spazio di lavoro sull'host del server, quindi solo il proprietario del server ripristina. Scarica il backup e chiediglielo |
 | «Questo server non espone alcuna superficie di backup.»                   | L'host non ha alcuna porta di backup cablata — un server demo. Le operazioni sono assenti invece che rifiutate               |
 | «Il file supera la dimensione accettata dal server.»                      | Gli upload sono limitati a 8 GiB. Metti il file sull'host del server e inserisci il suo percorso in **File di database dello spazio di lavoro**            |
-| Import refused: not a Control Center workspace database                  | Il file non ha alcuna riga `workspace_meta` — non è un'esportazione di spazio di lavoro, oppure è troncato. Non è stato sostituito nulla |
-| Un'istantanea è elencata come **Incompleta**                             | Il suo manifest manca o nomina file assenti. Creane una nuova; nel frattempo adotta da essa i singoli file degli spazi di lavoro |
-| Un'istantanea dice che alcuni spazi di lavoro non sono stati acquisiti   | Quegli spazi di lavoro non hanno mai ricevuto scritture, oppure la loro copia non è riuscita. Controlla il log del server     |
+| Un ripristino viene rifiutato e non viene sostituito nulla | Il file non ha superato un controllo, e il messaggio dice quale: non è un database di uno spazio di lavoro, è danneggiato, differisce dalla checksum registrata dalla sua istantanea, lo ha scritto una versione più recente del server, oppure i suoi webhook o inviti appartengono già a un altro spazio di lavoro su questo server. Usa un'altra copia oppure aggiorna prima il server |
+| Un'istantanea è elencata come **Non verificata** | Non è mai stata completata, oppure è stata creata prima che le istantanee registrassero le checksum. Creane una nuova; nel frattempo ripristina da essa i singoli file degli spazi di lavoro |
+| Un'istantanea dice che alcuni spazi di lavoro non sono stati acquisiti   | Quegli spazi di lavoro non hanno mai ricevuto scritture, sono danneggiati, oppure la loro copia non è riuscita. Controlla il log del server     |
+| Uno spazio di lavoro mostra **Questo spazio di lavoro è in sola lettura** | Il suo database non ha superato il controllo di integrità. Nulla al suo interno può essere modificato finché il proprietario del server non lo ripristina da un backup |
+| I webhook smettono di arrivare dopo che uno spazio di lavoro passa a un altro server | I segreti dei webhook non viaggiano con il database. Salva di nuovo ogni trigger dei webhook e ogni connessione di sincronizzazione dei ticket sul nuovo server, poi comunica al mittente il nuovo URL |
 | A un'installazione ripristinata mancano le credenziali della forge o dell'SSO | `secrets.json` non è dentro un'istantanea. Ripristinalo da dove l'hai conservato, oppure ricollega i fornitori           |
 | A uno spazio di lavoro ripristinato mancano le immagini incollate        | I blob vivono accanto al database, non al suo interno. Copia anche `<workspaceId>/blobs/`                                    |
 

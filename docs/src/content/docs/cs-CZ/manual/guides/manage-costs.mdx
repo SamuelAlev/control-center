@@ -2,14 +2,14 @@
 title: Spravujte náklady
 description: Podívej se, kolik tvoji agenti utrácí, zastropuj autonomní běh a omez spotřebu tokenů.
 slug: cs-CZ/prirucka/navody/sprava-nakladu
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Tenhle návod ukazuje, jak zjistit, kolik stojí běhy agentů, a jak autonomní běh zastropovat.
 
 ## Jak se náklady zaznamenávají
 
-Každý běh agenta zapíše záznam běhu se vstupními tokeny, výstupními tokeny, tokeny uvažování, tokeny čtení z cache a tokeny zápisu do cache, odhadovanou cenou v centech a cenou podagentů, které spustil.
+Každý běh agenta zapíše záznam běhu se vstupními tokeny, výstupními tokeny, tokeny uvažování, tokeny čtení z cache a tokeny zápisu do cache, odhadovanou cenou v mikrodolarech (milióntinách amerického dolaru) a cenou podagentů, které spustil.
 
 Ceny bere z katalogu models.dev, který slouží jen k obohacení seznamu modelů o cenu a kontextové okno — nikdy jako zdroj id modelů. Model, který katalog neocení, zapíše **$0** a běhy s nulovou cenou se ze souhrnu **Využití a náklady** vyřadí. Lokální model Ollama proto neukáže žádnou útratu, počty tokenů se ale pořád zaznamenají. Paušální tarif (kimi-code, předplatné Claude) se chová stejně jen tehdy, když katalog pro obsloužený model cenu nemá; když ji má, běh se přesto odhadne podle těch sazeb. Při řetězci záloh se běh ocení podle modelu, který ho skutečně obsloužil, ne podle toho, o který jsi požádal.
 
@@ -78,7 +78,7 @@ Otevři záznam běhů v Přehledech (50 nejnovějších filtrovaných běhů) a
 
 ## Co se stane, když se rozpočet nastaví mimo běžnou cestu
 
-Pro úplnost: když se `monthlyBudgetCents` nebo politika rozpočtu zapíše přímo do řádku agenta:
+Pro úplnost: když se `monthlyBudgetMicros` nebo politika rozpočtu zapíše přímo do řádku agenta:
 
 - Rozpočty se vyhodnocují **až po** dokončení běhu, ne před odesláním. Posluchač dokončení běhu porovná útratu agenta od začátku měsíce s jeho stropem.
 - Překročení měkkého prahu (výchozí je 80 %) zapíše varovný incident a publikuje událost `BudgetThresholdCrossed`, na kterou můžeš pověsit spouštěč pipeline.

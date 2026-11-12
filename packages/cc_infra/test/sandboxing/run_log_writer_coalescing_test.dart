@@ -108,7 +108,7 @@ void main() {
             thoughtTokens: 0,
             cachedReadTokens: 0,
             cachedWriteTokens: 0,
-            estimatedCostCents: 3,
+            costMicros: 30000,
           ),
           durationMs: 500,
         ),
@@ -120,7 +120,7 @@ void main() {
       final metadata = ev['metadata'] as Map<String, dynamic>;
       expect(metadata['inputTokens'], 10);
       expect(metadata['outputTokens'], 20);
-      expect(metadata['estimatedCostCents'], 3);
+      expect(metadata['costMicros'], 30000);
       expect(metadata['durationMs'], 500);
     });
 

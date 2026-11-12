@@ -17,7 +17,7 @@
 # ---- Build stage: compile a native AOT executable ---------------------------
 # Pin the Dart SDK to satisfy `sdk: ">=3.12.0 <4.0.0"`.
 # Keep this in sync with apps/cc_signaling_server/pubspec.yaml's `environment`.
-ARG DART_SDK_VERSION=3.13
+ARG DART_SDK_VERSION=3.14
 FROM dart:${DART_SDK_VERSION}-sdk AS builder
 
 WORKDIR /build

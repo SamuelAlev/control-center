@@ -23,7 +23,6 @@ class ObservabilityMetrics {
     required this.totalRuns,
     required this.failedRuns,
     required this.successfulRuns,
-    required this.totalCostCents,
     required this.totalInputTokens,
     required this.totalOutputTokens,
     required this.totalCacheReadTokens,
@@ -49,7 +48,6 @@ class ObservabilityMetrics {
     totalRuns: 0,
     failedRuns: 0,
     successfulRuns: 0,
-    totalCostCents: 0,
     totalInputTokens: 0,
     totalOutputTokens: 0,
     totalCacheReadTokens: 0,
@@ -77,9 +75,6 @@ class ObservabilityMetrics {
 
   /// Number of runs whose status was [RunStatus.completed].
   final int successfulRuns;
-
-  /// Total estimated cost in US cents, summed over every run's `cost`.
-  final int totalCostCents;
 
   /// Total input tokens across all runs.
   final int totalInputTokens;
@@ -180,7 +175,6 @@ class ObservabilityMetrics {
           totalRuns == other.totalRuns &&
           failedRuns == other.failedRuns &&
           successfulRuns == other.successfulRuns &&
-          totalCostCents == other.totalCostCents &&
           totalInputTokens == other.totalInputTokens &&
           totalOutputTokens == other.totalOutputTokens &&
           totalCacheReadTokens == other.totalCacheReadTokens &&
@@ -205,7 +199,6 @@ class ObservabilityMetrics {
     totalRuns,
     failedRuns,
     successfulRuns,
-    totalCostCents,
     totalInputTokens,
     totalOutputTokens,
     totalCacheReadTokens,
@@ -236,7 +229,7 @@ class TimeBucket {
     required this.runs,
     required this.errors,
     required this.tokens,
-    required this.costCents,
+    required this.costMicros,
   });
 
   /// The floored start of this bucket window (e.g. `DateTime(y, m, d, h)` for
@@ -252,8 +245,8 @@ class TimeBucket {
   /// Total tokens across all five usage axes for the runs in this bucket.
   final int tokens;
 
-  /// Total estimated cost in US cents for the runs in this bucket.
-  final int costCents;
+  /// Total estimated cost in micro-dollars for the runs in this bucket.
+  final int costMicros;
 
   @override
   bool operator ==(Object other) =>
@@ -263,10 +256,11 @@ class TimeBucket {
           runs == other.runs &&
           errors == other.errors &&
           tokens == other.tokens &&
-          costCents == other.costCents;
+          costMicros == other.costMicros;
 
   @override
-  int get hashCode => Object.hash(bucketStart, runs, errors, tokens, costCents);
+  int get hashCode =>
+      Object.hash(bucketStart, runs, errors, tokens, costMicros);
 }
 
 /// Computes [ObservabilityMetrics] and time-series breakdowns over a collection
@@ -388,7 +382,6 @@ class ObservabilityMetricsCalculator {
       failedRuns: failedRuns,
       successfulRuns: successfulRuns,
       verifiedSuccessfulRuns: verifiedSuccessfulRuns,
-      totalCostCents: (totalCostMicros / 10000).round(),
       totalCostMicros: totalCostMicros,
       inclusiveCostMicros: inclusiveCostMicros,
       activeRuns: activeRuns,
@@ -440,7 +433,7 @@ class ObservabilityMetricsCalculator {
         acc.errors++;
       }
       acc.tokens += run.cost.totalTokens;
-      acc.costCents += run.cost.estimatedCostCents;
+      acc.costMicros += run.cost.costMicros;
     }
 
     final buckets = accumulators.values.map((a) => a.toBucket()).toList()
@@ -474,8 +467,8 @@ class _BucketAccumulator {
   /// Running sum of all-axis tokens in this bucket.
   int tokens = 0;
 
-  /// Running sum of cost in US cents in this bucket.
-  int costCents = 0;
+  /// Running sum of cost in micro-dollars in this bucket.
+  int costMicros = 0;
 
   /// Snapshots the running totals into an immutable [TimeBucket].
   TimeBucket toBucket() => TimeBucket(
@@ -483,6 +476,6 @@ class _BucketAccumulator {
     runs: runs,
     errors: errors,
     tokens: tokens,
-    costCents: costCents,
+    costMicros: costMicros,
   );
 }

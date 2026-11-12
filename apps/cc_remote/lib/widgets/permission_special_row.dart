@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart'
     show EnforcementLevel;
@@ -131,8 +132,10 @@ class PermissionSpecialRow extends StatelessWidget {
         l.permissionTools(constraint.tools!.join(', ')),
       if (constraint.maxCount != null)
         l.permissionMaxCount(number.format(constraint.maxCount)),
-      if (constraint.maxCents != null)
-        l.permissionMaxCents(number.format(constraint.maxCents)),
+      if (constraint.maxMicros != null)
+        l.permissionMaxCents(
+          number.format(constraint.maxMicros! / microsPerCent),
+        ),
     ].join(' · ');
   }
 }

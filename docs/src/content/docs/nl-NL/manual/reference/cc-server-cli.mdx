@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Elke flag, omgevingsvariabele, subcommando en datadirectorypad van de headless server.
 slug: nl-NL/handleiding/referentie/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Elke procesflag heeft een CLI-flag of een omgevingsvariabele; de flag wint, dan
@@ -229,12 +229,16 @@ macOS, `%APPDATA%\control-center` op Windows en `$XDG_DATA_HOME/control-center`
 (anders `~/.local/share/control-center`) elders. Een `.cc_server` relatief aan de
 cwd wordt alleen gebruikt als er geen home- of app-gegevensmap kan worden bepaald.
 
+De server houdt de datadirectory alleen toegankelijk voor zijn eigen account (`0700`). Hij start niet (exitcode `78`) wanneer hij dat niet kan, wanneer `global.db` beschadigd is of door een nieuwere versie is geschreven, of wanneer het identiteitsbestand niet gelezen kan worden.
+
 | Pad                               | Inhoud                                                                          |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Het werkruimteregister, gebruikers, gekoppelde apparaten, de nieuwsfeed en de fleetwachtrij |
-| `<workspaceId>/workspace.db`      | Eén database per werkruimte — agenten, ruimtes, tickets, geheugen, de codegraph  |
+| `<workspaceId>/workspace.db`      | Eén database per werkruimte — agenten, ruimtes, tickets, geheugen  |
+| `<workspaceId>/code_index.db`     | De codegraph van die werkruimte. Wordt opnieuw opgebouwd wanneer hij ontbreekt, en nooit geback-upt        |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | De nieuwste twee kopieën van een database van vóór een update die het formaat ervan wijzigde |
 | `<workspaceId>/chat_credentials/` | Tokens van de chatbot, als platte JSON, zodat ze met de werkruimte meegaan       |
-| `secrets.json`                    | Koppelingssleutels, de installatiesleutel voor Connect, provider-apps, de aanmeldingen van mensen (verzegeld wanneer gemaakt via Connect), SSO (`0600`) |
+| `secrets.json`                    | Koppelingssleutels, de installatiesleutel voor Connect, provider-apps, de aanmeldingen van mensen (verzegeld wanneer gemaakt via Connect), webhookgeheimen, SSO (`0600`) |
 | `backups/<timestamp>/`            | Eén momentopname van de installatie — `manifest.json`, `global.db` en een kopie van elke werkruimte |
 | `backups/exports/`                | Exportbestanden van één werkruimte, `<workspaceId>-<timestamp>.db`               |
 | `backups/transfer/`               | Staging voor het downloaden en uploaden van back-ups; opgeruimd door de route die erin schrijft |

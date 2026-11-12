@@ -52,17 +52,39 @@ class WebhookDeliveryDao extends DatabaseAccessor<WorkspaceDatabase>
             ..orderBy([(d) => OrderingTerm.desc(d.createdAt)]))
           .watch();
 
-  /// Whether a delivery with [dedupeKey] already exists for [triggerId].
-  Future<bool> existsByDedupeKey(String triggerId, String dedupeKey) async {
-    final row =
-        await (select(webhookDeliveriesTable)
-              ..where(
-                (d) =>
-                    d.triggerId.equals(triggerId) &
-                    d.dedupeKey.equals(dedupeKey),
-              )
-              ..limit(1))
-            .getSingleOrNull();
+  /// The `WHERE` of `uq_webhook_deliveries_dedupe`, spelled exactly as the
+  /// index spells it: a conflict target with a condition must match it.
+  static const CustomExpression<bool> _dedupeHeld = CustomExpression<bool>(
+    "dedupe_key IS NOT NULL AND status IN ('queued', 'dispatched')",
+  );
+
+  /// Records [delivery] unless its trigger already has a delivery holding the
+  /// same dedupe key (in flight or dispatched); returns whether it was
+  /// recorded.
+  ///
+  /// One insert whose conflict target is the partial unique index
+  /// `uq_webhook_deliveries_dedupe` on `(trigger_id, dedupe_key)` (the target
+  /// repeats its `WHERE`, which is how SQLite names a partial index), so of
+  /// two concurrent identical deliveries exactly one is recorded, and only
+  /// that one may dispatch. A conflict on anything else (a reused id) still
+  /// throws instead of reading as "duplicate".
+  ///
+  /// The conflict action is an update that never applies (`WHERE 0`), which
+  /// is SQLite's `DO NOTHING` for a target with a condition: no row is written
+  /// and none is returned.
+  Future<bool> claim(WebhookDeliveriesTableCompanion delivery) async {
+    final row = await into(webhookDeliveriesTable).insertReturningOrNull(
+      delivery,
+      onConflict: DoUpdate(
+        (old) => WebhookDeliveriesTableCompanion.custom(id: old.id),
+        target: [
+          webhookDeliveriesTable.triggerId,
+          webhookDeliveriesTable.dedupeKey,
+        ],
+        targetCondition: (_) => _dedupeHeld,
+        where: (_) => const Constant(false),
+      ),
+    );
     return row != null;
   }
 

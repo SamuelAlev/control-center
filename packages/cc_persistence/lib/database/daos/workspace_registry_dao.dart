@@ -60,9 +60,9 @@ class WorkspaceRegistryDao extends DatabaseAccessor<GlobalDatabase>
 
   /// Returns every workspace id INCLUDING soft-deleted ones.
   ///
-  /// Maintenance fan-out (retention sweeps, backup, the schema upgrade pass)
-  /// uses this: a soft-deleted workspace still has a database file on disk and
-  /// skipping it would leave that file un-swept and un-backed-up.
+  /// Bookkeeping only: which ids were ever registered. A soft-deleted
+  /// workspace has no database, so nothing that opens workspaces iterates
+  /// this; they iterate [liveIds].
   Future<List<String>> allIdsIncludingDeleted() async {
     final rows = await select(workspacesTable).get();
     return [for (final r in rows) r.id];
@@ -76,11 +76,8 @@ class WorkspaceRegistryDao extends DatabaseAccessor<GlobalDatabase>
 
   /// Returns every LIVE workspace id, in the app-wide manual order.
   ///
-  /// What the read fan-outs want. A soft-deleted workspace is one a person
-  /// removed: opening its file to answer "show me all my agents" pays a cold
-  /// open + `quick_check` to contribute rows the operator asked to stop seeing.
-  /// Maintenance still wants [allIdsIncludingDeleted] — the file is on disk
-  /// either way and skipping it would leave it un-swept and un-backed-up.
+  /// What every fan-out, sweep and snapshot iterates. A soft-deleted
+  /// workspace is one a person removed, and its database went with it.
   Future<List<String>> liveIds() async {
     final rows =
         await (select(workspacesTable)
@@ -152,9 +149,8 @@ class WorkspaceRegistryDao extends DatabaseAccessor<GlobalDatabase>
 
   /// Soft-deletes a workspace by [id] (sets deleted_at).
   ///
-  /// The workspace's database file is NOT removed here — the caller
-  /// (`WorkspaceDatabaseManager.dropAndClose`) owns that, so a soft-delete can
-  /// still be undone until the file is dropped.
+  /// The workspace's database file is NOT removed here — the caller owns
+  /// that (`WorkspaceDatabaseManager.markDeleted`, then `dropAndClose`).
   Future<int> deleteWorkspace(String id) =>
       (update(workspacesTable)..where((t) => t.id.equals(id))).write(
         WorkspacesTableCompanion(deletedAt: Value(DateTime.now())),

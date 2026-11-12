@@ -3,7 +3,7 @@ title: "Architektúra"
 description: "Hogyan épül fel a Control Center: vékonykliens-szervermodell, funkcióközpontú Clean Architecture, valamint portok és adapterek."
 dateModified: 2026-09-19
 slug: hu-HU/kezikonyv/fogalmak/architektura
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Áttekintés
@@ -100,9 +100,9 @@ Az alkalmazás összeállítási gyökere (`di/providers.dart`) a kliensoldali p
 **Drift** (SQLite), két adatbázisra bontva, mindkettő a `cc_persistence`-ben:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — valóban szerver szintű táblák rövid listája: a munkaterület-nyilvántartás, a felhasználók/beállítások/párosított eszközök, az SSO-kapcsolatok, a telepítés szintű szerverbeállítások, a kezelt műveletszabályzatok (egy telepítés szintű korlát, amely csak szigoríthatja a munkaterület korlátait), a felhasználónkénti hírfolyam, a flottasor (workerek/jobok/elhelyezési napló), a hitelesítés előtti `workspace_routes` index és a telepítési metaadatok. Az indítás csak ezt a fájlt nyitja meg, így az indulási költség lapos marad, akármennyi előzményt halmoznak fel a munkaterületek. Egy tábla ide való hozzáadása elszigetelési döntés, amelyet egy racsnis teszt miatt meg kell indokolni.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — munkaterületenként egy _könyvtár_, amely egy SQLite-fájlt és minden mást tartalmaz, ami csak ahhoz a munkaterülethez tartozik, így egy beszélgetés worktree-jei és ügynökfájljai az adatbázis mellett helyezkednek el, és vele együtt törlődnek. Szinte minden itt él: ügynökök, terek, jegyek, memória, pipeline-ok, megbeszélések, a kódgráf, átnézések, repók. A fájlok az első érintéskor lustán nyílnak meg a `WorkspaceDatabaseManager.of(workspaceId)`-n keresztül, és ilyenkor saját maguk fizetik meg a `quick_check`, az FTS/trigger telepítés és a `vector_init` költségét.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — munkaterületenként egy _könyvtár_, amely egy SQLite-fájlt és minden mást tartalmaz, ami csak ahhoz a munkaterülethez tartozik, így egy beszélgetés worktree-jei és ügynökfájljai az adatbázis mellett helyezkednek el, és vele együtt törlődnek. Szinte minden itt él: ügynökök, terek, jegyek, memória, pipeline-ok, megbeszélések, átnézések, repók. A kódgráf egy második fájl ugyanebben a könyvtárban, a `code_index.db`, amelyet újraépítenek, nem mentenek. A fájlok az első érintéskor lustán nyílnak meg a `WorkspaceDatabaseManager.of(workspaceId)`-n keresztül, és ilyenkor saját maguk fizetik meg a `quick_check`, az FTS/trigger telepítés és a `vector_init` költségét.
 
-Mindkét fél egy összelapított v1 bázisvonalról indult — az `onCreate` építi fel a jelenlegi sémát —, a migrációs lépések csak akkor kerülnek mögé, ha egy telepített adatbázist tovább kell vinni.
+Egyik fél sem tartalmaz migrációs lépéseket. Egy új fájl a táblák definíciójából épül fel. Egy régebbi verzióból származó fájlt először félre másolnak (`pre_upgrade/`), majd megnyitáskor ugyanezekre a definíciókra hozzák, így egy új telepítés és egy frissített ugyanazt a sémát kapja. Az újabb verzió által írt fájlt elutasítják.
 
 Mivel egy munkaterület egy fájl, a munkaterület exportálása egyetlen `VACUUM INTO` utasítás (`workspace.export`), nem táblánkénti dump; a `workspace.import` átvesz egy ilyen fájlt, és a beágyazott `workspace_meta` segítségével különbözteti meg a saját, újra átvett fájlját egy másik telepítésből származótól.
 

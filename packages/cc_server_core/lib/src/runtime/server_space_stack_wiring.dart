@@ -100,7 +100,6 @@ SpaceStackService _wireSpaceStackService({
         // A stack layer is the agent's work published for this person:
         // they may not approve it themselves (see AgentPrRequesters).
         final pr = await agentPrRequesters.open(
-          workspaceId: workspaceId,
           repo: repo,
           head: head,
           approvalOwnerUserIds: approvalOwnerUserIds,

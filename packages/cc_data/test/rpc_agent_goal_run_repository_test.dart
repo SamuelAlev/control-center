@@ -35,8 +35,8 @@ void main() {
     'kind': kind,
     'status': status,
     'deadline_at': '2026-08-01T12:00:00.000',
-    'cost_cap_cents': 500,
-    'cost_cents': 125,
+    'cost_cap_micros': 5000000,
+    'cost_micros': 1250000,
     'max_runs': 10,
     'run_count': 3,
     'consecutive_failures': 1,
@@ -66,8 +66,8 @@ void main() {
         expect(g.kind, AgentGoalKind.goal);
         expect(g.status, AgentGoalStatus.active);
         expect(g.deadlineAt, DateTime(2026, 8, 1, 12));
-        expect(g.costCapCents, 500);
-        expect(g.costCents, 125);
+        expect(g.costCapMicros, 5000000);
+        expect(g.costMicros, 1250000);
         expect(g.maxRuns, 10);
         expect(g.runCount, 3);
         expect(g.consecutiveFailures, 1);
@@ -151,7 +151,7 @@ void main() {
       expect(g.createdAt, DateTime.fromMillisecondsSinceEpoch(0));
       expect(g.activeRunId, isNull);
       expect(g.requestedByUserId, isNull);
-      expect(g.costCents, 0);
+      expect(g.costMicros, 0);
       expect(g.runCount, 0);
     });
 

@@ -2,7 +2,7 @@
 title: Configurarea agenților
 description: Fiecare câmp al entității de agent și enumerările pe care le folosește.
 slug: ro-RO/manual/referinta/configurarea-agentilor
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Această referință listează fiecare câmp al entității de agent, plus enumerările și flag-urile pe care le folosește. Pentru un parcurs pas cu pas de creare sau editare a unui agent în aplicație, vezi [Creează și configurează un agent](/ro-RO/manual/ghiduri-practice/creeaza-agent/).
@@ -26,17 +26,17 @@ Această referință listează fiecare câmp al entității de agent, plus enume
 | `effort`                | `String?`              | Nu          | Id-ul nivelului de raționament (de ex. `'low'`, `'xhigh'`), preluat din `thinkingLevels` ale modelului selectat                                                                                      |
 | `contextSize`           | `int?`                 | Nu          | Dimensiunea maximă a ferestrei de context                                                                                                                                                            |
 | `role`                  | `AgentRole?`           | Nu          | Rolul agentului                                                                                                                                                                                      |
-| `monthlyBudgetCents`    | `int`                  | Nu          | Plafon lunar de cheltuieli, în cenți (implicit `0`, nelimitat)                                                                                                                                       |
+| `monthlyBudgetMicros`    | `int`                  | Nu          | Plafon lunar de cheltuieli, în microdolari (implicit `0`, nelimitat)                                                                                                                                       |
 | `silenceTimeoutMinutes` | `int?`                 | Nu          | Suprascriere a timeout-ului de tăcere, în minute; trebuie să fie null sau între 1–240 (verificat în constructor)                                                                                     |
 | `maxConcurrentTasks`    | `int`                  | Nu          | Implicit `1`. Cifra de capacitate pe care o raportează modelul de prezență (numărătorile de rulări în execuție și în coadă sunt comparate cu ea)                                                     |
 | `visibility`            | `AgentVisibility`      | Nu          | Implicit `workspace`                                                                                                                                                                                 |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Nu          | Starea de guvernanță (implicit `active`). Scrisă de oprirea dură a bugetului și afișată în organigramă și în lista de prezență. Trimiterea acceptă în continuare muncă de la un agent `paused`       |
-| `budgetPolicyId`        | `String?`              | Nu          | Id-ul politicii de buget partajate; când este null, se aplică direct `monthlyBudgetCents`                                                                                                            |
+| `budgetPolicyId`        | `String?`              | Nu          | Id-ul politicii de buget partajate; când este null, se aplică direct `monthlyBudgetMicros`                                                                                                            |
 | `runtimeProfileId`      | `String?`              | Nu          | Id-ul profilului de runtime personalizat                                                                                                                                                             |
 | `createdAt`             | `DateTime`             | Da          | Marca temporală a creării                                                                                                                                                                            |
 
 `name` și `title` trebuie să fie ambele ne-goale (verificat în constructor). Valoarea
-implicită `0` a `monthlyBudgetCents` înseamnă nelimitat. Scrie un plafon cu `agents.upsert`.
+implicită `0` a `monthlyBudgetMicros` înseamnă nelimitat. Scrie un plafon cu `agents.upsert`.
 
 ## Enumerarea AgentRole
 

@@ -123,14 +123,12 @@ class HarnessRunAccounting implements ProviderCallObserver {
         }
         final usage = record.usage;
         return ProviderCallCost(
-          (price.estimate(
-                    inputTokens: usage.inputTokens,
-                    outputTokens: usage.outputTokens,
-                    cacheReadTokens: usage.cacheReadTokens,
-                    cacheWriteTokens: usage.cacheWriteTokens,
-                  ) *
-                  1000000)
-              .round(),
+          price.estimateMicros(
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            cacheReadTokens: usage.cacheReadTokens,
+            cacheWriteTokens: usage.cacheWriteTokens,
+          ),
         );
       },
     );
@@ -234,7 +232,6 @@ class HarnessRunAccounting implements ProviderCallObserver {
       cachedReadTokens: usage.cacheReadTokens,
       cachedWriteTokens: usage.cacheWriteTokens,
       costMicros: _ownCostMicros,
-      estimatedCostCents: (_ownCostMicros / 10000).round(),
       costBasis: _costBasis ?? CostBasis.estimated,
       durationMs: durationMs ?? runOffsetMs + elapsedMs,
     );

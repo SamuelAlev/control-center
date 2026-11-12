@@ -2,7 +2,7 @@
 title: Fazer cópia de segurança e restaurar
 description: Tire um instantâneo da instalação, mova um espaço de trabalho entre máquinas, restaure um espaço de trabalho ou todos eles e mantenha cópias noutro local.
 slug: pt-PT/manual/guias/copia-de-seguranca-e-restauro
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Este guia aborda as cinco coisas que as pessoas fazem realmente com cópias de
@@ -44,10 +44,10 @@ Ambos os artefactos são **apenas bases de dados**:
 - Um **instantâneo da instalação** é uma pasta com data e hora: `manifest.json`, `global.db` e um `<workspaceId>/workspace.db` por espaço de trabalho.
 - Uma **exportação de espaço de trabalho** é esse único ficheiro `workspace.db`.
 
-A base de dados de um espaço de trabalho é o espaço de trabalho inteiro: as suas conversas, registos de execuções, índice de código, ligações a repositórios, definições de ambientes e membros. Contém também os tokens de webhook dos pipelines e os segredos de webhook da sincronização de tickets, em forma legível. Guarde uma cópia de segurança ou exportação de um espaço de trabalho da mesma forma que guarda um segredo. Não contém nenhum início de sessão de fornecedor, chave de dispositivo nem segredo de utilizador; esses vivem na base de dados global e no armazenamento de segredos do servidor.
+A base de dados de um espaço de trabalho é o espaço de trabalho inteiro: as suas conversas, registos de execuções, ligações a repositórios, definições de ambientes e membros. Não contém segredos: os tokens de webhook dos pipelines, os segredos de webhook da sincronização de tickets, os inícios de sessão em fornecedores, as chaves de dispositivo e os segredos de utilizador vivem na base de dados global e no armazenamento de segredos do servidor. Continua a ser tudo o que o espaço de trabalho disse e fez, por isso guarde uma cópia de segurança ou exportação transferida tão privada quanto o próprio espaço de trabalho. O índice de código é um ficheiro separado ao lado da base de dados, `code_index.db`. Nenhuma cópia de segurança o inclui; o servidor reconstrói-o.
 
 Nenhum deles transporta o resto do diretório de dados: `secrets.json` (chaves de
-emparelhamento, credenciais de fornecedores, SSO), os `blobs/` de um espaço de trabalho
+emparelhamento, credenciais de fornecedores, segredos de webhook, SSO), os `blobs/` de um espaço de trabalho
 (imagens coladas em mensagens), `skills/`, `agents/`, `chat_credentials/`, o áudio de
 reuniões gravado ou imagens de rigs. Parte disso é descartável e parte não é — a
 [tabela completa está na referência](/pt-PT/manual/referencia/copia-de-seguranca/#o-que-uma-cópia-de-segurança-não-contém),
@@ -63,17 +63,13 @@ O servidor continua em execução durante todo o processo. Cada ficheiro é escr
 `VACUUM INTO`, que é consistente em relação a uma base de dados em utilização, pelo que
 não há janela de manutenção nem necessidade de parar agentes.
 
-Cada linha da lista mostra a data e hora, o tamanho em disco, quantos espaços de trabalho
-foram capturados e se o instantâneo está **Completo** ou **Incompleto**. Incompleto
-significa que o manifesto está em falta ou que refere ficheiros que não existem — uma
-cópia de segurança interrompida por uma falha ou por um disco cheio. Continuam a ser
-listados de propósito: um instantâneo que não vê é um instantâneo que acredita ter. Um
-instantâneo incompleto não consegue restaurar uma instalação inteira, mas os ficheiros de
-espaço de trabalho que contém ainda podem ser adotados um a um.
+Cada linha da lista mostra a data e hora, o tamanho em disco, quantos espaços de trabalho foram capturados e se o instantâneo está **Completo** ou **Não verificado**. Cada cópia é verificada depois de escrita, e o manifesto regista o tamanho e a soma de verificação dela. Não verificado significa que o servidor não pode garantir o instantâneo: o manifesto está em falta ou é ilegível, ou um ficheiro que ele refere não existe ou mudou de tamanho. É o caso de uma cópia de segurança interrompida por uma falha ou por um disco cheio, ou de uma tirada antes de os instantâneos registarem somas de verificação. Continuam a ser listados de propósito: um instantâneo que não vê é um instantâneo que acredita ter. Um instantâneo não verificado não consegue restaurar uma instalação inteira, mas os ficheiros de espaço de trabalho que contém ainda podem ser restaurados um a um.
 
 Uma linha pode também indicar **_n_ espaços de trabalho não capturados**. Trata-se de um
-espaço de trabalho registado mas nunca escrito (ainda não há ficheiro), ou de um cuja
+espaço de trabalho registado mas nunca escrito (ainda não há ficheiro), de um cuja base de dados está danificada (uma cópia danificada nunca é feita), ou de um cuja
 cópia falhou — verifique o registo do servidor.
+
+Um instantâneo ou uma cópia de segurança agendada marcada como **Última cópia boa** guarda a cópia boa mais recente de um espaço de trabalho cuja base de dados foi entretanto danificada. A limpeza agendada não lhe toca, e eliminá-lo pede confirmação, até que esse espaço de trabalho seja restaurado.
 
 ## Agendar cópias de segurança de espaços de trabalho e a retenção
 
@@ -102,7 +98,7 @@ admin indica-o na própria linha em vez de listar as cópias de segurança.
 
 Expanda uma linha para ver cada cópia de segurança, da mais recente para a mais antiga:
 
-- **Restaurar** substitui a base de dados atual do espaço de trabalho por esta cópia de segurança. Exporte primeiro o espaço de trabalho se puder precisar de desfazer a operação. Requer o proprietário do servidor, que tem também de ser o proprietário do espaço de trabalho.
+- **Restaurar** substitui a base de dados atual do espaço de trabalho por esta cópia de segurança. A base de dados que ela substitui fica nesta lista, com um nome que termina em `-pre-restore`, para que possa voltar atrás. Requer o proprietário do servidor, que tem também de ser o proprietário do espaço de trabalho.
 - **Descarregar** guarda o ficheiro na máquina que está a utilizar. A cópia de segurança continua no servidor.
 - **Copiar caminho** copia a sua localização no servidor.
 - **Eliminar** remove esta cópia de segurança permanentemente, depois de escrever o nome do espaço de trabalho. Requer **proprietário**.
@@ -121,7 +117,7 @@ uma, descarregue-a, crie um espaço de trabalho (só o proprietário do servidor
 
 ## Eliminar um instantâneo da instalação
 
-Em **Instantâneos da instalação**, expanda o instantâneo, incluindo um incompleto, e use
+Em **Instantâneos da instalação**, expanda o instantâneo, incluindo um não verificado, e use
 **Excluir instantâneo** na zona de perigo. Confirme o nome. Todo o diretório do
 instantâneo é removido permanentemente do servidor; descarregue-o primeiro se precisar de
 uma cópia. Um pipeline de cópia de segurança de espaço de trabalho nunca elimina estes
@@ -162,19 +158,14 @@ O passo 3 é um restauro, por isso precisa do proprietário do servidor de desti
 Se os dois servidores forem a mesma máquina onde está sentado, **Guardar no servidor** na origem e, depois, o caminho do ficheiro em **Ficheiro de base de dados do espaço de trabalho** e **Importar** no destino, fazem o mesmo sem a ida e volta; esse caminho é resolvido no anfitrião do servidor.
 
 :::caution[A importação substitui tudo]
-Importar substitui tudo o que o espaço de trabalho de destino contém atualmente, e não é
-possível desfazer. Exporte o destino primeiro se ele tiver algo que possa querer de volta.
+Importar substitui tudo o que o espaço de trabalho de destino contém atualmente. A base de dados que ela substitui fica guardada em **Backups agendados** com um nome que termina em `-pre-restore`; restaure essa para voltar atrás.
 :::
 
-Duas coisas são permitidas e registadas em vez de recusadas: importar um ficheiro cujo id
-de espaço de trabalho registado difere do destino (é assim que duplica um espaço de
-trabalho ou o restaura com um id novo) e importar um ficheiro de uma **instalação
-diferente**. Nesse segundo caso, os dispositivos emparelhados e os ids de utilizador do
-ficheiro pertencem à instalação de onde veio e não serão resolvidos nesta — os dados do
-próprio espaço de trabalho estão intactos, mas volte a confirmar a associação depois de o
-adotar.
+Um ficheiro de outro espaço de trabalho ou de uma **instalação diferente** é aceite: é assim que duplica um espaço de trabalho, o restaura com um id novo ou o entrega a outra pessoa. Os ids de utilizador de outra instalação não são resolvidos nesta — os dados do próprio espaço de trabalho estão intactos, mas volte a confirmar a associação depois de o adotar.
 
-Os tokens do bot de chat e os inícios de sessão em fornecedores ficam fora da base de dados, por isso a instalação que recebe volta a ligar a sua própria. O ficheiro transporta, porém, os tokens de webhook dos pipelines e os segredos de webhook da sincronização de tickets do espaço de trabalho, pelo que um espaço de trabalho que entrega a outra pessoa lhe entrega também esses. Rode-os depois se o destinatário não os deve ter.
+Um ficheiro restaurado não pode conceder nada neste servidor por si só. As permissões que trazia para além da associação comum são retiradas e listadas em **Retido em cópias restauradas** no topo da página: regras de ação que deixam os agentes atuarem sem aprovação ou depois de uma, caminhos que um sandbox pode executar, acesso a repositórios acima de leitura, funções acima de membro e convites abertos para essas funções. **Aceitar** concede-a de novo; **Rejeitar** descarta-a. As aprovações para executar uma definição de ambiente no anfitrião são limpas, por isso aprove essas definições de novo. Quem restaura mantém ou recebe a função de proprietário.
+
+Os tokens do bot de chat, os inícios de sessão em fornecedores e os segredos de webhook ficam fora da base de dados, por isso a instalação que recebe volta a ligar a sua própria. Os gatilhos de webhook e os webhooks de sincronização de tickets chegam sem os segredos e não recebem nada noutro servidor até que os volte a guardar lá, o que dá a cada gatilho um novo URL.
 
 ## Restaurar um espaço de trabalho a partir de um instantâneo
 
@@ -186,7 +177,7 @@ Precisa de ser o proprietário do servidor e o proprietário do espaço de traba
 
 É a mesma operação que uma importação, apontada à cópia do ficheiro desse espaço de
 trabalho dentro do instantâneo — de propósito, para que não exista um segundo mecanismo
-que possa tratar o mesmo ficheiro de forma diferente.
+que possa tratar o mesmo ficheiro de forma diferente. A cópia é primeiro verificada contra a soma de verificação que o instantâneo registou.
 
 Uma linha pode indicar **Não está mais neste servidor**, com **Restaurar** desativado: o
 instantâneo contém um espaço de trabalho que esta instalação já não tem. Recupere-o
@@ -195,6 +186,10 @@ manualmente — crie um espaço de trabalho (apenas o proprietário do servidor 
 expandido mostra o seu próprio **Caminho no servidor** num campo de cópia, e o título da
 linha é o id antigo do espaço de trabalho, por isso tem as duas metades desse caminho à
 frente.
+
+## Restaurar um espaço de trabalho danificado
+
+Um espaço de trabalho cuja base de dados falha na verificação de integridade fica em modo apenas leitura: tudo continua legível e cada alteração é recusada. Os membros veem **Este espaço de trabalho está em modo apenas leitura** no topo do espaço de trabalho, o proprietário do servidor vê-o em **Precisa da sua atenção** nesta página, e a cópia de segurança mais recente que tem uma cópia boa fica guardada como **Última cópia boa**. Restaure o espaço de trabalho a partir dessa cópia, como descrito acima, para voltar a torná-lo gravável. A base de dados danificada é guardada como uma cópia de segurança `-pre-restore`.
 
 ## Restaurar uma instalação inteira
 
@@ -324,7 +319,7 @@ cron ou de um temporizador do systemd, e sincronize depois o `DEST` para fora do
 anfitrião. O `VACUUM INTO` requer o SQLite 3.27 ou mais recente.
 
 Escreva-o **fora** de `<dataDir>/backups/`. Um diretório criado à mão nesse local não tem
-`manifest.json`, por isso a aplicação iria listá-lo como um instantâneo incompleto e a
+`manifest.json`, por isso a aplicação iria listá-lo como um instantâneo não verificado e a
 lista deixaria de ser um registo honesto daquilo que o próprio servidor produziu.
 
 ### Limpar instantâneos antigos da instalação inteira
@@ -372,9 +367,11 @@ local onde são guardadas.
 | "Apenas o proprietário do servidor pode restaurar cópias de segurança. Ainda pode transferi-las." | Restaurar substitui a base de dados de um espaço de trabalho no anfitrião do servidor, por isso só o proprietário do servidor restaura. Descarregue a cópia de segurança e peça-lhe |
 | "Este servidor não expõe nenhuma superfície de backup." | O anfitrião não tem nenhuma porta de cópia de segurança ligada — é um servidor de demonstração. As operações estão ausentes em vez de serem recusadas |
 | "O ficheiro é maior do que o servidor aceita." | Os envios estão limitados a 8 GiB. Coloque o ficheiro no anfitrião do servidor e introduza o seu caminho em **Ficheiro de base de dados do espaço de trabalho** |
-| Import refused: not a Control Center workspace database | O ficheiro não tem uma linha `workspace_meta` — não é uma exportação de espaço de trabalho, ou está truncado. Nada foi substituído |
-| Um instantâneo aparece listado como **Incompleto** | O manifesto está em falta ou refere ficheiros que não existem. Tire um novo; entretanto, adote a partir dele os ficheiros de espaço de trabalho individuais |
-| Um instantâneo diz que há espaços de trabalho não capturados | Esses espaços de trabalho nunca foram escritos, ou a cópia deles falhou. Verifique o registo do servidor |
+| A restauração é recusada e nada é substituído | O ficheiro falhou numa verificação, e a mensagem diz qual: não é uma base de dados de espaço de trabalho, está danificado, difere da soma de verificação que o instantâneo registou, uma versão mais recente do servidor o escreveu, ou os webhooks ou convites dele já pertencem a outro espaço de trabalho neste servidor. Utilize outra cópia ou atualize primeiro o servidor |
+| Um instantâneo aparece listado como **Não verificado** | Nunca terminou, ou foi tirado antes de os instantâneos registarem somas de verificação. Tire um novo; entretanto, restaure a partir dele os ficheiros de espaço de trabalho individuais |
+| Um instantâneo diz que há espaços de trabalho não capturados | Esses espaços de trabalho nunca foram escritos, estão danificados, ou a cópia deles falhou. Verifique o registo do servidor |
+| Um espaço de trabalho diz **Este espaço de trabalho está em modo apenas leitura** | A base de dados dele falhou numa verificação de integridade. Nada nele pode ser alterado até que o proprietário do servidor o restaure a partir de uma cópia de segurança |
+| Os webhooks deixam de chegar depois de um espaço de trabalho mudar para outro servidor | Os segredos de webhook não viajam com a base de dados. Volte a guardar cada gatilho de webhook e cada ligação de sincronização de tickets no novo servidor, e depois envie o novo URL ao remetente |
 | Uma instalação restaurada não tem credenciais de forge nem de SSO | O `secrets.json` não está num instantâneo. Restaure-o do local onde o guardou ou volte a ligar os fornecedores |
 | Faltam imagens coladas a um espaço de trabalho restaurado | Os blobs ficam ao lado da base de dados, não dentro dela. Copie também `<workspaceId>/blobs/` |
 

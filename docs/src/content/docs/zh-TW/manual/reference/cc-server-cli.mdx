@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: 無介面伺服器的每一個旗標、環境變數、子指令與資料目錄路徑。
 slug: zh-TW/手冊/參考/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 每個行程旗標都接受一個命令列旗標或一個環境變數；旗標優先，其次是環境變數，
@@ -203,12 +203,16 @@ webhook——不必一直等待一個正在睡覺的人。期限一到，該次�
 在無法解析出家目錄或應用程式資料目錄時，才會使用相對於目前工作目錄的
 `.cc_server`。
 
+伺服器會將資料目錄設為僅其自身帳號可存取（`0700`）。當它無法做到這點、`global.db` 已損壞或是由較新版本寫入，或是無法讀取其身分檔時，伺服器會拒絕啟動（結束代碼 `78`）。
+
 | 路徑                              | 內容                                                                     |
 | --------------------------------- | ------------------------------------------------------------------------ |
 | `global.db`                       | 工作區註冊表、使用者、已配對裝置、新聞動態與機群佇列                      |
-| `<workspaceId>/workspace.db`      | 每個工作區一個資料庫——代理、空間、工單、記憶、程式碼圖                    |
+| `<workspaceId>/workspace.db`      | 每個工作區一個資料庫——代理、空間、工單、記憶                    |
+| `<workspaceId>/code_index.db`     | 該工作區的程式碼圖。缺少時會被重建，從不備份 |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | 更新改變格式之前的資料庫副本，最新的兩份 |
 | `<workspaceId>/chat_credentials/` | 聊天機器人權杖，以純文字 JSON 保存，因此會隨工作區一起移動                |
-| `secrets.json`                    | 配對金鑰、Connect 安裝金鑰、供應商應用程式、人們的登入（透過 Connect 建立者為封存形式）、SSO（`0600`） |
+| `secrets.json`                    | 配對金鑰、Connect 安裝金鑰、供應商應用程式、人們的登入（透過 Connect 建立者為封存形式）、webhook 密鑰、SSO（`0600`） |
 | `backups/<timestamp>/`            | 一份安裝快照——`manifest.json`、`global.db` 以及每個工作區的副本          |
 | `backups/exports/`                | 單一工作區的匯出，`<workspaceId>-<timestamp>.db`                         |
 | `backups/transfer/`               | 備份下載與上傳的暫存區；由寫入它的路由負責清理                           |

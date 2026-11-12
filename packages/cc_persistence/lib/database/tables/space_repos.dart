@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_space_repos_spaceId', columns: {#spaceId})
 /// Many-to-many join between spaces and the repos a space provisions
 /// worktrees for.
 ///
@@ -12,16 +11,20 @@ import 'package:drift/drift.dart';
 ///
 /// `workspaceId` is carried (not just derivable via the space) so reads scope
 /// to the workspace directly — workspace isolation is a hard invariant.
+///
+/// The primary key `(spaceId, repoId)` serves every per-space read; the
+/// repo side needs an index of its own.
+@TableIndex(name: 'idx_space_repos_repo', columns: {#repoId})
 class SpaceReposTable extends Table {
   /// Workspace the space and repo belong to.
   TextColumn get workspaceId => text().customConstraint('NOT NULL')();
 
-  /// Space side of the link.
+  /// Space side of the link; the link goes with its space.
   TextColumn get spaceId => text().customConstraint(
     'NOT NULL REFERENCES spaces (id) ON DELETE CASCADE',
   )();
 
-  /// Repo side of the link.
+  /// Repo side of the link; the link goes with its repo.
   TextColumn get repoId => text().customConstraint(
     'NOT NULL REFERENCES repos (id) ON DELETE CASCADE',
   )();

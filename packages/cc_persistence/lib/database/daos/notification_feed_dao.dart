@@ -39,40 +39,68 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Params key an agent wait's notification carries its wait id under.
   static const String waitIdKey = 'wait_id';
 
-  /// Watches the newest [limit] feed items, most-recent-first.
-  Stream<List<NotificationFeedTableData>> watchRecent(
+  /// Watches the newest [limit] feed items, most-recent-first, each with
+  /// its `rowid` — the sequence a read mark compares within one second.
+  Stream<List<({NotificationFeedTableData row, int seq})>> watchRecent(
     String workspaceId, {
     int limit = 50,
   }) =>
-      (select(notificationFeedTable)
-            ..where((t) => t.workspaceId.equals(workspaceId))
-            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-            ..limit(limit))
-          .watch();
+      customSelect(
+        'SELECT *, rowid AS _seq FROM notification_feed '
+        'WHERE workspace_id = ? ORDER BY created_at DESC, rowid DESC LIMIT ?',
+        variables: [Variable.withString(workspaceId), Variable.withInt(limit)],
+        readsFrom: {notificationFeedTable},
+      ).watch().map(
+        (rows) => [
+          for (final r in rows)
+            (row: notificationFeedTable.map(r.data), seq: r.read<int>('_seq')),
+        ],
+      );
 
   /// Inserts one recorded frame, then prunes rows beyond [retainedRows]
-  /// (oldest first) so the feed cannot grow without bound.
+  /// (oldest first) so the feed cannot grow without bound. Returns the new
+  /// row's `rowid`.
   ///
-  /// Per-item states are pruned with the rows they describe: a state whose
-  /// feed item is gone can never be read again and would otherwise accumulate
-  /// one row per user per notification, forever.
-  Future<void> insertAndPrune(NotificationFeedTableCompanion entry) =>
+  /// Per-item states go with the rows they describe (their `item_id` is
+  /// `ON DELETE CASCADE`): a state whose feed item is gone can never be read
+  /// again and would otherwise accumulate one row per user per notification,
+  /// forever.
+  Future<int> insertAndPrune(NotificationFeedTableCompanion entry) =>
       transaction(() async {
-        await into(notificationFeedTable).insert(entry);
+        final seq = await into(notificationFeedTable).insert(entry);
         await customStatement(
           'DELETE FROM notification_feed WHERE workspace_id = ?1 '
-          'AND id NOT IN (SELECT id FROM notification_feed '
-          'WHERE workspace_id = ?1 ORDER BY created_at DESC, id DESC '
+          'AND rowid NOT IN (SELECT rowid FROM notification_feed '
+          'WHERE workspace_id = ?1 ORDER BY created_at DESC, rowid DESC '
           'LIMIT ?2)',
           [entry.workspaceId.value, retainedRows],
         );
-        await customStatement(
-          'DELETE FROM notification_item_states WHERE workspace_id = ?1 '
-          'AND item_id NOT IN '
-          '(SELECT id FROM notification_feed WHERE workspace_id = ?1)',
-          [entry.workspaceId.value],
-        );
+        return seq;
       });
+
+  /// The position `(created_at, rowid)` of the newest item in the feed, or
+  /// [now] with sequence 0 when the feed is empty (every later item, even
+  /// one in the same second, follows that).
+  Future<({DateTime at, int seq})> _newestPosition(
+    String workspaceId,
+    DateTime now,
+  ) async {
+    final row = await customSelect(
+      'SELECT created_at, rowid AS _seq FROM notification_feed '
+      'WHERE workspace_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 1',
+      variables: [Variable.withString(workspaceId)],
+      readsFrom: {notificationFeedTable},
+    ).getSingleOrNull();
+    if (row == null) {
+      return (at: now, seq: 0);
+    }
+    return (
+      at: DateTime.fromMillisecondsSinceEpoch(
+        row.read<int>('created_at') * 1000,
+      ),
+      seq: row.read<int>('_seq'),
+    );
+  }
 
   Future<void> _requireItem(String workspaceId, String itemId) async {
     final row =
@@ -95,69 +123,75 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .watchSingleOrNull();
 
-  /// Stamps the last-seen watermark for a user (mark-all-read), preserving
-  /// any existing cleared watermark.
+  /// Moves a user's last-seen watermark to the newest item in the feed
+  /// (mark-all-read), preserving any existing cleared watermark. [now] is
+  /// the mark taken over an empty feed.
   ///
   /// Read-only per-item states are dropped in the same transaction: a row is an
   /// OVERRIDE of the watermark, so an "explicitly unread" one would survive
   /// "mark all as read" and keep the bell badged. Rows carrying a dismissal
   /// survive — that is a hide, not a read opinion, and the watermark does not
   /// speak for it.
-  Future<void> markAllRead(
-    String workspaceId,
-    String userId,
-    DateTime lastSeenAt,
-  ) => transaction(() async {
-    await into(notificationReadMarksTable).insert(
-      NotificationReadMarksTableCompanion.insert(
-        workspaceId: workspaceId,
-        userId: userId,
-        lastSeenAt: Value(lastSeenAt),
-      ),
-      onConflict: DoUpdate(
-        (old) =>
-            NotificationReadMarksTableCompanion(lastSeenAt: Value(lastSeenAt)),
-      ),
-    );
-    await (delete(notificationItemStatesTable)..where(
-          (t) =>
-              t.workspaceId.equals(workspaceId) &
-              t.userId.equals(userId) &
-              t.dismissedAt.isNull(),
-        ))
-        .go();
-  });
+  Future<void> markAllRead(String workspaceId, String userId, DateTime now) =>
+      transaction(() async {
+        final seen = await _newestPosition(workspaceId, now);
+        await into(notificationReadMarksTable).insert(
+          NotificationReadMarksTableCompanion.insert(
+            workspaceId: workspaceId,
+            userId: userId,
+            lastSeenAt: Value(seen.at),
+            lastSeenSeq: Value(seen.seq),
+          ),
+          onConflict: DoUpdate(
+            (old) => NotificationReadMarksTableCompanion(
+              lastSeenAt: Value(seen.at),
+              lastSeenSeq: Value(seen.seq),
+            ),
+          ),
+        );
+        await (delete(notificationItemStatesTable)..where(
+              (t) =>
+                  t.workspaceId.equals(workspaceId) &
+                  t.userId.equals(userId) &
+                  t.dismissedAt.isNull(),
+            ))
+            .go();
+      });
 
-  /// Stamps [clearedBefore] (and the last-seen watermark, since clearing
-  /// implies having seen) for a user, and drops that user's per-item states.
+  /// Moves a user's cleared watermark (and the last-seen one, since clearing
+  /// implies having seen) to the newest item in the feed, and drops that
+  /// user's per-item states. [now] is the mark taken over an empty feed.
   ///
   /// The states are dropped rather than kept because the watermark subsumes
   /// every one of them: a row saying "this item is read" cannot change the
   /// answer for an item the watermark already hides.
-  Future<void> clearAll(
-    String workspaceId,
-    String userId,
-    DateTime clearedBefore,
-  ) => transaction(() async {
-    await into(notificationReadMarksTable).insert(
-      NotificationReadMarksTableCompanion.insert(
-        workspaceId: workspaceId,
-        userId: userId,
-        lastSeenAt: Value(clearedBefore),
-        clearedBefore: Value(clearedBefore),
-      ),
-      onConflict: DoUpdate(
-        (old) => NotificationReadMarksTableCompanion(
-          lastSeenAt: Value(clearedBefore),
-          clearedBefore: Value(clearedBefore),
-        ),
-      ),
-    );
-    await (delete(notificationItemStatesTable)..where(
-          (t) => t.workspaceId.equals(workspaceId) & t.userId.equals(userId),
-        ))
-        .go();
-  });
+  Future<void> clearAll(String workspaceId, String userId, DateTime now) =>
+      transaction(() async {
+        final mark = await _newestPosition(workspaceId, now);
+        await into(notificationReadMarksTable).insert(
+          NotificationReadMarksTableCompanion.insert(
+            workspaceId: workspaceId,
+            userId: userId,
+            lastSeenAt: Value(mark.at),
+            lastSeenSeq: Value(mark.seq),
+            clearedBefore: Value(mark.at),
+            clearedBeforeSeq: Value(mark.seq),
+          ),
+          onConflict: DoUpdate(
+            (old) => NotificationReadMarksTableCompanion(
+              lastSeenAt: Value(mark.at),
+              lastSeenSeq: Value(mark.seq),
+              clearedBefore: Value(mark.at),
+              clearedBeforeSeq: Value(mark.seq),
+            ),
+          ),
+        );
+        await (delete(notificationItemStatesTable)..where(
+              (t) =>
+                  t.workspaceId.equals(workspaceId) & t.userId.equals(userId),
+            ))
+            .go();
+      });
 
   /// Watches one user's per-item state overrides in this workspace.
   Stream<List<NotificationItemStatesTableData>> watchItemStates(
@@ -213,22 +247,34 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
             ))
             .getSingleOrNull();
     final lastSeenAt = mark?.lastSeenAt;
-    final query = select(notificationFeedTable)
-      ..where(
-        (t) =>
-            t.workspaceId.equals(workspaceId) &
-            t.method.equals(messageReceivedMethod) &
-            t.createdAt.isSmallerOrEqualValue(readAt),
-      );
-    if (lastSeenAt != null) {
-      query.where((t) => t.createdAt.isBiggerThanValue(lastSeenAt));
-    }
+    // Items after the watermark POSITION: one recorded later in the same
+    // second as the mark is not covered by it.
+    final rows = await customSelect(
+      'SELECT id, params_json FROM notification_feed '
+      'WHERE workspace_id = ? AND method = ? AND created_at <= ?'
+      '${lastSeenAt == null ? '' : ' AND (created_at > ? OR (created_at = ? AND rowid > ?))'}',
+      variables: [
+        Variable.withString(workspaceId),
+        Variable.withString(messageReceivedMethod),
+        Variable<DateTime>(readAt),
+        if (lastSeenAt != null) ...[
+          Variable<DateTime>(lastSeenAt),
+          Variable<DateTime>(lastSeenAt),
+          Variable.withInt(mark!.lastSeenSeq),
+        ],
+      ],
+      readsFrom: {notificationFeedTable},
+    ).get();
     // The feed is capped at [retainedRows], so matching the JSON params here
     // is cheaper than teaching SQL the frame shape.
     final itemIds = [
-      for (final row in await query.get())
-        if (_isFromConversation(row.paramsJson, spaceId, conversationId))
-          row.id,
+      for (final row in rows)
+        if (_isFromConversation(
+          row.read<String>('params_json'),
+          spaceId,
+          conversationId,
+        ))
+          row.read<String>('id'),
     ];
     if (itemIds.isEmpty) {
       return;

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
@@ -288,6 +290,30 @@ void main() {
       expect(repo.lastMetadata?.containsKey('context'), isFalse);
     });
   });
+
+  group('a workspace deleted while its run streams', () {
+    test('ends the turn in memory and attempts nothing else', () async {
+      await emit(TextEvent(content: 'Half an answer'));
+      repo.workspaceDeleted = true;
+      await emit(DoneEvent());
+      await finish();
+
+      expect(registry.isActive(messageId), isFalse);
+      expect(dispatchService.completedRuns, isEmpty);
+      expect(dispatchService.failedRuns, isEmpty);
+      expect(notifications, isEmpty);
+    });
+
+    test('ends the same way when the stream closes on an error', () async {
+      await emit(TextEvent(content: 'Half an answer'));
+      repo.workspaceDeleted = true;
+      events.addError(StateError('the process was killed'));
+      await finish();
+
+      expect(registry.isActive(messageId), isFalse);
+      expect(dispatchService.failedRuns, isEmpty);
+    });
+  });
 }
 
 class FakeMessagingRepository implements MessagingRepository {
@@ -296,6 +322,10 @@ class FakeMessagingRepository implements MessagingRepository {
 
   /// Workspace the transcript write was scoped to.
   String? lastWorkspaceId;
+
+  /// When set, every write is refused the way the database manager refuses a
+  /// deleted workspace.
+  bool workspaceDeleted = false;
 
   @override
   Future<void> updateMessage(
@@ -306,6 +336,9 @@ class FakeMessagingRepository implements MessagingRepository {
     Map<String, dynamic>? metadata,
     String? idempotencyKey,
   }) async {
+    if (workspaceDeleted) {
+      throw DeletedWorkspaceException(workspaceId);
+    }
     lastWorkspaceId = workspaceId;
     lastContent = content;
     lastMetadata = metadata;

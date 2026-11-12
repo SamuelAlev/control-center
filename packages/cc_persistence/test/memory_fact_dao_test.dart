@@ -1,8 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -23,6 +22,8 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
+    await seedAgent(db, 'agent-1');
+    await seedAgent(db, 'agent-2');
   });
 
   tearDown(() async {
@@ -335,32 +336,5 @@ void main() {
         expect((await db.memoryFactDao.getById('ws-2', 'f-2'))!.recallCount, 0);
       },
     );
-
-    test('searchVector / searchHybrid throw without sqlite_vector, or complete '
-        'when a sibling test already loaded it', () async {
-      await db.memoryFactDao.upsert(fact(id: 'f-1', workspaceId: 'ws-1'));
-      // createTestDatabase does not register sqlite_vector, so both paths
-      // raise when the extension is absent. `openGlobalDatabase` in
-      // server_database_test.dart registers it as a process-global SQLite
-      // auto-extension, so a concurrent file in this process can make the
-      // functions appear — then the queries complete (typically empty for a
-      // 1-d probe against the 384-d index) instead of throwing.
-      final query = Float32List.fromList([0.1]);
-      try {
-        final vector = await db.memoryFactDao.searchVector('ws-1', query);
-        expect(vector, isA<List<MemoryFactsTableData>>());
-        final hybrid = await db.memoryFactDao.searchHybrid(
-          'ws-1',
-          'deployment',
-          query,
-        );
-        expect(hybrid, isA<List<MemoryFactsTableData>>());
-      } on Exception {
-        await expectLater(
-          db.memoryFactDao.searchHybrid('ws-1', 'deployment', query),
-          throwsA(isA<Exception>()),
-        );
-      }
-    });
   });
 }

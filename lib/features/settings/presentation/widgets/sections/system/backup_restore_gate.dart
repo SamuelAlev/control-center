@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/utils/human_bytes.dart';
@@ -46,6 +47,7 @@ class BackupSnapshotWorkspaceRow extends ConsumerWidget {
     required this.name,
     required this.busy,
     required this.onRestore,
+    this.refusal,
   });
 
   /// The workspace's file in the snapshot.
@@ -60,46 +62,58 @@ class BackupSnapshotWorkspaceRow extends ConsumerWidget {
   /// Fired by Restore, with the workspace's name.
   final Future<void> Function(BackupSnapshotWorkspaceView, String) onRestore;
 
+  /// Why the last restore of this entry was refused, shown under it.
+  final String? refusal;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final known = name != null;
 
+    final row = Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name ?? entry.workspaceId,
+                style: CcTypography.bodySm.copyWith(
+                  color: known ? tokens.textPrimary : tokens.textTertiary,
+                ),
+              ),
+              Text(
+                known ? humanBytes(entry.bytes) : l10n.backupWorkspaceUnknown,
+                style: CcTypography.caption.copyWith(
+                  color: tokens.textTertiary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (canRestoreBackups(ref)) ...[
+          const SizedBox(width: AppSpacing.md),
+          CcButton(
+            size: CcButtonSize.sm,
+            variant: CcButtonVariant.secondary,
+            loading: busy,
+            onPressed: known && !busy ? () => onRestore(entry, name!) : null,
+            child: Text(l10n.backupRestoreAction),
+          ),
+        ],
+      ],
+    );
     return Padding(
       padding: const EdgeInsetsDirectional.only(bottom: AppSpacing.sm),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  name ?? entry.workspaceId,
-                  style: CcTypography.bodySm.copyWith(
-                    color: known ? tokens.textPrimary : tokens.textTertiary,
-                  ),
-                ),
-                Text(
-                  known ? humanBytes(entry.bytes) : l10n.backupWorkspaceUnknown,
-                  style: CcTypography.caption.copyWith(
-                    color: tokens.textTertiary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (canRestoreBackups(ref)) ...[
-            const SizedBox(width: AppSpacing.md),
-            CcButton(
-              size: CcButtonSize.sm,
-              variant: CcButtonVariant.secondary,
-              loading: busy,
-              onPressed: known && !busy ? () => onRestore(entry, name!) : null,
-              child: Text(l10n.backupRestoreAction),
-            ),
-          ],
+          row,
+          if (refusal case final message?)
+            BackupRestoreRefusal(message: message),
         ],
       ),
     );

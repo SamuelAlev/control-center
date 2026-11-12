@@ -1,9 +1,9 @@
 /// Lifecycle status of an inbound webhook delivery.
 enum WebhookDeliveryStatus {
-  /// Accepted, awaiting dispatch.
+  /// Accepted and being dispatched; holds its dedupe key.
   queued,
 
-  /// Started its pipeline run.
+  /// Started its pipeline run; keeps holding its dedupe key.
   dispatched,
 
   /// Refused before dispatch (bad signature, unknown token, duplicate).
@@ -12,7 +12,8 @@ enum WebhookDeliveryStatus {
   /// Accepted but intentionally not acted on (filtered out by event filters).
   ignored,
 
-  /// Dispatch was attempted but errored.
+  /// Dispatch was attempted but errored. Holds no dedupe key, so the
+  /// provider's retry is dispatched again.
   failed;
 
   /// Storage string.
@@ -54,8 +55,8 @@ enum WebhookSignatureStatus {
   };
 }
 
-/// A logged inbound webhook delivery: the raw request, its verification
-/// outcome and what the server did with it.
+/// A logged inbound webhook delivery: its allow-listed headers, verification
+/// outcome and what the server did with it. The body is not kept.
 class WebhookDelivery {
   /// Creates a [WebhookDelivery].
   WebhookDelivery({
@@ -67,7 +68,6 @@ class WebhookDelivery {
     this.dedupeKey,
     this.dedupeSource,
     this.eventAction,
-    this.rawBody,
     this.headers = const {},
     this.responseStatus,
     this.responseBody,
@@ -101,10 +101,7 @@ class WebhookDelivery {
   /// against the trigger's event filters.
   final String? eventAction;
 
-  /// The raw request body.
-  final String? rawBody;
-
-  /// The request headers.
+  /// The allow-listed request headers (lower-cased names).
   final Map<String, String> headers;
 
   /// HTTP status the server replied with.
@@ -118,16 +115,6 @@ class WebhookDelivery {
 
   /// When the delivery was received.
   final DateTime createdAt;
-
-  /// Whether this delivery can be replayed.
-  ///
-  /// A delivery that failed signature verification (invalid or missing) is
-  /// **never** replayable — replaying it would still fail the security gate.
-  /// Deliveries that passed (or skipped) verification but were ignored/failed
-  /// for a downstream reason can be replayed.
-  bool get replayable =>
-      signatureStatus != WebhookSignatureStatus.invalid &&
-      signatureStatus != WebhookSignatureStatus.missing;
 
   /// Returns a copy with an updated [status], [runId] and response fields.
   WebhookDelivery copyWith({
@@ -144,7 +131,6 @@ class WebhookDelivery {
     dedupeKey: dedupeKey,
     dedupeSource: dedupeSource,
     eventAction: eventAction,
-    rawBody: rawBody,
     headers: headers,
     responseStatus: responseStatus ?? this.responseStatus,
     responseBody: responseBody ?? this.responseBody,

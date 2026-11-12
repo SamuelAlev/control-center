@@ -8,14 +8,22 @@ import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/mappers/ticket_mapper.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
   late WorkspaceDatabase db;
   const mapper = TicketMapper();
 
-  setUp(() {
+  setUp(() async {
     db = createTestDatabase();
+    await seedParents(
+      db,
+      agents: ['agent-0', 'agent-1'],
+      projects: ['proj-1'],
+      teams: ['team-1'],
+      spaces: ['chan-1'],
+    );
   });
 
   tearDown(() async {

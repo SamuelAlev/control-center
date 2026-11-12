@@ -5,7 +5,7 @@ import 'package:cc_domain/features/memory/domain/value_objects/memory_type.dart'
 
 /// The four independently-rankable recall voices.
 enum RecallVoice {
-  /// Dense semantic similarity (embedding/Hamming).
+  /// Dense semantic similarity (vector search over the fact embeddings).
   vector,
 
   /// Episodic-graph connectivity (BFS over typed edges).

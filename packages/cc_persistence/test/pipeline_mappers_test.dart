@@ -21,7 +21,7 @@ void main() {
       String? errorStackTrace,
       String? dedupKey,
       DateTime? finishedAt,
-      int totalCostCents = 0,
+      int totalCostMicros = 0,
       int totalTokens = 0,
       bool dryRun = false,
     }) => PipelineRun(
@@ -37,7 +37,7 @@ void main() {
       finishedAt: finishedAt,
       errorMessage: errorMessage,
       errorStackTrace: errorStackTrace,
-      totalCostCents: totalCostCents,
+      totalCostMicros: totalCostMicros,
       totalTokens: totalTokens,
       dryRun: dryRun,
     );
@@ -50,7 +50,7 @@ void main() {
       String? errorStackTrace,
       String? dedupKey,
       DateTime? finishedAt,
-      int totalCostCents = 0,
+      int totalCostMicros = 0,
       int totalTokens = 0,
       bool dryRun = false,
     }) => PipelineRunsTableData(
@@ -71,7 +71,7 @@ void main() {
       parentPipelineRunId: null,
       parentStepId: null,
       templateVersion: 1,
-      totalCostCents: totalCostCents,
+      totalCostMicros: totalCostMicros,
       totalTokens: totalTokens,
       dryRun: dryRun,
       isProjection: false,
@@ -88,7 +88,7 @@ void main() {
           finishedAt: finished,
           errorMessage: 'err',
           errorStackTrace: 'trace',
-          totalCostCents: 100,
+          totalCostMicros: 100,
           totalTokens: 500,
           dryRun: true,
         );
@@ -106,7 +106,7 @@ void main() {
         expect(companion.finishedAt.value, finished);
         expect(companion.errorMessage.value, 'err');
         expect(companion.errorStackTrace.value, 'trace');
-        expect(companion.totalCostCents.value, 100);
+        expect(companion.totalCostMicros.value, 100);
         expect(companion.totalTokens.value, 500);
         expect(companion.dryRun.value, isTrue);
       },
@@ -134,7 +134,7 @@ void main() {
           errorStackTrace: 'stack',
           dedupKey: 'dk',
           finishedAt: finished,
-          totalCostCents: 200,
+          totalCostMicros: 200,
           totalTokens: 1000,
           dryRun: true,
         );
@@ -152,7 +152,7 @@ void main() {
         expect(run.finishedAt, finished);
         expect(run.errorMessage, 'boom');
         expect(run.errorStackTrace, 'stack');
-        expect(run.totalCostCents, 200);
+        expect(run.totalCostMicros, 200);
         expect(run.totalTokens, 1000);
         expect(run.dryRun, isTrue);
       },
@@ -213,7 +213,7 @@ void main() {
           parentPipelineRunId: companion.parentPipelineRunId.value,
           parentStepId: companion.parentStepId.value,
           templateVersion: companion.templateVersion.value,
-          totalCostCents: companion.totalCostCents.value,
+          totalCostMicros: companion.totalCostMicros.value,
           totalTokens: companion.totalTokens.value,
           dryRun: companion.dryRun.value,
           isProjection: companion.isProjection.value,

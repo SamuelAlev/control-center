@@ -14544,13 +14544,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backupSnapshotComplete => 'Úplný';
 
   @override
-  String get backupSnapshotIncomplete => 'Neúplný';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Manifest chybí nebo jmenuje soubory, které tam nejsou, takže tento snímek nemůže obnovit celou instalaci. Soubory pracovních prostorů, které má, lze pořád převzít jeden po druhém.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Smazat snímek';
 
   @override
@@ -18724,4 +18717,243 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Tento stroj můžete sledovat. Používá přihlášení osoby, pro kterou byl otevřen, takže jen ona ho může ovládat, přesměrovat jeho porty, vkládat do něj nebo na něj přetahovat soubory.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Databáze serveru je teď zaneprázdněná. Zkuste to za chvíli znovu.';
+
+  @override
+  String get refusalStorageFull =>
+      'Na serveru došlo místo na disku, takže nelze nic uložit. Vlastník serveru musí uvolnit místo.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Data tohoto pracovního prostoru jsou poškozená. Vlastník serveru ho musí obnovit ze zálohy.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Tento pracovní prostor je jen pro čtení, dokud ho vlastník serveru neobnoví ze zálohy, takže změny nelze uložit.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Tato data zapsala novější verze serveru. Aktualizujte server a zkuste to znovu.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Server našel databázový soubor, který nezapsal. Vlastník serveru musí zkontrolovat datovou složku serveru.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Tento pracovní prostor byl smazán.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Tento požadavek se pořád zpracovává. Počkejte, až skončí, a pak zkontrolujte výsledek.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Na serveru na této cestě žádný soubor není. Nic nebylo nahrazeno.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Tento soubor je poškozený, takže ho nelze obnovit. Nic nebylo nahrazeno.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Tento soubor neodpovídá kontrolnímu součtu, který zaznamenala jeho záloha, takže mohl být změněn nebo poškozen. Nic nebylo nahrazeno.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Tento soubor zapsala novější verze serveru. Pro jeho obnovení aktualizujte server. Nic nebylo nahrazeno.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Tento soubor není databází pracovního prostoru. Nic nebylo nahrazeno.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Tento soubor se nepodařilo převést do formátu tohoto serveru. Nic nebylo nahrazeno.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Tento soubor obsahuje odkazy patřící jinému pracovnímu prostoru na tomto serveru a jeho obnovení by je převzalo. Nic nebylo nahrazeno.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Tento pracovní prostor je jen pro čtení';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Jeho data neprošla kontrolou integrity, takže změny nelze uložit. Vše je pořád čitelné. Vlastník serveru ho může obnovit ze zálohy.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Jeho data neprošla kontrolou integrity, takže změny nelze uložit. Vše je pořád čitelné. Obnovte ho ze zálohy, aby šel znovu upravovat.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Otevřít zálohy';
+
+  @override
+  String get serverNoticesLabel => 'Vyžaduje vaši pozornost';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Jen pro čtení';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Od $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Jeho databáze neprošla kontrolou integrity, takže funguje jen pro čtení a odmítá každou změnu. Obnovte ji ze zálohy v seznamech níže; její poslední dobrá kopie se zachová, dokud to neuděláte.';
+
+  @override
+  String get serverNoticeDetails => 'Podrobnosti';
+
+  @override
+  String get backupSnapshotUnverified => 'Neověřeno';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Tento snímek nelze ověřit. Nikdy se nedokončil, nebo vznikl dříve, než snímky začaly ukládat kontrolní součty, takže nemůže obnovit celou instalaci. Pracovní prostory, které obsahuje, lze obnovit jednotlivě.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Poslední dobrá kopie';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Ponecháno, protože obsahuje poslední dobrou kopii poškozeného pracovního prostoru. Čištění ji nechá být, dokud se tento pracovní prostor neobnoví.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Toto je poslední dobrá kopie poškozeného pracovního prostoru. Pokud ji smažete, nebude už nic, z čeho by se tento pracovní prostor dal obnovit.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count oprávnění bylo zadrženo k posouzení. Jsou uvedena nahoře na této stránce.',
+      many:
+          '$count oprávnění bylo zadrženo k posouzení. Jsou uvedena nahoře na této stránce.',
+      few:
+          '$count oprávnění byla zadržena k posouzení. Jsou uvedena nahoře na této stránce.',
+      one:
+          '1 oprávnění bylo zadrženo k posouzení. Je uvedeno nahoře na této stránce.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Zadrženo z obnovených kopií';
+
+  @override
+  String get importHoldsExplainer =>
+      'Obnovená kopie sama o sobě na tomto serveru nic neuděluje. Tato oprávnění v ní byla: přijměte jedno, abyste ho udělili znovu, nebo ho zamítněte, abyste ho zahodili.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agenti to mohou dělat bez schválení: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agenti to mohou dělat, jakmile to osoba schválí: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Spouštět příkazy začínající na $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Všude v tomto pracovním prostoru';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'V prostoru $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Pro agenta $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandboxy mohou spouštět $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person může měnit $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person může posuzovat pull requesty v $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person získá přístup $level k $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person získá roli $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Otevřené pozvání ke vstupu s rolí $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Otevřené pozvání ke vstupu s rolí $role a přístupem pro posuzování nebo zápis k $count repozitářům',
+      many:
+          'Otevřené pozvání ke vstupu s rolí $role a přístupem pro posuzování nebo zápis k $count repozitářům',
+      few:
+          'Otevřené pozvání ke vstupu s rolí $role a přístupem pro posuzování nebo zápis k $count repozitářům',
+      one:
+          'Otevřené pozvání ke vstupu s rolí $role a přístupem pro posuzování nebo zápis k 1 repozitáři',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Oprávnění, které tato verze aplikace nedokáže popsat';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Obnoveno $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Přijmout';
+
+  @override
+  String get importHoldDismiss => 'Zamítnout';
+
+  @override
+  String get importHoldAcceptTitle => 'Udělit toto oprávnění?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nPřijetím se oprávnění na serveru udělí hned.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Oprávnění uděleno.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Nic nebylo uděleno: osoba nebo věc, pro kterou to bylo, už v tomto pracovním prostoru není.';
 }

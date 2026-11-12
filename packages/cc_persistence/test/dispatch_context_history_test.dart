@@ -18,17 +18,13 @@ void main() {
     repo = DaoMessagingRepository(dbs);
     final db = dbs.of('ws-1');
     await db.messagingDao.insertSpace(
-      SpacesTableCompanion.insert(
-        id: 's',
-        name: 'S',
-        workspaceId: const Value('ws-1'),
-      ),
+      SpacesTableCompanion.insert(id: 's', name: 'S', workspaceId: 'ws-1'),
     );
     await db.conversationDao.insertConversation(
       ConversationsTableCompanion.insert(
         id: 'c',
         spaceId: 's',
-        workspaceId: const Value('ws-1'),
+        workspaceId: 'ws-1',
       ),
     );
   });
@@ -47,7 +43,6 @@ void main() {
     String content = 'body',
     String? metadata,
     bool compacted = false,
-    Uint8List? embedding,
   }) {
     return dbs
         .of('ws-1')
@@ -64,7 +59,6 @@ void main() {
             createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
             metadata: Value(metadata),
             compacted: Value(compacted),
-            embedding: Value(embedding),
           ),
         );
   }
@@ -150,7 +144,10 @@ void main() {
       tailText,
       contains('idx_conversation_messages_conversation_created'),
     );
-    expect(dao.contextTailSql(hasCursor: false), contains('list_metadata'));
+    expect(
+      dao.contextTailSql(hasCursor: false),
+      isNot(contains('transcript_segments')),
+    );
     expect(
       MessagingDao.latestContextAgentTurnIdSql.contains('metadata'),
       isFalse,
@@ -180,13 +177,16 @@ void main() {
       second: 1,
       content: 'remember this',
       metadata: blob,
-      embedding: Uint8List.fromList(const [1, 2, 3, 4]),
+    );
+    await repo.updateMessageEmbedding(
+      'ws-1',
+      'embedded',
+      Uint8List.fromList(const [1, 2, 3, 4]),
     );
     final rows = await repo.getMessagesWithEmbedding('ws-1', 's');
     expect(rows, hasLength(1));
     expect(rows.single.message.content, 'remember this');
     expect(rows.single.embedding, isNotEmpty);
     expect(rows.single.message.metadata?['segments'], isNull);
-    expect(rows.single.message.metadata?['segments_elided'], isTrue);
   });
 }

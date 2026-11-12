@@ -66,6 +66,10 @@ class ApprovalWorkflowService {
   /// machine. Throws [InvalidApprovalTransitionException] for an illegal
   /// transition and [NotFoundException] when the approval is missing (the
   /// workspace-scoped read returns null for a foreign approval).
+  ///
+  /// The write names the status the decision was checked against, so two
+  /// deciders racing on one approval produce exactly one decision: the loser
+  /// reloads and gets the transition error for the state the winner left.
   Future<Approval> decide(
     String approvalId, {
     required String workspaceId,
@@ -74,15 +78,7 @@ class ApprovalWorkflowService {
     String? decidedById,
     String? reason,
   }) async {
-    final current = await _repository.getById(workspaceId, approvalId);
-    if (current == null) {
-      throw NotFoundException('Approval $approvalId not found.');
-    }
-    if (!decision.isValidFrom(current.status)) {
-      throw InvalidApprovalTransitionException(
-        'Cannot ${decision.name} an approval that is ${current.status.label}.',
-      );
-    }
+    final current = await _load(workspaceId, approvalId, decision);
     final now = DateTime.now();
     final resulting = decision.resultingStatus;
     final updated = current.copyWith(
@@ -99,7 +95,16 @@ class ApprovalWorkflowService {
       removeDecidedAt: !resulting.isTerminal,
       updatedAt: now,
     );
-    await _repository.upsert(updated);
+    if (!await _repository.recordDecision(updated, expected: current.status)) {
+      // Another decision landed between the read and the write. Report the
+      // state it left; a decision still valid from there was not what this
+      // decider saw, so it is refused rather than applied on top.
+      final latest = await _load(workspaceId, approvalId, decision);
+      throw InvalidApprovalTransitionException(
+        'Cannot ${decision.name} an approval that is ${latest.status.label}: '
+        'it was decided concurrently.',
+      );
+    }
     _audit?.log(
       actorType: decidedByActorType,
       actorId: decidedById,
@@ -110,6 +115,24 @@ class ApprovalWorkflowService {
       details: reason,
     );
     return updated;
+  }
+
+  /// Reads the approval and checks that [decision] may apply to it.
+  Future<Approval> _load(
+    String workspaceId,
+    String approvalId,
+    ApprovalDecision decision,
+  ) async {
+    final current = await _repository.getById(workspaceId, approvalId);
+    if (current == null) {
+      throw NotFoundException('Approval $approvalId not found.');
+    }
+    if (!decision.isValidFrom(current.status)) {
+      throw InvalidApprovalTransitionException(
+        'Cannot ${decision.name} an approval that is ${current.status.label}.',
+      );
+    }
+    return current;
   }
 
   /// Adds a comment to an approval's review discussion.

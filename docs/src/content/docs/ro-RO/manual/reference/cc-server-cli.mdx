@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Toate flag-urile, variabilele de mediu, subcomenzile și căile din directorul de date ale serverului headless.
 slug: ro-RO/manual/referinta/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Fiecare setare a procesului acceptă un flag de linie de comandă sau o variabilă de
@@ -243,12 +243,16 @@ Directorul de date implicit este `~/Library/Application Support/control-center` 
 curent este folosit doar când nu se poate rezolva niciun director home sau de date de
 aplicație.
 
+Serverul ține directorul de date privat pentru propriul cont (`0700`). Refuză să pornească (cod de ieșire `78`) când nu poate face asta, când `global.db` este deteriorat sau a fost scris de o versiune mai nouă, sau când nu poate citi fișierul lui de identitate.
+
 | Cale                              | Conținut                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Registrul spațiilor de lucru, utilizatorii, dispozitivele asociate, fluxul de știri și coada flotei |
-| `<workspaceId>/workspace.db`      | O bază de date per spațiu de lucru — agenți, spații, tichete, memorie, graful de cod |
+| `<workspaceId>/workspace.db`      | O bază de date per spațiu de lucru — agenți, spații, tichete, memorie |
+| `<workspaceId>/code_index.db` | Graful de cod al acelui spațiu de lucru. Se reconstruiește când lipsește și nu se salvează niciodată ca backup |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Cele mai recente două copii ale unei baze de date de dinaintea unei actualizări care i-a schimbat formatul |
 | `<workspaceId>/chat_credentials/` | Tokenuri de bot de chat, ca JSON simplu, ca să meargă împreună cu spațiul de lucru |
-| `secrets.json`                    | Chei de asociere, cheia de instalare Connect, aplicațiile provider, autentificările oamenilor (sigilate când sunt făcute prin Connect), SSO (`0600`) |
+| `secrets.json`                    | Chei de asociere, cheia de instalare Connect, aplicațiile provider, autentificările oamenilor (sigilate când sunt făcute prin Connect), secretele webhook, SSO (`0600`) |
 | `backups/<timestamp>/`            | Un snapshot de instalare — `manifest.json`, `global.db` și o copie a fiecărui spațiu de lucru |
 | `backups/exports/`                | Exporturi ale unui singur spațiu de lucru, `<workspaceId>-<timestamp>.db`       |
 | `backups/transfer/`               | Zonă de tranzit pentru descărcările și încărcările de backup; curățată de ruta care o scrie |

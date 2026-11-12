@@ -1,6 +1,6 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_meetings_workspaceId', columns: {#workspaceId})
 @TableIndex(name: 'idx_meetings_createdAt', columns: {#createdAt})
 /// Drift table for recorded meetings (local meeting notes).
 ///
@@ -22,8 +22,14 @@ class MeetingsTable extends Table {
   BoolColumn get titleIsCustom =>
       boolean().withDefault(const Constant(false))();
 
-  /// Lifecycle status: `recording`, `processing`, `done`, or `failed`.
-  TextColumn get status => text().withDefault(const Constant('recording'))();
+  /// Lifecycle status: `recording`, `processing`, `done`, or `failed`
+  /// (`MeetingStatus.toStorage()`).
+  TextColumn get status => text()
+      .check(
+        // ignore: recursive_getters
+        status.isIn(SpacesStoredValues.meetingStatus),
+      )
+      .withDefault(const Constant('recording'))();
 
   /// Detected source application (e.g. "Google Meet"), when known.
   TextColumn get sourceApp => text().nullable()();
@@ -48,8 +54,14 @@ class MeetingsTable extends Table {
   TextColumn get audioPath => text().nullable()();
 
   /// Capture mode: `remote` (mic = you, system output = the others) or
-  /// `inPerson` (one shared mic; diarization splits the in-room speakers).
-  TextColumn get mode => text().withDefault(const Constant('remote'))();
+  /// `inPerson` (one shared mic; diarization splits the in-room speakers)
+  /// (`MeetingMode.toStorage()`).
+  TextColumn get mode => text()
+      .check(
+        // ignore: recursive_getters
+        mode.isIn(SpacesStoredValues.meetingMode),
+      )
+      .withDefault(const Constant('remote'))();
 
   /// When recording began.
   DateTimeColumn get startedAt => dateTime().withDefault(currentDateAndTime)();

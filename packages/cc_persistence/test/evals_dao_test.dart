@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -8,7 +9,26 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
-    // The evals tables only FK-reference workspaces, so seed those.
+    // The parents the rows below point at. They live in the file's own
+    // workspace, so no `w-1` / `w-2` read ever sees them.
+    await seedParents(
+      db,
+      agents: ['a-1', 'a-2', 'a-x', 'a-y'],
+      runLogs: [
+        'log-1',
+        'log-new',
+        'log-old',
+        'log-other',
+        'shared-log',
+        'shared',
+      ],
+    );
+    for (final suite in ['s-1', 's-2', 's-shared']) {
+      await seedEvalSuite(db, suite);
+    }
+    for (final recording in ['rec-1', 'r']) {
+      await seedSessionRecording(db, recording);
+    }
   });
 
   tearDown(() async {
@@ -274,11 +294,11 @@ void main() {
     test(
       'suiteByName does not surface a suite from another workspace',
       () async {
-        // Same name in two workspaces; the lookup is (ws, name)-scoped.
+        // A file holds one workspace, so a name is unique in it; the lookup
+        // is still (ws, name)-scoped.
         await putSuite('w-1', 's-1', name: 'shared');
-        await putSuite('w-2', 's-2', name: 'shared');
         expect((await db.evalsDao.suiteByName('w-1', 'shared'))!.id, 's-1');
-        expect((await db.evalsDao.suiteByName('w-2', 'shared'))!.id, 's-2');
+        expect(await db.evalsDao.suiteByName('w-2', 'shared'), isNull);
       },
     );
 
@@ -290,7 +310,7 @@ void main() {
     test('suites orders by name and stays scoped to the workspace', () async {
       await putSuite('w-1', 's-b', name: 'beta');
       await putSuite('w-1', 's-a', name: 'alpha');
-      await putSuite('w-2', 's-c', name: 'alpha');
+      await putSuite('w-2', 's-c', name: 'gamma');
       final rows = await db.evalsDao.suites('w-1');
       expect(rows.map((s) => s.name), ['alpha', 'beta']);
     });
@@ -299,7 +319,7 @@ void main() {
       'watchSuites emits only the workspace rows and updates live',
       () async {
         await putSuite('w-1', 's-1', name: 'alpha');
-        await putSuite('w-2', 's-2', name: 'alpha');
+        await putSuite('w-2', 's-2', name: 'beta');
         final snap = await db.evalsDao.watchSuites('w-1').first;
         expect(snap.single.id, 's-1');
       },
@@ -390,7 +410,7 @@ void main() {
           status: 'done',
           scorecardJson: '{"p":0.5}',
           passRate: 0.5,
-          costCents: 42,
+          costMicros: 42,
           startedAt: started,
           finishedAt: finished,
         );
@@ -398,7 +418,7 @@ void main() {
         expect(row!.status, 'done');
         expect(row.scorecardJson, '{"p":0.5}');
         expect(row.passRate, 0.5);
-        expect(row.costCents, 42);
+        expect(row.costMicros, 42);
         expect(row.startedAt!.toUtc(), started.toUtc());
         expect(row.finishedAt!.toUtc(), finished.toUtc());
       },
@@ -465,9 +485,9 @@ void main() {
     test(
       'configVersionByHash does not surface a row from another workspace',
       () async {
-        // Same (agent, hash) in both workspaces; lookup is ws-scoped.
+        // A file holds one (agent, hash) once; the lookup is still
+        // ws-scoped, so another workspace's id finds nothing.
         await putVersion('w-1', 'v-1', configHash: 'shared-hash');
-        await putVersion('w-2', 'v-2', configHash: 'shared-hash');
         expect(
           (await db.evalsDao.configVersionByHash(
             'w-1',
@@ -477,12 +497,8 @@ void main() {
           'v-1',
         );
         expect(
-          (await db.evalsDao.configVersionByHash(
-            'w-2',
-            'a-1',
-            'shared-hash',
-          ))!.id,
-          'v-2',
+          await db.evalsDao.configVersionByHash('w-2', 'a-1', 'shared-hash'),
+          isNull,
         );
       },
     );

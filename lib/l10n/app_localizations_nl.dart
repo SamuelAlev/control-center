@@ -14422,13 +14422,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backupSnapshotComplete => 'Volledig';
 
   @override
-  String get backupSnapshotIncomplete => 'Onvolledig';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Het manifest ontbreekt of noemt bestanden die er niet zijn, dus deze momentopname kan de hele installatie niet herstellen. De werkruimtebestanden die er wel zijn, kun je nog steeds één voor één overnemen.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Momentopname verwijderen';
 
   @override
@@ -18588,4 +18581,234 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Je kunt deze machine bekijken. Hij gebruikt de inloggegevens van de persoon voor wie hij is geopend, dus alleen die persoon kan hem bedienen, zijn poorten doorsturen, erin plakken of er bestanden op neerzetten.';
+
+  @override
+  String get refusalStorageBusy =>
+      'De database van de server is nu bezet. Probeer het zo meteen opnieuw.';
+
+  @override
+  String get refusalStorageFull =>
+      'De schijf van de server is vol, dus er kan niets worden opgeslagen. De serverbeheerder moet ruimte vrijmaken.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'De gegevens van deze werkruimte zijn beschadigd. De serverbeheerder moet ze terugzetten vanuit een back-up.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Deze werkruimte is alleen lezen totdat de serverbeheerder hem terugzet vanuit een back-up, dus wijzigingen kunnen niet worden opgeslagen.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Deze gegevens zijn geschreven door een nieuwere versie van de server. Werk de server bij en probeer het dan opnieuw.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'De server heeft een databasebestand gevonden dat hij niet zelf heeft geschreven. De serverbeheerder moet de datamap van de server controleren.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Deze werkruimte is verwijderd.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Dit verzoek wordt nog verwerkt. Wacht tot het klaar is en controleer dan het resultaat.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Er staat geen bestand op dat pad op de server. Er is niets vervangen.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Dat bestand is beschadigd en kan niet worden teruggezet. Er is niets vervangen.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Dat bestand komt niet overeen met de checksum die in de back-up is vastgelegd, dus het is mogelijk gewijzigd of beschadigd. Er is niets vervangen.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Dat bestand is geschreven door een nieuwere versie van de server. Werk de server bij om het terug te zetten. Er is niets vervangen.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Dat bestand is geen werkruimtedatabase. Er is niets vervangen.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Dat bestand kon niet naar het formaat van deze server worden omgezet. Er is niets vervangen.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Dat bestand bevat koppelingen die bij een andere werkruimte op deze server horen; terugzetten zou ze overnemen. Er is niets vervangen.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'Deze werkruimte is alleen lezen';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Zijn gegevens zijn niet door een integriteitscontrole gekomen, dus wijzigingen kunnen niet worden opgeslagen. Alles blijft leesbaar. De serverbeheerder kan hem terugzetten vanuit een back-up.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Zijn gegevens zijn niet door een integriteitscontrole gekomen, dus wijzigingen kunnen niet worden opgeslagen. Alles blijft leesbaar. Zet hem terug vanuit een back-up om hem weer schrijfbaar te maken.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Back-ups openen';
+
+  @override
+  String get serverNoticesLabel => 'Vraagt om jouw aandacht';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Alleen lezen';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Sinds $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'De database heeft de integriteitscontrole niet doorstaan, dus de werkruimte kan alleen worden gelezen en weigert elke wijziging. Zet de werkruimte terug vanuit een back-up in de lijsten hieronder; de laatste goede kopie blijft bewaard tot je dat doet.';
+
+  @override
+  String get serverNoticeDetails => 'Details';
+
+  @override
+  String get backupSnapshotUnverified => 'Niet te verifiëren';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Deze momentopname kan niet worden gecontroleerd. Hij is nooit afgerond of is gemaakt voordat momentopnames checksums bijhielden, dus hij kan niet de hele installatie terugzetten. De werkruimtebestanden erin kunnen wel één voor één worden teruggezet.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Laatste goede kopie';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Bewaard omdat hij de laatste goede kopie van een beschadigde werkruimte bevat. Opschonen laat hem met rust tot die werkruimte is teruggezet.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Dit is de laatste goede kopie van een beschadigde werkruimte. Als je hem verwijdert, is er niets meer waaruit die werkruimte kan worden teruggezet.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count machtigingen zijn ter beoordeling tegengehouden. Ze staan bovenaan deze pagina.',
+      one:
+          '1 machtiging is ter beoordeling tegengehouden. Ze staat bovenaan deze pagina.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Tegengehouden bij teruggezette kopieën';
+
+  @override
+  String get importHoldsExplainer =>
+      'Een teruggezette kopie kan op deze server op eigen kracht niets toekennen. Deze machtigingen zaten erin: accepteer er één om hem opnieuw toe te kennen, of wijs hem af om hem te laten vervallen.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agents mogen dit zonder goedkeuring: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agents mogen dit zodra een persoon het goedkeurt: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Opdrachten uitvoeren die beginnen met $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Overal in deze werkruimte';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'In ruimte $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Voor agent $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandboxes mogen $path uitvoeren';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person mag $repo wijzigen';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person mag pull requests in $repo beoordelen';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person krijgt $level-toegang tot $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person krijgt de rol $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Een openstaande uitnodiging om lid te worden met de rol $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Een openstaande uitnodiging om lid te worden met de rol $role en beoordelings- of schrijftoegang tot $count repositories',
+      one:
+          'Een openstaande uitnodiging om lid te worden met de rol $role en beoordelings- of schrijftoegang tot 1 repository',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Een machtiging die deze versie van de app niet kan beschrijven';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Teruggezet $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Accepteren';
+
+  @override
+  String get importHoldDismiss => 'Afwijzen';
+
+  @override
+  String get importHoldAcceptTitle => 'Deze machtiging verlenen?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nAccepteren verleent dit direct op de server.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Machtiging verleend.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Er is niets verleend: wie of wat het was bedoeld voor, staat niet meer in deze werkruimte.';
 }

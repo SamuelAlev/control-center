@@ -326,7 +326,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       required String credentialId,
     })?
     onHarnessCredentialExhausted,
-    int? costCapCents,
+    int? costCapMicros,
   }) {
     if (_shutDown) {
       throw StateError('the agent dispatch adapter has shut down');
@@ -378,7 +378,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
       claudeAccountsSpent: claudeAccountsSpent,
       onResolveHarnessRotation: onResolveHarnessRotation,
       onHarnessCredentialExhausted: onHarnessCredentialExhausted,
-      costCapCents: costCapCents,
+      costCapMicros: costCapMicros,
     );
     session.onHarnessStarted = () => onSessionHarnessStarted?.call(session);
     // Registered BEFORE the run starts, and removed only if the entry is still

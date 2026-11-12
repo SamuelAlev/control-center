@@ -21,31 +21,8 @@ List<ReviewSpaceAssociation> toDomainList(
 ) => rows.map(toDomain).toList(growable: false);
 
 /// Parses a status string from the database into a [ReviewSpaceStatus] enum value.
-ReviewSpaceStatus parseStatus(String value) {
-  switch (value) {
-    case 'requested':
-      return ReviewSpaceStatus.requested;
-    case 'in_progress':
-      return ReviewSpaceStatus.inProgress;
-    case 'awaiting_approval':
-      return ReviewSpaceStatus.awaitingApproval;
-    case 'completed':
-      return ReviewSpaceStatus.completed;
-    default:
-      return ReviewSpaceStatus.requested;
-  }
-}
+ReviewSpaceStatus parseStatus(String value) => ReviewSpaceStatus.values
+    .firstWhere((s) => s.wire == value, orElse: () => ReviewSpaceStatus.requested);
 
 /// Converts a [ReviewSpaceStatus] enum value to its database string representation.
-String statusToString(ReviewSpaceStatus status) {
-  switch (status) {
-    case ReviewSpaceStatus.requested:
-      return 'requested';
-    case ReviewSpaceStatus.inProgress:
-      return 'in_progress';
-    case ReviewSpaceStatus.awaitingApproval:
-      return 'awaiting_approval';
-    case ReviewSpaceStatus.completed:
-      return 'completed';
-  }
-}
+String statusToString(ReviewSpaceStatus status) => status.wire;

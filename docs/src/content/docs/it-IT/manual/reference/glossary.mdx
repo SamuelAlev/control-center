@@ -2,7 +2,7 @@
 title: Glossario
 description: Definizioni dei termini chiave usati in Control Center.
 slug: it-IT/manuale/riferimento/glossario
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (una VM racchiusa — l\'unico backend con un confine a livello di kernel, applicato ai terminali interattivi), native (Seatbelt nativo del sistema operativo su macOS, bubblewrap su Linux e WSL2) o none. Sondato una volta all\'avvio; native avvolge l\'invio degli agenti quando è disponibile. Windows non ha un backend nativo e Linux richiede bwrap più socat; su un host del genere partono solo le esecuzioni del proprietario del server, senza involucro, e le altre vengono rifiutate. --sandbox off esegue senza involucro le esecuzioni di ogni membro.'],
 ['Rig', 'Una macchina usa e getta che un agente pilota in tempo reale: un browser o un desktop Linux racchiuso, un emulatore Android o un simulatore iOS gestito dall\'host, oppure un terminale racchiuso. Osservata dal vivo su una corsia dedicata a piena risoluzione, con la presa di controllo imposta lato server. Con ambito di conversazione, così la scheda umana e lo strumento dell\'agente si rivolgono a un\'unica macchina.'],
 ['Recinto', 'La più forte proprietà di isolamento disponibile per i rig supportati da VM: un confine a livello di kernel, un disco overlay usa e getta, un gate di rete che nega per impostazione predefinita e un broker delle credenziali. I rig Android e iOS sono usa e getta ma usano la rete gestita dall\'host, quindi non rivendicano questo confine. Pilotare un rig usa la classe di guardrail enclosureControl.'],
-['RunCost', 'Il conteggio di token e costi (token di input, token di output, costo stimato in centesimi) per una singola esecuzione di agente.'],
+['RunCost', 'Il conteggio di token e costi (token di input, token di output, costo stimato in microdollari) per una singola esecuzione di agente.'],
 ['WakeReason', 'Perché un agente è stato inviato. Sei valori: messaggio dell\'utente, assegnazione di un ticket, reinvio di ripristino dopo un errore, ticket figlio completato, heartbeat di follow-up pianificato e passaggio di pipeline.'],
 ['SandboxPort', 'Gestisce il ciclo di vita del sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Conia credenziali con ambito limitato per l\'avvio del sandbox (un token limitato a un repository per l\'ambiente di un agente, di scrittura solo per il percorso di push lato server) e le rilascia allo smontaggio.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Recinto**: Il confine più forte per i rig supportati da VM — un confine a livello di kernel, un disco overlay usa e getta, un gate di rete che nega per impostazione predefinita e un broker delle credenziali. I rig Android e iOS sono usa e getta ma usano la rete gestita dall'host e non rivendicano questo confine. Pilotare un rig usa la classe di guardrail `enclosureControl`.
 
-**RunCost**: Il conteggio di token e costi (token di input, token di output, costo stimato in centesimi) per una singola esecuzione di agente.
+**RunCost**: Il conteggio di token e costi (token di input, token di output, costo stimato in microdollari) per una singola esecuzione di agente.
 
 **WakeReason**: Perché un agente è stato inviato. Sei valori: messaggio dell'utente, assegnazione di un ticket, reinvio di ripristino dopo un errore, ticket figlio completato, heartbeat di follow-up pianificato e passaggio di pipeline.
 

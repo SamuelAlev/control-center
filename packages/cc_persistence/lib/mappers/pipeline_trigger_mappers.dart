@@ -4,8 +4,13 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.da
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
-/// Converts domain [PipelineTrigger] to Drift companion.
-PipelineTriggersTableCompanion triggerToCompanion(PipelineTrigger t) {
+/// Converts domain [PipelineTrigger] to Drift companion. The row keeps
+/// [webhookTokenRef], the secrets-store reference of the trigger's token, and
+/// never the token.
+PipelineTriggersTableCompanion triggerToCompanion(
+  PipelineTrigger t, {
+  required String? webhookTokenRef,
+}) {
   return PipelineTriggersTableCompanion(
     id: Value(t.id),
     eventType: Value(t.eventType),
@@ -15,7 +20,7 @@ PipelineTriggersTableCompanion triggerToCompanion(PipelineTrigger t) {
     cronExpression: Value(t.cronExpression),
     timezone: Value(t.timezone),
     nextRunAt: Value(t.nextRunAt?.toUtc()),
-    webhookToken: Value(t.webhookToken),
+    webhookTokenRef: Value(webhookTokenRef),
     eventFiltersJson: Value(jsonEncode(t.eventFilters)),
     matchJson: Value(jsonEncode(t.match)),
     lastFiredAt: Value(t.lastFiredAt),
@@ -25,8 +30,12 @@ PipelineTriggersTableCompanion triggerToCompanion(PipelineTrigger t) {
   );
 }
 
-/// Converts Drift row to domain [PipelineTrigger].
-PipelineTrigger triggerFromRow(PipelineTriggersTableData row) {
+/// Converts Drift row to domain [PipelineTrigger], with [webhookToken] the
+/// token resolved from the row's secrets-store reference.
+PipelineTrigger triggerFromRow(
+  PipelineTriggersTableData row, {
+  required String? webhookToken,
+}) {
   return PipelineTrigger(
     id: row.id,
     eventType: row.eventType,
@@ -36,7 +45,7 @@ PipelineTrigger triggerFromRow(PipelineTriggersTableData row) {
     cronExpression: row.cronExpression,
     timezone: row.timezone,
     nextRunAt: row.nextRunAt,
-    webhookToken: row.webhookToken,
+    webhookToken: webhookToken,
     eventFilters: _decodeMap(row.eventFiltersJson),
     match: _decodeMap(row.matchJson),
     lastFiredAt: row.lastFiredAt,

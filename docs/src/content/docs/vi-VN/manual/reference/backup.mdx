@@ -2,7 +2,7 @@
 title: Sao lưu, xuất và nhập
 description: Bố cục ảnh chụp, manifest, mọi thao tác sao lưu và tuyến truyền tải, cùng chính xác những tệp mà một bản sao lưu có và không chứa.
 slug: vi-VN/so-tay/tham-chieu/sao-luu
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Mọi thứ Control Center có thể sao chép, chuyển giao hoặc nhận, cùng hình dạng chính
@@ -46,11 +46,11 @@ tệp trên Windows và sắp xếp theo trình tự thời gian như một chu�
 
 Các bản sao lưu không gian làm việc theo lịch nằm riêng tại
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Chúng không bao gồm manifest hay `global.db` và không phải ảnh chụp bản cài đặt.
+Mỗi bản có một `manifest.json` chỉ mô tả riêng tệp đó và không có `global.db`; chúng không phải ảnh chụp bản cài đặt. Khi khôi phục, cơ sở dữ liệu bị thay thế được giữ ở cùng vị trí, dưới tên `<timestamp>-pre-restore`.
 Bước lưu trữ của quy trình hằng tuần chỉ xóa các bản sao lưu của chính không gian
 làm việc đó cũ hơn tuổi đã cấu hình (mặc định 30 ngày); các ảnh chụp bản cài đặt
 do người dùng tạo thủ công không bao giờ bị bước đó xoay vòng. `server.listBackups`
-chỉ liệt kê ảnh chụp bản cài đặt, kể cả những ảnh chưa hoàn tất; `workspace.listBackups`
+chỉ liệt kê ảnh chụp bản cài đặt, kể cả những ảnh chưa xác minh; `workspace.listBackups`
 liệt kê các bản sao lưu theo lịch của một không gian làm việc.
 
 Xóa một không gian làm việc vẫn để nguyên thư mục này. Lịch của không gian làm việc dừng
@@ -62,33 +62,39 @@ chủ sở hữu bản cài đặt xóa chúng. `server.listOrphanedBackups` bá
 
 | Trường                     | Kiểu            | Ý nghĩa                                                            |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | số nguyên       | Phiên bản định dạng manifest. Hiện tại là `1`                       |
+| `format`                  | số nguyên       | Định dạng manifest. Hiện tại là `2`                       |
 | `created_at`               | ISO-8601 UTC    | Thời điểm ảnh chụp được thực hiện                                    |
-| `global.file`              | chuỗi           | Luôn là `global.db`                                                 |
-| `global.schema_version`    | số nguyên       | Phiên bản lược đồ `GlobalDatabase` tại thời điểm chụp               |
-| `global.bytes`             | số nguyên       | Kích thước của `global.db` đã ghi                                   |
-| `workspace_schema_version` | số nguyên       | Phiên bản lược đồ `WorkspaceDatabase` dùng chung cho mọi tệp không gian làm việc |
-| `workspaces[]`             | mảng            | Một mục cho mỗi không gian làm việc được chụp                       |
+| `global` | đối tượng | Bản ghi của `global.db`. Không có trong sao lưu không gian làm việc theo lịch |
+| `workspaces[]`             | mảng            | Một bản ghi cho mỗi không gian làm việc được chụp                       |
 | `workspaces[].workspace_id`| chuỗi           | Không gian làm việc mà tệp này chứa                                 |
-| `workspaces[].file`        | chuỗi           | Đường dẫn tương đối so với gốc ảnh chụp, `<workspaceId>/workspace.db` |
-| `workspaces[].bytes`       | số nguyên       | Kích thước của tệp đó                                               |
-| `skipped_workspaces[]`     | mảng chuỗi      | Những không gian làm việc mà bản sao lưu **không** chụp được        |
+| `skipped_workspaces[]` | mảng | Những không gian làm việc mà bản sao lưu **không** chụp được |
+| `skipped_workspaces[].workspace_id` | chuỗi | Không gian làm việc đã bị bỏ sót |
+| `skipped_workspaces[].reason` | chuỗi | `no_file`, `damaged` hoặc `failed` |
 
-Một không gian làm việc bị bỏ qua khi nó đã được đăng ký nhưng chưa từng được ghi vào
-(nên chưa có tệp), hoặc khi `VACUUM INTO` của nó thất bại. Dù theo cách nào, ảnh chụp
-vẫn hoàn tất và manifest ghi rõ những gì còn thiếu.
+`global` và mỗi mục của `workspaces[]` ghi lại một tệp đã sao chép, đo trên bản sao sau khi nó được ghi:
+
+| Trường | Kiểu | Ý nghĩa |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | chuỗi           | Đường dẫn tương đối so với gốc ảnh chụp: `global.db` hoặc `<workspaceId>/workspace.db` |
+| `bytes`       | số nguyên       | Kích thước của bản sao                                               |
+| `sha256` | chuỗi | SHA-256 của bản sao, dạng hex chữ thường |
+| `quick_check` | chuỗi | Kết quả `quick_check` của SQLite cho bản sao: `ok`, hoặc phát hiện của nó |
+| `user_version` | số nguyên | Phiên bản lược đồ của bản sao |
+| `application_id` | số nguyên | `application_id` của SQLite trên bản sao |
+
+Một không gian làm việc bị bỏ qua khi nó đã được đăng ký nhưng chưa từng được ghi vào (`no_file`), khi cơ sở dữ liệu của nó không vượt qua kiểm tra toàn vẹn (`damaged`; bản sao hỏng không bao giờ được tạo), hoặc khi bản sao của nó hoặc việc kiểm tra bản sao đó thất bại (`failed`). Dù theo cách nào, ảnh chụp vẫn hoàn tất và manifest ghi rõ những gì còn thiếu. Manifest được ghi cuối cùng.
 
 ### Tính đầy đủ
 
-`server.listBackups` báo cáo một cờ `complete` cho mỗi ảnh chụp. Cờ này là false khi
-manifest vắng mặt hoặc không phân tích được, khi `global.db` bị thiếu, hoặc khi manifest
-nêu tên một tệp không gian làm việc không có trên đĩa.
+`server.listBackups` báo cáo một cờ `complete` cho mỗi ảnh chụp. Cờ này là false khi manifest vắng mặt, không phân tích được hoặc thuộc định dạng khác, khi một tệp mà nó nêu tên bị thiếu hoặc có kích thước khác, hoặc khi một bản sao không vượt qua kiểm tra của nó. Ứng dụng hiển thị ảnh chụp như vậy là **Chưa xác minh**. Các ảnh chụp được tạo trước định dạng `2` nằm ở trạng thái này.
 
-Một ảnh chụp chưa hoàn tất vẫn được liệt kê, bởi vì một ảnh chụp mà người vận hành không
+Một ảnh chụp chưa xác minh vẫn được liệt kê, bởi vì một ảnh chụp mà người vận hành không
 thấy là một ảnh chụp họ tin rằng mình đang có. Khi manifest không đọc được, danh sách lùi
 về chính bố cục thư mục và báo cáo bất kỳ tệp `<workspaceId>/workspace.db` nào nó tìm
 thấy — những tệp đó vẫn có thể được nhận riêng lẻ qua `workspace.import` dù toàn bộ ảnh
 chụp không thể khôi phục một bản cài đặt.
+
+Một ảnh chụp hoặc sao lưu theo lịch được liệt kê mang `pinned_reason: "last_good_copy"` trong khi nó giữ bản sao đã xác minh mới nhất của một không gian làm việc có cơ sở dữ liệu trực tiếp bị hỏng. Bước lưu trữ sẽ bỏ qua nó cho đến khi không gian làm việc đó được khôi phục.
 
 ## Ảnh chụp không chứa những gì
 
@@ -99,6 +105,7 @@ hơn cơ sở dữ liệu của nó, và không phần nào khác đi kèm:
 | ----------------------------------- | ------------------ | -------------------------------------- |
 | `global.db`                         | Có                 | Không                                  |
 | `<workspaceId>/workspace.db`        | Có                 | Có (nó *chính là* tệp đó)              |
+| `<workspaceId>/code_index.db` | Không | Không |
 | `<workspaceId>/blobs/`              | Không              | Không                                  |
 | `<workspaceId>/skills/`             | Không              | Không                                  |
 | `<workspaceId>/agents/`             | Không              | Không                                  |
@@ -111,15 +118,9 @@ hơn cơ sở dữ liệu của nó, và không phần nào khác đi kèm:
 | `rigs/`                             | Không              | Không                                  |
 | `_agent_hooks/`                     | Không              | Không                                  |
 
-Một phần trong đó có thể bỏ đi — `spaces/` chứa các worktree copy-on-write được cấp phát
-lại từ các kho lưu trữ, `pr_clones/` là một bộ nhớ đệm, `models/` tải lại được, `rigs/`
-là trạng thái máy. Một phần thì không: `blobs/` chứa ảnh được dán mà các hàng trong cơ
-sở dữ liệu trỏ tới, `skills/` và `agents/` chứa các tệp mà agent chạy cùng, và
-`secrets.json` chứa mọi khóa ghép nối, thông tin xác thực nhà cung cấp và cài đặt SSO
-trên bản cài đặt. Xem [Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/#sao-chép-bản-sao-lưu-ra-khỏi-máy)
-để bao quát phần còn lại.
-:::caution[Cơ sở dữ liệu không gian làm việc chứa bí mật webhook]
-`workspace.db` là toàn bộ không gian làm việc: các cuộc hội thoại, nhật ký lượt chạy, chỉ mục mã, liên kết kho mã, định nghĩa môi trường và thành viên. Nó cũng giữ ở dạng đọc được các token webhook của pipeline và bí mật webhook đồng bộ ticket của không gian làm việc, nên hãy coi một bản xuất hay bản sao lưu đã tải về là một bí mật. Nó không giữ đăng nhập nhà cung cấp, khóa thiết bị hay bí mật người dùng nào; những thứ đó nằm trong `global.db` và `secrets.json`.
+Một phần trong đó có thể bỏ đi — `spaces/` chứa các worktree copy-on-write được cấp phát lại từ các kho lưu trữ, `pr_clones/` là một bộ nhớ đệm, `code_index.db` được dựng lại, `models/` tải lại được, `rigs/` là trạng thái máy. Một phần thì không: `blobs/` chứa ảnh được dán mà các hàng trong cơ sở dữ liệu trỏ tới, `skills/` và `agents/` chứa các tệp mà agent chạy cùng, và `secrets.json` chứa mọi khóa ghép nối, thông tin xác thực nhà cung cấp và cài đặt SSO trên bản cài đặt. Xem [Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/#sao-chép-bản-sao-lưu-ra-khỏi-máy) để bao quát phần còn lại.
+:::note[Bí mật không nằm trong cơ sở dữ liệu]
+`workspace.db` là toàn bộ không gian làm việc: các cuộc hội thoại, nhật ký lượt chạy, liên kết kho mã, định nghĩa môi trường và thành viên. Token webhook pipeline và bí mật webhook đồng bộ ticket nằm trong `secrets.json`: cơ sở dữ liệu giữ một tham chiếu tới từng cái, còn chỉ mục tuyến đường giữ một hash có khóa của mỗi token. Vì vậy, một không gian làm việc được khôi phục trên một bản cài đặt khác sẽ không nhận webhook nào cho đến khi các trigger của nó được lưu lại ở đó. Đăng nhập nhà cung cấp, khóa thiết bị và bí mật người dùng nằm trong `global.db` và `secrets.json`.
 :::
 
 :::note[Token chat chủ đích ở lại phía sau]
@@ -146,6 +147,8 @@ nối cổng sao lưu, chẳng hạn máy chủ demo.
 | `workspace.deleteBackup` | thay đổi | Không gian làm việc | `owner` | `name` | `{ok}` |
 | `workspace.export`   | đọc    | Không gian làm việc | `admin`     | không có      | `{ok, path}`                  |
 | `workspace.import`   | thay đổi | Không gian làm việc | `owner`, và chủ sở hữu bản cài đặt | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | đọc | Không gian làm việc | `owner`, và chủ sở hữu bản cài đặt | không có | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | thay đổi | Không gian làm việc | `owner`, và chủ sở hữu bản cài đặt | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | thay đổi | Bản cài đặt* | `owner`      | `id`          | hàng sổ đăng ký được đánh dấu đã xóa |
 
 * `workspace.delete` không thuộc phạm vi nào vì hàng mà nó đánh dấu nằm trong sổ đăng ký
@@ -163,18 +166,20 @@ một không gian làm việc đang hoạt động, vì các bản sao lưu củ
 xóa chỉ chấp nhận tên một thư mục dấu thời gian có trong danh sách, không chấp nhận đường
 dẫn.
 
+`workspace.importHolds.list` trả về những gì một lần nhập đã giữ lại. Mỗi lần giữ có một `id`, một `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` hoặc `invite`), `payload` mà nó sẽ đưa trở lại, `imported_at` và `source_install_id`. `workspace.importHolds.resolve` với `accept: true` cấp lại quyền đó, còn với `false` thì loại bỏ nó. `applied` là false khi người hoặc thứ mà quyền đó dành cho không còn ở trong không gian làm việc.
+
 :::note[Ảnh chụp toàn bộ bản cài đặt đều yêu cầu chủ sở hữu ở cả hai làn]
 `server.backupNow`, `server.listBackups` và `server.deleteBackup` yêu cầu **chủ sở hữu**
 bản cài đặt (`ServerAuthority.serverOwner`), cùng cổng như `GET /backup/snapshot`. Một
 ảnh chụp nắm mọi cơ sở dữ liệu của không gian làm việc, nên chỉ là quản trị viên của một
 không gian làm việc thì chưa đủ để quản lý những cái khác. Thao tác xóa chỉ chấp nhận tên
 thư mục dấu thời gian có trong danh sách, không phải một đường dẫn máy chủ tùy ý, và xóa
-toàn bộ ảnh chụp (kể cả ảnh chụp chưa hoàn tất). Xuất/nhập theo từng không gian làm việc
+toàn bộ ảnh chụp (kể cả ảnh chụp chưa xác minh). Xuất/nhập theo từng không gian làm việc
 vẫn ở mức quản trị viên không gian làm việc.
 :::
 
 :::note[Việc khôi phục thuộc về chủ sở hữu bản cài đặt]
-`workspace.import` và `POST /backup/restore` khiến máy chủ tiếp nhận một tệp cơ sở dữ liệu mà các hàng của nó được xem là của chính máy chủ: liên kết kho mã và người đã tạo ra chúng, định nghĩa môi trường chạy trên máy chủ, đường dẫn worktree và nhật ký. Vì vậy cả hai đều cần chủ sở hữu bản cài đặt (`ServerAuthority.serverOwner`), người cũng phải là chủ sở hữu của không gian làm việc đó. Ai khác, và mọi bên gọi trên một máy không có chủ sở hữu được ghi nhận, đều bị từ chối với `server_owner_required`. Không trigger hay view nào mà tệp mang theo được tiếp nhận.
+`workspace.import` và `POST /backup/restore` khiến máy chủ tiếp nhận một tệp cơ sở dữ liệu mà các hàng của nó được xem là của chính máy chủ: liên kết kho mã và người đã tạo ra chúng, định nghĩa môi trường chạy trên máy chủ, đường dẫn worktree và nhật ký. Vì vậy cả hai đều cần chủ sở hữu bản cài đặt (`ServerAuthority.serverOwner`), người cũng phải là chủ sở hữu của không gian làm việc đó. Ai khác, và mọi bên gọi trên một máy không có chủ sở hữu được ghi nhận, đều bị từ chối với `server_owner_required`. Không trigger, view, cột hay ràng buộc nào mà tệp mang theo được tiếp nhận.
 :::
 
 ### Phản hồi của `server.listBackups`
@@ -215,21 +220,21 @@ hai thứ không thể trôi dạt thành những cách xử lý khác nhau cho 
 
 ### Kiểm tra hợp lệ của `workspace.import`
 
-Trước khi bất cứ thứ gì bị thay thế, tệp ứng viên được mở ở chế độ chỉ đọc bằng một kết
-nối SQLite thô tồn tại ngắn, và hàng `workspace_meta` của nó được đọc.
+Trước khi bất cứ thứ gì bị thay thế, tệp ứng viên được sao chép sang một tệp tạm nằm cạnh đích và được kiểm tra tại đó. Việc từ chối không chạm vào gì cả, và loại của nó được mang trong `data.kind`.
 
 | Điều kiện                                        | Kết quả                                                         |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Không phải cơ sở dữ liệu SQLite đọc được, hoặc không có `workspace_meta` | Bị từ chối. Không có gì bị chạm tới        |
-| Id không gian làm việc được ghi ≠ đích            | **Được phép**, có ghi nhật ký. Đây là cách một không gian làm việc được nhân bản hoặc khôi phục dưới một id mới |
-| Id bản cài đặt được ghi ≠ bản cài đặt này         | **Được phép**, có ghi nhật ký. Các thiết bị đã ghép nối và id người dùng của nó thuộc về bản cài đặt đó và sẽ không phân giải được ở đây |
-| Id không gian làm việc không hợp lệ, hoặc tệp không tồn tại | Bị từ chối                                            |
+| Tệp không tồn tại | Bị từ chối, `import.missing_source` |
+| Không phải cơ sở dữ liệu SQLite đọc được, hoặc không vượt qua `quick_check` | Bị từ chối, `import.damaged` |
+| Đến từ một ảnh chụp và SHA-256 của nó khác với manifest | Bị từ chối, `import.checksum_mismatch` |
+| Một phiên bản máy chủ mới hơn đã ghi nó | Bị từ chối, `import.newer_schema` |
+| `application_id` khác, hoặc không có `workspace_meta` | Bị từ chối, `import.foreign_file` |
+| Không thể đưa về lược đồ của máy chủ này | Bị từ chối, `import.schema_mismatch` |
+| Webhook hoặc lời mời của nó đã định tuyến tới một không gian làm việc khác | Bị từ chối, `import.route_conflict` |
+| Id không gian làm việc được ghi ≠ đích            | **Được phép**. Các hàng của nó được gán lại khóa theo đích. Đây là cách một không gian làm việc được nhân bản hoặc khôi phục dưới một id mới |
+| Id bản cài đặt được ghi ≠ bản cài đặt này         | **Được phép**. Id người dùng của nó thuộc về bản cài đặt đó và sẽ không phân giải được ở đây |
 
-Khi được chấp nhận, cơ sở dữ liệu của không gian làm việc đích được đóng và loại khỏi bộ
-quản lý trước khi tệp được sao chép đè lên nó (một kết nối drift đang mở sẽ giữ tệp và
-`-wal` của nó), rồi được mở lại để `beforeOpen` cài đặt lại các trigger FTS và đồng bộ,
-và các chỉ mục FTS được dựng lại — bảng nội dung của một tệp được nhập thì đã được điền
-nhưng chỉ mục của nó có thể đã cũ.
+Khi được chấp nhận, tệp đã chuẩn bị được đưa về lược đồ của máy chủ này và phải khớp đúng với nó. Những quyền mà một tệp không được tự cấp thì bị lấy ra khỏi nó: các phê duyệt chạy định nghĩa môi trường trên máy chủ bị xóa, còn các quy tắc hành động cho phép hoặc hỏi xác nhận, các quyền thực thi sandbox, quyền kho mã cao hơn quyền đọc, vai trò cao hơn thành viên và lời mời tới các vai trò đó trở thành những lần giữ để chủ sở hữu máy chủ xem xét. Người nhập giữ hoặc nhận vai trò chủ sở hữu. Cơ sở dữ liệu bị thay thế được giữ lại như một bản sao lưu theo lịch tên `<timestamp>-pre-restore`, tệp đã chuẩn bị được đổi tên vào vị trí của nó khi các kết nối của không gian làm việc đã đóng, `code_index.db` bị xóa để được dựng lại, và các chỉ mục FTS được dựng lại.
 
 ## Các tuyến truyền tải
 
@@ -259,7 +264,7 @@ không gian làm việc đó.
 
 | Trạng thái | Nguyên nhân                                                                       |
 | ---------- | --------------------------------------------------------------------------------- |
-| `400`      | Thiếu một tham số truy vấn bắt buộc, tên bản sao lưu không hợp lệ, hoặc phần thân tải lên rỗng |
+| `400` | Thiếu một tham số truy vấn bắt buộc, tên bản sao lưu không hợp lệ, phần thân tải lên rỗng, hoặc tệp tải lên bị từ chối (thân là `{error, kind}` với một loại `import.*`) |
 | `403`      | Thiết bị không xác định hoặc đã bị thu hồi, chữ ký sai, hoặc bên gọi thiếu vai trò    |
 | `404`      | Máy chủ này không có cổng sao lưu, hoặc ảnh chụp, bản sao lưu hay tệp không gian làm việc được nêu tên không tồn tại |
 | `405`      | `/backup/restore` được gọi với phương thức khác `POST`                              |
@@ -298,6 +303,8 @@ kiểu truyền nào mã hóa các tệp sao lưu thu được khi lưu trữ.
 | Ảnh chụp                       | `<dataDir>/backups/<timestamp>/`                             |
 | Bản sao lưu không gian làm việc theo lịch | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Bản xuất không gian làm việc   | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Cơ sở dữ liệu bị thay thế bởi một lần khôi phục | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Cơ sở dữ liệu ở trạng thái trước khi một lần cập nhật thay đổi định dạng của chúng | `<dataDir>/pre_upgrade/` và `<dataDir>/<workspaceId>/pre_upgrade/`, hai bản mới nhất của mỗi loại |
 | Trung chuyển truyền tải        | `<dataDir>/backups/transfer/` — một bàn làm việc, được dọn bởi chính tuyến ghi vào nó |
 | Tên tệp lưu trữ ảnh chụp       | `<snapshot directory name>.zip`                              |
 | Giới hạn tải lên               | 8 GiB cho mỗi lần tải lên đã mã hóa tới `/backup/restore`    |

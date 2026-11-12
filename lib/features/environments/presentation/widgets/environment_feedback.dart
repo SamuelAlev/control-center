@@ -2,20 +2,16 @@ import 'dart:async';
 
 import 'package:cc_data/cc_data.dart' show RpcEnvironmentRepository;
 import 'package:cc_domain/cc_domain.dart' show ServerOwnerRequiredException;
-import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_host_approval.dart';
 import 'package:control_center/features/environments/providers/environment_actions.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// The readable part of a failed call.
-String environmentFailureMessage(Object error) =>
-    error is RemoteRpcException ? error.message : '$error';
 
 /// The words for a refused environment call: an unapproved definition that
 /// may not run on the server (`environment.host_unapproved`, by kind) in the
@@ -26,7 +22,7 @@ String environmentRefusalMessage(
   required bool owner,
 }) => isEnvironmentHostUnapproved(error)
     ? environmentHostUnapprovedMessage(l10n, owner: owner)
-    : environmentFailureMessage(error);
+    : failureMessage(l10n, error);
 
 /// The words for a failed save or approval of a definition: the owner-only
 /// refusal (it places something on the server host) in the app's own words,
@@ -34,7 +30,7 @@ String environmentRefusalMessage(
 String environmentSaveFailureMessage(AppLocalizations l10n, Object error) =>
     error is ServerOwnerRequiredException
     ? l10n.environmentHostOwnerOnly
-    : environmentFailureMessage(error);
+    : failureMessage(l10n, error);
 
 /// Whether the controls of [key]'s environment may be pressed: only once the
 /// server has said this person may operate it (`can_operate`). Everything

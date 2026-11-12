@@ -8,6 +8,7 @@ import 'package:control_center/features/settings/presentation/widgets/kit/settin
 import 'package:control_center/features/settings/presentation/widgets/sections/user/username_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,9 +42,10 @@ class OnboardingYouStep extends ConsumerWidget {
           children: [
             Icon(AppIcons.triangleAlert, size: 14, color: t.fgErrorPrimary),
             Text(
-              l10n.accountLoadFailed(
-                error is RemoteRpcException ? error.message : '$error',
-              ),
+              storageRefusalMessage(l10n, error) ??
+                  l10n.accountLoadFailed(
+                    error is RemoteRpcException ? error.message : '$error',
+                  ),
               style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
             ),
           ],
@@ -134,9 +136,7 @@ class _YouFormState extends ConsumerState<_YouForm> {
     } on UsernameRefusedException catch (refusal) {
       _availability.refused(refusal.reason);
     } on Object catch (error) {
-      _error = error is RemoteRpcException
-          ? error.message
-          : l10n.failedWithError('$error');
+      _error = failureMessage(l10n, error);
     } finally {
       if (mounted) {
         setState(() => _busy = false);

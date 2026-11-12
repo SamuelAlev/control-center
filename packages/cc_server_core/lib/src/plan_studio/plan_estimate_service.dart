@@ -152,7 +152,7 @@ class PlanEstimateService {
       graph: graph,
       historyByRoleKey: historyByRoleKey,
       impactByNodeKey: impactByNodeKey,
-      budgetCeilingCents: proposal.budget.maxCostCents,
+      budgetCeilingMicros: proposal.budget.maxCostMicros,
     );
   }
 
@@ -170,16 +170,16 @@ class PlanEstimateService {
     'nodes': {
       for (final e in estimate.byNodeKey.entries) e.key: e.value.toJson(),
     },
-    if (estimate.totalCostCentsLow != null)
-      'total_cost_cents_low': estimate.totalCostCentsLow,
-    if (estimate.totalCostCentsHigh != null)
-      'total_cost_cents_high': estimate.totalCostCentsHigh,
+    if (estimate.totalCostMicrosLow != null)
+      'total_cost_micros_low': estimate.totalCostMicrosLow,
+    if (estimate.totalCostMicrosHigh != null)
+      'total_cost_micros_high': estimate.totalCostMicrosHigh,
     if (estimate.totalDurationMsLow != null)
       'total_duration_ms_low': estimate.totalDurationMsLow,
     if (estimate.totalDurationMsHigh != null)
       'total_duration_ms_high': estimate.totalDurationMsHigh,
-    if (estimate.budgetCeilingCents != null)
-      'budget_ceiling_cents': estimate.budgetCeilingCents,
+    if (estimate.budgetCeilingMicros != null)
+      'budget_ceiling_micros': estimate.budgetCeilingMicros,
     'is_partial': estimate.isPartial,
     'exceeds_budget': estimate.exceedsBudget,
   };

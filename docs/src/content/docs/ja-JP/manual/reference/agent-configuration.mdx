@@ -2,7 +2,7 @@
 title: エージェント設定
 description: エージェントエンティティのすべてのフィールドと、それが使用する列挙型をまとめます。
 slug: ja-JP/マニュアル/リファレンス/エージェント設定
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 このリファレンスでは、エージェントエンティティのすべてのフィールドと、それが使用する列挙型およびフラグを一覧します。アプリでエージェントを作成または編集する手順を追った説明については、[エージェントの作成と設定](/ja-JP/マニュアル/ハウツーガイド/エージェント作成/)を参照してください。
@@ -26,16 +26,16 @@ sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 | `effort`                | `String?`              | いいえ | 推論レベルの id（例: `'low'`、`'xhigh'`）。選択したモデルの `thinkingLevels` から取得される                                                                                                                                    |
 | `contextSize`           | `int?`                 | いいえ | コンテキストウィンドウの最大サイズ                                                                                                                                                                                          |
 | `role`                  | `AgentRole?`           | いいえ | エージェントのロール                                                                                                                                                                                                        |
-| `monthlyBudgetCents`    | `int`                  | いいえ | 月間の支出上限（セント単位。デフォルト `0` で無制限）                                                                                                                                                                        |
+| `monthlyBudgetMicros`    | `int`                  | いいえ | 月間の支出上限（マイクロドル単位。デフォルト `0` で無制限）                                                                                                                                                                        |
 | `silenceTimeoutMinutes` | `int?`                 | いいえ | 無応答タイムアウトの上書き（分単位）。null または 1–240 のいずれかでなければならない（コンストラクターでアサート）                                                                                                           |
 | `maxConcurrentTasks`    | `int`                  | いいえ | デフォルトは `1`。プレゼンスモデルが報告するキャパシティ値（実行中とキューの件数がこれと比較される）                                                                                                                        |
 | `visibility`            | `AgentVisibility`      | いいえ | デフォルトは `workspace`                                                                                                                                                                                                    |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | いいえ | ガバナンスステータス（デフォルトは `active`）。予算のハードストップによって書き込まれ、組織図とプレゼンス名簿に表示される。ディスパッチは `paused` のエージェントからの作業も引き続き受け入れる                              |
-| `budgetPolicyId`        | `String?`              | いいえ | 共有予算ポリシーの id。null の場合は `monthlyBudgetCents` が直接適用される                                                                                                                                                   |
+| `budgetPolicyId`        | `String?`              | いいえ | 共有予算ポリシーの id。null の場合は `monthlyBudgetMicros` が直接適用される                                                                                                                                                   |
 | `runtimeProfileId`      | `String?`              | いいえ | カスタムランタイムプロファイルの id                                                                                                                                                                                          |
 | `createdAt`             | `DateTime`             | はい   | 作成タイムスタンプ                                                                                                                                                                                                          |
 
-`name` と `title` はどちらも空であってはならない（コンストラクターでアサート）。`monthlyBudgetCents` のデフォルトである `0` は無制限を意味する。上限を書き込むには `agents.upsert` を使う。
+`name` と `title` はどちらも空であってはならない（コンストラクターでアサート）。`monthlyBudgetMicros` のデフォルトである `0` は無制限を意味する。上限を書き込むには `agents.upsert` を使う。
 
 ## AgentRole 列挙型
 

@@ -2,7 +2,7 @@
 title: أحداث النطاق
 description: الفهرس الكامل لأحداث النطاق وعددها 54، وحمولاتها، والمشتركون على جانب الخادم الذين يستهلكونها.
 slug: ar-SA/دليل-المستخدم/مرجع/أحداث-النطاق
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## ناقل الأحداث
@@ -112,7 +112,7 @@ sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 | الحدث | الحمولة | متى يُطلَق |
 | --- | --- | --- |
 | `ActivityLogged` | `id`، `actorType`، `actorId?`، `action`، `entityType`، `entityId?`، `details?`، `workspaceId?`، `runId?` | يُنشأ بند في سجل النشاط |
-| `BudgetThresholdCrossed` | `scopeType`، `scopeId`، `spentCents`، `budgetCents`، `isHardStop` | يتجاوز الإنفاق العتبة |
+| `BudgetThresholdCrossed` | `scopeType`، `scopeId`، `spentMicros`، `budgetMicros`، `isHardStop` | يتجاوز الإنفاق العتبة |
 
 ## أحداث الهوية والعضوية
 

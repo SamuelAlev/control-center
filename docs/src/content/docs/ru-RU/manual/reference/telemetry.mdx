@@ -2,7 +2,7 @@
 title: Статистика использования
 description: Что Control Center записывает при включённой статистике использования, кто это решает и что никогда не отправляется.
 slug: ru-RU/руководство/справка/статистика-использования
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center может отправлять **псевдонимизированные события использования** в экземпляр [Umami](https://umami.is). Статистика использования **выключена, пока её не включит оператор сервера**. Этот параметр принадлежит серверу и действует для каждого подключённого к нему клиента: приложения для компьютера, веб-приложения, телефона и самого сервера.
@@ -109,7 +109,7 @@ ID отправляются, но только в виде псевдонимо�
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Изменены навыки рабочего пространства |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Дан ответ на предложение оркестрации |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | План одобрен или отклонён (телефон) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Запущена контролируемая цель или цикл (телефон) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | Запущена контролируемая цель или цикл (телефон) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Беседа создана или ответвлена |
 | `conversation_rewound` | `conversation_id` | Беседа продолжена с более раннего сообщения |
 | `space_archived` | `workspace_id`, `space_id` | Пространство архивировано |
@@ -128,7 +128,7 @@ ID отправляются, но только в виде псевдонимо�
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Запуск агента завершён |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Агент остановился в ожидании человека |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Политика действий отклонила действие агента |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Запуск конвейера завершён. `trigger` — это `manual`, тип события, которое его запустило, или только вид именованного триггера (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | Запуск конвейера завершён. `trigger` — это `manual`, тип события, которое его запустило, или только вид именованного триггера (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | Pull request опубликован из пространства |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Слит pull request, открытый агентом |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Запись встречи сохранена |
@@ -142,7 +142,7 @@ ID отправляются, но только в виде псевдонимо�
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Навык рабочего пространства установлен, обновлён или изменён на диске |
 | `calendar_auth_expired` | `workspace_id` | Подключение к календарю требует повторного входа |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Событие календаря вот-вот начнётся |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Расходы превысили порог бюджета |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | Расходы превысили порог бюджета |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | Запрошено ревью отслеживаемого PR |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Изменилось решение по ревью отслеживаемого PR |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | В связанном репозитории слит PR, открытый не агентом |

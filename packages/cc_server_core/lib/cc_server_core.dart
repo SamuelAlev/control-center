@@ -50,6 +50,7 @@ export 'src/remote_event_forwarder.dart';
 export 'src/remote_rpc_catalog.dart';
 export 'src/rig_event_listener.dart';
 export 'src/rpc_exception_mapper.dart';
+export 'src/server_boot_refusal.dart' show ServerBootRefusal;
 export 'src/server_mcp_client_control.dart';
 export 'src/server_mcp_control.dart';
 export 'src/server_mcp_registry.dart' show buildServerMcpRegistry;

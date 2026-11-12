@@ -80,7 +80,7 @@ class PlanDocumentApprovalService {
     required String workspaceId,
     required String planId,
     Set<String>? approvedNodeKeys,
-    int? maxCostCents,
+    int? maxCostMicros,
     String? approvedByUserId,
   }) async {
     final doc = await _plans.getById(workspaceId, planId);
@@ -90,7 +90,7 @@ class PlanDocumentApprovalService {
     final proposal = PlanDocumentCompiler.toProposal(
       doc,
       agentId: doc.agentId,
-      maxCostCents: maxCostCents,
+      maxCostMicros: maxCostMicros,
     );
     final violations = _validator.validate(proposal);
     if (violations.isNotEmpty) {
@@ -123,8 +123,8 @@ class PlanDocumentApprovalService {
           // The ROOM the plan was authored in, never its conversation.
           spaceId: spaceId,
           orchestratorAgentId: doc.agentId,
-          estimatedCostCents: proposal.budget.estimatedCostCents,
-          maxCostCents: proposal.budget.maxCostCents,
+          estimatedCostMicros: proposal.budget.estimatedCostMicros,
+          maxCostMicros: proposal.budget.maxCostMicros,
           createdAt: now,
           updatedAt: now,
         ),
@@ -188,8 +188,8 @@ class PlanDocumentApprovalService {
         revision: failed.revision,
         teamId: failed.teamId,
         projectId: failed.projectId,
-        estimatedCostCents: failed.estimatedCostCents,
-        maxCostCents: failed.maxCostCents,
+        estimatedCostMicros: failed.estimatedCostMicros,
+        maxCostMicros: failed.maxCostMicros,
         hiredAgentIds: failed.hiredAgentIds,
         createdAt: failed.createdAt,
         updatedAt: DateTime.now(),

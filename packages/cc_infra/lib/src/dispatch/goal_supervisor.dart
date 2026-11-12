@@ -4,13 +4,14 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/goal_supervision_port.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart'
-    show defaultRunCostCapCents;
+    show defaultRunCostCapMicros;
 import 'package:uuid/uuid.dart';
 
 /// Dispatches one bounded agent run for a goal. Wired by the runtime to
@@ -26,7 +27,7 @@ typedef GoalDispatcher =
       required String prompt,
       String? conversationId,
       String? requestedByUserId,
-      int? costCapCents,
+      int? costCapMicros,
     });
 
 /// Posts a system message into the goal's space. Wired by the runtime to
@@ -63,11 +64,12 @@ class GoalSupervisor implements GoalSupervisionPort {
     );
   }
 
-  /// Hard cost cap for a whole goal, in cents (priced models only). The
-  /// budget is what bounds an unattended goal — there is deliberately no
-  /// default deadline or run-count cap (a hard iteration wall kills
-  /// legitimate long-term goals; opt in with `/goal --days N` / `--max N`).
-  static const int defaultCostCapCents = 5000;
+  /// Hard cost cap for a whole goal, in micro-dollars (50 USD; priced models
+  /// only). The budget is what bounds an unattended goal — there is
+  /// deliberately no default deadline or run-count cap (a hard iteration wall
+  /// kills legitimate long-term goals; opt in with `/goal --days N` /
+  /// `--max N`). The `agent_goal_runs.cost_cap_micros` column default matches.
+  static const int defaultCostCapMicros = 50000000;
 
   /// Consecutive failed runs after which the supervisor gives up.
   static const int maxConsecutiveFailures = 3;
@@ -151,7 +153,7 @@ class GoalSupervisor implements GoalSupervisionPort {
         (_, final Duration budget) => now.add(budget),
         _ => null,
       },
-      costCapCents: flags.budgetCents ?? defaultCostCapCents,
+      costCapMicros: flags.budgetMicros ?? defaultCostCapMicros,
       maxRuns: flags.maxRuns,
       requestedByUserId: requestedByUserId,
       createdAt: now,
@@ -166,16 +168,13 @@ class GoalSupervisor implements GoalSupervisionPort {
           'Started a durable /${kind.wire} goal: ${flags.objective}\n\n'
           'It keeps running until the agent declares it complete with the '
           'complete_goal tool, a human stops it, or the cost cap '
-          '(${_dollars(goal.costCapCents)}) is hit'
+          '(${formatUsdMicros(goal.costCapMicros)}) is hit'
           '${goal.maxRuns == null ? '' : ', or the run budget of ${goal.maxRuns} runs is exhausted'}'
           '${goal.deadlineAt == null ? '' : ', or the deadline passes'}'
           '.',
     );
     return _dispatchRun(goal, prompt: '/${kind.wire} ${flags.objective}');
   }
-
-  /// `\$x.xx` from cents — budgets are priced in dollars.
-  static String _dollars(int cents) => '\$${(cents / 100).toStringAsFixed(2)}';
 
   @override
   Future<AgentGoalRun?> activeGoalForAgent(
@@ -226,14 +225,14 @@ class GoalSupervisor implements GoalSupervisionPort {
   /// immediately (unless its run is still live).
   ///
   /// A `budgetExhausted` goal is also resumable — budget exhaustion is not
-  /// completion — but only by RAISING the budget: [raiseCostCapCents] must
+  /// completion — but only by RAISING the budget: [raiseCostCapMicros] must
   /// lift the cap above the spend that tripped it, otherwise the resume is
   /// refused (re-dispatching into the same wall would burn a run for
   /// nothing). Paused goals resume as-is.
   Future<void> resumeGoal(
     String workspaceId,
     String goalId, {
-    int? raiseCostCapCents,
+    int? raiseCostCapMicros,
   }) async {
     final goal = await _goalRepository.getById(workspaceId, goalId);
     final fromBudget = goal?.status == AgentGoalStatus.budgetExhausted;
@@ -242,21 +241,22 @@ class GoalSupervisor implements GoalSupervisionPort {
       return;
     }
     if (fromBudget &&
-        (raiseCostCapCents == null || raiseCostCapCents <= goal.costCents)) {
+        (raiseCostCapMicros == null || raiseCostCapMicros <= goal.costMicros)) {
       await _systemMessageSender(
         workspaceId: goal.workspaceId,
         spaceId: goal.spaceId,
         conversationId: goal.conversationId,
         content:
             'Durable /${goal.kind.wire} goal is stopped at its cost cap '
-            '(${_dollars(goal.costCapCents)} spent: ${_dollars(goal.costCents)}). '
+            '(${formatUsdMicros(goal.costCapMicros)} spent: '
+            '${formatUsdMicros(goal.costMicros)}). '
             'Resume it with a raised budget to continue.',
       );
       return;
     }
     final resumed = goal.copyWith(
       status: AgentGoalStatus.active,
-      costCapCents: raiseCostCapCents,
+      costCapMicros: raiseCostCapMicros,
       updatedAt: _now(),
     );
     await _goalRepository.upsert(resumed);
@@ -365,7 +365,8 @@ class GoalSupervisor implements GoalSupervisionPort {
       return 'the deadline passed';
     }
     if (goal.costCapReached) {
-      return 'the cost cap of ${goal.costCapCents} cents was reached';
+      return 'the cost cap of ${formatUsdMicros(goal.costCapMicros)} was '
+          'reached';
     }
     if (goal.runBudgetExhausted) {
       return 'the run budget of ${goal.maxRuns} runs was exhausted';
@@ -390,7 +391,7 @@ class GoalSupervisor implements GoalSupervisionPort {
     // Thread the goal's REMAINING budget as the run's cost cap so a
     // segment can never overshoot an explicit `/goal --budget` by a whole
     // segment's worth of spend (the default cap is only the upper bound).
-    final remaining = goal.costCapCents - goal.costCents;
+    final remaining = goal.costCapMicros - goal.costMicros;
     final runId = await _dispatcher(
       workspaceId: goal.workspaceId,
       spaceId: goal.spaceId,
@@ -398,11 +399,7 @@ class GoalSupervisor implements GoalSupervisionPort {
       prompt: prompt,
       conversationId: goal.conversationId,
       requestedByUserId: goal.requestedByUserId,
-      costCapCents:
-          (remaining < defaultRunCostCapCents
-                  ? remaining
-                  : defaultRunCostCapCents)
-              .clamp(1, defaultRunCostCapCents),
+      costCapMicros: remaining.clamp(1, defaultRunCostCapMicros),
     );
     final updated = goal.copyWith(
       activeRunId: runId,
@@ -467,7 +464,7 @@ class GoalSupervisor implements GoalSupervisionPort {
     final runLog = await _runLogRepository.getById(workspaceId, runId);
     final failed = runLog?.status == RunStatus.error;
     final finished = goal.copyWith(
-      costCents: goal.costCents + (runLog?.cost.estimatedCostCents ?? 0),
+      costMicros: goal.costMicros + (runLog?.cost.costMicros ?? 0),
       runCount: goal.runCount + 1,
       removeActiveRunId: true,
       consecutiveFailures: failed ? goal.consecutiveFailures + 1 : 0,
@@ -546,7 +543,7 @@ class _GoalFlags {
   const _GoalFlags({
     required this.objective,
     this.maxRuns,
-    this.budgetCents,
+    this.budgetMicros,
     this.days,
     this.timeBudget,
     this.error,
@@ -558,8 +555,9 @@ class _GoalFlags {
   /// Run budget (`--max N`), or null for uncapped.
   final int? maxRuns;
 
-  /// Cost cap in cents (`--budget D`), or null for the default.
-  final int? budgetCents;
+  /// Cost cap in micro-dollars (`--budget D`, typed in dollars), or null for
+  /// the default.
+  final int? budgetMicros;
 
   /// Deadline in days from start (`--days N`), or null for no deadline.
   final int? days;
@@ -605,7 +603,7 @@ class _GoalFlags {
     final tokens = remaining.split(RegExp(r'\s+'));
     final kept = <String>[];
     int? maxRuns;
-    int? budgetCents;
+    int? budgetMicros;
     int? days;
     var i = 0;
     while (i < tokens.length) {
@@ -615,7 +613,7 @@ class _GoalFlags {
         final parsed = switch (token) {
           '--max' => int.tryParse(value),
           '--days' => int.tryParse(value),
-          _ => _dollarsToCents(value),
+          _ => parseDollarsToMicros(value),
         };
         if (parsed != null && parsed > 0) {
           switch (token) {
@@ -624,7 +622,7 @@ class _GoalFlags {
             case '--days':
               days = parsed;
             default:
-              budgetCents = parsed;
+              budgetMicros = parsed;
           }
           i += 2;
           continue;
@@ -638,15 +636,9 @@ class _GoalFlags {
       // An explicit `--max` wins over a leading count: the longer spelling is
       // the more deliberate one.
       maxRuns: maxRuns ?? leadingRuns,
-      budgetCents: budgetCents,
+      budgetMicros: budgetMicros,
       days: days,
       timeBudget: leadingTime,
     );
-  }
-
-  /// Parses a dollar amount (`25`, `25.50`, `\$25`) into cents, or null.
-  static int? _dollarsToCents(String raw) {
-    final dollars = double.tryParse(raw.replaceFirst('\$', ''));
-    return dollars == null ? null : (dollars * 100).round();
   }
 }

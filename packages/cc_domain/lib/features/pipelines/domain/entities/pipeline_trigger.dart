@@ -115,7 +115,9 @@ class PipelineTrigger {
   /// Opaque secret path token for webhook triggers. An inbound POST to
   /// `/webhooks/<webhookToken>` is routed to this trigger; the request's HMAC
   /// signature is verified against this same token. `null` for non-webhook
-  /// triggers.
+  /// triggers, and for one whose stored secret is gone (its next save mints a
+  /// new token). The server keeps it in its secrets store, never in a
+  /// database row.
   final String? webhookToken;
 
   /// Per-event action filters for webhook triggers (e.g.

@@ -35,7 +35,7 @@ void main() {
           SpacesTableCompanion.insert(
             id: id,
             name: 'Ch $id',
-            workspaceId: Value(workspaceId),
+            workspaceId: workspaceId,
           ),
         );
   }

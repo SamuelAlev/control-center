@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Every flag, environment variable, subcommand and data-directory path of the headless server.
 slug: en-GB/manual/reference/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Every process flag takes a CLI flag or an environment variable; the flag wins,
@@ -225,12 +225,18 @@ The default data dir is `~/Library/Application Support/control-center` on macOS,
 `~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
 no home or app-data directory resolves.
 
+The server keeps the data directory private to its own account (`0700`). It refuses to
+start (exit code `78`) when it cannot, when `global.db` is damaged or was written by a
+newer version, or when its identity file cannot be read.
+
 | Path                              | Contents                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
-| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory, the code graph    |
+| `<workspaceId>/workspace.db`      | One database per workspace — agents, spaces, tickets, memory                    |
+| `<workspaceId>/code_index.db`     | That workspace's code graph. Rebuilt when it is missing, never backed up        |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | The newest two copies of a database from before an update changed its format |
 | `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
-| `secrets.json`                    | Pairing keys, the Connect install key, provider apps, people's sign-ins (sealed when made through Connect), SSO (`0600`) |
+| `secrets.json`                    | Pairing keys, the Connect install key, provider apps, people's sign-ins (sealed when made through Connect), webhook secrets, SSO (`0600`) |
 | `backups/<timestamp>/`            | One install snapshot — `manifest.json`, `global.db` and a copy of each workspace |
 | `backups/exports/`                | Single-workspace exports, `<workspaceId>-<timestamp>.db`                        |
 | `backups/transfer/`               | Staging for backup downloads and uploads; swept by the route that writes it     |

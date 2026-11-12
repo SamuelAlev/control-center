@@ -1,0 +1,36 @@
+{
+ "user_version": 29,
+ "base": "workspace_v29_a",
+ "overrides": [
+  {
+   "type": "table",
+   "name": "conversations",
+   "tbl_name": "conversations",
+   "sql": "CREATE TABLE \"conversations\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"title\" TEXT NOT NULL DEFAULT '', \"status\" TEXT NOT NULL DEFAULT 'active', \"anchor_message_id\" TEXT REFERENCES conversation_messages(id) ON DELETE CASCADE, \"created_by_principal_id\" TEXT NULL, \"leaf_message_id\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "conversation_messages",
+   "tbl_name": "conversation_messages",
+   "sql": "CREATE TABLE \"conversation_messages\" (\"id\" TEXT NOT NULL, \"space_id\" TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE, \"conversation_id\" TEXT NOT NULL REFERENCES conversations (id) ON DELETE CASCADE, \"sender_id\" TEXT NOT NULL, \"sender_type\" TEXT NOT NULL, \"content\" TEXT NOT NULL, \"content_chars\" INTEGER NOT NULL DEFAULT 0, \"message_type\" TEXT NOT NULL DEFAULT 'text', \"metadata\" TEXT NULL, \"list_metadata\" TEXT NULL, \"transcript_chars\" INTEGER NOT NULL DEFAULT 0, \"parent_message_id\" TEXT NULL, \"compacted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"compacted\" IN (0, 1)), \"reverted\" INTEGER NOT NULL DEFAULT 0 CHECK (\"reverted\" IN (0, 1)), \"reverted_at\" INTEGER NULL, \"embedding\" BLOB NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"context_tokens\" INTEGER NULL, \"context_window_tokens\" INTEGER NULL, PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "calendar_accounts",
+   "tbl_name": "calendar_accounts",
+   "sql": "CREATE TABLE \"calendar_accounts\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL DEFAULT '', \"provider_id\" TEXT NOT NULL DEFAULT 'google', \"account_email\" TEXT NOT NULL, \"display_name\" TEXT NULL, \"last_synced_at\" INTEGER NULL, \"auth_expired_at\" INTEGER NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "user_activity",
+   "tbl_name": "user_activity",
+   "sql": "CREATE TABLE \"user_activity\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"user_id\" TEXT NOT NULL, \"action\" TEXT NOT NULL, \"target_type\" TEXT NULL, \"target_id\" TEXT NULL, \"device_id\" TEXT NULL, \"ip\" TEXT NULL, \"country_code\" TEXT NULL, \"details\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"))"
+  },
+  {
+   "type": "table",
+   "name": "action_policies",
+   "tbl_name": "action_policies",
+   "sql": "CREATE TABLE \"action_policies\" (\"id\" TEXT NOT NULL, \"workspace_id\" TEXT NOT NULL, \"scope_type\" TEXT NOT NULL, \"scope_id\" TEXT NOT NULL DEFAULT '', \"action_class\" TEXT NULL, \"command_prefix\" TEXT NULL, \"decision\" TEXT NOT NULL DEFAULT 'prompt', \"provenance\" TEXT NOT NULL DEFAULT 'user', \"constraint_json\" TEXT NULL, \"expires_at\" INTEGER NULL, \"enforcement\" TEXT NULL, \"created_by\" TEXT NULL, \"created_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), \"updated_at\" INTEGER NOT NULL DEFAULT (CAST(strftime('%s', CURRENT_TIMESTAMP) AS INTEGER)), PRIMARY KEY (\"id\"), UNIQUE (\"workspace_id\", \"scope_type\", \"scope_id\", \"action_class\", \"command_prefix\"))"
+  }
+ ]
+}

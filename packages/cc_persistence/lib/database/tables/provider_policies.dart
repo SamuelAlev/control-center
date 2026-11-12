@@ -1,6 +1,7 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_provider_policies_workspaceId', columns: {#workspaceId})
+@TableIndex(name: 'idx_provider_policies_created', columns: {#createdAt})
 /// Drift table for per-workspace provider-governance policy (PRD 05).
 ///
 /// Each row is one allow/deny statement (`action` × `resource` globs) that the
@@ -20,10 +21,16 @@ class ProviderPoliciesTable extends Table {
   TextColumn get resource => text()();
 
   /// Effect: `allow` or `deny`.
-  TextColumn get effect => text()();
+  TextColumn get effect => text().check(
+    // ignore: recursive_getters
+    effect.isIn(AgentsStoredValues.policyEffect),
+  )();
 
   /// Policy layer (`global` | `user` | `workspace`); stored rows are workspace.
-  TextColumn get layer => text().withDefault(const Constant('workspace'))();
+  TextColumn get layer => text()
+      // ignore: recursive_getters
+      .check(layer.isIn(AgentsStoredValues.policyLayer))
+      .withDefault(const Constant('workspace'))();
 
   /// When the statement was created.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

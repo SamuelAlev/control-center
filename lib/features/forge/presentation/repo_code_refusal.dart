@@ -11,6 +11,7 @@ import 'package:control_center/features/auth/providers/oauth_providers.dart'
         kNeedsSignInKind,
         needsSignIn;
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 
 /// The `data.kind` of a refusal to act on a linked repository whose path now
 /// names a different repository on its forge, until an admin relinks it.
@@ -119,9 +120,11 @@ String? repoCodeRefusalMessage(AppLocalizations l10n, Object error) {
 /// [repoCodeRefusalMessage] for an error that may be absent: what a failed
 /// repository change (save, commit, push, publish, sync, checkout, a stack
 /// move) says when the server refused it by kind, else null for the caller's
-/// own failure copy.
-String? repoRefusalOf(AppLocalizations l10n, Object? error) =>
-    error == null ? null : repoCodeRefusalMessage(l10n, error);
+/// own failure copy. A storage refusal (a read-only workspace, a busy or full
+/// server) is worded after the repository's own kinds.
+String? repoRefusalOf(AppLocalizations l10n, Object? error) => error == null
+    ? null
+    : repoCodeRefusalMessage(l10n, error) ?? storageRefusalMessage(l10n, error);
 
 /// A refused code read in words, with the sign-in that fixes it when the
 /// refusal is `needs_sign_in`; null for any other error, which the caller

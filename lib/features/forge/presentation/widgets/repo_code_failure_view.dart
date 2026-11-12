@@ -7,6 +7,7 @@ import 'package:control_center/features/auth/providers/oauth_providers.dart'
 import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 
 /// A code view (a file, a diff, a search) that could not load, in place of
@@ -72,7 +73,9 @@ class RepoCodeFailureView extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              failure?.message ?? fallback,
+              failure?.message ??
+                  (error == null ? null : storageRefusalMessage(l10n, error)) ??
+                  fallback,
               textAlign: TextAlign.center,
               style: CcTypography.bodySm.copyWith(color: t.textSecondary),
             ),

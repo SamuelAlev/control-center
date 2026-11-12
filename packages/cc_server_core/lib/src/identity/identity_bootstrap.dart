@@ -73,8 +73,13 @@ class IdentityBootstrap {
   /// Gives every workspace's recorded owner an owner membership in that
   /// workspace when the row is missing. A workspace without a recorded owner
   /// is left alone: nobody is granted it.
+  ///
+  /// Live workspaces only: a deleted workspace has no database, and opening
+  /// its id to write a membership would create one.
   Future<void> _ensureOwnerMemberships() async {
-    final rows = await _global.select(_global.workspacesTable).get();
+    final rows = await (_global.select(
+      _global.workspacesTable,
+    )..where((t) => t.deletedAt.isNull())).get();
     for (final ws in rows) {
       final ownerUserId = ws.ownerUserId;
       if (ownerUserId == null) {

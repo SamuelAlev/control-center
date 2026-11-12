@@ -11,7 +11,7 @@ void main() {
       Map<String, dynamic>? state,
       String? errorMessage,
       DateTime? finishedAt,
-      int totalCostCents = 0,
+      int totalCostMicros = 0,
       int totalTokens = 0,
       bool dryRun = false,
     }) => PipelineRun(
@@ -23,7 +23,7 @@ void main() {
       startedAt: now,
       finishedAt: finishedAt,
       errorMessage: errorMessage,
-      totalCostCents: totalCostCents,
+      totalCostMicros: totalCostMicros,
       totalTokens: totalTokens,
       dryRun: dryRun,
     );
@@ -70,14 +70,14 @@ void main() {
           state: {'x': 1},
           finishedAt: now,
           errorMessage: 'err',
-          totalCostCents: 100,
+          totalCostMicros: 1000000,
           totalTokens: 500,
         );
         expect(copy.status, PipelineRunStatus.completed);
         expect(copy.state, {'x': 1});
         expect(copy.finishedAt, now);
         expect(copy.errorMessage, 'err');
-        expect(copy.totalCostCents, 100);
+        expect(copy.totalCostMicros, 1000000);
         expect(copy.totalTokens, 500);
         // Immutable fields preserved
         expect(copy.id, 'run-1');
@@ -112,7 +112,7 @@ void main() {
       expect(run.parentPipelineRunId, isNull);
       expect(run.parentStepId, isNull);
       expect(run.templateVersion, 1);
-      expect(run.totalCostCents, 0);
+      expect(run.totalCostMicros, 0);
       expect(run.totalTokens, 0);
       expect(run.dryRun, isFalse);
     });
@@ -137,8 +137,8 @@ void main() {
       'equality ignores state and cost differences',
       timeout: const Timeout.factor(2),
       () {
-        final a = run0(state: {'x': 1}, totalCostCents: 100);
-        final b = run0(state: {'y': 2}, totalCostCents: 200);
+        final a = run0(state: {'x': 1}, totalCostMicros: 1000000);
+        final b = run0(state: {'y': 2}, totalCostMicros: 2000000);
         // Equality only checks id, templateId, workspaceId, status, finishedAt, errorMessage
         expect(a, equals(b));
       },
@@ -189,8 +189,8 @@ void main() {
       'hashCode is unchanged when cost differs',
       timeout: const Timeout.factor(2),
       () {
-        final a = run0(totalCostCents: 100);
-        final b = run0(totalCostCents: 200);
+        final a = run0(totalCostMicros: 1000000);
+        final b = run0(totalCostMicros: 2000000);
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       },

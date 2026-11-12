@@ -65,6 +65,7 @@ void main() {
       if (resolved) NotificationFeedItem.resolvedAtKey: '2026-11-04T10:00:00Z',
     },
     createdAt: createdAt,
+    seq: 0,
   );
 
   test('re-raises an unanswered wait on schedule, as a reminder', () {

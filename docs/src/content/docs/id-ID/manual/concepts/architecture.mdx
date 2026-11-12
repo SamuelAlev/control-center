@@ -3,7 +3,7 @@ title: Arsitektur
 description: Bagaimana Control Center disusun dengan model server klien tipis, Clean Architecture yang mengutamakan fitur, serta port dan adapter.
 dateModified: 2026-09-19
 slug: id-ID/panduan-pengguna/konsep/arsitektur
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Ringkasan
@@ -100,9 +100,9 @@ Akar komposisi aplikasi (`di/providers.dart`) mengikat port sisi klien ke implem
 **Drift** (SQLite), terbagi menjadi dua basis data, keduanya di `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — daftar singkat tabel yang benar-benar berskala server: registri ruang kerja, pengguna/preferensi/perangkat yang dipasangkan, koneksi SSO, pengaturan server selevel instalasi, kebijakan tindakan terkelola (pembatas selevel instalasi yang hanya dapat memperketat pagar pengaman ruang kerja), umpan berita per pengguna, antrean fleet (pekerja/tugas/log penempatan), indeks `workspace_routes` pra-autentikasi, dan metadata instalasi. Boot hanya membuka berkas ini, sehingga biaya startup tetap datar tidak peduli seberapa banyak riwayat yang dikumpulkan ruang kerja. Menambahkan tabel di sini adalah keputusan isolasi yang harus Anda pertanggungjawabkan karena ada pengujian ratchet yang menuntutnya.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — satu _direktori_ per ruang kerja, yang memuat satu berkas SQLite plus semua hal lain yang hanya milik ruang kerja itu, sehingga worktree suatu percakapan dan berkas agen berada di samping basis data dan ikut terhapus bersamanya. Hampir semuanya berada di sini: agen, space, tiket, memori, pipeline, rapat, graf kode, tinjauan, repo. Berkas dibuka secara lazy saat pertama kali disentuh melalui `WorkspaceDatabaseManager.of(workspaceId)` dan saat itu juga menanggung `quick_check`, pemasangan FTS/trigger, serta `vector_init` miliknya sendiri.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — satu _direktori_ per ruang kerja, yang memuat satu berkas SQLite plus semua hal lain yang hanya milik ruang kerja itu, sehingga worktree suatu percakapan dan berkas agen berada di samping basis data dan ikut terhapus bersamanya. Hampir semuanya berada di sini: agen, space, tiket, memori, pipeline, rapat, tinjauan, repo. Graf kode adalah berkas kedua di direktori yang sama, `code_index.db`, yang dibangun ulang alih-alih dicadangkan. Berkas dibuka secara lazy saat pertama kali disentuh melalui `WorkspaceDatabaseManager.of(workspaceId)` dan saat itu juga menanggung `quick_check`, pemasangan FTS/trigger, serta `vector_init` miliknya sendiri.
 
-Kedua bagian dimulai dari baseline v1 yang sudah dipadatkan — `onCreate` membangun skema saat ini — dengan langkah migrasi yang ditambahkan hanya ketika basis data yang telah di-deploy harus dibawa ke depan.
+Kedua bagian tidak memiliki langkah migrasi. Berkas baru dibangun dari definisi tabel. Berkas dari versi lama lebih dulu disalin ke samping (`pre_upgrade/`) lalu dibawa ke definisi yang sama saat dibuka, sehingga instalasi baru dan instalasi yang diperbarui berakhir dengan skema yang sama. Berkas yang ditulis versi yang lebih baru ditolak.
 
 Karena satu ruang kerja adalah satu berkas, mengekspor ruang kerja cukup dengan satu pernyataan `VACUUM INTO` (`workspace.export`), bukan dump tabel demi tabel; `workspace.import` mengadopsi berkas semacam itu dan menggunakan `workspace_meta` yang tertanam untuk membedakan berkasnya sendiri yang diadopsi ulang dari berkas yang berasal dari instalasi lain.
 

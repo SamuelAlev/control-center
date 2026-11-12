@@ -1,11 +1,11 @@
 import 'package:cc_domain/core/domain/value_objects/commit_signing_key.dart';
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/commit_signing_key_details.dart';
 import 'package:control_center/features/settings/providers/commit_signing_key_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -28,9 +28,7 @@ class _CommitSigningKeySectionState
   bool _busy = false;
 
   String _reason(AppLocalizations l10n, Object error) =>
-      error is RemoteRpcException
-      ? error.message
-      : l10n.failedWithError('$error');
+      failureMessage(l10n, error);
 
   Future<void> _create() async {
     final l10n = AppLocalizations.of(context);
@@ -118,7 +116,7 @@ class _CommitSigningKeySectionState
       child: switch (state) {
         AsyncValue(hasValue: true) => _body(l10n, key),
         AsyncError(:final error) => _ErrorRow(
-          message: error is RemoteRpcException ? error.message : '$error',
+          message: failureMessage(l10n, error),
           onRetry: () => ref.invalidate(commitSigningKeyProvider),
         ),
         _ => const Padding(

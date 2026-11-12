@@ -343,7 +343,6 @@ class UsageEvent extends AgentProcessEvent {
     if (usage.cachedReadTokens > 0) 'cachedReadTokens': usage.cachedReadTokens,
     if (usage.cachedWriteTokens > 0)
       'cachedWriteTokens': usage.cachedWriteTokens,
-    'estimatedCostCents': usage.estimatedCostCents,
     if (usage.costMicros != 0) 'costMicros': usage.costMicros,
     if (usage.costBasis != CostBasis.estimated)
       'costBasis': usage.costBasis.name,

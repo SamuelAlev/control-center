@@ -3,9 +3,9 @@ import 'package:test/test.dart';
 
 import 'helpers/test_database.dart';
 
-/// Verifies the read-cursor column added in the v12 → v13 migration
-/// (`space_participants.last_read_at`) and the [MessagingDao] methods that
-/// drive the sidebar's unseen indicator.
+/// Verifies the read cursor (`space_participants.last_read_at` +
+/// `last_read_seq`) and the [MessagingDao] methods that drive the sidebar's
+/// unseen indicator.
 void main() {
   late WorkspaceDatabase db;
 
@@ -20,7 +20,13 @@ void main() {
   Future<void> seedSpaceWithUser(String spaceId) async {
     await db
         .into(db.spacesTable)
-        .insert(SpacesTableCompanion.insert(id: spaceId, name: 'Ch $spaceId'));
+        .insert(
+          SpacesTableCompanion.insert(
+            workspaceId: 'test-workspace',
+            id: spaceId,
+            name: 'Ch $spaceId',
+          ),
+        );
     await db
         .into(db.spaceParticipantsTable)
         .insert(
@@ -55,7 +61,7 @@ void main() {
           .first;
       expect(cursor, isNotNull);
       expect(
-        cursor!.isAfter(before.subtract(const Duration(seconds: 1))),
+        cursor!.at.isAfter(before.subtract(const Duration(seconds: 1))),
         isTrue,
       );
     });
@@ -81,6 +87,54 @@ void main() {
         expect(second!.isAfter(first!) || second == first, isTrue);
       },
     );
+
+    test('the cursor is the newest message position, ties included', () async {
+      await seedSpaceWithUser('c1');
+      await (db.update(db.spacesTable)..where((t) => t.id.equals('c1'))).write(
+        const SpacesTableCompanion(workspaceId: Value('w-1')),
+      );
+      await db
+          .into(db.conversationsTable)
+          .insert(
+            ConversationsTableCompanion.insert(
+              workspaceId: 'test-workspace',
+              id: 'conv-1',
+              spaceId: 'c1',
+            ),
+          );
+      final second = DateTime.utc(2025, 3, 1, 12);
+      Future<void> message(String id) => db.messagingDao.insertMessage(
+        ConversationMessagesTableCompanion.insert(
+          id: id,
+          spaceId: 'c1',
+          conversationId: 'conv-1',
+          senderId: 'agent-1',
+          senderType: 'agent',
+          content: id,
+          createdAt: Value(second),
+        ),
+      );
+      await message('m-1');
+      await message('m-2');
+
+      await db.messagingDao.markSpaceRead('c1', 'user-1');
+      final cursor = await db.messagingDao
+          .watchUserLastReadAt('c1', 'user-1')
+          .first;
+      expect(cursor!.at.isAtSameMomentAs(second), isTrue);
+
+      // A message stamped with the very same second, written after the read,
+      // is still after the cursor: the time alone could not tell them apart.
+      await message('m-3');
+      final activity = await db.messagingDao.watchSpaceActivity('w-1').first;
+      expect(activity.single.lastAgentMessage!.isAfter(cursor), isTrue);
+
+      await db.messagingDao.markSpaceRead('c1', 'user-1');
+      final caughtUp = await db.messagingDao
+          .watchUserLastReadAt('c1', 'user-1')
+          .first;
+      expect(activity.single.lastAgentMessage, caughtUp);
+    });
 
     test(
       'markSpaceRead targets only the user row, not agent participants',
@@ -116,7 +170,13 @@ void main() {
       () async {
         await db
             .into(db.spacesTable)
-            .insert(SpacesTableCompanion.insert(id: 'c1', name: 'Ch c1'));
+            .insert(
+              SpacesTableCompanion.insert(
+                workspaceId: 'test-workspace',
+                id: 'c1',
+                name: 'Ch c1',
+              ),
+            );
 
         await db.messagingDao.markSpaceRead('c1', 'user-1');
         expect(

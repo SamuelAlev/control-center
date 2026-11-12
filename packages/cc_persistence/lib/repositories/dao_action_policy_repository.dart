@@ -22,27 +22,12 @@ class DaoActionPolicyRepository implements ActionPolicyRepository {
       _dbs.of(workspaceId).actionPolicyDao;
 
   @override
-  Future<void> upsertRule(ActionPolicyRule rule) async {
-    // The rule carries its own workspace, so the file is picked from the entity
-    // rather than from a second parameter that could disagree with it.
-    final dao = _dao(rule.workspaceId);
-    // A rule replaces only rules with its identity (see
-    // [ActionPolicyRule.sharesIdentityWith]). Enforced here because SQLite
-    // never applies the table's unique key: one of actionClass/commandPrefix
-    // is always NULL, and NULLs compare distinct.
-    final existing = await dao.rulesForScope(
-      rule.workspaceId,
-      rule.scopeType.wire,
-      rule.scopeId,
-    );
-    for (final row in existing) {
-      if (row.id != rule.id &&
-          _mapper.ruleFromRow(row).sharesIdentityWith(rule)) {
-        await dao.deleteRule(rule.workspaceId, row.id);
-      }
-    }
-    await dao.upsertRule(_mapper.ruleToCompanion(rule));
-  }
+  Future<void> upsertRule(ActionPolicyRule rule) =>
+      // The rule carries its own workspace, so the file is picked from the
+      // entity rather than from a second parameter that could disagree with
+      // it. Rule identity is the table's unique key, so the DAO writes one
+      // upsert on it (see [ActionPolicyDao.upsertRule]).
+      _dao(rule.workspaceId).upsertRule(_mapper.ruleToCompanion(rule));
 
   @override
   Future<List<ActionPolicyRule>> rules(String workspaceId) async => (await _dao(

@@ -2,7 +2,7 @@
 title: پیکربندی عامل
 description: هر فیلد موجودیت عامل و enumهایی که به کار می‌برد.
 slug: fa-IR/راهنمای-کاربر/مرجع/پیکربندی-عامل
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 این مرجع هر فیلد روی موجودیت عامل را به‌همراه enumها و پرچم‌هایی که به کار می‌برد فهرست می‌کند. برای یک راهنمای گام‌به‌گام از ساخت یا ویرایش یک عامل در برنامه، [ایجاد و پیکربندی یک عامل](/fa-IR/راهنمای-کاربر/راهنماهای-عملی/ایجاد-عامل/) را ببینید.
@@ -26,17 +26,17 @@ sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 | `effort`                | `String?`              | خیر    | شناسهٔ سطح استدلال (مثلاً `'low'`، `'xhigh'`)، برگرفته از `thinkingLevels` مدل انتخاب‌شده                                                                                    |
 | `contextSize`           | `int?`                 | خیر    | بیشترین اندازهٔ پنجرهٔ زمینه                                                                                                                                                                         |
 | `role`                  | `AgentRole?`           | خیر    | نقش عامل                                                                                                                                                                                            |
-| `monthlyBudgetCents`    | `int`                  | خیر    | سقف هزینهٔ ماهانه به سنت (پیش‌فرض `0`، بی‌نهایت)                                                                                                                                                     |
+| `monthlyBudgetMicros`    | `int`                  | خیر    | سقف هزینهٔ ماهانه به میکرودلار (پیش‌فرض `0`، بی‌نهایت)                                                                                                                                                     |
 | `silenceTimeoutMinutes` | `int?`                 | خیر    | جایگزین مهلت سکوت به دقیقه؛ باید null باشد یا در بازهٔ 1–240 (با assert در سازنده)                                                                                                                   |
 | `maxConcurrentTasks`    | `int`                  | خیر    | پیش‌فرض `1`. رقم ظرفیتی که مدل حضور گزارش می‌کند (شمارهای در حال اجرا و در صف با آن مقایسه می‌شوند)                                                                                                  |
 | `visibility`            | `AgentVisibility`      | خیر    | پیش‌فرض `workspace`                                                                                                                                                                                 |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | خیر    | وضعیت حاکمیتی (پیش‌فرض `active`). با توقف سخت بودجه نوشته می‌شود و روی نمودار سازمانی و فهرست حضور رندر می‌شود. اعزام هنوز کار را از یک عامل `paused` می‌پذیرد                                          |
-| `budgetPolicyId`        | `String?`              | خیر    | شناسهٔ سیاست بودجهٔ اشتراکی؛ وقتی null باشد `monthlyBudgetCents` مستقیم اعمال می‌شود                                                                                                                |
+| `budgetPolicyId`        | `String?`              | خیر    | شناسهٔ سیاست بودجهٔ اشتراکی؛ وقتی null باشد `monthlyBudgetMicros` مستقیم اعمال می‌شود                                                                                                                |
 | `runtimeProfileId`      | `String?`              | خیر    | شناسهٔ پروفایل زمان اجرای سفارشی                                                                                                                                                                    |
 | `createdAt`             | `DateTime`             | بله    | مُهر زمانی ساخت                                                                                                                                                                                     |
 
 `name` و `title` هر دو باید ناتهی باشند (با assert در سازنده). پیش‌فرض `0` برای
-`monthlyBudgetCents` یعنی بی‌نهایت. سقف را با `agents.upsert` بنویسید.
+`monthlyBudgetMicros` یعنی بی‌نهایت. سقف را با `agents.upsert` بنویسید.
 
 ## enum مربوط به AgentRole
 

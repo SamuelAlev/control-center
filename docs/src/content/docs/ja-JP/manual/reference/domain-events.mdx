@@ -2,7 +2,7 @@
 title: ドメインイベント
 description: 54 個のドメインイベント、そのペイロード、およびそれらを消費するサーバー側のサブスクライバーの完全なカタログです。
 slug: ja-JP/マニュアル/リファレンス/ドメインイベント
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## イベントバス
@@ -112,7 +112,7 @@ sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 | イベント                 | ペイロード                                                                                               | 発行されるタイミング      |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | 監査証跡のエントリが作成されたとき |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | 支出がしきい値を超えたとき |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | 支出がしきい値を超えたとき |
 
 ## アイデンティティとメンバーシップのイベント
 

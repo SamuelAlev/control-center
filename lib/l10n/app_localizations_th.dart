@@ -14245,13 +14245,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get backupSnapshotComplete => 'ครบ';
 
   @override
-  String get backupSnapshotIncomplete => 'ไม่ครบ';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'แมนิเฟสต์หายไปหรือระบุไฟล์ที่ไม่มี ดังนั้นสแนปช็อตนี้กู้คืนทั้งการติดตั้งไม่ได้ ไฟล์เวิร์กสเปซที่มียังนำมาใช้ทีละรายการได้';
-
-  @override
   String get backupDeleteSnapshotLabel => 'ลบสแนปช็อต';
 
   @override
@@ -18357,4 +18350,233 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'คุณดูเครื่องนี้ได้ เครื่องใช้การลงชื่อเข้าใช้ของบุคคลที่เปิดเครื่องให้ ดังนั้นมีเพียงบุคคลนั้นเท่านั้นที่ควบคุม ส่งต่อพอร์ต วาง หรือวางไฟล์ลงในเครื่องได้';
+
+  @override
+  String get refusalStorageBusy =>
+      'ฐานข้อมูลของเซิร์ฟเวอร์กำลังไม่ว่างในขณะนี้ ลองใหม่อีกครั้งในอีกสักครู่';
+
+  @override
+  String get refusalStorageFull =>
+      'พื้นที่ดิสก์ของเซิร์ฟเวอร์เต็ม จึงบันทึกอะไรไม่ได้ เจ้าของเซิร์ฟเวอร์ต้องเพิ่มพื้นที่ว่างก่อน';
+
+  @override
+  String get refusalStorageDamaged =>
+      'ข้อมูลของเวิร์กสเปซนี้เสียหาย เจ้าของเซิร์ฟเวอร์ต้องกู้คืนจากการสำรองข้อมูล';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'เวิร์กสเปซนี้เป็นแบบอ่านอย่างเดียวจนกว่าเจ้าของเซิร์ฟเวอร์จะกู้คืนจากการสำรองข้อมูล จึงบันทึกการเปลี่ยนแปลงไม่ได้';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'ข้อมูลนี้ถูกเขียนโดยเซิร์ฟเวอร์เวอร์ชันที่ใหม่กว่า อัปเดตเซิร์ฟเวอร์แล้วลองอีกครั้ง';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'เซิร์ฟเวอร์พบไฟล์ฐานข้อมูลที่ไม่ได้เป็นผู้เขียน เจ้าของเซิร์ฟเวอร์ต้องตรวจสอบโฟลเดอร์ข้อมูลของเซิร์ฟเวอร์';
+
+  @override
+  String get refusalWorkspaceDeleted => 'เวิร์กสเปซนี้ถูกลบแล้ว';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'คำขอนี้ยังดำเนินการอยู่ รอให้เสร็จก่อน แล้วค่อยตรวจสอบผลลัพธ์';
+
+  @override
+  String get refusalImportMissingSource =>
+      'ไม่มีไฟล์ที่พาธนั้นบนเซิร์ฟเวอร์ ไม่มีการแทนที่อะไร';
+
+  @override
+  String get refusalImportDamaged =>
+      'ไฟล์นี้เสียหาย จึงกู้คืนไม่ได้ ไม่มีการแทนที่อะไร';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'ไฟล์นี้ไม่ตรงกับ checksum ที่บันทึกไว้ในการสำรองข้อมูล อาจถูกเปลี่ยนแปลงหรือเสียหาย ไม่มีการแทนที่อะไร';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'ไฟล์นี้ถูกเขียนโดยเซิร์ฟเวอร์เวอร์ชันที่ใหม่กว่า อัปเดตเซิร์ฟเวอร์เพื่อกู้คืน ไม่มีการแทนที่อะไร';
+
+  @override
+  String get refusalImportForeignFile =>
+      'ไฟล์นี้ไม่ใช่ฐานข้อมูลของเวิร์กสเปซ ไม่มีการแทนที่อะไร';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'ไม่สามารถแปลงไฟล์นี้ให้เป็นรูปแบบของเซิร์ฟเวอร์นี้ได้ ไม่มีการแทนที่อะไร';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'ไฟล์นี้มีลิงก์ที่เป็นของเวิร์กสเปซอื่นบนเซิร์ฟเวอร์นี้ การกู้คืนจะทำให้ลิงก์เหล่านั้นถูกแย่งไป ไม่มีการแทนที่อะไร';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'เวิร์กสเปซนี้เป็นแบบอ่านอย่างเดียว';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'ข้อมูลไม่ผ่านการตรวจสอบความสมบูรณ์ จึงบันทึกการเปลี่ยนแปลงไม่ได้ ยังดูทุกอย่างได้ตามปกติ เจ้าของเซิร์ฟเวอร์กู้คืนจากการสำรองข้อมูลได้';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'ข้อมูลไม่ผ่านการตรวจสอบความสมบูรณ์ จึงบันทึกการเปลี่ยนแปลงไม่ได้ ยังดูทุกอย่างได้ตามปกติ กู้คืนจากการสำรองข้อมูลเพื่อให้แก้ไขได้อีกครั้ง';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'เปิดการสำรองข้อมูล';
+
+  @override
+  String get serverNoticesLabel => 'ต้องให้ความสนใจ';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'อ่านอย่างเดียว';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'ตั้งแต่ $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'ฐานข้อมูลไม่ผ่านการตรวจสอบความสมบูรณ์ จึงให้อ่านได้อย่างเดียวและปฏิเสธการเปลี่ยนแปลงทั้งหมด กู้คืนจากการสำรองข้อมูลในรายการด้านล่าง สำเนาที่ดีล่าสุดจะยังคงอยู่จนกว่าจะกู้คืน';
+
+  @override
+  String get serverNoticeDetails => 'รายละเอียด';
+
+  @override
+  String get backupSnapshotUnverified => 'ยังไม่ได้ตรวจสอบ';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'สแนปช็อตนี้ตรวจสอบไม่ได้ เพราะไม่เสร็จสมบูรณ์ หรือถูกสร้างก่อนที่สแนปช็อตจะบันทึก checksum จึงกู้คืนทั้งการติดตั้งไม่ได้ อย่างไรก็ตาม ไฟล์เวิร์กสเปซที่อยู่ในนั้นกู้คืนทีละไฟล์ได้';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'สำเนาที่ดีล่าสุด';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'เก็บไว้เพราะเป็นสำเนาที่ดีล่าสุดของเวิร์กสเปซที่เสียหาย การล้างข้อมูลจะไม่แตะต้องจนกว่าเวิร์กสเปซนั้นจะถูกกู้คืน';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'นี่คือสำเนาที่ดีล่าสุดของเวิร์กสเปซที่เสียหาย หากลบ จะไม่เหลืออะไรให้กู้คืนเวิร์กสเปซนั้นได้';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'มีสิทธิ์ $count รายการถูกกันไว้เพื่อให้ตรวจสอบ ดูได้ที่ด้านบนของหน้านี้',
+      one: 'มีสิทธิ์ 1 รายการถูกกันไว้เพื่อให้ตรวจสอบ ดูได้ที่ด้านบนของหน้านี้',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'กันไว้จากสำเนาที่กู้คืน';
+
+  @override
+  String get importHoldsExplainer =>
+      'สำเนาที่กู้คืนไม่สามารถให้สิทธิ์ใดๆ บนเซิร์ฟเวอร์นี้ได้ด้วยตัวเอง สิทธิ์เหล่านี้อยู่ในไฟล์นั้น อนุมัติรายการเพื่อให้สิทธิ์อีกครั้ง หรือปฏิเสธเพื่อทิ้งสิทธิ์นั้น';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'เอเจนต์ทำสิ่งนี้ได้โดยไม่ต้องขออนุมัติ: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'เอเจนต์ทำสิ่งนี้ได้เมื่อมีคนอนุมัติ: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'รันคำสั่งที่ขึ้นต้นด้วย $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'ทุกที่ในเวิร์กสเปซนี้';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'ในสเปซ $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'สำหรับเอเจนต์ $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'แซนด์บ็อกซ์รัน $path ได้';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person แก้ไข $repo ได้';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person รีวิว pull request ใน $repo ได้';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person ได้สิทธิ์เข้าถึงระดับ $level ใน $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person ได้บทบาท $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'คำเชิญที่ยังไม่ได้ใช้ เพื่อเข้าร่วมด้วยบทบาท $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'คำเชิญที่ยังไม่ได้ใช้ เพื่อเข้าร่วมด้วยบทบาท $role และให้สิทธิ์รีวิวหรือเขียนใน $count รีโพสิทอรี',
+      one:
+          'คำเชิญที่ยังไม่ได้ใช้ เพื่อเข้าร่วมด้วยบทบาท $role และให้สิทธิ์รีวิวหรือเขียนใน 1 รีโพสิทอรี',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown => 'สิทธิ์ที่เวอร์ชันแอปนี้อธิบายไม่ได้';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'กู้คืนเมื่อ $time';
+  }
+
+  @override
+  String get importHoldAccept => 'อนุมัติ';
+
+  @override
+  String get importHoldDismiss => 'ปฏิเสธ';
+
+  @override
+  String get importHoldAcceptTitle => 'ให้สิทธิ์นี้หรือไม่?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nเมื่ออนุมัติ สิทธิ์นี้จะถูกให้บนเซิร์ฟเวอร์ทันที';
+  }
+
+  @override
+  String get importHoldAccepted => 'ให้สิทธิ์แล้ว';
+
+  @override
+  String get importHoldNotApplied =>
+      'ยังไม่ได้ให้สิทธิ์ เพราะผู้รับหรือสิ่งที่เกี่ยวข้องไม่อยู่ในเวิร์กสเปซนี้แล้ว';
 }

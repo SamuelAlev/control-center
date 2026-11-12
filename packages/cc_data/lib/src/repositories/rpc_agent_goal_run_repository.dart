@@ -22,8 +22,8 @@ AgentGoalRun _agentGoalRunFromWire(Map<String, dynamic> w) => AgentGoalRun(
   kind: AgentGoalKindWire.fromWire(w['kind'] as String?),
   status: AgentGoalStatusWire.fromWire(w['status'] as String?),
   deadlineAt: _parseOptionalDate(w['deadline_at']),
-  costCapCents: (w['cost_cap_cents'] as num?)?.toInt() ?? 1,
-  costCents: (w['cost_cents'] as num?)?.toInt() ?? 0,
+  costCapMicros: (w['cost_cap_micros'] as num?)?.toInt() ?? 1,
+  costMicros: (w['cost_micros'] as num?)?.toInt() ?? 0,
   maxRuns: (w['max_runs'] as num?)?.toInt(),
   runCount: (w['run_count'] as num?)?.toInt() ?? 0,
   activeRunId: w['active_run_id'] as String?,
@@ -93,16 +93,16 @@ class RpcAgentGoalRunRepository {
   );
 
   /// Resumes a paused goal. A `budgetExhausted` goal resumes only by
-  /// raising the budget: pass [raiseCostCapCents] above the spend that
+  /// raising the budget: pass [raiseCostCapMicros] above the spend that
   /// tripped the cap.
   Future<void> resumeGoal(
     String workspaceId,
     String goalId, {
-    int? raiseCostCapCents,
+    int? raiseCostCapMicros,
   }) => _client.call('agentGoalRuns.resume', {
     'workspace_id': workspaceId,
     'goal_id': goalId,
-    'raise_cost_cap_cents': ?raiseCostCapCents,
+    'raise_cost_cap_micros': ?raiseCostCapMicros,
   });
 
   /// Cancels the goal permanently (NOT reversible).

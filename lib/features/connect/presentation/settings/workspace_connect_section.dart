@@ -5,6 +5,7 @@ import 'package:control_center/features/connect/providers/workspace_connect_prov
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -46,7 +47,7 @@ class WorkspaceConnectSection extends ConsumerWidget {
       return SectionCard(
         label: l10n.connectTitle,
         child: CcAlert(
-          title: l10n.failedWithError('${async.error}'),
+          title: failureMessage(l10n, async.error!),
           variant: CcAlertVariant.danger,
         ),
       );

@@ -3,6 +3,7 @@ import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/ports/forge_credential_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/server_audit_repository.dart';
+import 'package:cc_domain/core/domain/repositories/server_notice_repository.dart';
 import 'package:cc_domain/core/domain/repositories/user_activity_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.dart';
@@ -41,6 +42,7 @@ import 'package:cc_server_core/src/catalog/gif_ops.dart';
 import 'package:cc_server_core/src/catalog/mcp_server_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_data_gate.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
+import 'package:cc_server_core/src/catalog/server_notice_ops.dart';
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/user_profile_ops.dart';
 import 'package:cc_server_core/src/catalog/workspace_provider_app_ops.dart';
@@ -134,6 +136,7 @@ ExtraOpsResult buildServerExtraOps({
   required Future<bool> Function(String userId) isServerOwner,
   required PrDataGate prData,
   McpServerControl? mcpServer,
+  ServerNoticeRepository? serverNotices,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -211,6 +214,7 @@ ExtraOpsResult buildServerExtraOps({
     ...buildUserProfileOps(users: userRepository),
     ...buildEmailVouchOps(users: userRepository),
     ...buildBackupOps(databaseBackup: databaseBackup),
+    ...buildServerNoticeOps(notices: serverNotices),
     ...buildConversationTitleOps(
       conversationTitles,
       requireConversation: requireConversationSpace,

@@ -39,7 +39,7 @@ class ActionConstraint {
     this.commands,
     this.tools,
     this.maxCount,
-    this.maxCents,
+    this.maxMicros,
   });
 
   /// The always-matching constraint (equivalent to no constraint at all).
@@ -64,8 +64,8 @@ class ActionConstraint {
   /// does not match (so a more restrictive rule decides).
   final int? maxCount;
 
-  /// The largest monetary magnitude in cents this rule tolerates.
-  final int? maxCents;
+  /// The largest monetary magnitude in micro-dollars this rule tolerates.
+  final int? maxMicros;
 
   /// Whether this constraint says nothing at all.
   bool get isUnconstrained =>
@@ -75,7 +75,7 @@ class ActionConstraint {
       commands == null &&
       tools == null &&
       maxCount == null &&
-      maxCents == null;
+      maxMicros == null;
 
   /// Whether [request] falls within this constraint, for a PERMISSIVE rule.
   ///
@@ -130,8 +130,8 @@ class ActionConstraint {
           ConstraintMatch.miss,
       if (maxCount != null)
         _ceilingFacet(request.magnitude, maxCount!, restrictive),
-      if (maxCents != null)
-        _ceilingFacet(request.cents, maxCents!, restrictive),
+      if (maxMicros != null)
+        _ceilingFacet(request.micros, maxMicros!, restrictive),
     ];
 
     if (restrictive) {
@@ -297,7 +297,7 @@ class ActionConstraint {
       if (commands != null) 'commands=${commands!.join(",")}',
       if (tools != null) 'tools=${tools!.join(",")}',
       if (maxCount != null) 'maxCount=$maxCount',
-      if (maxCents != null) 'maxCents=$maxCents',
+      if (maxMicros != null) 'maxMicros=$maxMicros',
     ];
     return parts.join(' ');
   }
@@ -310,7 +310,7 @@ class ActionConstraint {
     if (commands != null) 'commands': commands,
     if (tools != null) 'tools': tools,
     if (maxCount != null) 'maxCount': maxCount,
-    if (maxCents != null) 'maxCents': maxCents,
+    if (maxMicros != null) 'maxMicros': maxMicros,
   };
 
   /// Parses the stored JSON shape; null for a malformed or absent value —
@@ -331,7 +331,7 @@ class ActionConstraint {
       commands: strings(json['commands']),
       tools: strings(json['tools']),
       maxCount: number(json['maxCount']),
-      maxCents: number(json['maxCents']),
+      maxMicros: number(json['maxMicros']),
     );
     return c.isUnconstrained ? null : c;
   }

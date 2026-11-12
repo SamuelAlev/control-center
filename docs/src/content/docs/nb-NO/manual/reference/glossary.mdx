@@ -2,7 +2,7 @@
 title: Ordliste
 description: Definisjoner av sentrale begreper som brukes gjennomgående i Control Center.
 slug: nb-NO/handbok/referanse/ordliste
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (en lukket VM — den ene backenden med en kjernegrense, brukt på interaktive terminaler), native (OS-innfødt Seatbelt på macOS, bubblewrap på Linux og WSL2) eller none. Probres én gang ved oppstart; native pakker inn agentutsending når den er tilgjengelig. Windows har ingen native-backend, og Linux trenger bwrap pluss socat; på en slik vert starter bare serverens eiers kjøringer, uinnpakkede, og andre avvises. --sandbox off kjører alle medlemmers agenter uinnpakkede.'],
 ['Stasjon', 'En kastbar maskin en agent styrer i sanntid: en lukket nettleser eller et Linux-skrivebord, en vertsstyrt Android-emulator eller iOS-simulator, eller en lukket terminal. Overvåkes direkte over sin egen bane i full oppløsning, med overtakelse håndhevet på serversiden. Knyttet til en samtale, slik at menneskefanen og agentverktøyet adresserer én maskin.'],
 ['Isolert miljø', 'Den sterkere isolasjonsegenskapen som er tilgjengelig for VM-støttede stasjoner: en kjernegrense, en kastbar overlay-disk, en nettsluse som avviser som standard og en legitimasjonsmegler. Android- og iOS-stasjoner er kastbare, men bruker vertsstyrt nettverk og gjør ikke krav på denne grensen. Å styre en stasjon bruker tillatelsesklassen enclosureControl.'],
-['RunCost', 'Token- og kostnadsopptelling (inndata-tokener, utdata-tokener, estimert kostnad i cent) for én enkelt agentkjøring.'],
+['RunCost', 'Token- og kostnadsopptelling (inndata-tokener, utdata-tokener, estimert kostnad i mikrodollar) for én enkelt agentkjøring.'],
 ['WakeReason', 'Hvorfor en agent ble sendt ut. Seks verdier: brukermelding, saktildeling, gjenopprettingsutsending etter en feil, fullført underordnet sak, planlagt oppfølgingsheartbeat og pipeline-steg.'],
 ['SandboxPort', 'Håndterer livssyklusen til sandkassen (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Utsteder avgrensede legitimasjoner for oppstart av sandkassen (et token for ett repo for en agents miljø, skriving bare for push-stien på serveren) og frigir dem ved nedriving.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Isolert miljø**: Den sterkere, VM-støttede stasjonsgrensen — en kjernegrense, en kastbar overlay-disk, en nettsluse som avviser som standard og en legitimasjonsmegler. Android- og iOS-stasjoner er kastbare, men bruker vertsstyrt nettverk og gjør ikke krav på denne grensen. Å styre en stasjon bruker tillatelsesklassen `enclosureControl`.
 
-**RunCost**: Token- og kostnadsopptelling (inndata-tokener, utdata-tokener, estimert kostnad i cent) for én enkelt agentkjøring.
+**RunCost**: Token- og kostnadsopptelling (inndata-tokener, utdata-tokener, estimert kostnad i mikrodollar) for én enkelt agentkjøring.
 
 **WakeReason**: Hvorfor en agent ble sendt ut. Seks verdier: brukermelding, saktildeling, gjenopprettingsutsending etter en feil, fullført underordnet sak, planlagt oppfølgingsheartbeat og pipeline-steg.
 

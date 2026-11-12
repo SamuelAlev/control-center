@@ -3,6 +3,7 @@ import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/language_picker.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:control_center/shared/widgets/theme_choice_picker.dart';
@@ -242,10 +243,9 @@ Future<void> showTokenDialog(
               }
             } on Object catch (e) {
               if (dialogContext.mounted) {
-                CcToastScope.of(dialogContext).show(
-                  l10n.failedWithError('$e'),
-                  variant: CcToastVariant.danger,
-                );
+                CcToastScope.of(
+                  dialogContext,
+                ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
               }
             }
           },

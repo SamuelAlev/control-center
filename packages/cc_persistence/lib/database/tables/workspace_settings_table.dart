@@ -15,7 +15,8 @@ class WorkspaceSettingsTable extends Table {
   /// Setting key (client-defined namespace, e.g. `branch_template`).
   TextColumn get key => text()();
 
-  /// Opaque setting value.
+  /// Opaque setting value: JSON for some keys, plain text for others, so it
+  /// carries no JSON check.
   TextColumn get value => text()();
 
   /// When the value was last written.
@@ -25,5 +26,5 @@ class WorkspaceSettingsTable extends Table {
   String get tableName => 'workspace_settings';
 
   @override
-  Set<Column> get primaryKey => {workspaceId, key};
+  Set<Column> get primaryKey => {key, workspaceId};
 }

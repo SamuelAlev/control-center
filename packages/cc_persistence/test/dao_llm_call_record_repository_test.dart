@@ -5,6 +5,7 @@ import 'package:cc_domain/features/observability/domain/run_usage_ledger.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Pins the DURABLE half of request-level accounting.
@@ -21,8 +22,16 @@ void main() {
   setUp(() async {
     global = createTestGlobalDatabase();
     dbs = createTestWorkspaceDatabases(global: global);
-    await seedTestWorkspace(global, dbs, 'ws-1');
     repo = DaoLlmCallRecordRepository(dbs);
+    // The runs and conversations the calls below belong to.
+    for (final ws in ['ws-1', 'ws-2']) {
+      await seedTestWorkspace(global, dbs, ws);
+      await seedParents(
+        dbs.of(ws),
+        conversations: ['conv-1', 'conv-9'],
+        runLogs: ['run-1', 'run-2', 'run-3'],
+      );
+    }
   });
 
   tearDown(() async {
@@ -175,7 +184,6 @@ void main() {
   test(
     'cost totals isolate runs and workspaces and allow unpriced calls',
     () async {
-      await seedTestWorkspace(global, dbs, 'ws-2');
       await repo.upsertAll('ws-1', [
         call(requestId: 'priced', costMicros: 120),
         call(requestId: 'unpriced', costMicros: null),

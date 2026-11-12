@@ -117,7 +117,6 @@ class AgentRunLog {
     this.liveness,
     this.errorFamily,
     this.lastOutputAt,
-    this.continuationSummary,
     this.contextSnapshotJson,
     this.pipelineRunId,
     this.pipelineStepId,
@@ -201,9 +200,6 @@ class AgentRunLog {
   /// When the agent last produced output.
   final DateTime? lastOutputAt;
 
-  /// Continuation summary written after run completion.
-  final String? continuationSummary;
-
   /// Serialized full prompt context for debugging.
   final String? contextSnapshotJson;
 
@@ -247,14 +243,10 @@ class AgentRunLog {
   /// service maps the registry's `AgentKind` into this when it writes the run.
   final AgentRunRole role;
 
-  /// Exact cost in micro-USD rolled up from this run's subagent (child) runs,
+  /// Exact cost in micro-dollars rolled up from this run's subagent (child) runs,
   /// summed concurrency-safely as each child completes (see
   /// `SubagentCostPropagator`). Zero for leaf runs.
   final int childCostMicros;
-
-  /// Whole-cent display projection of [childCostMicros]; use that for
-  /// arithmetic.
-  int get childCostCents => (childCostMicros / 10000).round();
 
   /// Run id of the parent run that spawned this one as an ephemeral subagent
   /// (via the `task` tool). Null for top-level runs. Distinct from
@@ -312,11 +304,7 @@ class AgentRunLog {
   bool get isVerifiedSuccess =>
       status == RunStatus.completed && verification.isVerifiedSuccess;
 
-  /// Total cost in US cents for this run including propagated subagent cost.
-  int get totalCostCentsWithChildren =>
-      cost.estimatedCostCents + childCostCents;
-
-  /// Total cost in micro-USD for this run including propagated subagent cost.
+  /// Total cost in micro-dollars for this run including propagated subagent cost.
   int get totalCostMicrosWithChildren => cost.costMicros + childCostMicros;
 
   /// True while the run is still active.
@@ -355,7 +343,6 @@ class AgentRunLog {
           liveness == other.liveness &&
           errorFamily == other.errorFamily &&
           lastOutputAt == other.lastOutputAt &&
-          continuationSummary == other.continuationSummary &&
           contextSnapshotJson == other.contextSnapshotJson &&
           pipelineRunId == other.pipelineRunId &&
           pipelineStepId == other.pipelineStepId &&
@@ -396,7 +383,6 @@ class AgentRunLog {
     liveness,
     errorFamily,
     lastOutputAt,
-    continuationSummary,
     contextSnapshotJson,
     pipelineRunId,
     pipelineStepId,
@@ -447,8 +433,6 @@ class AgentRunLog {
     bool removeErrorFamily = false,
     DateTime? lastOutputAt,
     bool removeLastOutputAt = false,
-    String? continuationSummary,
-    bool removeContinuationSummary = false,
     String? contextSnapshotJson,
     bool removeContextSnapshotJson = false,
     String? pipelineRunId,
@@ -496,9 +480,6 @@ class AgentRunLog {
       lastOutputAt: removeLastOutputAt
           ? null
           : (lastOutputAt ?? this.lastOutputAt),
-      continuationSummary: removeContinuationSummary
-          ? null
-          : (continuationSummary ?? this.continuationSummary),
       contextSnapshotJson: removeContextSnapshotJson
           ? null
           : (contextSnapshotJson ?? this.contextSnapshotJson),

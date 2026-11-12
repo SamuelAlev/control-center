@@ -13,7 +13,7 @@ AgentRunLog _run({
   int thoughtTokens = 0,
   int cachedReadTokens = 0,
   int cachedWriteTokens = 0,
-  int estimatedCostCents = 0,
+  int costMicros = 0,
   int? durationMs,
   int? timeToFirstTokenMs,
 }) => AgentRunLog(
@@ -27,9 +27,7 @@ AgentRunLog _run({
     thoughtTokens: thoughtTokens,
     cachedReadTokens: cachedReadTokens,
     cachedWriteTokens: cachedWriteTokens,
-    estimatedCostCents: estimatedCostCents,
-    // A recorded cost carries its exact micro-USD; cents is its projection.
-    costMicros: estimatedCostCents * 10000,
+    costMicros: costMicros,
     durationMs: durationMs,
     timeToFirstTokenMs: timeToFirstTokenMs,
   ),
@@ -45,7 +43,7 @@ void main() {
       expect(m.totalRuns, 0);
       expect(m.failedRuns, 0);
       expect(m.successfulRuns, 0);
-      expect(m.totalCostCents, 0);
+      expect(m.totalCostMicros, 0);
       expect(m.errorRate, 0);
       expect(m.cacheRate, 0);
       expect(m.avgDurationMs, 0);
@@ -81,7 +79,7 @@ void main() {
           thoughtTokens: 30,
           cachedReadTokens: 40,
           cachedWriteTokens: 50,
-          estimatedCostCents: 7,
+          costMicros: 7,
         ),
         _run(
           startedAt: base,
@@ -90,7 +88,7 @@ void main() {
           thoughtTokens: 3,
           cachedReadTokens: 4,
           cachedWriteTokens: 5,
-          estimatedCostCents: 8,
+          costMicros: 8,
         ),
       ]);
       expect(m.totalInputTokens, 11);
@@ -98,7 +96,7 @@ void main() {
       expect(m.totalReasoningTokens, 33);
       expect(m.totalCacheReadTokens, 44);
       expect(m.totalCacheWriteTokens, 55);
-      expect(m.totalCostCents, 15);
+      expect(m.totalCostMicros, 15);
     });
 
     test('cacheRate = cacheRead / (input + cacheRead)', () {
@@ -251,7 +249,7 @@ void main() {
           thoughtTokens: 1,
           cachedReadTokens: 4,
           cachedWriteTokens: 5,
-          estimatedCostCents: 10,
+          costMicros: 10,
         ),
         _run(
           startedAt: DateTime(2026, 1, 1, 9, 50),
@@ -261,7 +259,7 @@ void main() {
           thoughtTokens: 10,
           cachedReadTokens: 40,
           cachedWriteTokens: 50,
-          estimatedCostCents: 90,
+          costMicros: 90,
         ),
       ];
       final series = calc.hourlySeries(runs);
@@ -272,7 +270,7 @@ void main() {
       expect(b.errors, 1);
       // Reasoning is a subset of output: 12 + 120, not another token axis.
       expect(b.tokens, 132);
-      expect(b.costCents, 100);
+      expect(b.costMicros, 100);
     });
 
     test('runs straddling a day boundary land in distinct hour buckets', () {
@@ -316,13 +314,13 @@ void main() {
           startedAt: DateTime(2026, 1, 1, 1),
           status: RunStatus.error,
           inputTokens: 100,
-          estimatedCostCents: 5,
+          costMicros: 5,
         ),
         _run(
           startedAt: DateTime(2026, 1, 1, 23),
           status: RunStatus.completed,
           outputTokens: 200,
-          estimatedCostCents: 15,
+          costMicros: 15,
         ),
       ];
       final series = calc.dailySeries(runs);
@@ -331,7 +329,7 @@ void main() {
       expect(b.runs, 2);
       expect(b.errors, 1);
       expect(b.tokens, 300);
-      expect(b.costCents, 20);
+      expect(b.costMicros, 20);
     });
   });
 
@@ -343,7 +341,7 @@ void main() {
           startedAt: base,
           inputTokens: 10,
           outputTokens: 20,
-          estimatedCostCents: 5,
+          costMicros: 5,
           durationMs: 1000,
           timeToFirstTokenMs: 100,
         ),
@@ -362,21 +360,21 @@ void main() {
         runs: 1,
         errors: 0,
         tokens: 5,
-        costCents: 2,
+        costMicros: 2,
       );
       final b2 = TimeBucket(
         bucketStart: t,
         runs: 1,
         errors: 0,
         tokens: 5,
-        costCents: 2,
+        costMicros: 2,
       );
       final b3 = TimeBucket(
         bucketStart: t,
         runs: 1,
         errors: 1,
         tokens: 5,
-        costCents: 2,
+        costMicros: 2,
       );
       expect(b1, b2);
       expect(b1.hashCode, b2.hashCode);

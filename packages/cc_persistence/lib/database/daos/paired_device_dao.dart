@@ -18,6 +18,9 @@ abstract final class PairedDeviceStatus {
 
   /// Revoked by the user — PSK deleted, must not reconnect.
   static const revoked = 'revoked';
+
+  /// Every status: what the column's check admits.
+  static const values = [pendingConfirm, active, revoked];
 }
 
 /// Data access object for [PairedDevicesTable].

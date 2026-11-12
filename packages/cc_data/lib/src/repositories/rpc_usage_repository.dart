@@ -19,7 +19,7 @@ class RpcUsageRepository {
     });
     final dto = CostSummaryDto.fromJson(data);
     return CostSummary(
-      totalUsd: dto.totalUsd,
+      totalMicros: dto.totalMicros,
       requestCount: dto.requestCount,
       windowStart: dto.windowStart == null
           ? DateTime.fromMillisecondsSinceEpoch(0)

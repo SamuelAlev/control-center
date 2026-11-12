@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_output_port.dart';
 import 'package:cc_mcp/src/tools/submit_output_tool.dart';
 import 'package:test/test.dart';
 
@@ -7,7 +8,10 @@ void main() {
   late SubmitOutputTool tool;
 
   setUp(() {
-    tool = SubmitOutputTool(runLogRepository: _FakeRunLogs());
+    tool = SubmitOutputTool(
+      runLogRepository: _FakeRunLogs(),
+      runOutputs: _FakeOutputs(),
+    );
   });
 
   test('missing workspace_id is refused', () async {
@@ -33,6 +37,11 @@ class _FakeRunLogs implements AgentRunLogRepository {
     String agentId,
   ) async => null;
 
+  @override
+  dynamic noSuchMethod(Invocation invocation) {}
+}
+
+class _FakeOutputs implements AgentRunOutputPort {
   @override
   dynamic noSuchMethod(Invocation invocation) {}
 }

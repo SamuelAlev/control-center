@@ -14318,13 +14318,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get backupSnapshotComplete => 'کامل';
 
   @override
-  String get backupSnapshotIncomplete => 'ناقص';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'مانیفست غایب است یا فایل‌هایی را نام می‌برد که نیستند، پس این اسنپ‌شات کل نصب را بازیابی نمی‌کند. فایل‌های فضای کاری موجود هنوز یکی‌یکی قابل پذیرش‌اند.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'حذف اسنپ‌شات';
 
   @override
@@ -18456,4 +18449,234 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'می‌توانید این دستگاه را تماشا کنید. این دستگاه از حساب‌های ورود شخصی که برای او باز شده استفاده می‌کند، پس فقط همان شخص می‌تواند آن را کنترل کند، پورت‌هایش را هدایت کند، در آن بچسباند یا فایل روی آن رها کند.';
+
+  @override
+  String get refusalStorageBusy =>
+      'پایگاه داده‌ی سرور هم‌اکنون مشغول است. لحظه‌ای دیگر دوباره امتحان کنید.';
+
+  @override
+  String get refusalStorageFull =>
+      'فضای دیسک سرور تمام شده و چیزی نمی‌تواند ذخیره شود. مالک سرور باید مقداری فضا آزاد کند.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'داده‌های این فضای کاری آسیب دیده است. مالک سرور باید آن را از یک پشتیبان بازیابی کند.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'این فضای کاری تا زمانی که مالک سرور آن را از یک پشتیبان بازیابی نکند فقط خواندنی است و تغییرات ذخیره نمی‌شوند.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'این داده‌ها با نسخه‌ی جدیدتری از سرور نوشته شده است. سرور را به‌روز کنید و دوباره تلاش کنید.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'سرور فایل پایگاه داده‌ای پیدا کرده که خودش ننوشته است. مالک سرور باید پوشه‌ی داده‌های سرور را بررسی کند.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'این فضای کاری حذف شده است.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'این درخواست هنوز در حال پردازش است. صبر کنید تا تمام شود، سپس نتیجه را بررسی کنید.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'در این مسیر روی سرور فایلی وجود ندارد. چیزی جایگزین نشد.';
+
+  @override
+  String get refusalImportDamaged =>
+      'این فایل آسیب دیده است، پس نمی‌توان آن را بازیابی کرد. چیزی جایگزین نشد.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'این فایل با جمع کنترلی ثبت‌شده در پشتیبانش مطابقت ندارد، پس ممکن است تغییر کرده یا آسیب دیده باشد. چیزی جایگزین نشد.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'این فایل با نسخه‌ی جدیدتری از سرور نوشته شده است. برای بازیابی آن سرور را به‌روز کنید. چیزی جایگزین نشد.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'این فایل یک پایگاه داده‌ی فضای کاری نیست. چیزی جایگزین نشد.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'این فایل به قالب پایگاه داده‌ی این سرور تبدیل نشد. چیزی جایگزین نشد.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'این فایل پیوندهایی دارد که متعلق به فضای کاری دیگری روی این سرور است و بازیابی آن این پیوندها را از آن فضا می‌گیرد. چیزی جایگزین نشد.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'این فضای کاری فقط خواندنی است';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'داده‌هایش بررسی یکپارچگی را رد کرده، پس تغییرات نمی‌توانند ذخیره شوند. همه‌چیز هنوز قابل خواندن است. مالک سرور می‌تواند آن را از یک پشتیبان بازیابی کند.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'داده‌هایش بررسی یکپارچگی را رد کرده، پس تغییرات نمی‌توانند ذخیره شوند. همه‌چیز هنوز قابل خواندن است. برای قابل‌نوشتن شدن دوباره، آن را از یک پشتیبان بازیابی کنید.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'باز کردن پشتیبان‌ها';
+
+  @override
+  String get serverNoticesLabel => 'نیاز به توجه شما دارد';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'فقط خواندنی';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'از $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'پایگاه دادهٔ آن بررسی یکپارچگی را رد کرده، پس فقط خواندنی است و هر تغییری را رد می‌کند. آن را از یک پشتیبان در فهرست‌های زیر بازیابی کنید؛ تا آن زمان آخرین نسخه‌ی سالمش نگه داشته می‌شود.';
+
+  @override
+  String get serverNoticeDetails => 'جزئیات';
+
+  @override
+  String get backupSnapshotUnverified => 'تأیید‌نشده';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'این اسنپ‌شات قابل تأیید نیست. یا هرگز کامل نشده، یا پیش از آنکه اسنپ‌شات‌ها جمع کنترلی ثبت کنند گرفته شده، پس نمی‌تواند کل نصب را بازیابی کند. فایل‌های فضای کاری‌ای که دارد هنوز می‌توانند یک‌به‌یک بازیابی شوند.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'آخرین نسخه‌ی سالم';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'نگه داشته شده چون آخرین نسخه‌ی سالم یک فضای کاری آسیب‌دیده را دارد. پاک‌سازی تا زمانی که آن فضای کاری بازیابی نشود به آن دست نمی‌زند.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'این آخرین نسخه‌ی سالم یک فضای کاری آسیب‌دیده است. اگر آن را حذف کنید، چیزی برای بازیابی آن فضای کاری باقی نمی‌ماند.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count اجازه برای بررسی شما نگه داشته شد. در بالای این صفحه فهرست شده‌اند.',
+      one:
+          '1 اجازه برای بررسی شما نگه داشته شد. در بالای این صفحه فهرست شده است.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'نگه‌داشته‌شده از نسخه‌های بازیابی‌شده';
+
+  @override
+  String get importHoldsExplainer =>
+      'یک نسخه‌ی بازیابی‌شده به‌تنهایی نمی‌تواند چیزی را روی این سرور اعطا کند. این اجازه‌ها در آن بودند: یکی را بپذیرید تا دوباره اعطا شود، یا آن را رد کنید تا حذف شود.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'عامل‌ها می‌توانند این کار را بدون تأیید انجام دهند: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'عامل‌ها پس از تأیید یک فرد می‌توانند این کار را انجام دهند: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'اجرای دستورهایی که با $command شروع می‌شوند';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'در همه‌جای این فضای کاری';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'در فضای $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'برای عامل $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'سندباکس‌ها می‌توانند $path را اجرا کنند';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person می‌تواند $repo را تغییر دهد';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person می‌تواند Pull request ها را در $repo بررسی کند';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person دسترسی $level به $repo می‌گیرد';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person نقش $role را می‌گیرد';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'یک دعوت باز برای پیوستن با نقش $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'یک دعوت باز برای پیوستن با نقش $role و دسترسی بررسی یا نوشتن به $count مخزن',
+      one:
+          'یک دعوت باز برای پیوستن با نقش $role و دسترسی بررسی یا نوشتن به ۱ مخزن',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'اجازه‌ای که این نسخه‌ی برنامه نمی‌تواند توصیفش کند';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'بازیابی‌شده در $time';
+  }
+
+  @override
+  String get importHoldAccept => 'پذیرفتن';
+
+  @override
+  String get importHoldDismiss => 'رد کردن';
+
+  @override
+  String get importHoldAcceptTitle => 'این اجازه اعطا شود؟';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nپذیرفتن این اجازه را فوراً روی سرور اعطا می‌کند.';
+  }
+
+  @override
+  String get importHoldAccepted => 'اجازه اعطا شد.';
+
+  @override
+  String get importHoldNotApplied =>
+      'چیزی اعطا نشد: کسی یا چیزی که این اجازه برایش بود دیگر در این فضای کاری نیست.';
 }

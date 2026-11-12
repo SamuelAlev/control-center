@@ -13,28 +13,28 @@ import '../../../../fakes/fake_agent_run_log_repository.dart';
 void main() {
   group('BudgetPolicy', () {
     test(
-      'isUnlimited when monthlyBudgetCents is zero',
+      'isUnlimited when monthlyBudgetMicros is zero',
       timeout: const Timeout.factor(2),
       () {
         const policy = BudgetPolicy(
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 0,
+          monthlyBudgetMicros: 0,
         );
         expect(policy.isUnlimited, isTrue);
       },
     );
 
     test(
-      'isUnlimited when monthlyBudgetCents is negative',
+      'isUnlimited when monthlyBudgetMicros is negative',
       timeout: const Timeout.factor(2),
       () {
         const policy = BudgetPolicy(
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: -100,
+          monthlyBudgetMicros: -1000000,
         );
         expect(policy.isUnlimited, isTrue);
       },
@@ -48,8 +48,8 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 1000,
-          spentCents: 1000,
+          monthlyBudgetMicros: 10000000,
+          spentMicros: 10000000,
         );
         expect(policy.isExhausted, isTrue);
       },
@@ -63,8 +63,8 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 500,
-          spentCents: 800,
+          monthlyBudgetMicros: 5000000,
+          spentMicros: 8000000,
         );
         expect(policy.isExhausted, isTrue);
       },
@@ -78,8 +78,8 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 0,
-          spentCents: 999,
+          monthlyBudgetMicros: 0,
+          spentMicros: 9990000,
         );
         expect(policy.isExhausted, isFalse);
       },
@@ -93,9 +93,9 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 1000,
+          monthlyBudgetMicros: 10000000,
           softThresholdPercent: 80,
-          spentCents: 800,
+          spentMicros: 8000000,
         );
         expect(policy.isNearLimit, isTrue);
       },
@@ -109,9 +109,9 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 1000,
+          monthlyBudgetMicros: 10000000,
           softThresholdPercent: 80,
-          spentCents: 799,
+          spentMicros: 7990000,
         );
         expect(policy.isNearLimit, isFalse);
       },
@@ -125,9 +125,9 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 1000,
+          monthlyBudgetMicros: 10000000,
           softThresholdPercent: 50,
-          spentCents: 500,
+          spentMicros: 5000000,
         );
         expect(policy.isNearLimit, isTrue);
       },
@@ -141,25 +141,25 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 1000,
-          spentCents: 500,
+          monthlyBudgetMicros: 10000000,
+          spentMicros: 5000000,
         );
         expect(policy.isExhausted, isFalse);
       },
     );
 
     test(
-      'remainingCents = budget - spent',
+      'remainingMicros = budget - spent',
       timeout: const Timeout.factor(2),
       () {
         const policy = BudgetPolicy(
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 1000,
-          spentCents: 300,
+          monthlyBudgetMicros: 10000000,
+          spentMicros: 3000000,
         );
-        expect(policy.remainingCents, 700);
+        expect(policy.remainingMicros, 7000000);
       },
     );
 
@@ -168,8 +168,8 @@ void main() {
         id: 'p1',
         scopeType: 'agent',
         scopeId: 'a1',
-        monthlyBudgetCents: 100,
-        spentCents: 500,
+        monthlyBudgetMicros: 1000000,
+        spentMicros: 5000000,
       );
       expect(over.spentPercent, 100);
 
@@ -177,8 +177,8 @@ void main() {
         id: 'p2',
         scopeType: 'agent',
         scopeId: 'a2',
-        monthlyBudgetCents: 200,
-        spentCents: 50,
+        monthlyBudgetMicros: 2000000,
+        spentMicros: 500000,
       );
       expect(normal.spentPercent, 25);
     });
@@ -191,8 +191,8 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 0,
-          spentCents: 9999,
+          monthlyBudgetMicros: 0,
+          spentMicros: 99990000,
         );
         expect(policy.spentPercent, 0);
       },
@@ -203,13 +203,13 @@ void main() {
         id: 'p1',
         scopeType: 'agent',
         scopeId: 'a1',
-        monthlyBudgetCents: 1000,
+        monthlyBudgetMicros: 10000000,
       );
       const b = BudgetPolicy(
         id: 'p1',
         scopeType: 'agent',
         scopeId: 'a1',
-        monthlyBudgetCents: 1000,
+        monthlyBudgetMicros: 10000000,
       );
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
@@ -220,13 +220,13 @@ void main() {
         id: 'p1',
         scopeType: 'agent',
         scopeId: 'a1',
-        monthlyBudgetCents: 1000,
+        monthlyBudgetMicros: 10000000,
       );
       const b = BudgetPolicy(
         id: 'p1',
         scopeType: 'agent',
         scopeId: 'a1',
-        monthlyBudgetCents: 2000,
+        monthlyBudgetMicros: 20000000,
       );
       expect(a, isNot(equals(b)));
       expect(a.hashCode, isNot(equals(b.hashCode)));
@@ -237,12 +237,12 @@ void main() {
         id: 'p1',
         scopeType: 'agent',
         scopeId: 'a1',
-        monthlyBudgetCents: 1000,
+        monthlyBudgetMicros: 10000000,
       );
-      final updated = original.copyWith(spentCents: 500);
-      expect(updated.spentCents, 500);
+      final updated = original.copyWith(spentMicros: 5000000);
+      expect(updated.spentMicros, 5000000);
       expect(updated.id, 'p1');
-      expect(updated.monthlyBudgetCents, 1000);
+      expect(updated.monthlyBudgetMicros, 10000000);
     });
 
     test(
@@ -253,7 +253,7 @@ void main() {
           id: 'p1',
           scopeType: 'agent',
           scopeId: 'a1',
-          monthlyBudgetCents: 1000,
+          monthlyBudgetMicros: 10000000,
           periodStart: null,
         ).copyWith(periodStart: DateTime(2025, 6, 1));
         expect(withDate.periodStart, isNotNull);
@@ -306,24 +306,24 @@ void main() {
 
     tearDown(() => eventBus.dispose());
 
-    Agent makeAgent({int monthlyBudgetCents = 1000}) => Agent(
+    Agent makeAgent({int monthlyBudgetMicros = 10000000}) => Agent(
       id: 'agent-1',
       name: 'Test',
       title: 'Test',
       agentMdPath: '/p.md',
       workspaceId: 'ws-1',
       skills: AgentSkills([]),
-      monthlyBudgetCents: monthlyBudgetCents,
+      monthlyBudgetMicros: monthlyBudgetMicros,
       createdAt: DateTime(2025, 1, 1),
     );
 
-    AgentRunLog makeLog({int costCents = 0, DateTime? startedAt}) =>
+    AgentRunLog makeLog({int costMicros = 0, DateTime? startedAt}) =>
         AgentRunLog(
           id: 'log-${DateTime.now().microsecondsSinceEpoch}',
           agentId: 'agent-1',
           startedAt: startedAt ?? DateTime.now(),
           status: RunStatus.completed,
-          cost: RunCost(estimatedCostCents: costCents),
+          cost: RunCost(costMicros: costMicros),
         );
 
     test(
@@ -343,7 +343,7 @@ void main() {
       'returns null when agent has unlimited budget (0)',
       timeout: const Timeout.factor(2),
       () async {
-        await agentRepo.upsert(makeAgent(monthlyBudgetCents: 0));
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 0));
         final block = await service.checkInvocationBlock(
           agentId: 'agent-1',
           workspaceId: 'ws-1',
@@ -356,8 +356,8 @@ void main() {
       'returns block when budget exhausted',
       timeout: const Timeout.factor(2),
       () async {
-        await agentRepo.upsert(makeAgent(monthlyBudgetCents: 500));
-        runLogRepo.seed(makeLog(costCents: 600));
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 5000000));
+        runLogRepo.seed(makeLog(costMicros: 6000000));
 
         final events = <BudgetThresholdCrossed>[];
         eventBus.on<BudgetThresholdCrossed>().listen(events.add);
@@ -377,11 +377,38 @@ void main() {
     );
 
     test(
+      'many sub-cent runs exhaust a one-cent budget',
+      timeout: const Timeout.factor(2),
+      () async {
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 10000));
+        // Each run costs 0.3 cents; a cents total would count each as zero.
+        for (var i = 0; i < 4; i++) {
+          runLogRepo.seed(
+            AgentRunLog(
+              id: 'sub-cent-$i',
+              agentId: 'agent-1',
+              startedAt: DateTime.now(),
+              status: RunStatus.completed,
+              cost: const RunCost(costMicros: 3000),
+            ),
+          );
+        }
+
+        final block = await service.checkInvocationBlock(
+          agentId: 'agent-1',
+          workspaceId: 'ws-1',
+        );
+        expect(block, isNotNull);
+        expect(block!.reason, 'budget_exhausted');
+      },
+    );
+
+    test(
       'publishes warning event when near 80% but does not block',
       timeout: const Timeout.factor(2),
       () async {
-        await agentRepo.upsert(makeAgent(monthlyBudgetCents: 1000));
-        runLogRepo.seed(makeLog(costCents: 850));
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 10000000));
+        runLogRepo.seed(makeLog(costMicros: 8500000));
 
         final events = <BudgetThresholdCrossed>[];
         eventBus.on<BudgetThresholdCrossed>().listen(events.add);
@@ -402,8 +429,8 @@ void main() {
       'no events when spend is well below threshold',
       timeout: const Timeout.factor(2),
       () async {
-        await agentRepo.upsert(makeAgent(monthlyBudgetCents: 1000));
-        runLogRepo.seed(makeLog(costCents: 100));
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 10000000));
+        runLogRepo.seed(makeLog(costMicros: 1000000));
 
         final events = <BudgetThresholdCrossed>[];
         eventBus.on<BudgetThresholdCrossed>().listen(events.add);
@@ -431,8 +458,8 @@ void main() {
       'getSpentPercent returns 0 for unlimited budget',
       timeout: const Timeout.factor(2),
       () async {
-        await agentRepo.upsert(makeAgent(monthlyBudgetCents: 0));
-        runLogRepo.seed(makeLog(costCents: 500));
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 0));
+        runLogRepo.seed(makeLog(costMicros: 5000000));
 
         final pct = await service.getSpentPercent('ws-1', 'agent-1');
         expect(pct, 0);
@@ -443,8 +470,8 @@ void main() {
       'getSpentPercent returns clamped percentage',
       timeout: const Timeout.factor(2),
       () async {
-        await agentRepo.upsert(makeAgent(monthlyBudgetCents: 200));
-        runLogRepo.seed(makeLog(costCents: 100));
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 2000000));
+        runLogRepo.seed(makeLog(costMicros: 1000000));
 
         final pct = await service.getSpentPercent('ws-1', 'agent-1');
         expect(pct, 50);
@@ -455,8 +482,8 @@ void main() {
       'getSpentPercent clamps to 100 when over budget',
       timeout: const Timeout.factor(2),
       () async {
-        await agentRepo.upsert(makeAgent(monthlyBudgetCents: 100));
-        runLogRepo.seed(makeLog(costCents: 300));
+        await agentRepo.upsert(makeAgent(monthlyBudgetMicros: 1000000));
+        runLogRepo.seed(makeLog(costMicros: 3000000));
 
         final pct = await service.getSpentPercent('ws-1', 'agent-1');
         expect(pct, 100);

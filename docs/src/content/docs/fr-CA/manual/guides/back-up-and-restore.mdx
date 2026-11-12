@@ -2,7 +2,7 @@
 title: Sauvegarder et restaurer
 description: Prenez un instantané de l’installation, déplacez un espace de travail entre machines, restaurez un seul espace de travail ou tous, et conservez des copies ailleurs.
 slug: fr-CA/manuel/guides/sauvegarder-et-restaurer
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Ce guide couvre les cinq choses que les gens font réellement avec les sauvegardes : en
@@ -45,10 +45,10 @@ Les deux artefacts sont **des bases de données uniquement** :
 - Un **instantané de l’installation** est un répertoire horodaté : `manifest.json`, `global.db` et un `<workspaceId>/workspace.db` par espace de travail.
 - Une **exportation d’espace de travail** est ce seul fichier `workspace.db`.
 
-La base de données d’un espace de travail représente tout l’espace de travail : ses conversations, ses journaux d’exécution, son index de code, ses liens de dépôts, ses définitions d’environnement et ses membres. Elle contient aussi les jetons de webhook des pipelines et les secrets de webhook de synchronisation des tickets de l’espace, sous une forme lisible. Conservez une sauvegarde ou une exportation téléchargée d’un espace de travail comme vous conserveriez un secret. Elle ne contient aucune connexion de fournisseur, aucune clé d’appareil et aucun secret d’utilisateur; ceux-ci se trouvent dans la base de données globale et dans le magasin de secrets du serveur.
+La base de données d’un espace de travail représente tout l’espace de travail : ses conversations, ses journaux d’exécution, ses liens de dépôts, ses définitions d’environnement et ses membres. Elle ne contient aucun secret : les jetons de webhook des pipelines, les secrets de webhook de synchronisation des tickets, les connexions aux fournisseurs, les clés d’appareil et les secrets d’utilisateur se trouvent dans la base de données globale et dans le magasin de secrets du serveur. Elle reste pourtant tout ce que l’espace de travail a dit et fait ; conservez donc une sauvegarde ou une exportation téléchargée aussi privée que l’espace de travail lui-même. L’index de code est un fichier distinct, à côté de la base de données : `code_index.db`. Aucune sauvegarde ne le contient ; le serveur le reconstruit.
 
 Ni l’un ni l’autre ne transporte le reste du répertoire de données : `secrets.json` (clés
-d’association, identifiants de fournisseurs, SSO), le dossier `blobs/` d’un espace de
+d’association, identifiants de fournisseurs, secrets de webhook, SSO), le dossier `blobs/` d’un espace de
 travail (images collées dans les messages), `skills/`, `agents/`,
 `chat_credentials/`, l’audio des réunions enregistrées ou les images de rig. Une partie de
 tout cela est jetable et une autre ne l’est pas — le
@@ -65,18 +65,13 @@ Le serveur continue de fonctionner pendant toute l’opération. Chaque fichier 
 avec `VACUUM INTO`, ce qui garantit la cohérence par rapport à une base de données active :
 aucune fenêtre de maintenance n’est nécessaire et il n’est pas utile d’arrêter les agents.
 
-Chaque ligne de la liste indique l’horodatage, la taille sur le disque, le nombre
-d’espaces de travail capturés et si l’instantané est **Complet** ou **Incomplet**.
-« Incomplet » signifie que le manifeste est absent ou qu’il nomme des fichiers qui ne sont
-pas là — une sauvegarde interrompue par un plantage ou un disque plein. Ces instantanés
-restent listés volontairement : un instantané que vous ne voyez pas est un instantané que
-vous croyez avoir. Un instantané incomplet ne peut pas restaurer une installation
-complète, mais les fichiers d’espace de travail qu’il contient peuvent tout de même être
-adoptés un à la fois.
+Chaque ligne de la liste indique l’horodatage, la taille sur le disque, le nombre d’espaces de travail capturés et si l’instantané est **Complet** ou **Non vérifié**. Chaque copie est vérifiée après son écriture, et le manifeste consigne sa taille et sa somme de contrôle. Non vérifié signifie que le serveur ne peut pas garantir l’instantané : son manifeste est absent ou illisible, ou un fichier qu’il nomme est absent ou a changé de taille. Il s’agit d’une sauvegarde interrompue par un plantage ou un disque plein, ou d’une sauvegarde prise avant que les instantanés ne consignent des sommes de contrôle. Ces instantanés restent listés volontairement : un instantané que vous ne voyez pas est un instantané que vous croyez avoir. Un instantané non vérifié ne peut pas restaurer une installation complète, mais les fichiers d’espace de travail qu’il contient peuvent tout de même être restaurés un à la fois.
 
 Une ligne peut aussi indiquer **_n_ espaces de travail non capturés**. Il s’agit d’un
 espace de travail enregistré, mais dans lequel rien n’a jamais été écrit (aucun fichier
-n’existe encore), ou dont la copie a échoué — vérifiez le journal du serveur.
+n’existe encore), ou dont la base de données est endommagée (une copie endommagée n’est jamais prise), ou dont la copie a échoué — vérifiez le journal du serveur.
+
+Un instantané ou une sauvegarde planifiée marqué **Dernière copie valide** contient la copie valide la plus récente d’un espace de travail dont la base de données a depuis été endommagée. Le nettoyage planifié le laisse intact, et sa suppression exige une confirmation, jusqu’à ce que cet espace de travail soit restauré.
 
 ## Planifier les sauvegardes d’espaces de travail et leur conservation
 
@@ -107,7 +102,7 @@ l’indique sur sa ligne au lieu de lister ses sauvegardes.
 
 Développez une ligne pour voir chaque sauvegarde, de la plus récente à la plus ancienne :
 
-- **Restaurer** remplace la base de données actuelle de l’espace de travail par cette sauvegarde. Exportez d’abord l’espace de travail si vous pourriez avoir besoin d’annuler l’opération. Exige le propriétaire du serveur, qui doit aussi être propriétaire de l’espace de travail.
+- **Restaurer** remplace la base de données actuelle de l’espace de travail par cette sauvegarde. La base de données qu’elle remplace est conservée dans cette liste, sous un nom se terminant par `-pre-restore`, afin que vous puissiez revenir en arrière. Exige le propriétaire du serveur, qui doit aussi être propriétaire de l’espace de travail.
 - **Télécharger** enregistre le fichier sur la machine que vous utilisez. La sauvegarde reste sur le serveur.
 - **Copier le chemin** copie son emplacement sur le serveur.
 - **Supprimer** retire définitivement cette sauvegarde, une fois que vous avez saisi le nom de l’espace de travail. Exige **propriétaire**.
@@ -127,7 +122,7 @@ le fichier comme décrit dans
 
 ## Supprimer un instantané de l’installation
 
-Sous **Instantanés de l’installation**, dépliez l’instantané, même s’il est incomplet,
+Sous **Instantanés de l’installation**, dépliez l’instantané, même s’il est non vérifié,
 et utilisez **Supprimer l’instantané** dans la section de danger. Confirmez son nom. Le
 répertoire de l’instantané est entièrement et définitivement supprimé du serveur ;
 téléchargez-le d’abord si vous en voulez une copie. Un pipeline de sauvegarde
@@ -170,21 +165,14 @@ L’étape 3 est une restauration : elle exige le propriétaire du serveur de de
 Si les deux serveurs sont la même machine que celle devant laquelle vous êtes assis, **Enregistrer sur le serveur** sur la source, puis le chemin du fichier dans **Fichier de base de données d'espace de travail** et **Importer** sur la destination, produisent le même résultat sans aller-retour; ce chemin est résolu sur l’hôte du serveur.
 
 :::caution[L’importation remplace tout]
-L’importation écrase tout ce que contient actuellement l’espace de travail cible, et elle
-est irréversible. Exportez la cible d’abord si elle contient quoi que ce soit que vous
-voudriez récupérer.
+L’importation remplace tout ce que contient actuellement l’espace de travail cible. La base de données qu’elle remplace est conservée sous **Sauvegardes planifiées**, avec un nom se terminant par `-pre-restore` ; restaurez celle-ci pour revenir en arrière.
 :::
 
-Deux situations sont autorisées et journalisées plutôt que refusées : importer un fichier
-dont l’identifiant d’espace de travail enregistré diffère de celui de la cible (c’est
-ainsi qu’on duplique un espace de travail ou qu’on le restaure sous un nouvel
-identifiant), et importer un fichier provenant d’une **autre installation**. Dans ce
-second cas, les appareils associés et les identifiants d’utilisateur du fichier
-appartiennent à l’installation d’origine et ne se résoudront pas sur celle-ci — les
-données propres à l’espace de travail sont intactes, mais vérifiez de nouveau l’adhésion
-après son adoption.
+Un fichier provenant d’un autre espace de travail ou d’une **autre installation** est accepté : c’est ainsi qu’on duplique un espace de travail, qu’on le restaure sous un nouvel identifiant ou qu’on le confie à quelqu’un d’autre. Les identifiants d’utilisateur d’une autre installation ne se résolvent pas sur celle-ci — les données propres à l’espace de travail sont intactes, mais vérifiez de nouveau l’adhésion après son adoption.
 
-Les jetons des robots de clavardage et les connexions aux fournisseurs se trouvent hors de la base de données, de sorte que l’installation qui reçoit l’espace de travail reconnecte les siens. Le fichier contient en revanche les jetons de webhook des pipelines et les secrets de webhook de synchronisation des tickets de l’espace de travail : un espace de travail que vous remettez à quelqu’un d’autre leur transmet donc aussi ces éléments. Renouvelez-les ensuite si le destinataire ne doit pas les conserver.
+Un fichier restauré ne peut rien accorder à lui seul sur ce serveur. Les permissions qu’il portait au-delà de l’appartenance ordinaire sont retirées et listées sous **Mis en attente lors de la restauration**, en haut de la page : règles d’action qui permettent aux agents d’agir sans approbation ou après une approbation, chemins qu’un bac à sable peut exécuter, accès aux dépôts au-delà de la lecture, rôles au-delà de membre et invitations ouvertes à ces rôles. **Accepter** l’accorde à nouveau ; **Rejeter** la supprime. Les approbations d’exécution d’une définition d’environnement sur l’hôte sont effacées : approuvez donc de nouveau ces définitions. Celui qui restaure conserve ou obtient le rôle de propriétaire.
+
+Les jetons des robots de clavardage, les connexions aux fournisseurs et les secrets de webhook se trouvent hors de la base de données ; l’installation qui la reçoit reconnecte donc les siens. Les déclencheurs de webhook et les webhooks de synchronisation des tickets arrivent sans leurs secrets et ne reçoivent rien sur un autre serveur tant que vous ne les avez pas enregistrés de nouveau là-bas, ce qui attribue à chaque déclencheur une nouvelle URL.
 
 ## Restaurer un espace de travail à partir d’un instantané
 
@@ -196,7 +184,7 @@ Vous devez être le propriétaire du serveur et le propriétaire de l’espace d
 
 Il s’agit de la même opération qu’une importation, dirigée vers la copie du fichier de
 cet espace de travail contenue dans l’instantané — délibérément, pour qu’aucun second
-mécanisme ne puisse traiter le même fichier différemment.
+mécanisme ne puisse traiter le même fichier différemment. La copie est d’abord vérifiée par rapport à la somme de contrôle enregistrée par l’instantané.
 
 Une ligne peut indiquer **N’existe plus sur ce serveur**, avec **Restaurer** désactivé :
 l’instantané contient un espace de travail que cette installation n’a plus. Récupérez-le
@@ -204,6 +192,10 @@ manuellement — créez un espace de travail (seul le propriétaire du serveur p
 L’instantané déplié affiche son propre **Chemin sur le serveur** dans un champ copiable,
 et le titre de la ligne est l’ancien identifiant d’espace de travail : vous avez donc les
 deux moitiés de ce chemin sous les yeux.
+
+## Restaurer un espace de travail endommagé
+
+Un espace de travail dont la base de données échoue à son contrôle d’intégrité passe en lecture seule : tout reste lisible et toute modification est refusée. Les membres voient **Cet espace de travail est en lecture seule** en haut de l’espace de travail, le propriétaire du serveur le voit sous **Nécessite votre attention** sur cette page, et la sauvegarde la plus récente qui contient une copie valide est conservée comme **Dernière copie valide**. Restaurez l’espace de travail à partir de cette copie, comme décrit plus haut, pour le rendre de nouveau modifiable. La base de données endommagée est conservée comme sauvegarde `-pre-restore`.
 
 ## Restaurer une installation complète
 
@@ -335,7 +327,7 @@ l’extérieur de l’hôte. `VACUUM INTO` exige SQLite 3.27 ou une version plus
 
 Écrivez-le **à l’extérieur** de `<dataDir>/backups/`. Un répertoire fabriqué à la main à
 cet endroit n’a pas de `manifest.json` : l’application le listerait comme un instantané
-incomplet et la liste cesserait d’être un relevé fidèle de ce que le serveur lui-même a
+non vérifié et la liste cesserait d’être un relevé fidèle de ce que le serveur lui-même a
 produit.
 
 ### Élaguer les anciens instantanés complets de l’installation
@@ -383,9 +375,11 @@ fois que vous changez l’endroit où elles sont stockées.
 | « Seul le propriétaire du serveur peut restaurer les sauvegardes. Vous pouvez tout de même les télécharger. » | Restaurer remplace la base de données d’un espace de travail sur l’hôte du serveur, donc seul le propriétaire du serveur restaure. Téléchargez la sauvegarde et demandez-le-lui |
 | « Ce serveur n'expose aucune surface de sauvegarde. »                       | Aucun port de sauvegarde n’est câblé sur l’hôte — c’est un serveur de démonstration. Les opérations sont absentes plutôt que refusées |
 | « Le fichier dépasse la taille acceptée par le serveur. »                        | Les téléversements sont plafonnés à 8 GiB. Placez le fichier sur l’hôte du serveur et saisissez son chemin dans **Fichier de base de données d'espace de travail** |
-| Importation refusée : ce n’est pas une base de données d’espace de travail Control Center | Le fichier n’a pas de ligne `workspace_meta` — ce n’est pas une exportation d’espace de travail, ou il est tronqué. Rien n’a été remplacé |
-| Un instantané est listé comme **Incomplet**                             | Son manifeste est absent ou nomme des fichiers manquants. Créez-en un nouveau ; entre-temps, adoptez les fichiers d’espace de travail qu’il contient un par un |
-| Un instantané indique que des espaces de travail n’ont pas été capturés | Rien n’a jamais été écrit dans ces espaces de travail, ou leur copie a échoué. Vérifiez le journal du serveur          |
+| Une restauration est refusée et rien n’est remplacé | Le fichier a échoué à une vérification, et le message précise laquelle : ce n’est pas une base de données d’espace de travail, elle est endommagée, elle diffère de la somme de contrôle enregistrée par son instantané, une version plus récente du serveur l’a écrite, ou ses webhooks ou invitations appartiennent déjà à un autre espace de travail de ce serveur. Utilisez une autre copie, ou mettez d’abord le serveur à jour |
+| Un instantané est listé comme **Non vérifié** | Il n’a jamais été terminé, ou il a été pris avant que les instantanés ne consignent des sommes de contrôle. Créez-en un nouveau ; entre-temps, restaurez-en les fichiers d’espace de travail un par un |
+| Un instantané indique que des espaces de travail n’ont pas été capturés | Rien n’a jamais été écrit dans ces espaces de travail, ils sont endommagés, ou leur copie a échoué. Vérifiez le journal du serveur          |
+| Un espace de travail affiche **Cet espace de travail est en lecture seule** | Sa base de données a échoué à un contrôle d’intégrité. Rien de ce qu’elle contient ne peut être modifié tant que le propriétaire du serveur ne l’a pas restaurée à partir d’une sauvegarde |
+| Les webhooks cessent d’arriver après qu’un espace de travail migre vers un autre serveur | Les secrets de webhook ne voyagent pas avec la base de données. Enregistrez de nouveau chaque déclencheur de webhook et chaque connexion de synchronisation des tickets sur le nouveau serveur, puis donnez à l’expéditeur la nouvelle URL |
 | Une installation restaurée n’a aucun identifiant de forge ni de SSO     | `secrets.json` ne se trouve pas dans un instantané. Restaurez-le depuis l’endroit où vous l’avez conservé, ou reconnectez les fournisseurs |
 | Des images collées manquent dans un espace de travail restauré          | Les blobs résident à côté de la base de données, pas dedans. Copiez aussi `<workspaceId>/blobs/`                             |
 

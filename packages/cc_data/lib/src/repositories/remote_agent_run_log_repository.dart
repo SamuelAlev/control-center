@@ -9,11 +9,9 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// Backs the web build and the desktop in REMOTE mode. A workspace id selects
 /// the database file server-side, so every workspace-scoped call names its
 /// `workspace_id` in the args — an agent, conversation or run id resolves only
-/// inside its own workspace. [watchAll] / [watchRecent] are the documented
-/// cross-workspace exceptions (the dashboard's global view and the
-/// completeness-critical system jobs). Mirrors the `agent_run_log.*` ops + the
-/// `agent_run_log.watchByAgent` / `agent_run_log.watchActiveByConversation` /
-/// `agent_run_log.watchAll` subscriptions in the host catalog.
+/// inside its own workspace. [watchRecent] is the documented cross-workspace
+/// exception (the dashboard's global view). Mirrors the `agent_run_log.*` ops
+/// + the `agent_run_log.watch*` subscriptions in the host catalog.
 class RemoteAgentRunLogRepository {
   /// Creates a [RemoteAgentRunLogRepository] over [_client].
   RemoteAgentRunLogRepository(this._client);
@@ -127,7 +125,6 @@ class RemoteAgentRunLogRepository {
         'thought_tokens': cost.thoughtTokens,
         'cached_read_tokens': cost.cachedReadTokens,
         'cached_write_tokens': cost.cachedWriteTokens,
-        'estimated_cost_cents': cost.estimatedCostCents,
         'cost_micros': cost.costMicros,
         'cost_basis': cost.costBasis.name,
         'duration_ms': cost.durationMs,
@@ -255,12 +252,17 @@ class RemoteAgentRunLogRepository {
       })
       .map(_logs);
 
-  /// Live run logs across ALL workspaces (the dashboard's global view).
-  Stream<List<AgentRunLogDto>> watchAll() =>
-      _client.subscribe('agent_run_log.watchAll', const {}).map(_logs);
+  /// Live unfinished (pending or running) run logs of [workspaceId], newest
+  /// first and bounded by the host.
+  Stream<List<AgentRunLogDto>> watchActiveByWorkspace(String workspaceId) =>
+      _client
+          .subscribe('agent_run_log.watchActiveByWorkspace', {
+            'workspace_id': workspaceId,
+          })
+          .map(_logs);
 
   /// Live [limit] most recent run logs across ALL workspaces, newest first —
-  /// the bounded companion to [watchAll] for live dashboard surfaces.
+  /// the dashboard's global view.
   Stream<List<AgentRunLogDto>> watchRecent(int limit) => _client
       .subscribe('agent_run_log.watchRecent', {'limit': limit})
       .map(_logs);

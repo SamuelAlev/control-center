@@ -2,7 +2,7 @@
 title: Schutzregeln — eine Richtlinie für jede verändernde Aktion
 description: Warum Control Center jede Nebenwirkung eines Agenten durch eine einzige Policy-Engine für allow, prompt und deny führt, warum die ActionClass-Taxonomie absichtlich klein bleibt und was der Autonomieregler wirklich ändert.
 slug: de-DE/handbuch/konzepte/schutzregeln
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Agenten in Control Center können Dateien löschen, Branches pushen, Pull
@@ -116,7 +116,7 @@ Eine Einschränkung kann benennen:
 - **Hosts** — Netzziele, mit Platzhaltern für Subdomains (`*.internal`)
 - **Befehle** — Befehlspräfixe, an einer Wortgrenze
 - **Werkzeuge** — der genaue Werkzeugname, den ein Aufruf nennt, damit eine Freigabe ein einzelnes Werkzeug abdecken kann statt jedes Werkzeugs mit derselben Wirkung
-- **Obergrenzen** — `maxCount` / `maxCents`, damit „bis zu 50 Dateien löschen“
+- **Obergrenzen** — `maxCount` / `maxMicros`, damit „bis zu 50 Dateien löschen“
   ausdrückbar ist
 
 Drei Eigenschaften folgen daraus, dass die Grammatik geschlossen und

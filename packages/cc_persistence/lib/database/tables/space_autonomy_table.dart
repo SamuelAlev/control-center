@@ -1,3 +1,5 @@
+import 'package:cc_persistence/database/tables/agents.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:cc_persistence/database/tables/spaces.dart';
 import 'package:drift/drift.dart';
 
@@ -5,7 +7,10 @@ import 'package:drift/drift.dart';
 /// is a first-class, adjustable per-space control — `proposeOnly` /
 /// `actWithApproval` / `actFreely` — enforced at the harness's fail-closed
 /// approval gate.
-@TableIndex(name: 'idx_space_autonomy_workspaceId', columns: {#workspaceId})
+///
+/// One dial per agent per space: `(space_id, agent_id)` is unique and the
+/// write is one `INSERT … ON CONFLICT` on it.
+@TableIndex(name: 'idx_space_autonomy_agentId', columns: {#agentId})
 class SpaceAutonomyTable extends Table {
   /// Id.
   TextColumn get id => text()();
@@ -17,11 +22,16 @@ class SpaceAutonomyTable extends Table {
   TextColumn get spaceId =>
       text().references(SpacesTable, #id, onDelete: KeyAction.cascade)();
 
-  /// The agent the dial applies to.
-  TextColumn get agentId => text()();
+  /// The agent the dial applies to. `ON DELETE CASCADE`: a dial for an agent
+  /// that no longer exists governs nothing.
+  TextColumn get agentId =>
+      text().references(AgentsTable, #id, onDelete: KeyAction.cascade)();
 
-  /// `proposeOnly` | `actWithApproval` | `actFreely`.
-  TextColumn get autonomyLevel => text()();
+  /// `proposeOnly` | `actWithApproval` | `actFreely` (`AutonomyLevel.wire`).
+  TextColumn get autonomyLevel => text().check(
+    // ignore: recursive_getters
+    autonomyLevel.isIn(SpacesStoredValues.autonomyLevel),
+  )();
 
   /// Last change time.
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
@@ -34,6 +44,6 @@ class SpaceAutonomyTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, spaceId, agentId},
+    {spaceId, agentId},
   ];
 }

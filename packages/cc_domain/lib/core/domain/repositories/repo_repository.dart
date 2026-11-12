@@ -32,7 +32,8 @@ abstract class RepoRepository {
   /// before exposing a repo's data to a caller that supplied a workspace id.
   Future<bool> exists(String workspaceId, String repoId);
 
-  /// Inserts or updates a repo in [workspaceId]. Returns the repo id.
+  /// Inserts or updates a repo in [workspaceId]. Returns the stored repo id:
+  /// a checkout already linked at the same path keeps the id it has.
   ///
   /// A newly inserted repo appends to the end of the manual order; an update
   /// leaves the order untouched.

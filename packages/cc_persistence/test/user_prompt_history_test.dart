@@ -14,11 +14,21 @@ void main() {
     await seedTestWorkspace(global, manager, 'ws-hist');
     final db = manager.of('ws-hist');
     await db.messagingDao.insertSpace(
-      SpacesTableCompanion.insert(id: 'sp', name: 'general'),
+      SpacesTableCompanion.insert(
+        workspaceId: 'test-workspace',
+        id: 'sp',
+        name: 'general',
+      ),
     );
-    await db.into(db.conversationsTable).insert(
-      ConversationsTableCompanion.insert(id: 'conv', spaceId: 'sp'),
-    );
+    await db
+        .into(db.conversationsTable)
+        .insert(
+          ConversationsTableCompanion.insert(
+            workspaceId: 'test-workspace',
+            id: 'conv',
+            spaceId: 'sp',
+          ),
+        );
 
     Future<void> add(
       String id,

@@ -12,6 +12,7 @@ import 'package:cc_server_core/src/push/web_push_transport.dart';
 import 'package:test/test.dart';
 import 'package:webpush_encryption/webpush_encryption.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 class _RecordingTransport extends WebPushTransport {
@@ -56,6 +57,7 @@ void main() {
   setUp(() async {
     temporary = await Directory.systemTemp.createTemp('cc-webpush-test-');
     database = createTestGlobalDatabase();
+    await seedUsers(database, ['alice', 'bob']);
     repository = WebPushRepository(FileSecretsStore(dataDir: temporary.path));
     service = WebPushService(
       repository: repository,
@@ -207,6 +209,7 @@ void main() {
           workspaceId: 'workspace-1',
           method: 'notifications/agent_awaiting_input',
           params: const {'workspace_id': 'workspace-1', 'space_id': 'space-1'},
+          seq: 0,
           createdAt: DateTime.now(),
         ),
       );
@@ -265,6 +268,7 @@ void main() {
             workspaceId: 'workspace-1',
             method: 'notifications/agent_awaiting_input',
             params: params,
+            seq: 0,
             createdAt: DateTime.now(),
           ),
         );
@@ -328,6 +332,7 @@ void main() {
             'repo_id': 'repo-private',
             'space_id': 'space-private',
           },
+          seq: 0,
           createdAt: DateTime.now(),
         ),
       );
@@ -384,6 +389,7 @@ void main() {
         workspaceId: 'workspace-1',
         method: 'notifications/agent_awaiting_input',
         params: const {'repo_id': 'repo-private', 'space_id': 'space-private'},
+        seq: 0,
         createdAt: DateTime.now(),
       ),
     );
@@ -425,6 +431,7 @@ void main() {
           workspaceId: 'workspace-1',
           method: 'notifications/agent_awaiting_input',
           params: const {'workspace_id': 'workspace-1'},
+          seq: 0,
           createdAt: DateTime.now(),
         ),
       );

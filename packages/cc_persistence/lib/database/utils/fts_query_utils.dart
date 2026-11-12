@@ -1,8 +1,15 @@
 /// Converts raw user text into an FTS5 query expression that uses OR
 /// between tokens (default AND would force every word to appear). Drops
-/// FTS5 operator characters, very short tokens and common stopwords so
-/// "what's my name?" becomes `name*` instead of an empty / malformed
-/// expression that silently returns zero rows.
+/// punctuation and FTS5 operator characters, one-letter Latin tokens and
+/// common English stopwords, so "what's my name?" becomes `"name"*` instead
+/// of an empty / malformed expression that silently returns zero rows.
+///
+/// Tokens are runs of Unicode letters, digits and combining marks: the same
+/// characters the FTS tables' `unicode61` tokenizer keeps, so Japanese, Arabic
+/// or Hindi text is searched as written rather than stripped to nothing. Each
+/// token is quoted, so no FTS5 syntax can leak from it. A single non-Latin
+/// character is a whole word in some scripts (`猫`), so only ASCII tokens need
+/// two characters.
 String toFtsOrQuery(String raw) {
   const stopwords = {
     'a',
@@ -69,17 +76,26 @@ String toFtsOrQuery(String raw) {
     'll',
     'd',
   };
-  final tokens = raw
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
-      .split(RegExp(r'\s+'))
-      .where((t) => t.length >= 2 && !stopwords.contains(t))
+  final tokens = _token
+      .allMatches(raw.toLowerCase())
+      .map((m) => m[0]!)
+      .where(
+        (t) => (t.length >= 2 || !_ascii.hasMatch(t)) && !stopwords.contains(t),
+      )
       .toSet();
   if (tokens.isEmpty) {
     return '';
   }
-  return tokens.map((t) => '$t*').join(' OR ');
+  // Tokens hold only letters, digits and marks, so a quote cannot occur in
+  // one; the quotes keep words like `NEAR` from being read as operators.
+  return tokens.map((t) => '"$t"*').join(' OR ');
 }
+
+/// One query token: a run of Unicode letters, digits and combining marks.
+final _token = RegExp(r'[\p{L}\p{N}\p{M}]+', unicode: true);
+
+/// Only ASCII characters.
+final _ascii = RegExp(r'^[\x00-\x7f]*$');
 
 /// Builds a **workspace-scoped** FTS5 MATCH expression.
 ///

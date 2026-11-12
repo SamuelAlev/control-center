@@ -2,7 +2,6 @@ import 'package:cc_persistence/database/tables/meetings.dart';
 import 'package:drift/drift.dart';
 
 @TableIndex(name: 'idx_meeting_decisions_meetingId', columns: {#meetingId})
-@TableIndex(name: 'idx_meeting_decisions_workspaceId', columns: {#workspaceId})
 /// Drift table for decisions extracted from a meeting summary.
 ///
 /// Persisted as structured rows — NOT parsed out of the notes markdown. The

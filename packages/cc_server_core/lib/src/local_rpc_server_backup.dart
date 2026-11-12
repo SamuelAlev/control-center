@@ -26,8 +26,9 @@ typedef BackupStoredFileReader =
     Future<File?> Function({required String workspaceId, required String name});
 
 /// Adopts an uploaded workspace database file as [workspaceId]'s, replacing
-/// what is there. Throws with an operator-readable message when the file is not
-/// a workspace database.
+/// what is there, on behalf of [importedBy] (the server owner, who keeps the
+/// owner role in it). Throws a `ValidationException` whose code is the
+/// refusal's `data.kind` when the file is refused.
 ///
 /// This is `workspace.import` reached from the other direction: the RPC op
 /// names a path that already exists on the SERVER, which is unreachable for
@@ -38,6 +39,7 @@ typedef BackupRestoreReader =
     Future<void> Function({
       required String workspaceId,
       required String sourcePath,
+      required String importedBy,
     });
 
 extension _BackupMethods on LocalRpcServer {
@@ -335,13 +337,28 @@ extension _BackupMethods on LocalRpcServer {
         await _closeProxy(res, HttpStatus.badRequest);
         return;
       }
-      await adopt(workspaceId: workspaceId, sourcePath: staged.path);
-    } on Object catch (e) {
-      _w('backup restore failed for $workspaceId: $e');
+      await adopt(
+        workspaceId: workspaceId,
+        sourcePath: staged.path,
+        importedBy: userId,
+      );
+    } on ValidationException catch (e) {
+      // A refused file: the refusal's own client-safe sentence and the kind
+      // clients localize by. Nothing was replaced.
+      _w('backup restore refused for $workspaceId: ${e.code}');
       res
         ..statusCode = HttpStatus.badRequest
         ..headers.contentType = ContentType.json
-        ..write(jsonEncode({'error': '$e'}));
+        ..write(jsonEncode({'error': e.message, 'kind': ?e.code}));
+      await res.close();
+      return;
+    } on Object catch (e) {
+      // Raw text can name paths on the server; it stays in the log.
+      _w('backup restore failed for $workspaceId: $e');
+      res
+        ..statusCode = HttpStatus.internalServerError
+        ..headers.contentType = ContentType.json
+        ..write(jsonEncode({'error': 'The restore failed'}));
       await res.close();
       return;
     } finally {

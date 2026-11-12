@@ -76,4 +76,7 @@ class EpisodicEdgeTypes {
 
   /// Shared situational/temporal context.
   static const String contextual = 'contextual';
+
+  /// Every slug an edge may carry; the store refuses any other.
+  static const List<String> all = [relatedTo, references, contextual];
 }

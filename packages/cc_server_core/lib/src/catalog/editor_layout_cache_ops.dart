@@ -1,5 +1,7 @@
+import 'dart:convert';
+
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
+import 'package:cc_domain/core/domain/repositories/editor_layout_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
 import 'package:cc_host/cc_host.dart';
 
@@ -7,23 +9,23 @@ import 'package:cc_host/cc_host.dart';
 ///
 /// A layout is the caller's own arrangement of a space's or PR's tabs,
 /// including the tab each pane last showed, so it roams with the PERSON
-/// across devices rather than being shared by the workspace. The stored key is
-/// derived from the session's `userId`, never from an argument, so no caller
-/// can name another person's row. Only [EditorLayoutCacheKinds.all] are
-/// reachable: the same `caches` table holds server-owned rows (PR payloads,
-/// collaboration and escalation state) that clients must not read or forge.
-List<RepoOp> buildEditorLayoutCacheOps(CacheRepository cache) => [
+/// across devices rather than being shared by the workspace. It is stored in
+/// the workspace's `editor_layouts` table under the session's `userId`, never
+/// an argument, so no caller can name another person's row. Only the
+/// [EditorLayoutCacheKinds] are accepted; the ops reach no other table.
+List<RepoOp> buildEditorLayoutCacheOps(EditorLayoutRepository layouts) => [
   RepoOp(
     name: 'cache.read',
     kind: RepoOpKind.read,
     requiredArgs: const ['kind', 'key'],
     handler: (ctx) async {
-      final (:kind, :key) = _layoutAddress(ctx);
+      final (:surface, :target) = _layoutAddress(ctx);
       return {
-        'payload': await cache.read(
+        'payload': await layouts.read(
           ctx.workspaceId!,
-          kind,
-          editorLayoutOwnerKey(ctx.userId, key),
+          userId: ctx.userId,
+          surface: surface,
+          target: target,
         ),
       };
     },
@@ -35,40 +37,46 @@ List<RepoOp> buildEditorLayoutCacheOps(CacheRepository cache) => [
     audited: false,
     requiredArgs: const ['kind', 'key'],
     handler: (ctx) async {
-      final (:kind, :key) = _layoutAddress(ctx);
+      final (:surface, :target) = _layoutAddress(ctx);
       final payload = ctx.args['payload'];
-      if (payload is! String) {
-        throw const ValidationException('payload must be a string');
+      if (payload is! String || !_isJson(payload)) {
+        throw const ValidationException('payload must be a JSON string');
       }
-      await cache.put(
+      await layouts.write(
         ctx.workspaceId!,
-        kind,
-        editorLayoutOwnerKey(ctx.userId, key),
-        payload,
+        userId: ctx.userId,
+        surface: surface,
+        target: target,
+        layout: payload,
       );
       return const {};
     },
   ),
 ];
 
-/// The stored cache key of [userId]'s layout under the client's [key].
-String editorLayoutOwnerKey(String userId, String key) =>
-    '$_ownerPrefix$userId:$key';
-
-const String _ownerPrefix = 'user:';
-
 /// Validates the client's `kind` and `key`.
-///
-/// A key carrying the owner prefix is refused so a stored key always names
-/// exactly one owner.
-({String kind, String key}) _layoutAddress(RepoOpContext ctx) {
+({EditorLayoutSurface surface, String target}) _layoutAddress(
+  RepoOpContext ctx,
+) {
   final kind = ctx.args['kind'];
   final key = ctx.args['key'];
-  if (kind is! String || !EditorLayoutCacheKinds.all.contains(kind)) {
+  final surface = kind is String
+      ? EditorLayoutSurface.ofClientKind(kind)
+      : null;
+  if (surface == null) {
     throw const ValidationException('Unknown editor layout cache kind');
   }
-  if (key is! String || key.isEmpty || key.startsWith(_ownerPrefix)) {
+  if (key is! String || key.isEmpty) {
     throw const ValidationException('Invalid editor layout cache key');
   }
-  return (kind: kind, key: key);
+  return (surface: surface, target: key);
+}
+
+bool _isJson(String value) {
+  try {
+    jsonDecode(value);
+    return true;
+  } on FormatException {
+    return false;
+  }
 }

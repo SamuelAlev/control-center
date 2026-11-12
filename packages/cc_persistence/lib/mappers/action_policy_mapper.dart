@@ -46,7 +46,7 @@ class ActionPolicyMapper {
         actionClass: Value(rule.actionClass?.wire),
         commandPrefix: Value(rule.commandPrefix),
         decision: Value(rule.decision.wire),
-        provenance: Value(rule.provenance),
+        provenance: Value(ActionPolicyProvenance.parse(rule.provenance).wire),
         createdBy: Value(rule.createdBy),
         createdAt: Value(rule.createdAt),
         updatedAt: Value(rule.updatedAt),

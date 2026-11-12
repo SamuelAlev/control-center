@@ -69,13 +69,44 @@ class TicketDao extends DatabaseAccessor<WorkspaceDatabase>
     );
   });
 
-  /// Deletes a ticket scoped to [workspaceId]. Its collaborators and any child
-  /// tickets are removed via `ON DELETE CASCADE`. Scoping by `workspaceId`
-  /// means a ticket from another workspace is simply not matched. Returns the
-  /// number of rows deleted.
+  /// Deletes ONE ticket scoped to [workspaceId]. Its collaborators, links and
+  /// sync links go with it (`ON DELETE CASCADE`); its child tickets stay and
+  /// become roots (`ON DELETE SET NULL` on `parent_ticket_id`). Scoping by
+  /// `workspaceId` means a ticket from another workspace is simply not
+  /// matched. Returns the number of rows deleted.
   Future<int> deleteTicket(String id, String workspaceId) => (delete(
     ticketsTable,
   )..where((t) => t.id.equals(id) & t.workspaceId.equals(workspaceId))).go();
+
+  /// The rows of ticket [id] and of every ticket below it in the parent
+  /// tree, scoped to [workspaceId] (an empty list when [id] is not a ticket
+  /// of this workspace).
+  Future<List<TicketsTableData>> subtreeOf(String id, String workspaceId) =>
+      customSelect(
+        'WITH RECURSIVE subtree(id) AS ('
+        'SELECT id FROM tickets WHERE id = ? AND workspace_id = ? '
+        'UNION SELECT t.id FROM tickets t JOIN subtree s '
+        'ON t.parent_ticket_id = s.id'
+        ') SELECT tickets.* FROM tickets JOIN subtree USING (id)',
+        variables: [Variable<String>(id), Variable<String>(workspaceId)],
+        readsFrom: {ticketsTable},
+      ).asyncMap(ticketsTable.mapFromRow).get();
+
+  /// Deletes ticket [id] AND its whole subtree in one transaction, scoped to
+  /// [workspaceId]. Returns the deleted rows, so the caller can drop what
+  /// lives outside this file (their external-key routes).
+  Future<List<TicketsTableData>> deleteTicketSubtree(
+    String id,
+    String workspaceId,
+  ) => transaction(() async {
+    final rows = await subtreeOf(id, workspaceId);
+    if (rows.isNotEmpty) {
+      await (delete(
+        ticketsTable,
+      )..where((t) => t.id.isIn([for (final r in rows) r.id]))).go();
+    }
+    return rows;
+  });
 
   // --- reads ---
 

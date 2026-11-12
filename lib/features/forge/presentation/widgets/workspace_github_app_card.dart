@@ -9,6 +9,7 @@ import 'package:control_center/features/settings/presentation/widgets/kit/settin
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/provider_app_fields.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,7 +128,7 @@ class _OwnGitHubAppFieldsState extends ConsumerState<_OwnGitHubAppFields> {
       if (mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     } finally {
       if (mounted) {

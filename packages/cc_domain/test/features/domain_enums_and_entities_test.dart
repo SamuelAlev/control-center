@@ -293,7 +293,7 @@ void main() {
       leaseExpiresAt: DateTime(2025, 1, 2),
       attempts: 1,
       maxAttempts: 3,
-      costCents: 5,
+      costMicros: 5,
       lastAckedSeq: 9,
       createdAt: DateTime(2025, 1, 1),
     );
@@ -337,7 +337,7 @@ void main() {
         workerId: 'w1',
         leaseExpiresAt: DateTime(2025, 1, 2),
         attempts: 1,
-        costCents: 5,
+        costMicros: 5,
         lastAckedSeq: 9,
         createdAt: DateTime(2025, 1, 1),
       );
@@ -501,7 +501,7 @@ void main() {
         workspaceId: 'w',
         status: PipelineRunStatus.running,
         startedAt: start,
-        totalCostCents: 5,
+        totalCostMicros: 5,
         totalTokens: 7,
         triggerEventType: 'evt',
         triggerPayload: {'p': 1},
@@ -514,7 +514,7 @@ void main() {
         dryRun: true,
       );
       final next = run.copyWith(status: PipelineRunStatus.completed);
-      expect(next.totalCostCents, 5);
+      expect(next.totalCostMicros, 5);
       expect(next.totalTokens, 7);
       expect(next.triggerEventType, 'evt');
       expect(next.dedupKey, 'dk');

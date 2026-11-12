@@ -262,10 +262,14 @@ void main() {
       'server.deleteBackup',
       'server.listOrphanedBackups',
       'server.deleteOrphanedBackup',
+      // Damage findings about other people's workspaces.
+      'server.notices',
       'workspace.listBackups',
       'workspace.deleteBackup',
       'workspace.export',
       'workspace.import',
+      'workspace.importHolds.list',
+      'workspace.importHolds.resolve',
       // Cross-workspace lookups: every visitor's rows sit behind them.
       'orchestration.approvedNeedingMaterialization',
       'orchestration.forPipelineRunAnyWorkspace',

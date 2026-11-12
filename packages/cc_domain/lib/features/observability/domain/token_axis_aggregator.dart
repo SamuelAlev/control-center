@@ -3,7 +3,7 @@ import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 
 /// Token usage broken down across the five tracked token axes, plus the
-/// estimated cost in US cents those tokens accrued.
+/// estimated cost in micro-dollars those tokens accrued.
 ///
 /// The five axes mirror the per-run [RunCost] categories:
 /// * [input] — prompt / input tokens (`RunCost.inputTokens`).
@@ -12,8 +12,8 @@ import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 /// * [cacheRead] — cache-hit read tokens (`RunCost.cachedReadTokens`).
 /// * [cacheWrite] — cache-hit write tokens (`RunCost.cachedWriteTokens`).
 ///
-/// [costCents] is summed independently of the token axes (a run reports its
-/// own estimated cost in cents) so callers never have to re-derive price.
+/// [costMicros] is summed independently of the token axes (a run reports its
+/// own cost in micro-dollars) so callers never have to re-derive price.
 class TokenAxisTotals {
   /// Creates a [TokenAxisTotals] with explicit per-axis token counts and cost.
   const TokenAxisTotals({
@@ -22,7 +22,7 @@ class TokenAxisTotals {
     this.reasoning = 0,
     this.cacheRead = 0,
     this.cacheWrite = 0,
-    this.costCents = 0,
+    this.costMicros = 0,
   });
 
   /// Builds a [TokenAxisTotals] from a single run's [RunCost], mapping
@@ -33,7 +33,7 @@ class TokenAxisTotals {
     reasoning: cost.thoughtTokens,
     cacheRead: cost.cachedReadTokens,
     cacheWrite: cost.cachedWriteTokens,
-    costCents: cost.estimatedCostCents,
+    costMicros: cost.costMicros,
   );
 
   /// Prompt / input tokens.
@@ -51,8 +51,8 @@ class TokenAxisTotals {
   /// Cache-hit write tokens.
   final int cacheWrite;
 
-  /// Estimated cost in US cents accrued by these tokens.
-  final int costCents;
+  /// Estimated cost in micro-dollars accrued by these tokens.
+  final int costMicros;
 
   /// Sum of all five token axes (cost is excluded — it is not a token count).
   int get total => input + output + reasoning + cacheRead + cacheWrite;
@@ -64,7 +64,7 @@ class TokenAxisTotals {
     reasoning: reasoning + other.reasoning,
     cacheRead: cacheRead + other.cacheRead,
     cacheWrite: cacheWrite + other.cacheWrite,
-    costCents: costCents + other.costCents,
+    costMicros: costMicros + other.costMicros,
   );
 
   /// Empty totals with every axis and cost at zero.
@@ -80,16 +80,16 @@ class TokenAxisTotals {
           reasoning == other.reasoning &&
           cacheRead == other.cacheRead &&
           cacheWrite == other.cacheWrite &&
-          costCents == other.costCents;
+          costMicros == other.costMicros;
 
   @override
   int get hashCode =>
-      Object.hash(input, output, reasoning, cacheRead, cacheWrite, costCents);
+      Object.hash(input, output, reasoning, cacheRead, cacheWrite, costMicros);
 }
 
 /// Cost and token usage attributed to each agent role (main / sub / advisor).
 ///
-/// Each axis-total carries its own [TokenAxisTotals.costCents], so the
+/// Each axis-total carries its own [TokenAxisTotals.costMicros], so the
 /// per-role cost getters read straight off the corresponding bucket.
 class RoleCostBreakdown {
   /// Creates a [RoleCostBreakdown] from the three per-role totals.
@@ -109,17 +109,17 @@ class RoleCostBreakdown {
   /// runs.
   final TokenAxisTotals advisor;
 
-  /// Cost in US cents attributed to main runs.
-  int get mainCostCents => main.costCents;
+  /// Cost in micro-dollars attributed to main runs.
+  int get mainCostMicros => main.costMicros;
 
-  /// Cost in US cents attributed to subagent runs.
-  int get subCostCents => sub.costCents;
+  /// Cost in micro-dollars attributed to subagent runs.
+  int get subCostMicros => sub.costMicros;
 
-  /// Cost in US cents attributed to advisor runs.
-  int get advisorCostCents => advisor.costCents;
+  /// Cost in micro-dollars attributed to advisor runs.
+  int get advisorCostMicros => advisor.costMicros;
 
-  /// Combined cost in US cents across all three roles.
-  int get totalCostCents => mainCostCents + subCostCents + advisorCostCents;
+  /// Combined cost in micro-dollars across all three roles.
+  int get totalCostMicros => mainCostMicros + subCostMicros + advisorCostMicros;
 
   @override
   bool operator ==(Object other) =>
@@ -224,7 +224,7 @@ class TokenAggregation {
   /// Per-role (main / sub / advisor) cost and token attribution.
   final RoleCostBreakdown byRole;
 
-  /// Per-model usage, sorted by [TokenAxisTotals.costCents] descending.
+  /// Per-model usage, sorted by [TokenAxisTotals.costMicros] descending.
   final List<ModelUsage> byModel;
 
   /// Per-day usage, sorted by [DayUsage.day] ascending.
@@ -345,7 +345,7 @@ class TokenAxisAggregator {
           runs: modelRuns[entry.key] ?? 0,
           tokens: entry.value,
         ),
-    ]..sort((a, b) => b.tokens.costCents.compareTo(a.tokens.costCents));
+    ]..sort((a, b) => b.tokens.costMicros.compareTo(a.tokens.costMicros));
 
     final byDay = <DayUsage>[
       for (final entry in dayTokens.entries)

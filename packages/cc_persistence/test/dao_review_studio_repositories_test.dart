@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/visual_diff.da
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 /// Exercises the four PRD 18 Review Studio repositories backed by the review
@@ -30,7 +31,10 @@ void main() {
     contractRepo = DaoApiContractDiffRepository(dbs);
     visualRepo = DaoVisualDiffRepository(dbs);
     axisRepo = DaoReviewAxisResultRepository(dbs);
-    // The Review Studio tables reference only workspace_id, so seed those.
+    // Contract and visual snapshots belong to a linked repo.
+    for (final ws in ['w-1', 'w-2']) {
+      await seedRepo(dbs.of(ws), 'repo-1');
+    }
   });
 
   tearDown(() async {

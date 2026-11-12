@@ -46,7 +46,7 @@ Future<int> runConnectCommand({
   }
   final config = CcServerConfig.resolve(rest, environment: environment);
   Directory(config.dataDir).createSync(recursive: true);
-  final db = GlobalDatabase(openGlobalDatabase(dataDir: config.dataDir));
+  final db = GlobalDatabase.atDataDir(config.dataDir);
   try {
     final secrets = FileSecretsStore(dataDir: config.dataDir);
     final settings = ConnectSettings(

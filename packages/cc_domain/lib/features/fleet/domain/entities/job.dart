@@ -20,7 +20,7 @@ class Job {
     this.workerId,
     this.leaseExpiresAt,
     this.submittedBy,
-    this.costCents = 0,
+    this.costMicros = 0,
     this.attempts = 0,
     this.maxAttempts = 1,
     this.lastAckedSeq = 0,
@@ -71,8 +71,8 @@ class Job {
   /// Principal that submitted the job.
   final String? submittedBy;
 
-  /// Metered worker cost in cents.
-  final int costCents;
+  /// Metered worker cost in micro-dollars.
+  final int costMicros;
 
   /// Attempt count.
   final int attempts;
@@ -130,7 +130,7 @@ class Job {
       other.workerId == workerId &&
       other.attempts == attempts &&
       other.leaseExpiresAt == leaseExpiresAt &&
-      other.costCents == costCents &&
+      other.costMicros == costMicros &&
       other.lastAckedSeq == lastAckedSeq;
 
   @override
@@ -140,7 +140,7 @@ class Job {
     workerId,
     attempts,
     leaseExpiresAt,
-    costCents,
+    costMicros,
     lastAckedSeq,
   );
 }

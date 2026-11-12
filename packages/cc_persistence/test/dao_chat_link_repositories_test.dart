@@ -41,7 +41,7 @@ void main() {
               SpacesTableCompanion.insert(
                 id: spaceId,
                 name: 'Bridged $spaceId',
-                workspaceId: Value(workspaceId),
+                workspaceId: workspaceId,
               ),
             );
       }

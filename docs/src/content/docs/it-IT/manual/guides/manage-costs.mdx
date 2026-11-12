@@ -2,14 +2,14 @@
 title: Gestisci i costi
 description: Scopri quanto spendono i tuoi agenti, imponi un limite a un'esecuzione autonoma e riduci l'uso dei token.
 slug: it-IT/manuale/guide/gestisci-costi
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Questa guida mostra come capire quanto costano le esecuzioni degli agenti e come imporre un limite a un'esecuzione autonoma.
 
 ## Come vengono registrati i costi
 
-Ogni esecuzione di un agente scrive un registro delle esecuzioni che riporta i suoi token di input, i token di output, i token di ragionamento, i token letti dalla cache e scritti nella cache, un costo stimato in centesimi e il costo degli eventuali subagenti che ha generato.
+Ogni esecuzione di un agente scrive un registro delle esecuzioni che riporta i suoi token di input, i token di output, i token di ragionamento, i token letti dalla cache e scritti nella cache, un costo stimato in microdollari (milionesimi di dollaro USA) e il costo degli eventuali subagenti che ha generato.
 
 I prezzi provengono dal catalogo models.dev, che serve solo ad arricchire l'elenco dei modelli con prezzo e finestra di contesto — mai come fonte di id dei modelli. Un modello che il catalogo non riesce a prezzare registra **$0** e le esecuzioni a costo zero sono escluse dal riepilogo **Utilizzo e costo**. Un modello Ollama locale non mostra quindi alcuna spesa, anche se i suoi conteggi di token vengono comunque registrati. Un piano a tariffa fissa (kimi-code, un abbonamento Claude) si comporta allo stesso modo solo quando il catalogo non ha un prezzo per il modello servito; se ce l'ha, l'esecuzione viene comunque stimata a quelle tariffe. Nell'ambito di una catena di fallback l'esecuzione viene prezzata sul modello che l'ha effettivamente servita, non su quello richiesto.
 
@@ -78,7 +78,7 @@ Apri il registro delle esecuzioni di Panoramica (le 50 esecuzioni filtrate più 
 
 ## Che cosa succede se un budget viene impostato dall'esterno
 
-Per completezza, se `monthlyBudgetCents` o una policy di budget viene scritto direttamente in una riga di un agente:
+Per completezza, se `monthlyBudgetMicros` o una policy di budget viene scritto direttamente in una riga di un agente:
 
 - I budget vengono valutati **dopo** il completamento di un'esecuzione, non prima dell'invio. Un listener al completamento dell'esecuzione confronta la spesa dell'agente da inizio mese con il suo tetto.
 - Il superamento della soglia morbida (80% per impostazione predefinita) registra un incidente di avviso e genera un evento `BudgetThresholdCrossed` su cui puoi agganciare un trigger di pipeline.

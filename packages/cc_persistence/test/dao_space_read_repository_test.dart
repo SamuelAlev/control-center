@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
@@ -21,7 +22,13 @@ void main() {
     final db = dbs.of('w-1');
     await db
         .into(db.spacesTable)
-        .insert(SpacesTableCompanion.insert(id: 'c-1', name: 'c-1'));
+        .insert(
+          SpacesTableCompanion.insert(
+            workspaceId: 'test-workspace',
+            id: 'c-1',
+            name: 'c-1',
+          ),
+        );
   });
 
   tearDown(() async {
@@ -67,11 +74,11 @@ void main() {
         final before = await repo
             .watchUserLastReadAt('w-1', 'c-1', 'u-1')
             .first;
-        expect(before, DateTime(2020));
+        expect(before, FeedPosition(at: DateTime(2020), seq: 0));
 
         await repo.markSpaceRead('w-1', 'c-1', 'u-1');
         final after = await repo.watchUserLastReadAt('w-1', 'c-1', 'u-1').first;
-        expect(after!.isAfter(DateTime(2020)), isTrue);
+        expect(after!.at.isAfter(DateTime(2020)), isTrue);
       },
     );
 

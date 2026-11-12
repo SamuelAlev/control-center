@@ -35,10 +35,27 @@ class EpisodicEdgeDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Creates an [EpisodicEdgeDao].
   EpisodicEdgeDao(super.attachedDatabase);
 
-  /// Inserts or updates an edge (keyed on the `(workspace, source, target,
-  /// type)` unique index).
-  Future<void> upsert(EpisodicEdgesTableCompanion entry) =>
-      into(episodicEdgesTable).insertOnConflictUpdate(entry);
+  /// Inserts an edge, or updates the weight of the edge already joining the
+  /// same facts with the same type (the `(source, target, type)` unique key;
+  /// that edge keeps its id).
+  Future<void> upsert(EpisodicEdgesTableCompanion entry) {
+    final key = [
+      episodicEdgesTable.sourceFactId,
+      episodicEdgesTable.targetFactId,
+      episodicEdgesTable.edgeType,
+    ];
+    // Without a weight there is nothing to update: re-asserting the edge
+    // keeps the existing row as it is.
+    return into(episodicEdgesTable).insert(
+      entry,
+      onConflict: entry.weight.present
+          ? DoUpdate(
+              (_) => EpisodicEdgesTableCompanion(weight: entry.weight),
+              target: key,
+            )
+          : DoNothing(target: key),
+    );
+  }
 
   /// All edges in a workspace.
   Future<List<EpisodicEdgesTableData>> getByWorkspace(String workspaceId) =>

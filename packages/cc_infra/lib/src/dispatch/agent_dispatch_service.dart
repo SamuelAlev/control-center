@@ -209,7 +209,7 @@ class AgentDispatchService {
     MentionContext? mentionContext,
     AgentRunRole role = AgentRunRole.main,
     String? parentAgentId,
-    int? costCapCents,
+    int? costCapMicros,
     String? claudeAccountId,
     List<String> promptImageRefs = const [],
     String? modelOverride,
@@ -423,7 +423,7 @@ class AgentDispatchService {
         claudeAccountsSpent: claudePlan?.refusal,
         onResolveHarnessRotation: resolveHarnessRotation,
         onHarnessCredentialExhausted: onHarnessCredentialExhausted,
-        costCapCents: costCapCents,
+        costCapMicros: costCapMicros,
       );
 
       _runToDispatch[runLogId] = handle.dispatchId;
@@ -911,11 +911,8 @@ class AgentDispatchService {
       thoughtTokens: cost.thoughtTokens,
       cachedReadTokens: cost.cachedReadTokens,
       cachedWriteTokens: cost.cachedWriteTokens,
-      estimatedCostCents: cost.estimatedCostCents,
-      // The exact figure and its provenance are NOT reconstructible from cents:
-      // dropping them here silently downgraded every timed run's cost to the
-      // rounded projection and relabelled a provider-reported or subscription
-      // cost as an estimate.
+      // The figure and its provenance travel together: dropping the basis here
+      // relabelled a provider-reported or subscription cost as an estimate.
       costMicros: cost.costMicros,
       costBasis: cost.costBasis,
       durationMs: elapsed,

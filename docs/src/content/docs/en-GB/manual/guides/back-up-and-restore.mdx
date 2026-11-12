@@ -2,7 +2,7 @@
 title: Back up and restore
 description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
 slug: en-GB/manual/guides/back-up-and-restore
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 This guide covers the five things people actually do with backups: take one, collect it,
@@ -41,15 +41,17 @@ Both artefacts are **databases only**:
 - An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
 - A **workspace export** is that single `workspace.db` file.
 
-A workspace's database is the whole workspace: its conversations, run logs, code
-index, repository links, environment definitions and members. It also holds the
-workspace's pipeline webhook tokens and ticket-sync webhook secrets, in readable
-form. Store a downloaded workspace backup or export the way you store a secret.
-It holds no provider sign-ins, device keys or user secrets; those live in the
-global database and the server's secret store.
+A workspace's database is the whole workspace: its conversations, run logs,
+repository links, environment definitions and members. It holds no secrets:
+pipeline webhook tokens, ticket-sync webhook secrets, provider sign-ins, device
+keys and user secrets live in the global database and the server's secret store.
+It is still everything the workspace has said and done, so keep a downloaded
+backup or export as private as the workspace itself. The code index is a separate
+file beside the database, `code_index.db`. No backup carries it; the server
+rebuilds it.
 
 Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
-credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
+credentials, webhook secrets, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
 `agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
 disposable and some of it is not — the
 [full table is in the reference](/en-GB/manual/reference/backup/#what-a-backup-does-not-contain),
@@ -66,14 +68,22 @@ consistent against a live database, so there is no maintenance window and no nee
 agents.
 
 Each row in the list shows the timestamp, the size on disk, how many workspaces were
-captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
-manifest is missing or names files that are not there — a backup interrupted by a crash
-or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
-believe you have. An incomplete snapshot cannot restore a whole install, but the
-workspace files it does hold can still be adopted one at a time.
+captured and whether the snapshot is **Complete** or **Unverified**. Every copy is
+checked after it is written, and the manifest records its size and checksum.
+Unverified means the server cannot vouch for the snapshot: its manifest is missing or
+unreadable, or a file it names is absent or has changed size. That is a backup
+interrupted by a crash or a full disk, or one taken before snapshots recorded
+checksums. Those are still listed on purpose: a snapshot you cannot see is one you
+believe you have. An unverified snapshot cannot restore a whole install, but the
+workspace files it does hold can still be restored one at a time.
 
 A row may also say **_n_ workspaces not captured**. That is a workspace registered but
-never written to (there is no file yet), or one whose copy failed — check the server log.
+never written to (there is no file yet), one whose database is damaged (a damaged copy
+is never taken), or one whose copy failed — check the server log.
+
+A snapshot or scheduled backup marked **Last good copy** holds the newest good copy of
+a workspace whose database has since been damaged. Scheduled cleanup leaves it alone,
+and deleting it asks you to confirm, until that workspace is restored.
 
 ## Schedule workspace backups and retention
 
@@ -100,7 +110,7 @@ A workspace you are not an admin of says so in its row instead of listing its ba
 
 Expand a row to see each backup, newest first:
 
-- **Restore** replaces the workspace's current database with this backup. Export the workspace first if you may need to undo it. Needs the server owner, who must also own the workspace.
+- **Restore** replaces the workspace's current database with this backup. The database it replaces is kept in this list, under a name ending in `-pre-restore`, so you can go back. Needs the server owner, who must also own the workspace.
 - **Download** saves the file on the machine you are using. The backup stays on the server.
 - **Copy path** copies its location on the server.
 - **Delete** removes this backup permanently, once you type the workspace's name. Needs **owner**.
@@ -118,7 +128,7 @@ back, download it, create a workspace (only the server owner can), and upload th
 
 ## Delete an install snapshot
 
-Under **Install snapshots**, expand the snapshot, including an incomplete one,
+Under **Install snapshots**, expand the snapshot, including an unverified one,
 and use **Delete snapshot** in the danger section. Confirm its name. The entire
 snapshot directory is permanently removed from the server; download it first if
 you need a copy. A workspace backup pipeline never deletes these snapshots.
@@ -161,21 +171,28 @@ destination, does the same thing without the round trip; that path resolves on t
 server host.
 
 :::caution[Import replaces everything]
-Importing overwrites everything the target workspace currently holds, and it cannot be
-undone. Export the target first if it holds anything you might want back.
+Importing replaces everything the target workspace currently holds. The database it
+replaces is kept under **Scheduled backups** with a name ending in `-pre-restore`;
+restore that one to go back.
 :::
 
-Two things are allowed and logged rather than refused: importing a file whose recorded
-workspace id differs from the target (this is how you duplicate a workspace or restore it
-under a new id), and importing a file from a **different install**. In that second case
-the file's paired devices and user ids belong to the install it came from and will not
-resolve on this one — the workspace's own data is intact, but re-check membership after
-adopting it.
+A file from another workspace or from a **different install** is accepted: that is how
+you duplicate a workspace, restore it under a new id or hand it to somebody else. User
+ids from another install do not resolve on this one — the workspace's own data is
+intact, but re-check membership after adopting it.
 
-Chat bot tokens and provider sign-ins live outside the database, so the receiving
-install reconnects its own. The file does carry the workspace's pipeline webhook
-tokens and ticket-sync webhook secrets, so a workspace you hand to somebody else
-hands them those too. Rotate them afterwards if the recipient should not have them.
+A restored file cannot grant anything on this server by itself. The permissions it
+carried beyond ordinary membership are taken out and listed under **Held back from
+restored copies** at the top of the page: action rules that let agents act without
+approval or after one, paths a sandbox may run, repository access above read, roles
+above member and open invites to those roles. **Accept** grants one again; **Dismiss**
+drops it. Approvals to run an environment definition on the host are cleared, so
+approve those definitions again. Whoever restores keeps or gets the owner role.
+
+Chat bot tokens, provider sign-ins and webhook secrets live outside the database, so
+the receiving install connects its own. Webhook triggers and ticket-sync webhooks
+arrive without their secrets and receive nothing on another server until you save them
+again there, which gives each trigger a new URL.
 
 ## Restore one workspace from a snapshot
 
@@ -187,7 +204,8 @@ You need to be the server owner and the workspace's owner.
 
 This is the same operation as an import, pointed at the snapshot's copy of that
 workspace's file — deliberately, so there is no second mechanism that could treat the
-same file differently.
+same file differently. The copy is first checked against the checksum the snapshot
+recorded.
 
 A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
 holds a workspace this install no longer has. Bring it back by hand — create a workspace (server owner only),
@@ -196,6 +214,15 @@ then under **Workspace data** enter
 field and press **Import**. The expanded snapshot shows its own
 **Path on the server** in a copy field, and the row's title is the old workspace id, so
 you have both halves of that path in front of you.
+
+## Restore a damaged workspace
+
+A workspace whose database fails its integrity check turns read-only: everything stays
+readable and every change is refused. Members see **This workspace is read-only** at the
+top of the workspace, the server owner sees it under **Needs your attention** on this
+page, and the newest backup that holds a good copy is kept as **Last good copy**.
+Restore the workspace from that copy, as described above, to make it writable again.
+The damaged database is kept as a `-pre-restore` backup.
 
 ## Restore a whole install
 
@@ -317,7 +344,7 @@ Run it as the same user that owns the data directory, from cron or a systemd tim
 sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
 
 Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
-`manifest.json`, so the app would list it as an incomplete snapshot and the list would
+`manifest.json`, so the app would list it as an unverified snapshot and the list would
 stop being an honest record of what the server itself produced.
 
 ### Prune old whole-install snapshots
@@ -362,9 +389,11 @@ Do this once when you set backups up, and again whenever you change where they a
 | "Only the server owner can restore backups. You can still download them." | Restoring replaces a workspace's database on the server host, so only the server owner restores. Download the backup and ask them |
 | "This server has no backup surface."                                     | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
 | "The file is larger than the server accepts."                            | Uploads are capped at 8 GiB. Put the file on the server host and enter its path in **Workspace database file**           |
-| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
-| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
-| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
+| A restore is refused and nothing is replaced                             | The file failed a check, and the message says which: it is not a workspace database, it is damaged, it differs from the checksum its snapshot recorded, a newer version of the server wrote it, or its webhooks or invites already belong to another workspace on this server. Use another copy, or update the server first |
+| A snapshot is listed **Unverified**                                      | It never finished, or it was taken before snapshots recorded checksums. Take a fresh one; restore individual workspace files from it in the meantime |
+| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, are damaged, or their copy failed. Check the server log                     |
+| A workspace says **This workspace is read-only**                         | Its database failed an integrity check. Nothing in it can be changed until the server owner restores it from a backup    |
+| Webhooks stop arriving after a workspace moves to another server         | Webhook secrets do not travel with the database. Save each webhook trigger and ticket-sync connection again on the new server, then give the sender the new URL |
 | A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
 | A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
 

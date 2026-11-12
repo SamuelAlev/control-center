@@ -19,36 +19,61 @@ class RssDao extends DatabaseAccessor<GlobalDatabase> with _$RssDaoMixin {
   // ── Feeds ────────────────────────────────────────────────────────────
 
   /// Watches the user's RSS feeds, ordered by name.
-  Stream<List<RssFeedsTableData>> watchFeeds(String userId) => (select(
-    rssFeedsTable,
-  )..where((t) => t.userId.equals(userId))
-        ..orderBy([(t) => OrderingTerm.asc(t.name)]))
-      .watch();
+  Stream<List<RssFeedsTableData>> watchFeeds(String userId) =>
+      (select(rssFeedsTable)
+            ..where((t) => t.userId.equals(userId))
+            ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+          .watch();
 
   /// Gets the user's enabled RSS feeds.
-  Future<List<RssFeedsTableData>> getEnabledFeeds(String userId) =>
-      (select(
-        rssFeedsTable,
-      )..where((t) => t.userId.equals(userId) & t.enabled.equals(true))).get();
+  Future<List<RssFeedsTableData>> getEnabledFeeds(String userId) => (select(
+    rssFeedsTable,
+  )..where((t) => t.userId.equals(userId) & t.enabled.equals(true))).get();
 
   /// Get the user's feed by url (dedupe is per-user).
-  Future<RssFeedsTableData?> getFeedByUrl(String userId, String url) => (
-    select(rssFeedsTable)
-          ..where((t) => t.userId.equals(userId) & t.url.equals(url))
-        )
-        .getSingleOrNull();
+  Future<RssFeedsTableData?> getFeedByUrl(String userId, String url) =>
+      (select(rssFeedsTable)
+            ..where((t) => t.userId.equals(userId) & t.url.equals(url)))
+          .getSingleOrNull();
 
   /// Get a feed by id, scoped to the owning user: a foreign feed row is
   /// indistinguishable from a missing one.
-  Future<RssFeedsTableData?> getFeedById(String userId, String feedId) => (
-    select(rssFeedsTable)
-          ..where((t) => t.userId.equals(userId) & t.id.equals(feedId))
-        )
-        .getSingleOrNull();
+  Future<RssFeedsTableData?> getFeedById(String userId, String feedId) =>
+      (select(rssFeedsTable)
+            ..where((t) => t.userId.equals(userId) & t.id.equals(feedId)))
+          .getSingleOrNull();
 
-  /// Upsert feed. The [RssFeedsTableCompanion.userId] carries the owner.
-  Future<void> upsertFeed(RssFeedsTableCompanion entry) =>
-      into(rssFeedsTable).insertOnConflictUpdate(entry);
+  /// Writes a feed, by id or by its owner's URL (one row per user and URL),
+  /// in one statement. The [RssFeedsTableCompanion.userId] carries the owner;
+  /// the stored row keeps its id and creation time.
+  Future<void> upsertFeed(RssFeedsTableCompanion entry) {
+    final update = entry.copyWith(
+      id: const Value.absent(),
+      createdAt: const Value.absent(),
+    );
+    return into(rssFeedsTable).insert(
+      entry,
+      onConflict: UpsertMultiple([
+        DoUpdate((_) => update),
+        DoUpdate(
+          (_) => update,
+          target: [rssFeedsTable.userId, rssFeedsTable.url],
+        ),
+      ]),
+    );
+  }
+
+  /// Adds [entry] unless its owner already follows its URL, and returns the
+  /// stored feed: the new one, or the existing one unchanged.
+  Future<RssFeedsTableData> addFeed(RssFeedsTableCompanion entry) =>
+      into(rssFeedsTable).insertReturning(
+        entry,
+        onConflict: DoUpdate(
+          // A no-op update, so the existing row comes back from RETURNING.
+          (old) => RssFeedsTableCompanion.custom(updatedAt: old.updatedAt),
+          target: [rssFeedsTable.userId, rssFeedsTable.url],
+        ),
+      );
 
   /// Update feed fetch result. Feed-id keyed; callers must have verified
   /// ownership (see [getFeedById]).
@@ -81,9 +106,10 @@ class RssDao extends DatabaseAccessor<GlobalDatabase> with _$RssDaoMixin {
     String userId,
     String feedId, {
     required bool enabled,
-  }) => (update(
-    rssFeedsTable,
-  )..where((t) => t.userId.equals(userId) & t.id.equals(feedId))).write(
+  }) =>
+      (update(
+        rssFeedsTable,
+      )..where((t) => t.userId.equals(userId) & t.id.equals(feedId))).write(
         RssFeedsTableCompanion(
           enabled: Value(enabled),
           updatedAt: Value(DateTime.now()),
@@ -91,10 +117,9 @@ class RssDao extends DatabaseAccessor<GlobalDatabase> with _$RssDaoMixin {
       );
 
   /// Delete feed, scoped to the owning user.
-  Future<int> deleteFeed(String userId, String feedId) =>
-      (delete(
-        rssFeedsTable,
-      )..where((t) => t.userId.equals(userId) & t.id.equals(feedId))).go();
+  Future<int> deleteFeed(String userId, String feedId) => (delete(
+    rssFeedsTable,
+  )..where((t) => t.userId.equals(userId) & t.id.equals(feedId))).go();
 
   // ── Articles ─────────────────────────────────────────────────────────
 
@@ -162,33 +187,21 @@ class RssDao extends DatabaseAccessor<GlobalDatabase> with _$RssDaoMixin {
   /// image, author, publish date) so edits made upstream propagate, while
   /// preserving the user-owned `saved`/`read` flags and the original `id`
   /// and `createdAt` so bookmarks, read state and ordering survive a refresh.
-  Future<void> upsertArticleFromFeed(RssArticlesTableCompanion entry) async {
-    final existing =
-        await (select(rssArticlesTable)..where(
-              (t) =>
-                  t.feedId.equals(entry.feedId.value) &
-                  t.guid.equals(entry.guid.value),
-            ))
-            .getSingleOrNull();
-    if (existing == null) {
-      await into(
-        rssArticlesTable,
-      ).insert(entry, mode: InsertMode.insertOrIgnore);
-      return;
-    }
-    await (update(
-      rssArticlesTable,
-    )..where((t) => t.id.equals(existing.id))).write(
-      RssArticlesTableCompanion(
-        title: entry.title,
-        link: entry.link,
-        summary: entry.summary,
-        imageUrl: entry.imageUrl,
-        author: entry.author,
-        publishedAt: entry.publishedAt,
-      ),
-    );
-  }
+  Future<void> upsertArticleFromFeed(RssArticlesTableCompanion entry) =>
+      into(rssArticlesTable).insert(
+        entry,
+        onConflict: DoUpdate(
+          (_) => RssArticlesTableCompanion(
+            title: entry.title,
+            link: entry.link,
+            summary: entry.summary,
+            imageUrl: entry.imageUrl,
+            author: entry.author,
+            publishedAt: entry.publishedAt,
+          ),
+          target: [rssArticlesTable.feedId, rssArticlesTable.guid],
+        ),
+      );
 
   /// Bulk variant of [upsertArticleFromFeed] that runs every entry inside a
   /// single transaction.
@@ -215,8 +228,12 @@ class RssDao extends DatabaseAccessor<GlobalDatabase> with _$RssDaoMixin {
     required bool saved,
   }) => customUpdate(
     'UPDATE rss_articles SET saved = ? WHERE id = ? AND feed_id IN '
-        '(SELECT id FROM rss_feeds WHERE user_id = ?)',
-    variables: [Variable<bool>(saved), Variable<String>(articleId), Variable<String>(userId)],
+    '(SELECT id FROM rss_feeds WHERE user_id = ?)',
+    variables: [
+      Variable<bool>(saved),
+      Variable<String>(articleId),
+      Variable<String>(userId),
+    ],
     updates: {rssArticlesTable},
   );
 
@@ -227,15 +244,19 @@ class RssDao extends DatabaseAccessor<GlobalDatabase> with _$RssDaoMixin {
     required bool read,
   }) => customUpdate(
     'UPDATE rss_articles SET read = ? WHERE id = ? AND feed_id IN '
-        '(SELECT id FROM rss_feeds WHERE user_id = ?)',
-    variables: [Variable<bool>(read), Variable<String>(articleId), Variable<String>(userId)],
+    '(SELECT id FROM rss_feeds WHERE user_id = ?)',
+    variables: [
+      Variable<bool>(read),
+      Variable<String>(articleId),
+      Variable<String>(userId),
+    ],
     updates: {rssArticlesTable},
   );
 
   /// Marks every one of the user's articles as read.
   Future<void> markAllRead(String userId) => customUpdate(
     'UPDATE rss_articles SET read = 1 WHERE feed_id IN '
-        '(SELECT id FROM rss_feeds WHERE user_id = ?)',
+    '(SELECT id FROM rss_feeds WHERE user_id = ?)',
     variables: [Variable<String>(userId)],
     updates: {rssArticlesTable},
   );

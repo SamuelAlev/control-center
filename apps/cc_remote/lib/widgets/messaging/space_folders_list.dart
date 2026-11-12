@@ -126,7 +126,7 @@ class _RemoteSpaceFoldersListState
     };
     final readAt =
         ref.watch(remoteSpaceReadProvider(widget.workspaceId)).value ??
-        const <String, DateTime>{};
+        const <String, FeedPosition>{};
     final running =
         ref.watch(remoteRunningSpacesProvider(widget.workspaceId)).value ??
         const <String>{};
@@ -218,11 +218,10 @@ class _RemoteSpaceFoldersListState
                         lastActivityAt: activities[space.id]?.lastMessageAt,
                         unread:
                             !running.contains(space.id) &&
-                            readAt[space.id] != null &&
-                            activities[space.id]?.lastAgentMessageAt?.isAfter(
-                                  readAt[space.id]!,
-                                ) ==
-                                true,
+                            (activities[space.id]?.unreadAfter(
+                                  readAt[space.id],
+                                ) ??
+                                false),
                         space: space,
                         inFolder: row.parentId != null,
                         onMove: () =>

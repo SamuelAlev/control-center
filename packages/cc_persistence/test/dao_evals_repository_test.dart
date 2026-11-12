@@ -2,6 +2,7 @@ import 'package:cc_domain/features/evals/domain/entities/evals_entities.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Exercises [DaoEvalsRepository] against the real Drift database. The repository
@@ -19,7 +20,15 @@ void main() {
     await seedTestWorkspace(global, dbs, 'w-1');
     await seedTestWorkspace(global, dbs, 'w-2');
     repo = DaoEvalsRepository(dbs);
-    // The evals tables only FK-reference workspaces, so seed those.
+    // The parents the eval rows point at, in each workspace's file.
+    for (final ws in ['w-1', 'w-2']) {
+      final db = dbs.of(ws);
+      await seedParents(
+        db,
+        agents: ['a-1', 'a-2', 'a-x', 'a-y'],
+        runLogs: ['log-1', 'log-new', 'log-old', 'log-other', 'shared'],
+      );
+    }
   });
 
   tearDown(() async {
@@ -155,6 +164,12 @@ void main() {
 
   group('DaoEvalsRepository golden sessions', () {
     final blessedAt = DateTime.utc(2026, 6, 1);
+
+    setUp(() async {
+      for (final ws in ['w-1', 'w-2']) {
+        await seedSessionRecording(dbs.of(ws), 'rec-1', runLogId: 'log-1');
+      }
+    });
 
     GoldenSession golden(
       String id,
@@ -306,6 +321,14 @@ void main() {
   group('DaoEvalsRepository eval runs', () {
     final createdAt = DateTime.utc(2026, 4, 1);
 
+    setUp(() async {
+      for (final ws in ['w-1', 'w-2']) {
+        for (final suite in ['s-1', 's-2', 's-shared']) {
+          await seedEvalSuite(dbs.of(ws), suite);
+        }
+      }
+    });
+
     EvalRun run(
       String id,
       String ws, {
@@ -358,7 +381,7 @@ void main() {
           status: 'done',
           scorecardJson: '{"p": 0.5}',
           passRate: 0.5,
-          costCents: 42,
+          costMicros: 42,
           startedAt: DateTime.utc(2024, 1, 1),
           finishedAt: DateTime.utc(2024, 1, 2),
         );
@@ -366,7 +389,7 @@ void main() {
         expect(r!.status, 'done');
         expect(r.scorecardJson, '{"p": 0.5}');
         expect(r.passRate, 0.5);
-        expect(r.costCents, 42);
+        expect(r.costMicros, 42);
         expect(r.startedAt, isNotNull);
         expect(r.finishedAt, isNotNull);
       },

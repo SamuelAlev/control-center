@@ -274,7 +274,7 @@ void main() {
     final benchmark = const EvaluationBenchmarkBridge().toBenchmarkRun(report);
     expect(benchmark.passCount, attempts.length);
     expect(
-      const BenchmarkScorer().successAdjustedCostCents(benchmark),
+      const BenchmarkScorer().successAdjustedCostMicros(benchmark),
       isNotNull,
     );
   });

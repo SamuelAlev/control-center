@@ -46,12 +46,14 @@ class PipelineTemplateDao extends DatabaseAccessor<WorkspaceDatabase>
         .getSingleOrNull();
   }
 
-  /// Inserts or replaces a template row.
-  Future<void> upsert(PipelineTemplatesTableCompanion row) {
-    return into(
-      pipelineTemplatesTable,
-    ).insert(row, mode: InsertMode.insertOrReplace);
-  }
+  /// Inserts a template row, or updates the existing row with the same id in
+  /// place.
+  ///
+  /// Never `INSERT OR REPLACE`: a replace deletes the row first, which would
+  /// fire the `ON DELETE` actions of every trigger and orchestration pointing
+  /// at the template on each built-in re-seed.
+  Future<void> upsert(PipelineTemplatesTableCompanion row) =>
+      into(pipelineTemplatesTable).insertOnConflictUpdate(row);
 
   /// Deletes a template. Returns the number of rows removed.
   Future<int> deleteById(String workspaceId, String templateId) {

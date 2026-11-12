@@ -36,8 +36,8 @@ void main() {
         title: 'Do the thing',
         type: PlanNodeType.work,
         estimate: PlanNodeEstimate(
-          costCentsLow: 100,
-          costCentsHigh: 200,
+          costMicrosLow: 100,
+          costMicrosHigh: 200,
           durationMsLow: 1000,
           durationMsHigh: 2000,
           sampleSize: 3,
@@ -50,8 +50,8 @@ void main() {
         ],
       );
       final restored = PlanNode.fromJson(node.toJson());
-      expect(restored.estimate?.costCentsLow, 100);
-      expect(restored.estimate?.costCentsHigh, 200);
+      expect(restored.estimate?.costMicrosLow, 100);
+      expect(restored.estimate?.costMicrosHigh, 200);
       expect(restored.estimate?.durationMsLow, 1000);
       expect(restored.estimate?.durationMsHigh, 2000);
       expect(restored.estimate?.sampleSize, 3);
@@ -180,7 +180,7 @@ void main() {
             title: 'B',
             type: PlanNodeType.work,
             dependsOn: ['a'],
-            estimate: PlanNodeEstimate(sampleSize: 2, costCentsLow: 1),
+            estimate: PlanNodeEstimate(sampleSize: 2, costMicrosLow: 1),
           ),
         ],
       );

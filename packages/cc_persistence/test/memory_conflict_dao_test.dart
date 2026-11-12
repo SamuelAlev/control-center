@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_spaces.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -8,6 +9,8 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
+    await seedMemoryFact(db, 'fa');
+    await seedMemoryFact(db, 'fb');
   });
 
   tearDown(() async {
@@ -43,7 +46,7 @@ void main() {
       'getUnresolved returns only conflicts with a null resolution',
       () async {
         await conflict(id: 'c-1', ws: 'w-1');
-        await conflict(id: 'c-2', ws: 'w-1', resolution: 'kept_a');
+        await conflict(id: 'c-2', ws: 'w-1', resolution: 'superseded');
         final unresolved = await db.memoryConflictDao.getUnresolved('w-1');
         expect(unresolved, hasLength(1));
         expect(unresolved.first.id, 'c-1');
@@ -52,7 +55,7 @@ void main() {
 
     test('upsert replaces on conflict (same id PK)', () async {
       await conflict(id: 'c-1', ws: 'w-1');
-      await conflict(id: 'c-1', ws: 'w-1', resolution: 'kept_b');
+      await conflict(id: 'c-1', ws: 'w-1', resolution: 'superseded');
       final unresolved = await db.memoryConflictDao.getUnresolved('w-1');
       expect(unresolved, isEmpty);
     });

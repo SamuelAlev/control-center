@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
@@ -10,28 +11,29 @@ class NotificationFeedMapper {
   /// Creates a [NotificationFeedMapper].
   const NotificationFeedMapper();
 
-  /// To domain.
-  NotificationFeedItem toDomain(NotificationFeedTableData row) =>
+  /// To domain. [seq] is the row's `rowid`.
+  NotificationFeedItem toDomain(NotificationFeedTableData row, int seq) =>
       NotificationFeedItem(
         id: row.id,
         workspaceId: row.workspaceId,
         method: row.method,
         params: _decodeParams(row.paramsJson),
         createdAt: row.createdAt,
+        seq: seq,
       );
 
   /// To domain list.
   List<NotificationFeedItem> toDomainList(
-    List<NotificationFeedTableData> rows,
-  ) => rows.map(toDomain).toList(growable: false);
+    List<({NotificationFeedTableData row, int seq})> rows,
+  ) => [for (final r in rows) toDomain(r.row, r.seq)];
 
   /// To domain read mark.
   NotificationReadMark markToDomain(NotificationReadMarksTableData row) =>
       NotificationReadMark(
         workspaceId: row.workspaceId,
         userId: row.userId,
-        lastSeenAt: row.lastSeenAt,
-        clearedBefore: row.clearedBefore,
+        lastSeen: _position(row.lastSeenAt, row.lastSeenSeq),
+        cleared: _position(row.clearedBefore, row.clearedBeforeSeq),
       );
 
   /// To domain per-item state.
@@ -49,6 +51,9 @@ class NotificationFeedMapper {
   List<NotificationItemState> itemStatesToDomain(
     List<NotificationItemStatesTableData> rows,
   ) => rows.map(itemStateToDomain).toList(growable: false);
+
+  static FeedPosition? _position(DateTime? at, int seq) =>
+      at == null ? null : FeedPosition(at: at, seq: seq);
 
   static Map<String, dynamic> _decodeParams(String raw) {
     try {

@@ -63,7 +63,7 @@ class _FakeRunRepo implements PipelineRunRepository {
       parentPipelineRunId: existing.parentPipelineRunId,
       parentStepId: existing.parentStepId,
       templateVersion: existing.templateVersion,
-      totalCostCents: existing.totalCostCents,
+      totalCostMicros: existing.totalCostMicros,
       totalTokens: existing.totalTokens,
       dryRun: existing.dryRun,
       templateSnapshot: existing.templateSnapshot,
@@ -2388,7 +2388,9 @@ void main() {
       // No crash = pass
     });
 
-    test('skips run whose template no longer exists', () async {
+    test('fails a running run that holds no pinned definition', () async {
+      // Nobody can continue it: left running it would show as in progress
+      // forever and keep a slot of its template's parallel cap.
       runRepo.runs['orphan'] = PipelineRun(
         id: 'orphan',
         templateId: 'gone-tpl',
@@ -2396,11 +2398,18 @@ void main() {
         status: PipelineRunStatus.running,
         startedAt: DateTime(2026),
       );
+      final failed = <PipelineRunFailed>[];
+      final sub = eventBus.on<PipelineRunFailed>().listen(failed.add);
+      addTearDown(sub.cancel);
 
       await engine.resumeAll();
+      await Future<void>.delayed(Duration.zero);
 
-      // Run should still be running (untouched).
-      expect(runRepo.runs['orphan']!.status, PipelineRunStatus.running);
+      final run = runRepo.runs['orphan']!;
+      expect(run.status, PipelineRunStatus.failed);
+      expect(run.finishedAt, isNotNull);
+      expect(run.errorMessage, contains('cannot continue'));
+      expect(failed.single.pipelineRunId, 'orphan');
     });
 
     test(

@@ -2,7 +2,7 @@
 title: Domainesemények
 description: Az 54 domainesemény teljes katalógusa, a payloadjaik és az őket fogyasztó szerveroldali előfizetők.
 slug: hu-HU/kezikonyv/referencia/domainesemenyek
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Eseménybusz
@@ -112,7 +112,7 @@ Csak a végállapot-átmenetek kerülnek közzétételre. Nincs `PipelineRunStar
 | Esemény | Payload | Akkor tüzel, amikor |
 | --- | --- | --- |
 | `ActivityLogged` | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Létrejön egy auditnapló-bejegyzés |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop` | A költés meghaladja a küszöböt |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop` | A költés meghaladja a küszöböt |
 
 ## Identitás- és tagsági események
 

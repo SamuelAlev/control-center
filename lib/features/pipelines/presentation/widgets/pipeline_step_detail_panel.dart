@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_defin
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_status_badge.dart';
@@ -526,11 +527,11 @@ class _AgentRunTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, color, label) = _status();
-    final cents = log.totalCostCentsWithChildren;
+    final micros = log.totalCostMicrosWithChildren;
     final trailer = <String>[
       if (log.completedAt != null)
         formatPipelineDuration(log.completedAt!.difference(log.startedAt)),
-      if (cents > 0) '\$${(cents / 100).toStringAsFixed(2)}',
+      if (micros > 0) fmtMicros(micros, decimals: 2),
     ].join(' · ');
 
     return Container(

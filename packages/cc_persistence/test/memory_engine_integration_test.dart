@@ -11,6 +11,7 @@ import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 import 'package:uuid/uuid.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -29,6 +30,8 @@ void main() {
     global = createTestGlobalDatabase();
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, ws);
+    await seedAgent(dbs.of(ws), 'agent-1');
+    await seedAgent(dbs.of(ws), 'agent-2');
     factRepo = DaoMemoryFactRepository(dbs);
     conflictRepo = DaoMemoryConflictRepository(dbs);
     edgeRepo = DaoEpisodicEdgeRepository(dbs);

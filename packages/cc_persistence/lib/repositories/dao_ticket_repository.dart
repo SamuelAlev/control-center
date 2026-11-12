@@ -101,6 +101,29 @@ class DaoTicketRepository implements TicketRepository {
     }
   }
 
+  /// Deletes [ticketId] together with every ticket below it in the parent
+  /// tree, and their external-key routes.
+  ///
+  /// [delete] removes one ticket and leaves its children as roots; this is
+  /// the explicit call for a caller that means the whole breakdown.
+  Future<void> deleteWithSubtree(
+    String ticketId, {
+    required String workspaceId,
+  }) async {
+    final rows = await _dao(
+      workspaceId,
+    ).deleteTicketSubtree(ticketId, workspaceId);
+    for (final row in rows) {
+      final externalKey = row.externalKey;
+      if (externalKey != null) {
+        await _routes.remove(
+          WorkspaceRouteKind.ticketExternalKey,
+          _externalRouteKey(row.provider, externalKey),
+        );
+      }
+    }
+  }
+
   @override
   Future<Ticket?> getById(String workspaceId, String id) async {
     final row = await _dao(workspaceId).getById(id);

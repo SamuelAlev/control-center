@@ -237,12 +237,6 @@ class _FakeMessagingRepository implements MessagingRepository {
     String spaceId,
   ) async => [];
 
-  @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
-  }) async => [];
-
   void dispose() => _controller.close();
 
   /// The tree is not exercised by this fake — a branch it silently accepted

@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/agent_feedback_bar.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/agent_name_color.dart';
@@ -15,6 +16,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/utils/format_utils.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:flutter/foundation.dart' show listEquals;
@@ -518,9 +520,9 @@ class _AgentTrailer extends StatelessWidget {
     if (ms != null) {
       parts.add(_formatDuration(ms));
     }
-    final cents = message.turnCostCents;
-    if (cents != null && cents > 0) {
-      parts.add('\$${(cents / 100).toStringAsFixed(2)}');
+    final micros = message.turnCostMicros;
+    if (micros != null && micros > 0) {
+      parts.add(fmtMicros(micros, decimals: 2));
     }
     final tokens = message.turnTotalTokens;
     if (tokens != null && tokens > 0) {

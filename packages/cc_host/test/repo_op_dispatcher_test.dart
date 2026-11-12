@@ -124,6 +124,64 @@ void main() {
     });
   });
 
+  group('read-only workspace gate', () {
+    // A workspace whose database failed its integrity check serves reads
+    // and takes no writes. The refusal comes before the handler, with a
+    // kind the client can show, not as a SQLite error halfway through.
+    late List<String> ran;
+    RepoOpDispatcher gated() => RepoOpDispatcher(
+      registry: RepoOpRegistry([
+        for (final (name, kind) in [
+          ('thing.read', RepoOpKind.read),
+          ('thing.write', RepoOpKind.mutate),
+          ('thing.drop', RepoOpKind.destructive),
+        ])
+          RepoOp(
+            name: name,
+            kind: kind,
+            handler: (ctx) async {
+              ran.add(name);
+              return {'ok': true};
+            },
+          ),
+      ]),
+      confirm: (_, _) async => true,
+      resolveRole: (_, _) async => WorkspaceRole.owner,
+      isWorkspaceReadOnly: (workspaceId) => workspaceId == 'ws-damaged',
+    );
+
+    setUp(() => ran = []);
+
+    test('refuses a mutating op before its handler runs', () async {
+      for (final op in ['thing.write', 'thing.drop']) {
+        final res = await call(
+          gated(),
+          op,
+          args: const {'workspace_id': 'ws-damaged'},
+        );
+        expect(res['result'], isNull);
+        expect((res['error'] as Map)['data'], {'kind': 'storage.read_only'});
+      }
+      expect(ran, isEmpty);
+    });
+
+    test('still serves reads, and writes elsewhere', () async {
+      final read = await call(
+        gated(),
+        'thing.read',
+        args: const {'workspace_id': 'ws-damaged'},
+      );
+      final write = await call(
+        gated(),
+        'thing.write',
+        args: const {'workspace_id': 'ws-ok'},
+      );
+      expect(read['error'], isNull);
+      expect(write['error'], isNull);
+      expect(ran, ['thing.read', 'thing.write']);
+    });
+  });
+
   group('workspace_id chokepoint', () {
     RepoOpDispatcher scoped(void Function(String?) capture) => dispatcher(
       ops: [

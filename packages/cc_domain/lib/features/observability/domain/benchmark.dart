@@ -32,10 +32,8 @@ class BenchmarkTrial {
     required this.name,
     required this.status,
     this.reward,
-    this.costCents = 0,
     this.costMicros,
-    this.advisorCostCents = 0,
-    this.advisorCostMicros,
+    this.advisorCostMicros = 0,
     this.tokIn = 0,
     this.tokOut = 0,
     this.tokCache = 0,
@@ -52,17 +50,11 @@ class BenchmarkTrial {
   /// Verifier reward in `[0, 1]`, or null while the trial is unresolved.
   final double? reward;
 
-  /// Main-agent spend in US cents, or null when the price is unknown.
-  final int? costCents;
-
-  /// Exact micro-USD spend, when available; avoids rounding sub-cent calls.
+  /// Main-agent spend in micro-dollars, or null when the price is unknown.
   final int? costMicros;
 
-  /// Cost of any advisor / sub-agent calls for this trial, in US cents.
-  final int advisorCostCents;
-
-  /// Exact micro-USD advisor spend when measured.
-  final int? advisorCostMicros;
+  /// Cost of any advisor / sub-agent calls for this trial, in micro-dollars.
+  final int advisorCostMicros;
 
   /// Input tokens consumed by this trial.
   final int tokIn;
@@ -94,8 +86,6 @@ class BenchmarkTrial {
     int? costMicros,
     TrialStatus? status,
     double? reward,
-    int? costCents,
-    int? advisorCostCents,
     int? advisorCostMicros,
     int? tokIn,
     int? tokOut,
@@ -108,8 +98,6 @@ class BenchmarkTrial {
       status: status ?? this.status,
       reward: reward ?? this.reward,
       costMicros: costMicros ?? this.costMicros,
-      costCents: costCents ?? this.costCents,
-      advisorCostCents: advisorCostCents ?? this.advisorCostCents,
       advisorCostMicros: advisorCostMicros ?? this.advisorCostMicros,
       tokIn: tokIn ?? this.tokIn,
       tokOut: tokOut ?? this.tokOut,
@@ -126,9 +114,7 @@ class BenchmarkTrial {
           name == other.name &&
           status == other.status &&
           reward == other.reward &&
-          costCents == other.costCents &&
           costMicros == other.costMicros &&
-          advisorCostCents == other.advisorCostCents &&
           advisorCostMicros == other.advisorCostMicros &&
           tokIn == other.tokIn &&
           tokOut == other.tokOut &&
@@ -141,9 +127,7 @@ class BenchmarkTrial {
     name,
     status,
     reward,
-    costCents,
     costMicros,
-    advisorCostCents,
     advisorCostMicros,
     tokIn,
     tokOut,
@@ -221,19 +205,11 @@ class BenchmarkRun {
   /// expected are observed.
   int get pendingCount => math.max(0, expectedTotal - done - runningCount);
 
-  /// Main-agent cost in US cents, or null if any trial is unpriced.
-  int? get totalCostCents {
-    final micros = totalCostMicros;
-    return micros == null ? null : (micros / 10000).round();
-  }
-
-  /// Main-agent cost in micro-USD without per-trial rounding.
+  /// Main-agent cost in micro-dollars, or null if any trial is unpriced.
   int? get totalCostMicros {
     var total = 0;
     for (final trial in trials) {
-      final micros =
-          trial.costMicros ??
-          (trial.costCents == null ? null : trial.costCents! * 10000);
+      final micros = trial.costMicros;
       if (micros == null) {
         return null;
       }
@@ -242,16 +218,9 @@ class BenchmarkRun {
     return total;
   }
 
-  /// Total advisor / sub-agent cost across all trials, in US cents.
-  int get totalAdvisorCostCents =>
-      trials.fold(0, (sum, t) => sum + t.advisorCostCents);
-
-  /// Advisor spend before rounding individual trials to cents.
-  int get totalAdvisorCostMicros => trials.fold(
-    0,
-    (sum, trial) =>
-        sum + (trial.advisorCostMicros ?? trial.advisorCostCents * 10000),
-  );
+  /// Total advisor / sub-agent cost across all trials, in micro-dollars.
+  int get totalAdvisorCostMicros =>
+      trials.fold(0, (sum, t) => sum + t.advisorCostMicros);
 
   /// Total input tokens across all trials.
   int get totalTokIn => trials.fold(0, (sum, t) => sum + t.tokIn);
@@ -320,13 +289,14 @@ class BenchmarkScorer {
     return done > 0 ? run.passCount / done : 0;
   }
 
-  /// Cost per verified success, in cents; null when spend is unknown or none passed.
-  double? successAdjustedCostCents(BenchmarkRun run) {
+  /// Cost per verified success, in micro-dollars; null when spend is unknown
+  /// or none passed.
+  double? successAdjustedCostMicros(BenchmarkRun run) {
     final total = run.totalCostMicros;
     if (run.passCount <= 0 || total == null) {
       return null;
     }
-    return (total + run.totalAdvisorCostMicros) / (run.passCount * 10000);
+    return (total + run.totalAdvisorCostMicros) / run.passCount;
   }
 
   /// Estimates the time remaining for [run] given the current wall clock [now].
@@ -364,9 +334,7 @@ class BenchmarkScorer {
       final reward = trial.reward != null
           ? trial.reward!.toStringAsFixed(2)
           : '—';
-      final cost = trial.costMicros == null
-          ? _formatCents(trial.costCents)
-          : _formatMicros(trial.costMicros);
+      final cost = _formatMicros(trial.costMicros);
       final duration = _formatDuration(trial.durationMs);
       final detail = _escapeCell(trial.detail);
       buffer.writeln(
@@ -378,12 +346,7 @@ class BenchmarkScorer {
     final pct = run.successPct.toStringAsFixed(0);
     final spend = run.totalCostMicros == null
         ? '— (unpriced attempts)'
-        : run.trials.any(
-            (trial) =>
-                trial.costMicros != null || trial.advisorCostMicros != null,
-          )
-        ? _formatMicros(run.totalCostMicros! + run.totalAdvisorCostMicros)
-        : _formatCents(run.totalCostCents! + run.totalAdvisorCostCents);
+        : _formatMicros(run.totalCostMicros! + run.totalAdvisorCostMicros);
     buffer
       ..writeln()
       ..writeln(
@@ -407,9 +370,6 @@ class BenchmarkScorer {
   };
 
   /// Formats unknown spend without substituting zero.
-  static String _formatCents(int? cents) =>
-      cents == null ? '—' : '\$${(cents / 100).toStringAsFixed(2)}';
-
   static String _formatMicros(int? micros) =>
       micros == null ? '—' : '\$${(micros / 1000000).toStringAsFixed(6)}';
 

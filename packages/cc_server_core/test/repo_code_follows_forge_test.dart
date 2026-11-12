@@ -371,7 +371,7 @@ void main() {
           SpacesTableCompanion.insert(
             id: spaceId,
             name: spaceId,
-            workspaceId: const Value('ws1'),
+            workspaceId: 'ws1',
             noRepos: Value(noRepos),
           ),
         );
@@ -582,6 +582,7 @@ void main() {
         workspaceId: 'ws1',
         method: 'notifications/pr_review_requested',
         params: {'space_id': space},
+        seq: 0,
         createdAt: DateTime(2026),
       );
 

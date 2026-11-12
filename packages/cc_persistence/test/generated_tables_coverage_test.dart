@@ -1,6 +1,8 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 /// Drives the generated table code (the bulk of `workspace_database.g.dart` and
@@ -19,6 +21,7 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
+    await seedRepo(db, 'repo-1');
   });
 
   tearDown(() async => db.close());
@@ -130,6 +133,7 @@ void main() {
     });
 
     test('eval runs round-trip', () async {
+      await seedEvalSuite(db, 'es-1');
       await db
           .into(db.evalRunsTable)
           .insert(
@@ -150,6 +154,7 @@ void main() {
     });
 
     test('agent config versions round-trip', () async {
+      await seedAgent(db, 'a-1');
       await db
           .into(db.agentConfigVersionsTable)
           .insert(
@@ -170,6 +175,7 @@ void main() {
     });
 
     test('session recordings round-trip', () async {
+      await seedRunLog(db, 'rl-1');
       await db
           .into(db.sessionRecordingsTable)
           .insert(
@@ -189,6 +195,7 @@ void main() {
     });
 
     test('golden sessions round-trip', () async {
+      await seedSessionRecording(db, 'sr-1');
       await db
           .into(db.goldenSessionsTable)
           .insert(
@@ -213,8 +220,9 @@ void main() {
     // three tables are server-global rather than per-workspace.
     late GlobalDatabase global;
 
-    setUp(() {
+    setUp(() async {
       global = createTestGlobalDatabase();
+      await seedWorkspaceRow(global, 'ws');
     });
 
     tearDown(() async => global.close());
@@ -256,6 +264,15 @@ void main() {
     });
 
     test('placement log round-trip', () async {
+      await global
+          .into(global.jobsTable)
+          .insert(
+            JobsTableCompanion.insert(
+              id: 'job-1',
+              workspaceId: 'ws',
+              kind: 'agentRun',
+            ),
+          );
       await global
           .into(global.placementLogTable)
           .insert(

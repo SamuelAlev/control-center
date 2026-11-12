@@ -8,8 +8,9 @@ import 'package:drift/native.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 /// Builds an in-memory [WorkspaceDatabase] for cc_server_core tests — one
-/// workspace's data (agents, spaces, tickets, memory, pipelines, repos, the
-/// code graph).
+/// workspace's data (agents, spaces, tickets, memory, pipelines, repos). The
+/// code graph is in the workspace's code index
+/// (`WorkspaceDatabaseManager.codeIndexOf`).
 ///
 /// Mirrors cc_persistence's test helper: points SQLite's temp directory at the
 /// system temp dir and skips the `sqlite_vector` extension (vector search is

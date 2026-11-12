@@ -24,6 +24,7 @@ import 'package:cc_server_core/src/pr_review/agent_run_pull_request_scope.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 Repo _repo(String id, {String owner = 'acme', String? name}) => Repo(
@@ -72,11 +73,11 @@ void main() {
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, 'w1');
     await seedTestWorkspace(global, dbs, 'w2');
+    await seedUsers(global, ['alice', 'bob', 'admin', 'other-admin']);
     logins = {'alice': 'alice-gh'};
     loginForges = [];
     requesters = AgentPrRequesters(
-      cacheFor: (ws) => dbs.of(ws).cacheDao,
-      crossWorkspace: CrossWorkspaceQueries(dbs),
+      records: DaoAgentPullRequestRequesterRepository(global),
       viewer: (forge, user, ws) async =>
           logins[user] == null ? null : (login: logins[user]!, id: ''),
     );

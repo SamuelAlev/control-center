@@ -1,6 +1,13 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/entities/message.dart' show MessageType;
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart' show Mode;
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart'
+    show turnOutcomeFromString;
+import 'package:cc_domain/features/messaging/domain/value_objects/message_lifecycle_states.dart';
+import 'package:cc_persistence/database/tables/conversation_activity.dart';
+import 'package:cc_persistence/database/tables/conversation_message_embeddings_table.dart';
 import 'package:cc_persistence/database/tables/conversation_messages.dart';
 import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:cc_persistence/database/tables/space_participants.dart';
@@ -10,80 +17,11 @@ import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
 part 'messaging_dao.g.dart';
-
-/// Unicode code points in [text], which is what SQLite `LENGTH` counts.
-///
-/// `String.length` counts UTF-16 code units, so an emoji is 2. The meter used
-/// to sum `LENGTH(content)`. This is that count, and it is what the v12
-/// backfill stores.
-int _sqliteTextLength(String text) => text.runes.length;
-
-/// `transcriptChars` from a metadata JSON object, or 0 when it is absent.
-int _transcriptCharsOf(Map<dynamic, dynamic> metadata) {
-  final value = metadata['transcriptChars'];
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  return 0;
-}
-
-/// `metadata['context']`'s provider-reported reading, or nulls when the
-/// turn carries none.
-({int? tokens, int? window}) _contextOf(Map<dynamic, dynamic> metadata) {
-  final context = metadata['context'];
-  if (context is! Map) {
-    return (tokens: null, window: null);
-  }
-  int? read(Object? value) => value is num ? value.toInt() : null;
-  return (tokens: read(context['tokens']), window: read(context['window']));
-}
-
-/// Transcript size, context reading and list metadata from one decode of a
-/// metadata cell.
-///
-/// The returned list text is [raw] itself when there is no `segments` array, so a
-/// plain message stays byte-identical. An array is removed and replaced with
-/// `segments_elided` and `segment_count`.
-({
-  int transcriptChars,
-  ({int? tokens, int? window}) context,
-  String? listMetadata,
-})
-_stampMetadataJson(String? raw) {
-  const none = (tokens: null, window: null);
-  if (raw == null || raw.isEmpty) {
-    return (transcriptChars: 0, context: none, listMetadata: raw);
-  }
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is Map<dynamic, dynamic>) {
-      return (
-        transcriptChars: _transcriptCharsOf(decoded),
-        context: _contextOf(decoded),
-        listMetadata: _listMetadataOf(decoded, raw),
-      );
-    }
-  } on Object {
-    return (transcriptChars: 0, context: none, listMetadata: raw);
-  }
-  return (transcriptChars: 0, context: none, listMetadata: raw);
-}
-
-/// [fallback] when [metadata] has no segment array, so the list cell does not
-/// get a second encoding of JSON that was already stored.
-String _listMetadataOf(Map<dynamic, dynamic> metadata, String fallback) {
-  final segments = metadata['segments'];
-  if (segments is! List<dynamic>) {
-    return fallback;
-  }
-  final lite = Map<dynamic, dynamic>.from(metadata)..remove('segments');
-  lite['segments_elided'] = true;
-  lite['segment_count'] = segments.length;
-  return jsonEncode(lite);
-}
+part 'messaging_dao_activity.dart';
+part 'messaging_dao_branches.dart';
+part 'messaging_dao_embeddings.dart';
+part 'messaging_dao_spaces.dart';
+part 'messaging_dao_stamps.dart';
 
 /// Implicit SQLite `rowid` — a monotonic integer assigned in insertion order
 /// for this (normal, not `WITHOUT ROWID`) table. Used as a stable tie-breaker
@@ -98,18 +36,28 @@ String _listMetadataOf(Map<dynamic, dynamic> metadata, String fallback) {
 // ignore: unused_element
 const _rowid = CustomExpression<int>('rowid');
 
-/// Data access object for [SpacesTable], [SpaceParticipantsTable] and
-/// [ConversationMessagesTable].
+/// Data access object for [SpacesTable], [SpaceParticipantsTable],
+/// [ConversationMessagesTable] and the message embeddings.
+///
+/// A turn's transcript is written and read through `RunTranscriptDao`, in
+/// the same transaction as the message row it belongs to.
 @DriftAccessor(
   tables: [
     SpacesTable,
     ConversationsTable,
     SpaceParticipantsTable,
     ConversationMessagesTable,
+    ConversationActivityTable,
+    ConversationMessageEmbeddingsTable,
   ],
 )
 class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
-    with _$MessagingDaoMixin {
+    with
+        _$MessagingDaoMixin,
+        _ConversationActivity,
+        _MessageBranches,
+        _MessageEmbeddings,
+        _SpaceRows {
   /// Creates a [MessagingDao] for the given database.
   MessagingDao(super.attachedDatabase);
 
@@ -120,109 +68,91 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
   /// all-workspaces dashboard view merges one of these streams per workspace
   /// through `CrossWorkspaceQueries.mergeStreams` — it does not filter a global
   /// stream in memory, which is how other workspaces' spaces leaked before.
-  Stream<List<SpacesTableData>> watchSpaces() => (select(
-    spacesTable,
-  )..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])).watch();
+  Stream<List<SpacesTableData>> watchSpaces() =>
+      (select(spacesTable)..orderBy([
+            (t) => OrderingTerm.desc(t.updatedAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
+          .watch();
 
   /// Watches participants for a space.
   Stream<List<SpaceParticipantsTableData>> watchParticipants(String spaceId) =>
       (select(spaceParticipantsTable)
             ..where((t) => t.spaceId.equals(spaceId))
-            ..orderBy([(t) => OrderingTerm.asc(t.joinedAt)]))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.joinedAt),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
           .watch();
 
   /// Watches spaces for a specific workspace ordered by most recently updated.
   Stream<List<SpacesTableData>> watchSpacesByWorkspace(String workspaceId) =>
       (select(spacesTable)
             ..where((t) => t.workspaceId.equals(workspaceId))
-            ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.updatedAt),
+              (t) => OrderingTerm.desc(t.id),
+            ]))
           .watch();
 
-  /// Every `conversation_messages` column except `embedding`, as a SELECT list.
+  /// What a list read selects: every message column (`m.*`) and the two
+  /// facts [ListedMessageRow] reports about the message's transcript, read
+  /// off its `transcripts` row through `idx_transcripts_message_id`. No
+  /// segment is read.
   ///
-  /// The embedding is a 1,536-byte FLOAT32 blob per row that exists only for
-  /// semantic recall — nothing that reads a message LIST ever looks at it, and
-  /// no wire shape carries it. A `SELECT *` over a 10k-message conversation
-  /// therefore dragged ~15 MB off disk (and re-read all of it on every write
-  /// to the table) to hand back rows whose blob is then dropped.
-  ///
-  /// Derived from the table's own column list rather than spelled out, so a
-  /// column added later is included automatically instead of silently
-  /// arriving null.
-  late final String _messageColumnsSansEmbedding = conversationMessagesTable
-      .$columns
-      .where((c) => c.name != 'embedding' && c.name != 'list_metadata')
-      .map((c) => c.name)
-      .join(', ');
+  /// The statements name only `conversation_messages` as what they read: a
+  /// transcript's facts change on their own only while a subagent run
+  /// records, and a space turn's change in the same transaction as its
+  /// message row, which re-runs the list anyway. A streaming flush that adds
+  /// a segment does not move what the list shows: the count appears once the
+  /// turn finished.
+  static const listedMessageColumns =
+      'm.*, t.id IS NOT NULL AS has_transcript, '
+      'CASE WHEN t.complete THEN t.segment_count END AS finished_segment_count';
 
-  /// Same columns as [_messageColumnsSansEmbedding], but `metadata` is the
-  /// stored [ConversationMessagesTable.listMetadata] column.
-  ///
-  /// List watches re-run on every write to this table, and a streaming turn
-  /// writes its transcript on every chunk. Nothing that renders a list reads
-  /// `segments` from this row: a live turn comes from the relay, a finished
-  /// one from [getMessageById]. The stripped text is written with the row, so
-  /// this select does not parse it; a row without it lists no metadata.
-  /// [getMessages] and [getMessageById] keep the array. History pages and in-space search use this list too.
-  late final String _messageColumnsLite = _liteColumns();
+  /// The `FROM` of a list read: messages as `m`, with their transcript facts.
+  static const listedMessagesFrom =
+      'FROM conversation_messages m '
+      'LEFT JOIN transcripts t ON t.message_id = m.id ';
 
-  /// Column list selected by [watchMessages] and the other list reads.
-  ///
-  /// Public so a test can assert the fast path reads `list_metadata` instead
-  /// of parsing every transcript on each flush.
-  String get messageListSelectColumns => _messageColumnsLite;
+  ListedMessageRow _listed(QueryRow row) => (
+    data: conversationMessagesTable.map(row.data),
+    hasTranscript: row.read<bool>('has_transcript'),
+    segmentCount: row.readNullable<int>('finished_segment_count'),
+  );
 
-  /// [qualifier] is a table alias without the dot (`m` produces `m.id`).
-  /// Search joins the FTS table, which has its own `content`, so the bare
-  /// names would be ambiguous there.
-  String _liteColumns([String? qualifier]) {
-    final prefix = qualifier == null ? '' : '$qualifier.';
-    final metadata = '${prefix}list_metadata AS metadata';
-    return conversationMessagesTable.$columns
-        .where((c) => c.name != 'embedding' && c.name != 'list_metadata')
-        .map((c) => c.name == 'metadata' ? metadata : '$prefix${c.name}')
-        .join(', ');
-  }
+  /// Statement behind [watchMessages]: one conversation's list rows.
+  static const conversationListSql =
+      'SELECT $listedMessageColumns $listedMessagesFrom'
+      'WHERE m.conversation_id = ? AND m.reverted = 0 '
+      'ORDER BY m.created_at ASC, m.rowid ASC';
 
   /// Watches the messages of one conversation ordered by creation time.
   /// Reverted messages are hidden (an unrevert restores them).
-  Stream<List<ConversationMessagesTableData>> watchMessages(
-    String conversationId,
-  ) =>
+  Stream<List<ListedMessageRow>> watchMessages(String conversationId) =>
       customSelect(
-        'SELECT $_messageColumnsLite FROM conversation_messages '
-        'WHERE conversation_id = ? AND reverted = 0 '
-        'ORDER BY created_at ASC, rowid ASC',
+        conversationListSql,
         variables: [Variable.withString(conversationId)],
         readsFrom: {conversationMessagesTable},
-      ).watch().map(
-        (rows) => rows
-            .map((r) => conversationMessagesTable.map(r.data))
-            .toList(growable: false),
-      );
+      ).watch().map((rows) => rows.map(_listed).toList(growable: false));
 
   /// Watches the newest [limit] messages of a conversation, returned in
   /// ascending order (oldest-first) for display. Fetches `limit + 1` so the
   /// caller can tell whether older messages exist (the hasMore sentinel). The
   /// `(createdAt desc, rowid desc)` ordering keeps equal-timestamp rows stable.
-  Stream<List<ConversationMessagesTableData>> watchMessagesWindow(
+  Stream<List<ListedMessageRow>> watchMessagesWindow(
     String conversationId, {
     required int limit,
-  }) =>
-      customSelect(
-        'SELECT $_messageColumnsLite FROM conversation_messages '
-        'WHERE conversation_id = ? AND reverted = 0 '
-        'ORDER BY created_at DESC, rowid DESC LIMIT ?',
-        variables: [
-          Variable.withString(conversationId),
-          Variable.withInt(limit + 1),
-        ],
-        readsFrom: {conversationMessagesTable},
-      ).watch().map(
-        (rows) => rows.reversed
-            .map((r) => conversationMessagesTable.map(r.data))
-            .toList(growable: false),
-      );
+  }) => customSelect(
+    'SELECT $listedMessageColumns $listedMessagesFrom'
+    'WHERE m.conversation_id = ? AND m.reverted = 0 '
+    'ORDER BY m.created_at DESC, m.rowid DESC LIMIT ?',
+    variables: [
+      Variable.withString(conversationId),
+      Variable.withInt(limit + 1),
+    ],
+    readsFrom: {conversationMessagesTable},
+  ).watch().map((rows) => rows.reversed.map(_listed).toList(growable: false));
 
   /// The newest [limit] plain-text rows [senderId] sent in [conversationId],
   /// newest first. Content and the compacted flag only — recall never needs
@@ -341,8 +271,7 @@ LIMIT 1
   /// A conversation belongs to exactly one space, so for a legitimate caller the extra
   /// equality changes nothing — but the caller-supplied conversation id used to be the ONLY
   /// predicate.
-  Future<List<({ConversationMessagesTableData data, int rowid})>>
-  getMessagePageRows(
+  Future<List<({ListedMessageRow listed, int rowid})>> getMessagePageRows(
     String spaceId,
     String conversationId, {
     required int limit,
@@ -351,30 +280,22 @@ LIMIT 1
   }) {
     final hasCursor = beforeCreatedAtSeconds != null && beforeRowid != null;
     return customSelect(
-          'SELECT $_messageColumnsLite, rowid AS _rowid '
-          'FROM conversation_messages '
-          'WHERE space_id = ? AND conversation_id = ? AND reverted = 0 '
-          '${hasCursor ? 'AND (created_at < ? OR (created_at = ? AND rowid < ?)) ' : ''}'
-          'ORDER BY created_at DESC, rowid DESC LIMIT ?',
-          variables: [
-            Variable.withString(spaceId),
-            Variable.withString(conversationId),
-            if (hasCursor) ...[
-              Variable.withInt(beforeCreatedAtSeconds),
-              Variable.withInt(beforeCreatedAtSeconds),
-              Variable.withInt(beforeRowid),
-            ],
-            Variable.withInt(limit),
-          ],
-          readsFrom: {conversationMessagesTable},
-        )
-        .map(
-          (row) => (
-            data: conversationMessagesTable.map(row.data),
-            rowid: row.read<int>('_rowid'),
-          ),
-        )
-        .get();
+      'SELECT $listedMessageColumns, m.rowid AS _rowid $listedMessagesFrom'
+      'WHERE m.space_id = ? AND m.conversation_id = ? AND m.reverted = 0 '
+      '${hasCursor ? 'AND (m.created_at < ? OR (m.created_at = ? AND m.rowid < ?)) ' : ''}'
+      'ORDER BY m.created_at DESC, m.rowid DESC LIMIT ?',
+      variables: [
+        Variable.withString(spaceId),
+        Variable.withString(conversationId),
+        if (hasCursor) ...[
+          Variable.withInt(beforeCreatedAtSeconds),
+          Variable.withInt(beforeCreatedAtSeconds),
+          Variable.withInt(beforeRowid),
+        ],
+        Variable.withInt(limit),
+      ],
+      readsFrom: {conversationMessagesTable},
+    ).map((row) => (listed: _listed(row), rowid: row.read<int>('_rowid'))).get();
   }
 
   /// Watches every unanswered question in this workspace, including inactive
@@ -384,11 +305,11 @@ LIMIT 1
     String workspaceId,
   ) =>
       customSelect(
-        'SELECT $_messageColumnsSansEmbedding FROM conversation_messages '
+        'SELECT * FROM conversation_messages '
         'WHERE EXISTS (SELECT 1 FROM spaces WHERE spaces.id = conversation_messages.space_id '
         'AND spaces.workspace_id = ?) AND conversation_messages.reverted = 0 '
         "AND conversation_messages.message_type = 'user_question' "
-        "AND COALESCE(json_extract(conversation_messages.metadata, '\$.answered'), 0) != 1 "
+        'AND conversation_messages.answered = 0 '
         'ORDER BY conversation_messages.created_at ASC, conversation_messages.rowid ASC',
         variables: [Variable.withString(workspaceId)],
         readsFrom: {conversationMessagesTable, spacesTable},
@@ -400,71 +321,100 @@ LIMIT 1
 
   /// First answer wins, atomically. Preserve all stored question metadata
   /// instead of replacing it with a stale client's snapshot.
+  ///
+  /// The conversation's open-question count drops in the same transaction.
   Future<bool> answerQuestion(
     String messageId,
     Map<String, dynamic> answer,
-  ) async {
+  ) => transaction(() async {
     final changed = await customUpdate(
-      'UPDATE conversation_messages SET '
-      "metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
-      "'\$.answer', json(?)), "
-      "list_metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
-      "'\$.answer', json(?)) "
+      // `list_metadata` is the SQL name of the metadata column.
+      'UPDATE conversation_messages SET answered = 1, '
+      "list_metadata = json_set(COALESCE(list_metadata, '{}'), '\$.answer', json(?)) "
       "WHERE id = ? AND message_type = 'user_question' AND reverted = 0 "
-      "AND COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
+      'AND answered = 0',
       variables: [
-        Variable.withString(jsonEncode(answer)),
         Variable.withString(jsonEncode(answer)),
         Variable.withString(messageId),
       ],
       updates: {conversationMessagesTable},
     );
+    if (changed == 1) {
+      await _recountOpenQuestions(messageId: messageId);
+    }
     return changed == 1;
-  }
+  });
 
   /// Closes an unanswered question as expired, atomically: lands only while
-  /// the question is still open (`answered != 1`), so an answer that won the
+  /// the question is still open (`answered = 0`), so an answer that won the
   /// race is never overwritten. Returns whether it closed the question.
-  Future<bool> expireQuestion(String messageId) async {
+  Future<bool> expireQuestion(String messageId) => transaction(() async {
     final changed = await customUpdate(
-      'UPDATE conversation_messages SET '
-      "metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
-      "'\$.expired', json('true')), "
-      "list_metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
-      "'\$.expired', json('true')) "
-      "WHERE id = ? AND message_type = 'user_question' "
-      "AND COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
+      'UPDATE conversation_messages SET answered = 1, '
+      "list_metadata = json_set(COALESCE(list_metadata, '{}'), '\$.expired', json('true')) "
+      "WHERE id = ? AND message_type = 'user_question' AND answered = 0",
       variables: [Variable.withString(messageId)],
       updates: {conversationMessagesTable},
       updateKind: UpdateKind.update,
     );
+    if (changed == 1) {
+      await _recountOpenQuestions(messageId: messageId);
+    }
     return changed == 1;
-  }
+  });
 
   /// Closes every question created at or before [before] that is still open.
   /// Boot sweep: question waiters live in server memory, so after a restart
   /// none of these can be answered any more. Returns how many were closed.
-  Future<int> expireQuestionsCreatedBefore(DateTime before) => customUpdate(
-    'UPDATE conversation_messages SET '
-    "metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
-    "'\$.expired', json('true')), "
-    "list_metadata = json_set(COALESCE(metadata, '{}'), '\$.answered', json('true'), "
-    "'\$.expired', json('true')) "
-    "WHERE message_type = 'user_question' AND created_at <= ? "
-    "AND COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
-    variables: [Variable<DateTime>(before)],
-    updates: {conversationMessagesTable},
-    updateKind: UpdateKind.update,
-  );
+  Future<int> expireQuestionsCreatedBefore(
+    DateTime before,
+  ) => transaction(() async {
+    final closed = await customUpdate(
+      'UPDATE conversation_messages SET answered = 1, '
+      "list_metadata = json_set(COALESCE(list_metadata, '{}'), '\$.expired', json('true')) "
+      "WHERE message_type = 'user_question' AND created_at <= ? "
+      'AND answered = 0',
+      variables: [Variable<DateTime>(before)],
+      updates: {conversationMessagesTable},
+      updateKind: UpdateKind.update,
+    );
+    if (closed > 0) {
+      await _recountOpenQuestions();
+    }
+    return closed;
+  });
+
+  /// Statement behind [rebuildConversationActivity] for one conversation.
+  ///
+  /// Every term reads an index: the maximum and the newest non-human message
+  /// walk `idx_conversation_messages_conversation_created`, and the count
+  /// reads the open-question partial index. No row's metadata is touched.
+  static const rebuildActivitySql = """
+INSERT INTO conversation_activity (
+  conversation_id, space_id, last_message_at, last_agent_message_at,
+  last_agent_message_seq, open_question_count
+)
+SELECT conversation_id, space_id, MAX(created_at),
+  (SELECT a.created_at FROM conversation_messages a
+    WHERE a.conversation_id = ?1 AND a.reverted = 0 AND a.sender_type <> 'user'
+    ORDER BY a.created_at DESC, a.rowid DESC LIMIT 1),
+  (SELECT a.rowid FROM conversation_messages a
+    WHERE a.conversation_id = ?1 AND a.reverted = 0 AND a.sender_type <> 'user'
+    ORDER BY a.created_at DESC, a.rowid DESC LIMIT 1),
+  (SELECT COUNT(*) FROM conversation_messages q
+    WHERE q.conversation_id = ?1 AND q.message_type = 'user_question'
+      AND q.answered = 0 AND q.reverted = 0)
+FROM conversation_messages
+WHERE conversation_id = ?1 AND reverted = 0
+GROUP BY conversation_id, space_id
+""";
 
   /// Statement behind [watchSpaceActivity].
   ///
   /// Public so a test can `EXPLAIN QUERY PLAN` the exact text the watch runs.
-  /// The CTEs are `MATERIALIZED` so SQLite cannot fold them back into one pass
-  /// that reads `metadata` for every live message. The maxima use
-  /// `idx_conversation_messages_live_activity` (covering: no transcript blob).
-  /// The question count uses `idx_conversation_messages_messageType`, so it
-  /// reads `metadata` only for `user_question` rows.
+  /// It reads one `conversation_activity` row per conversation, never a
+  /// message: a streaming transcript flush updates a message and leaves
+  /// these rows alone, so it does not even re-run this statement.
   ///
   /// `last_agent_message_at` is the newest non-human message: agent output
   /// and server notices (`sender_type = 'system'`) both raise the dot.
@@ -473,85 +423,20 @@ LIMIT 1
   /// never reports `last_agent_message_at`: agent chatter must not raise a
   /// human unread dot, the same rule the notification wire applies.
   static const spaceActivitySql = r'''
-WITH activity AS MATERIALIZED (
-  SELECT space_id, conversation_id,
-         MAX(created_at) AS last_message_at,
-         MAX(CASE WHEN sender_type <> 'user' THEN created_at END)
-           AS last_agent_message_at
-  FROM conversation_messages
-  WHERE reverted = 0
-  GROUP BY space_id, conversation_id
-),
-questions AS MATERIALIZED (
-  SELECT space_id, conversation_id, COUNT(*) AS open_question_count
-  FROM conversation_messages
-  WHERE reverted = 0
-    AND message_type = 'user_question'
-    AND COALESCE(json_extract(metadata, '$.answered'), 0) != 1
-  GROUP BY space_id, conversation_id
-)
-SELECT activity.space_id AS space_id,
-       activity.conversation_id AS conversation_id,
-       activity.last_message_at AS last_message_at,
-       CASE WHEN spaces.kind = 'agentPeer' THEN NULL
-            ELSE activity.last_agent_message_at END AS last_agent_message_at,
-       COALESCE(questions.open_question_count, 0) AS open_question_count
-FROM activity
-JOIN spaces ON spaces.id = activity.space_id
-LEFT JOIN questions
-  ON questions.space_id = activity.space_id
- AND questions.conversation_id = activity.conversation_id
-WHERE spaces.workspace_id = ?
-  AND spaces.archived_at IS NULL
+SELECT a.space_id AS space_id,
+       a.conversation_id AS conversation_id,
+       a.last_message_at AS last_message_at,
+       CASE WHEN s.kind = 'agentPeer' THEN NULL
+            ELSE a.last_agent_message_at END AS last_agent_message_at,
+       CASE WHEN s.kind = 'agentPeer' THEN NULL
+            ELSE a.last_agent_message_seq END AS last_agent_message_seq,
+       a.open_question_count AS open_question_count
+FROM conversation_activity a
+JOIN spaces s ON s.id = a.space_id
+JOIN conversations c ON c.id = a.conversation_id
+WHERE s.workspace_id = ?
+  AND s.archived_at IS NULL
 ''';
-
-  /// Watches per-space activity signals for one workspace: newest message time, newest
-  /// agent-message time (the unread-dot signal) and the open (unanswered) agent-question
-  /// count (the needs-input signal).
-  ///
-  /// Archived spaces are excluded: an archived space's row is gone from the sidebar, so its
-  /// unread/needs-input signals would have no visible home — and a hidden room must not keep
-  /// demanding attention.
-  ///
-  /// The statement is [spaceActivitySql]: two materialized aggregates, so a
-  /// streaming flush does not re-read every transcript blob just to update
-  /// the sidebar dots.
-  Stream<
-    List<
-      ({
-        String spaceId,
-        String conversationId,
-        DateTime? lastMessageAt,
-        DateTime? lastAgentMessageAt,
-        int openQuestionCount,
-      })
-    >
-  >
-  watchSpaceActivity(String workspaceId) =>
-      customSelect(
-        spaceActivitySql,
-        variables: [Variable.withString(workspaceId)],
-        readsFrom: {conversationMessagesTable, spacesTable},
-      ).watch().map(
-        (rows) => [
-          for (final row in rows)
-            (
-              spaceId: row.read<String>('space_id'),
-              conversationId: row.read<String>('conversation_id'),
-              lastMessageAt: switch (row.readNullable<int>('last_message_at')) {
-                final int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
-                null => null,
-              },
-              lastAgentMessageAt: switch (row.readNullable<int>(
-                'last_agent_message_at',
-              )) {
-                final int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
-                null => null,
-              },
-              openQuestionCount: row.read<int>('open_question_count'),
-            ),
-        ],
-      );
 
   /// Returns a single message by ID or null.
   Future<ConversationMessagesTableData?> getMessageById(String messageId) =>
@@ -563,14 +448,10 @@ WHERE spaces.workspace_id = ?
   ///
   /// Send dispatch only needs the previous message's type (and, for a plan,
   /// its status). [getMessages] would read every transcript to answer that.
-  /// `json_extract` runs only for `plan` rows, so an agent turn's metadata
-  /// blob is never parsed.
+  /// Both are columns stored ahead of the metadata, so no transcript is
+  /// read or parsed.
   static const recentLiveMessageKindsSql = r'''
-SELECT message_type,
-  CASE
-    WHEN message_type = 'plan' THEN json_extract(metadata, '$.planStatus')
-    ELSE NULL
-  END AS plan_status
+SELECT message_type, plan_status
 FROM conversation_messages
 WHERE conversation_id = ? AND reverted = 0
 ORDER BY created_at DESC, rowid DESC
@@ -619,16 +500,12 @@ LIMIT 1
 
   /// Id of the newest live plan that is still awaiting approval.
   ///
-  /// A missing `planStatus` is pending. Only plan rows are parsed, and only
-  /// their status field.
-  static const latestPendingPlanIdSql = r'''
+  /// A missing `plan_status` is pending.
+  static const latestPendingPlanIdSql = '''
 SELECT id
 FROM conversation_messages
 WHERE conversation_id = ? AND reverted = 0 AND message_type = 'plan'
-  AND (
-    json_extract(metadata, '$.planStatus') IS NULL
-    OR json_extract(metadata, '$.planStatus') = 'pending'
-  )
+  AND (plan_status IS NULL OR plan_status = 'pending')
 ORDER BY created_at DESC, rowid DESC
 LIMIT 1
 ''';
@@ -661,7 +538,7 @@ LIMIT 1
   /// older turn's `segments` to decide a window that then discards them.
   /// [hasCursor] pages strictly older than a `(created_at, rowid)` pair.
   String contextTailSql({required bool hasCursor}) =>
-      'SELECT $_messageColumnsLite, rowid AS _rowid '
+      'SELECT *, rowid AS _rowid '
       'FROM conversation_messages '
       'WHERE conversation_id = ? AND reverted = 0 AND compacted = 0 '
       "${hasCursor ? 'AND (created_at < ? OR (created_at = ? AND rowid < ?)) ' : ''}"
@@ -706,7 +583,7 @@ LIMIT 1
   /// only hides reverted rows. The caller stops once the rendered character
   /// budget is crossed, so older blobs stay on disk.
   String sideChannelTailSql({required bool hasCursor}) =>
-      'SELECT $_messageColumnsLite, rowid AS _rowid '
+      'SELECT *, rowid AS _rowid '
       'FROM conversation_messages '
       'WHERE conversation_id = ? AND reverted = 0 '
       "${hasCursor ? 'AND (created_at < ? OR (created_at = ? AND rowid < ?)) ' : ''}"
@@ -744,33 +621,13 @@ LIMIT 1
         .get();
   }
 
-  /// Full metadata for [ids], so an empty agent turn can contribute its
-  /// transcript. Other rows in the side-channel window stay on the lite
-  /// select. Empty [ids] does not hit the database.
-  Future<List<ConversationMessagesTableData>> messagesByIds(List<String> ids) {
-    if (ids.isEmpty) {
-      return Future.value(const []);
-    }
-    final placeholders = List.filled(ids.length, '?').join(', ');
-    return customSelect(
-      'SELECT $_messageColumnsSansEmbedding FROM conversation_messages '
-      'WHERE id IN ($placeholders)',
-      variables: [for (final id in ids) Variable.withString(id)],
-      readsFrom: {conversationMessagesTable},
-    ).get().then(
-      (rows) => rows
-          .map((r) => conversationMessagesTable.map(r.data))
-          .toList(growable: false),
-    );
-  }
-
   /// Every summary row in a conversation, oldest first, without transcripts.
   ///
   /// The compaction messages. A summary whose `compacted` column is set still
   /// has to be returned: the verbatim tail skips that column, and the prompt
   /// would otherwise lose the summary.
   String get contextSummarySql =>
-      'SELECT $_messageColumnsLite '
+      'SELECT * '
       'FROM conversation_messages '
       "WHERE conversation_id = ? AND reverted = 0 AND message_type = 'compaction' "
       'ORDER BY created_at ASC, rowid ASC';
@@ -812,18 +669,17 @@ LIMIT 1
   /// Queued steering cards in one conversation, without other rows' transcripts.
   ///
   /// Enqueue, reorder, and run-start replay only need these cards. The
-  /// message-type index keeps the read off agent turns. `json_extract` runs
-  /// only on `steering` rows.
+  /// `steer_state = 'queued'` literal matches the partial index
+  /// `idx_conversation_messages_queued_steering`, which holds only queued
+  /// cards, so the read never touches another row.
   String get queuedSteeringSql =>
-      'SELECT $_messageColumnsLite '
-      'FROM conversation_messages INDEXED BY '
-      'idx_conversation_messages_messageType '
-      "WHERE message_type = 'steering' AND conversation_id = ? "
-      'AND space_id = ? AND reverted = 0 AND '
-      "json_extract(metadata, '\$.steerState') = 'queued'";
+      'SELECT * '
+      'FROM conversation_messages '
+      "WHERE steer_state = 'queued' AND conversation_id = ? "
+      "AND space_id = ? AND reverted = 0 AND message_type = 'steering'";
 
   /// Merges [patch] into a steering card's metadata only while the card is
-  /// still in [fromState] (`metadata.steerState`), returning whether it was.
+  /// still in [fromState] (its `steer_state`), returning whether it was.
   ///
   /// The steering queue's writers race each other: a reorder, an edit, a
   /// live run draining the card and the run-end conversion can all touch the
@@ -839,7 +695,7 @@ LIMIT 1
     String? messageType,
   }) => transaction(() async {
     final row = await getMessageById(messageId);
-    if (row == null) {
+    if (row == null || row.steerState != fromState) {
       return false;
     }
     final current = switch (row.metadata) {
@@ -849,13 +705,16 @@ LIMIT 1
       },
       _ => <String, dynamic>{},
     };
-    if (current['steerState'] != fromState) {
-      return false;
-    }
     await updateMessage(
       messageId,
       content: content,
-      metadata: {...current, ...patch},
+      metadata: {
+        ...current,
+        if (row.answered) 'answered': true,
+        'planStatus': ?row.planStatus,
+        'steerState': ?row.steerState,
+        ...patch,
+      },
       messageType: messageType,
     );
     return true;
@@ -928,7 +787,7 @@ LIMIT 1
     String conversationId,
   ) =>
       customSelect(
-        'SELECT $_messageColumnsSansEmbedding FROM conversation_messages '
+        'SELECT * FROM conversation_messages '
         'WHERE conversation_id = ? AND reverted = 0 '
         'ORDER BY created_at ASC, rowid ASC',
         variables: [Variable.withString(conversationId)],
@@ -945,10 +804,16 @@ LIMIT 1
   /// If [revertedAtMs] would tie a prior batch's timestamp (rapid reverts
   /// inside one millisecond), it is bumped one past the space's current max
   /// so each batch stays individually addressable for unrevert.
+  ///
+  /// The conversations' activity rows are recomputed in the same transaction.
   Future<void> revertMessages(List<String> ids, int revertedAtMs) async {
     if (ids.isEmpty) {
       return;
     }
+    await transaction(() => _revertMessages(ids, revertedAtMs));
+  }
+
+  Future<void> _revertMessages(List<String> ids, int revertedAtMs) async {
     final spaceIds =
         await (selectOnly(conversationMessagesTable)
               ..addColumns([conversationMessagesTable.spaceId])
@@ -982,22 +847,37 @@ LIMIT 1
         revertedAt: Value(stamp),
       ),
     );
+    await rebuildConversationActivity(await _conversationsOf(ids));
   }
 
-  /// Clears the reverted flag on the given messages (an unrevert/redo).
+  /// Clears the reverted flag on the given messages (an unrevert/redo), and
+  /// recomputes their conversations' activity rows in the same transaction.
   Future<void> unrevertMessages(List<String> ids) async {
     if (ids.isEmpty) {
       return;
     }
-    await (update(
-      conversationMessagesTable,
-    )..where((t) => t.id.isIn(ids))).write(
-      const ConversationMessagesTableCompanion(
-        reverted: Value(false),
-        revertedAt: Value(null),
-      ),
-    );
+    await transaction(() async {
+      await (update(
+        conversationMessagesTable,
+      )..where((t) => t.id.isIn(ids))).write(
+        const ConversationMessagesTableCompanion(
+          reverted: Value(false),
+          revertedAt: Value(null),
+        ),
+      );
+      await rebuildConversationActivity(await _conversationsOf(ids));
+    });
   }
+
+  /// Ids of a conversation's live messages, oldest first. Nothing else is
+  /// read: a revert only needs to know which rows follow its target.
+  Future<List<String>> liveMessageIds(String conversationId) => customSelect(
+    'SELECT id FROM conversation_messages '
+    'WHERE conversation_id = ? AND reverted = 0 '
+    'ORDER BY created_at ASC, rowid ASC',
+    variables: [Variable.withString(conversationId)],
+    readsFrom: {conversationMessagesTable},
+  ).map((row) => row.read<String>('id')).get();
 
   /// Returns the message ids reverted in the most-recent revert batch for a
   /// space (those sharing the maximum `reverted_at`), for unrevert.
@@ -1032,31 +912,108 @@ LIMIT 1
     await into(spacesTable).insert(entry);
   }
 
-  /// Inserts a participant, ignoring conflicts (prevents duplicates).
-  Future<void> insertParticipant(SpaceParticipantsTableCompanion entry) => into(
-    spaceParticipantsTable,
-  ).insert(entry, mode: InsertMode.insertOrIgnore);
+  /// Inserts a participant; a principal already in the space is left as it
+  /// is (`(space_id, principal_id)` is unique).
+  Future<void> insertParticipant(SpaceParticipantsTableCompanion entry) =>
+      into(spaceParticipantsTable).insert(
+        entry,
+        onConflict: DoNothing(
+          target: [
+            spaceParticipantsTable.spaceId,
+            spaceParticipantsTable.principalId,
+          ],
+        ),
+      );
 
-  /// Inserts a message.
+  /// Inserts a message and folds it into its conversation's activity row,
+  /// in one transaction.
   ///
   /// Stamps [ConversationMessagesTable.contentChars],
-  /// [ConversationMessagesTable.transcriptChars], the context reading and
-  /// [ConversationMessagesTable.listMetadata] in the same statement. A
-  /// follow-up update would fire the sync trigger a second time and make the
-  /// message-list watch run twice per send.
+  /// [ConversationMessagesTable.transcriptChars], the context reading and the
+  /// promoted metadata keys ([promotedMetadataKeys], removed from the stored
+  /// JSON) in the same statement. A follow-up update would fire the sync
+  /// trigger a second time and make the message-list watch run twice per
+  /// send. A `metadata['segments']` array becomes the message's transcript
+  /// rows in the same transaction.
   Future<void> insertMessage(ConversationMessagesTableCompanion entry) {
     final content = entry.content.present ? entry.content.value : '';
     final stamp = _stampMetadataJson(
       entry.metadata.present ? entry.metadata.value : null,
     );
-    return into(conversationMessagesTable).insert(
-      entry.copyWith(
-        contentChars: Value(_sqliteTextLength(content)),
-        transcriptChars: Value(stamp.transcriptChars),
-        contextTokens: Value(stamp.context.tokens),
-        contextWindowTokens: Value(stamp.context.window),
-        listMetadata: Value(stamp.listMetadata),
-      ),
+    return transaction(() async {
+      await into(conversationMessagesTable).insert(
+        entry.copyWith(
+          contentChars: Value(_sqliteTextLength(content)),
+          transcriptChars: Value(stamp.transcriptChars),
+          contextTokens: Value(stamp.context.tokens),
+          contextWindowTokens: Value(stamp.context.window),
+          answered: Value(stamp.answered),
+          planStatus: Value(stamp.planStatus),
+          steerState: Value(stamp.steerState),
+          metadata: Value(stamp.metadata),
+        ),
+      );
+      final segments = stamp.segments;
+      if (segments != null) {
+        await attachedDatabase.runTranscriptDao.writeMessageTranscript(
+          entry.id.value,
+          segments: _segmentBodies(segments),
+          segmentCount: segments.length,
+          transcriptChars: stamp.transcriptChars,
+          replaceAll: true,
+          // A whole transcript written without stream state is a finished
+          // one (a seeded or copied turn); a streaming turn says so.
+          complete: stamp.turn.complete ?? true,
+          outcome: stamp.turn.outcome,
+        );
+      }
+      await _foldInsertIntoActivity(entry.id.value);
+      await _recordAttachmentHolder(entry.id.value, stamp.metadata);
+    });
+  }
+
+  /// Records, on each uploaded file a message carries, that this message
+  /// holds it (`catalog_files.attached_message_id`).
+  ///
+  /// Written where the message row is written, in the same transaction, so
+  /// every way of sending a message records it and the catalog can answer
+  /// "does a message still hold these bytes" without reading a transcript.
+  /// The first holder stays: a fork or an edit that repeats the attachment
+  /// does not take it over.
+  Future<void> _recordAttachmentHolder(
+    String messageId,
+    String? metadataJson,
+  ) async {
+    if (metadataJson == null || !metadataJson.contains('"attachments"')) {
+      return;
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(metadataJson);
+    } on FormatException {
+      return;
+    }
+    final attachments = decoded is Map ? decoded['attachments'] : null;
+    if (attachments is! List) {
+      return;
+    }
+    final fileIds = <String>{
+      for (final attachment in attachments)
+        if (attachment is Map)
+          if (attachment['fileId'] case final String id when id.isNotEmpty) id,
+    };
+    if (fileIds.isEmpty) {
+      return;
+    }
+    await customUpdate(
+      'UPDATE catalog_files SET attached_message_id = ? '
+      'WHERE attached_message_id IS NULL '
+      'AND id IN (${List.filled(fileIds.length, '?').join(', ')})',
+      variables: [
+        Variable<String>(messageId),
+        for (final id in fileIds) Variable<String>(id),
+      ],
+      updates: {attachedDatabase.catalogFilesTable},
     );
   }
 
@@ -1066,10 +1023,15 @@ LIMIT 1
   /// conversation leaf (`DaoMessagingRepository.insertSteeringMessage` skips
   /// `setLeaf`), so no other row's `parent_message_id` can point at one and
   /// the delete cannot orphan the branch tree. Callers must have validated
-  /// the row's type/state.
-  Future<void> deleteMessageById(String messageId) => (delete(
-    conversationMessagesTable,
-  )..where((t) => t.id.equals(messageId))).go();
+  /// the row's type/state. The conversation's activity row is recomputed in
+  /// the same transaction.
+  Future<void> deleteMessageById(String messageId) => transaction(() async {
+    final conversations = await _conversationsOf([messageId]);
+    await (delete(
+      conversationMessagesTable,
+    )..where((t) => t.id.equals(messageId))).go();
+    await rebuildConversationActivity(conversations);
+  });
 
   /// Deletes one message row by id AND conversation — the ownership-checked
   /// form of `deleteMessageById` so a foreign workspace's row id resolves to
@@ -1077,137 +1039,182 @@ LIMIT 1
   Future<void> deleteMessageInConversation(
     String conversationId,
     String messageId,
-  ) =>
-      (delete(conversationMessagesTable)
-            ..where((t) => t.id.equals(messageId))
-            ..where((t) => t.conversationId.equals(conversationId)))
-          .go();
-
-  /// The conversation's current branch tip, or null when it has none.
-  Future<String?> currentLeaf(String conversationId) async {
-    final row = await (select(
-      conversationsTable,
-    )..where((t) => t.id.equals(conversationId))).getSingleOrNull();
-    final pointer = row?.leafMessageId;
-    return pointer == null || pointer.isEmpty ? null : pointer;
-  }
-
-  /// Points a conversation at [messageId] (null = no tip).
-  Future<void> setLeaf(String conversationId, String? messageId) =>
-      (update(conversationsTable)..where((t) => t.id.equals(conversationId)))
-          .write(ConversationsTableCompanion(leafMessageId: Value(messageId)));
-
-  /// Walks from [leafId] back to the root, newest first.
-  ///
-  /// Depth-capped: a corrupt parent chain that loops would otherwise walk
-  /// forever, and a conversation is never legitimately this deep.
-  Future<List<ConversationMessagesTableData>> branchFrom(
-    String conversationId,
-    String leafId, {
-    int maxDepth = 10000,
-  }) async {
-    final all = await (select(
-      conversationMessagesTable,
-    )..where((t) => t.conversationId.equals(conversationId))).get();
-    final byId = {for (final row in all) row.id: row};
-    final path = <ConversationMessagesTableData>[];
-    final seen = <String>{};
-    String? cursor = leafId;
-    while (cursor != null && path.length < maxDepth) {
-      if (!seen.add(cursor)) {
-        break;
-      }
-      final row = byId[cursor];
-      if (row == null) {
-        break;
-      }
-      path.add(row);
-      cursor = row.parentMessageId;
+  ) => transaction(() async {
+    final deleted =
+        await (delete(conversationMessagesTable)
+              ..where((t) => t.id.equals(messageId))
+              ..where((t) => t.conversationId.equals(conversationId)))
+            .go();
+    if (deleted > 0) {
+      await rebuildConversationActivity([conversationId]);
     }
-    return path.reversed.toList();
-  }
+  });
 
-  /// Every message in the conversation, whichever branch it is on.
-  Future<List<ConversationMessagesTableData>> allMessagesForTree(
-    String conversationId,
-  ) =>
-      (select(conversationMessagesTable)
-            ..where((t) => t.conversationId.equals(conversationId))
-            ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
-          .get();
-
-  /// Updates the updatedAt timestamp for a space.
-  Future<void> updateSpaceUpdatedAt(String spaceId, DateTime updatedAt) =>
-      (update(spacesTable)..where((t) => t.id.equals(spaceId))).write(
-        SpacesTableCompanion(updatedAt: Value(updatedAt)),
-      );
-
-  /// Updates the [Mode]-serialized value for a space.
-  Future<void> updateSpaceMode(String spaceId, String mode) =>
-      (update(spacesTable)..where((t) => t.id.equals(spaceId))).write(
-        SpacesTableCompanion(mode: Value(mode)),
-      );
-
-  /// Updates the provisioning status for a space. Leaving `provisioning`
-  /// also clears the granular step in the same write, so a non-null
-  /// `provisioning_step` can never accompany a `ready`/`failed` row.
-  Future<void> updateSpaceProvisioningStatus(String spaceId, String status) =>
-      (update(spacesTable)..where((t) => t.id.equals(spaceId))).write(
-        SpacesTableCompanion(
-          provisioningStatus: Value(status),
-          provisioningStep: status == 'provisioning'
-              ? const Value.absent()
-              : const Value(null),
-        ),
-      );
-
-  /// Updates the granular in-flight provisioning step for a space
-  /// (`SpaceProvisioningStep.toDbValue()` JSON, or null to clear).
-  Future<void> updateSpaceProvisioningStep(String spaceId, String? step) =>
-      (update(spacesTable)..where((t) => t.id.equals(spaceId))).write(
-        SpacesTableCompanion(provisioningStep: Value(step)),
-      );
-
-  /// This workspace's spaces whose provisioning status equals [status].
+  /// Statement behind [branchIds] and [branchFrom]: the ancestors of `?2`
+  /// in conversation `?1`, leaf first, with their distance from it.
   ///
-  /// Used by the boot reconciler to re-kick spaces a previous session
-  /// stranded in `provisioning` (the flip to ready/failed only ever comes from
-  /// the in-flight provisioning future, so a restart mid-provision would leave
-  /// them stuck forever). The reconciler visits every workspace's database in
-  /// turn, so it reaches all of them without this query spanning any.
-  Future<List<SpacesTableData>> spacesByProvisioningStatus(String status) =>
-      (select(
-        spacesTable,
-      )..where((t) => t.provisioningStatus.equals(status))).get();
+  /// Each step is one primary-key probe. A corrupt parent chain that loops
+  /// is cut at depth `?3`; the callers stop at the first repeated id.
+  static const branchSql = '''
+WITH RECURSIVE branch(id, parent_message_id, depth) AS (
+  SELECT id, parent_message_id, 0 FROM conversation_messages
+  WHERE conversation_id = ?1 AND id = ?2
+  UNION ALL
+  SELECT m.id, m.parent_message_id, b.depth + 1
+  FROM conversation_messages m JOIN branch b ON m.id = b.parent_message_id
+  WHERE m.conversation_id = ?1 AND b.depth < ?3
+)
+''';
+
+  /// Longest content prefix [treeNodes] returns: the navigator previews 80
+  /// characters after collapsing whitespace, and this leaves room for runs
+  /// of it.
+  static const treePreviewSourceChars = 400;
 
   /// Updates the content and/or metadata of an existing message.
   ///
+  /// [metadata] replaces the stored map. Its promoted keys
+  /// ([promotedMetadataKeys]) go to their columns and are removed from the
+  /// stored JSON; a map lacking `planStatus` or `steerState` clears that
+  /// column. `answered` is different: a map without it leaves the column
+  /// alone, so a rewrite that dropped the key cannot quietly reopen a
+  /// question behind the open-question count, and a map carrying it lands
+  /// only on a still-open `user_question` (first answer wins).
+  ///
+  /// A `segments` array in [metadata] is the whole transcript: it is written
+  /// as the message's transcript rows, rewriting only the segments whose
+  /// content differs from what is stored, and never stored in the JSON. A
+  /// map without it leaves the transcript as it is.
+  ///
   /// When [content] or [metadata] changes, the meter's stored counts are
-  /// written in the same statement. A metadata change also rewrites
-  /// [ConversationMessagesTable.listMetadata] unless [writeListMetadata] is
-  /// false: a tool-only transcript flush still stores the blob (and the
-  /// meter counter) but leaves the list projection the feed watches alone.
-  /// A content-only edit leaves that column alone. Embedding-only and
-  /// revert updates do not come through here, so they do not recompute
-  /// those counts.
+  /// written in the same statement. Revert updates do not come through here,
+  /// so they do not recompute those counts.
+  ///
+  /// A write that can open or close a question (an `answered` key or a type
+  /// change) recounts the conversation's open questions in the same
+  /// transaction.
   Future<void> updateMessage(
     String messageId, {
     String? content,
     Map<String, dynamic>? metadata,
     String? messageType,
-    bool writeListMetadata = true,
   }) {
-    final meta = metadata;
-    final encoded = meta == null ? null : jsonEncode(meta);
-    final context = meta == null ? null : _contextOf(meta);
+    final lifted = metadata == null ? null : _liftPromoted(metadata);
+    final encoded = lifted == null ? null : jsonEncode(lifted.rest);
+    final answering = metadata?.containsKey('answered') == true;
+    final segments = lifted?.segments;
+    Future<int> write() => _writeMessageRow(
+      messageId,
+      content: content,
+      metadata: metadata,
+      lifted: lifted,
+      encoded: encoded,
+      messageType: messageType,
+    );
+    final attaching = metadata?['attachments'] != null;
+    if (!answering && messageType == null && !attaching && segments == null) {
+      return write();
+    }
+    return transaction(() async {
+      final written = await write();
+      if (written == 0) {
+        return;
+      }
+      if (answering || messageType != null) {
+        await _recountOpenQuestions(messageId: messageId);
+      }
+      if (attaching) {
+        await _recordAttachmentHolder(messageId, encoded);
+      }
+      if (segments != null) {
+        final turn = _turnStateOf(metadata!);
+        await attachedDatabase.runTranscriptDao.writeMessageTranscript(
+          messageId,
+          segments: _segmentBodies(segments),
+          segmentCount: segments.length,
+          transcriptChars: _transcriptCharsOf(metadata),
+          replaceAll: true,
+          complete: turn.complete ?? true,
+          outcome: turn.outcome,
+        );
+      }
+    });
+  }
+
+  /// One flush of a streaming agent turn, in one transaction.
+  ///
+  /// Writes only the transcript segments in [changedSegments] (position →
+  /// encoded segment; every other segment row is left as it was) and the
+  /// transcript's length, [segmentCount]. On the message row it writes the
+  /// meter's counts from [metadata] (`transcriptChars`, `context`), [content]
+  /// when the visible text changed, and the metadata JSON itself only when
+  /// [writeMetadata] is set: that JSON is what a message list shows, and a
+  /// flush that only grew the transcript must not change it.
+  ///
+  /// With [writeMetadata], `streamComplete` and `outcome` in [metadata] also
+  /// finish the transcript.
+  Future<void> flushStreamingTurn(
+    String messageId, {
+    String? content,
+    required Map<String, dynamic> metadata,
+    required bool writeMetadata,
+    required Map<int, String> changedSegments,
+    required int segmentCount,
+  }) => transaction(() async {
+    final lifted = _liftPromoted(metadata);
+    final written = await _writeMessageRow(
+      messageId,
+      content: content,
+      metadata: metadata,
+      lifted: writeMetadata ? lifted : null,
+      encoded: writeMetadata ? jsonEncode(lifted.rest) : null,
+    );
+    if (written == 0) {
+      return;
+    }
+    final turn = writeMetadata
+        ? _turnStateOf(metadata)
+        : (complete: null, outcome: null);
+    await attachedDatabase.runTranscriptDao.writeMessageTranscript(
+      messageId,
+      segments: changedSegments,
+      segmentCount: segmentCount,
+      transcriptChars: _transcriptCharsOf(metadata),
+      replaceAll: false,
+      complete: turn.complete,
+      outcome: turn.outcome,
+    );
+  });
+
+  /// The one `UPDATE` of a message row behind [updateMessage] and
+  /// [flushStreamingTurn]. Returns the rows written.
+  ///
+  /// [metadata] supplies the meter's counts; [lifted] / [encoded] (both null
+  /// to leave them) the stored JSON and the promoted columns.
+  Future<int> _writeMessageRow(
+    String messageId, {
+    String? content,
+    Map<String, dynamic>? metadata,
+    ({
+      bool answered,
+      String? planStatus,
+      String? steerState,
+      List<Map<dynamic, dynamic>>? segments,
+      Map<dynamic, dynamic> rest,
+    })?
+    lifted,
+    String? encoded,
+    String? messageType,
+  }) {
+    final context = metadata == null ? null : _contextOf(metadata);
+    final answering =
+        lifted != null && metadata?.containsKey('answered') == true;
     return (update(conversationMessagesTable)..where(
           (t) =>
               t.id.equals(messageId) &
-              (meta?.containsKey('answered') == true
+              (answering
                   ? (t.messageType.equals('user_question') &
-                        const CustomExpression<bool>(
-                          "COALESCE(json_extract(metadata, '\$.answered'), 0) != 1",
-                        ))
+                        t.answered.equals(false))
                   : const Constant(true)),
         ))
         .write(
@@ -1217,11 +1224,15 @@ LIMIT 1
                 ? Value(_sqliteTextLength(content))
                 : const Value.absent(),
             metadata: encoded != null ? Value(encoded) : const Value.absent(),
-            listMetadata: meta == null || !writeListMetadata
-                ? const Value.absent()
-                : Value(_listMetadataOf(meta, encoded!)),
-            transcriptChars: meta != null
-                ? Value(_transcriptCharsOf(meta))
+            answered: answering ? Value(lifted.answered) : const Value.absent(),
+            planStatus: lifted != null
+                ? Value(lifted.planStatus)
+                : const Value.absent(),
+            steerState: lifted != null
+                ? Value(lifted.steerState)
+                : const Value.absent(),
+            transcriptChars: metadata != null
+                ? Value(_transcriptCharsOf(metadata))
                 : const Value.absent(),
             contextTokens: context != null
                 ? Value(context.tokens)
@@ -1243,10 +1254,9 @@ LIMIT 1
   /// results first for ties. Reverted (hidden) messages are excluded. Returns
   /// an empty list when the query has no usable search tokens.
   ///
-  /// The hit list is the two lines the search dialog shows, not the
-  /// transcript and not the embedding blob. Both used to ride along on
-  /// `SELECT m.*` and then get decoded and dropped.
-  Future<List<ConversationMessagesTableData>> searchInSpace(
+  /// A hit is a list row: the transcript stays on disk, only its facts are
+  /// read.
+  Future<List<ListedMessageRow>> searchInSpace(
     String spaceId,
     String query, {
     int limit = 50,
@@ -1256,7 +1266,7 @@ LIMIT 1
       return Future.value(const []);
     }
     return customSelect(
-      'SELECT ${_liteColumns('m')} FROM conversation_messages m '
+      'SELECT $listedMessageColumns $listedMessagesFrom'
       'JOIN conversation_messages_fts fts ON fts.rowid = m.rowid '
       'WHERE fts.conversation_messages_fts MATCH ? '
       'AND m.space_id = ? '
@@ -1269,164 +1279,19 @@ LIMIT 1
         Variable<int>(limit),
       ],
       readsFrom: {conversationMessagesTable},
-    ).map((row) => conversationMessagesTable.map(row.data)).get();
+    ).map(_listed).get();
   }
-
-  /// Returns the space row by id, or null.
-  Future<SpacesTableData?> getSpaceById(String spaceId) => (select(
-    spacesTable,
-  )..where((t) => t.id.equals(spaceId))).getSingleOrNull();
-
-  /// Returns all participants for a space (for dedup checks).
-  Future<List<SpaceParticipantsTableData>> getParticipants(String spaceId) =>
-      (select(
-        spaceParticipantsTable,
-      )..where((t) => t.spaceId.equals(spaceId))).get();
-
-  /// Deletes a space and all its messages and participants.
-  ///
-  /// The SPACE row goes first and FK `ON DELETE CASCADE` takes the children
-  /// with it.
-  Future<void> deleteSpaceCascade(String spaceId) => transaction(() async {
-    await (delete(spacesTable)..where((t) => t.id.equals(spaceId))).go();
-    // Belt and braces for a row whose FK did not cascade (`foreign_keys`
-    // off on this connection).
-    await (delete(
-      conversationMessagesTable,
-    )..where((t) => t.spaceId.equals(spaceId))).go();
-    await (delete(
-      spaceParticipantsTable,
-    )..where((t) => t.spaceId.equals(spaceId))).go();
-  });
-
-  /// Updates the space name.
-  Future<void> updateSpaceName(String spaceId, String name) =>
-      (update(spacesTable)..where((t) => t.id.equals(spaceId))).write(
-        SpacesTableCompanion(name: Value(name)),
-      );
-
-  /// Stamps (or clears, when [archivedAt] is null) a space's archive time.
-  /// `updatedAt` is deliberately untouched: archiving is a hide, not an
-  /// activity, so a restored space keeps its recency position in the list.
-  Future<void> setSpaceArchived(String spaceId, DateTime? archivedAt) =>
-      (update(spacesTable)..where((t) => t.id.equals(spaceId))).write(
-        SpacesTableCompanion(archivedAt: Value(archivedAt)),
-      );
-
-  /// Sets the space's `no_repos` flag — the only way "explicitly no repos"
-  /// is expressible, since zero `space_repos` rows already means "all repos".
-  Future<void> updateSpaceNoRepos(String spaceId, bool noRepos) =>
-      (update(spacesTable)..where((t) => t.id.equals(spaceId))).write(
-        SpacesTableCompanion(noRepos: Value(noRepos)),
-      );
-
-  /// Deletes all messages in a space.
-  Future<void> clearSpaceMessages(String spaceId) => (delete(
-    conversationMessagesTable,
-  )..where((t) => t.spaceId.equals(spaceId))).go();
-
-  /// Removes a single participant (agent or user) from a space.
-  Future<void> removeParticipant(String spaceId, String principalId) =>
-      (delete(spaceParticipantsTable)
-            ..where((t) => t.spaceId.equals(spaceId))
-            ..where((t) => t.principalId.equals(principalId)))
-          .go();
-
-  /// Updates [userId]'s read cursor on [spaceId] to now. Idempotent and
-  /// cheap (a single write against that user's participant row). Lazily
-  /// creates the row the first time a user opens a space they weren't an
-  /// original participant of (hidden/pipeline spaces). Powers the sidebar
-  /// unread indicator: once set, agent messages newer than this timestamp are
-  /// "seen" only until another lands.
-  Future<void> markSpaceRead(String spaceId, String userId) async {
-    final updated =
-        await (update(spaceParticipantsTable)..where(
-              (t) =>
-                  t.spaceId.equals(spaceId) &
-                  t.participantType.equals('user') &
-                  t.principalId.equals(userId),
-            ))
-            .write(
-              SpaceParticipantsTableCompanion(
-                lastReadAt: Value(DateTime.now()),
-              ),
-            );
-    if (updated == 0) {
-      await into(spaceParticipantsTable).insert(
-        SpaceParticipantsTableCompanion(
-          id: Value('$spaceId-user-$userId'),
-          spaceId: Value(spaceId),
-          principalId: Value(userId),
-          participantType: const Value('user'),
-          lastReadAt: Value(DateTime.now()),
-        ),
-        mode: InsertMode.insertOrIgnore,
-      );
-    }
-  }
-
-  /// Watches [userId]'s read cursor on [spaceId], or null when no row
-  /// exists yet / it has never been set.
-  Stream<DateTime?> watchUserLastReadAt(String spaceId, String userId) {
-    return (select(spaceParticipantsTable)..where(
-          (t) =>
-              t.spaceId.equals(spaceId) &
-              t.participantType.equals('user') &
-              t.principalId.equals(userId),
-        ))
-        .watchSingleOrNull()
-        .map((row) => row?.lastReadAt);
-  }
-
-  /// One workspace-wide snapshot of the authenticated user's read cursors.
-  /// Missing rows stay absent so never-opened spaces never show as unread.
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
-    String workspaceId,
-    String userId,
-  ) {
-    final query =
-        select(spaceParticipantsTable).join([
-          innerJoin(
-            spacesTable,
-            spacesTable.id.equalsExp(spaceParticipantsTable.spaceId),
-          ),
-        ])..where(
-          spacesTable.workspaceId.equals(workspaceId) &
-              spaceParticipantsTable.participantType.equals('user') &
-              spaceParticipantsTable.principalId.equals(userId),
-        );
-    return query.watch().map(
-      (rows) => {
-        for (final row in rows)
-          row.readTable(spaceParticipantsTable).spaceId: ?row
-              .readTable(spaceParticipantsTable)
-              .lastReadAt,
-      },
-    );
-  }
-
-  /// Updates the embedding blob for a message.
-  Future<void> updateMessageEmbedding(String id, Uint8List embedding) =>
-      (update(conversationMessagesTable)..where((t) => t.id.equals(id))).write(
-        ConversationMessagesTableCompanion(embedding: Value(embedding)),
-      );
 
   /// Watches all (non-reverted) messages in a space, across every conversation
   /// it holds, in creation order. Streaming twin of [getMessagesForSpace].
-  Stream<List<ConversationMessagesTableData>> watchMessagesForSpace(
-    String spaceId,
-  ) =>
+  Stream<List<ListedMessageRow>> watchMessagesForSpace(String spaceId) =>
       customSelect(
-        'SELECT $_messageColumnsLite FROM conversation_messages '
-        'WHERE space_id = ? AND reverted = 0 '
-        'ORDER BY created_at ASC, rowid ASC',
+        'SELECT $listedMessageColumns $listedMessagesFrom'
+        'WHERE m.space_id = ? AND m.reverted = 0 '
+        'ORDER BY m.created_at ASC, m.rowid ASC',
         variables: [Variable.withString(spaceId)],
         readsFrom: {conversationMessagesTable},
-      ).watch().map(
-        (rows) => rows
-            .map((r) => conversationMessagesTable.map(r.data))
-            .toList(growable: false),
-      );
+      ).watch().map((rows) => rows.map(_listed).toList(growable: false));
 
   /// Returns all (non-reverted) messages in a space, across every conversation
   /// it holds, in creation order.
@@ -1438,7 +1303,7 @@ LIMIT 1
     String spaceId,
   ) =>
       customSelect(
-        'SELECT $_messageColumnsSansEmbedding FROM conversation_messages '
+        'SELECT * FROM conversation_messages '
         'WHERE space_id = ? AND reverted = 0 '
         'ORDER BY created_at ASC, rowid ASC',
         variables: [Variable.withString(spaceId)],
@@ -1449,47 +1314,32 @@ LIMIT 1
             .toList(growable: false),
       );
 
-  /// Messages in a space that have embeddings, ordered by creation.
+  /// Statement behind [messagesToEmbed].
   ///
-  /// Semantic ranking needs the vector and the text, not the transcript.
-  /// `list_metadata` stands in for `metadata`, so a space full of embedded
-  /// turns does not pull every `segments` blob into the score loop.
-  Future<List<ConversationMessagesTableData>> getMessagesWithEmbedding(
-    String spaceId,
-  ) =>
-      customSelect(
-        'SELECT $_messageColumnsLite, embedding FROM conversation_messages '
-        'WHERE space_id = ? AND embedding IS NOT NULL AND reverted = 0 '
-        'ORDER BY created_at ASC, rowid ASC',
-        variables: [Variable.withString(spaceId)],
-        readsFrom: {conversationMessagesTable},
-      ).get().then(
-        (rows) => rows
-            .map((r) => conversationMessagesTable.map(r.data))
-            .toList(growable: false),
-      );
-
-  /// This workspace's messages with a NULL embedding, limited for batch
-  /// processing.
+  /// "Not embedded yet" is "has no row in `conversation_message_embeddings`":
+  /// each candidate costs one probe of that table's primary key, and the
+  /// message row is never written to say it was embedded. The walk is in
+  /// rowid order from a position, so a backfill reads the table once however
+  /// many batches it takes, and a message it could not embed is passed
+  /// instead of returned again. `NOT INDEXED` keeps it that walk: by the
+  /// message-type index the planner would collect and sort every remaining
+  /// message for each batch.
   ///
-  /// The startup embedding backfill must reach every workspace's un-embedded
-  /// messages, which it does by visiting each workspace's database in turn —
-  /// each embedding is then written back to the file its message came from.
-  Future<List<ConversationMessagesTableData>> getMessagesWithoutEmbedding({
-    int limit = 200,
-  }) =>
-      (select(conversationMessagesTable)
-            ..where((t) => t.embedding.isNull())
-            ..where(
-              (t) =>
-                  t.messageType.isIn([
-                    'text',
-                    'system',
-                    'agent_turn',
-                    'compaction',
-                  ]) &
-                  t.compacted.equals(false),
-            )
-            ..limit(limit))
-          .get();
+  /// The types are the ones embedded when they are written: what a person
+  /// typed, what an agent answered and a compaction summary. A message with
+  /// no text has nothing to embed.
+  static final messagesToEmbedSql =
+      """
+SELECT m.rowid AS position, m.id, m.content
+FROM conversation_messages m NOT INDEXED
+WHERE m.rowid > ?
+  AND m.message_type IN ('${MessageType.text.wire}', '${MessageType.agentTurn.wire}', '${MessageType.compaction.wire}')
+  AND m.compacted = 0
+  AND m.content <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM conversation_message_embeddings e WHERE e.message_id = m.id
+  )
+ORDER BY m.rowid
+LIMIT ?
+""";
 }

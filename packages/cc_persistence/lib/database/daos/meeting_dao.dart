@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_persistence/database/tables/meeting_action_items.dart';
 import 'package:cc_persistence/database/tables/meeting_decisions.dart';
 import 'package:cc_persistence/database/tables/meeting_speakers.dart';
@@ -31,14 +33,20 @@ class MeetingDao extends DatabaseAccessor<WorkspaceDatabase>
   Stream<List<MeetingsTableData>> watchByWorkspace(String workspaceId) =>
       (select(meetingsTable)
             ..where((t) => t.workspaceId.equals(workspaceId))
-            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.createdAt),
+              (t) => OrderingTerm.desc(t.id),
+            ]))
           .watch();
 
   /// Reads meetings in a workspace, newest first.
   Future<List<MeetingsTableData>> getByWorkspace(String workspaceId) =>
       (select(meetingsTable)
             ..where((t) => t.workspaceId.equals(workspaceId))
-            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.createdAt),
+              (t) => OrderingTerm.desc(t.id),
+            ]))
           .get();
 
   /// Looks up a meeting by id, scoped to [workspaceId]. A meeting owned by
@@ -103,19 +111,169 @@ class MeetingDao extends DatabaseAccessor<WorkspaceDatabase>
     meetingsTable,
   )..where((t) => t.id.equals(id) & t.workspaceId.equals(workspaceId))).go();
 
-  /// Watches transcript segments for a meeting, oldest first.
+  /// Most segments one read of [segmentsAfter] returns.
+  static const int segmentPageSize = 500;
+
+  /// Up to [limit] segments of a meeting inserted after sequence [afterSeq]
+  /// (their `rowid`), in insertion order, each with its sequence.
+  ///
+  /// A new row's rowid is above every existing one, so "after the last
+  /// sequence seen" is exactly "appended since". The meeting index keeps
+  /// its entries in rowid order, so this is a range read, not a scan of the
+  /// meeting.
+  Future<List<({MeetingTranscriptSegmentsTableData row, int seq})>>
+  segmentsAfter(
+    String workspaceId,
+    String meetingId, {
+    required int afterSeq,
+    int limit = segmentPageSize,
+  }) =>
+      customSelect(
+        'SELECT *, rowid AS _seq FROM meeting_transcript_segments '
+        'WHERE meeting_id = ? AND workspace_id = ? AND rowid > ? '
+        'ORDER BY rowid LIMIT ?',
+        variables: [
+          Variable.withString(meetingId),
+          Variable.withString(workspaceId),
+          Variable.withInt(afterSeq),
+          Variable.withInt(limit),
+        ],
+        readsFrom: {meetingTranscriptSegmentsTable},
+      ).get().then(
+        (rows) => [
+          for (final r in rows)
+            (
+              row: meetingTranscriptSegmentsTable.map(r.data),
+              seq: r.read<int>('_seq'),
+            ),
+        ],
+      );
+
+  /// Watches transcript segments for a meeting, ordered by start time.
+  ///
+  /// Incremental: after the first read, a write that only INSERTS segments
+  /// reads the rows after the last sequence seen ([segmentsAfter]) and
+  /// appends them, so a live recording costs one small read per new
+  /// segment instead of re-reading the whole meeting from the start. An
+  /// update or delete of segments (a speaker rename, the diarized rewrite,
+  /// a deleted meeting) reloads the meeting. Emits only when the list
+  /// changed: a segment written for another meeting reads nothing new.
   Stream<List<MeetingTranscriptSegmentsTableData>> watchSegments(
     String workspaceId,
     String meetingId,
-  ) =>
-      (select(meetingTranscriptSegmentsTable)
-            ..where(
-              (t) =>
-                  t.meetingId.equals(meetingId) &
-                  t.workspaceId.equals(workspaceId),
+  ) {
+    var segments = <({MeetingTranscriptSegmentsTableData row, int seq})>[];
+    var lastSeq = 0;
+    var emitted = false;
+    StreamSubscription<Set<TableUpdate>>? updates;
+    var chain = Future<void>.value();
+    late final StreamController<List<MeetingTranscriptSegmentsTableData>>
+    controller;
+
+    Future<List<({MeetingTranscriptSegmentsTableData row, int seq})>> readAfter(
+      int seq,
+    ) async {
+      final out = <({MeetingTranscriptSegmentsTableData row, int seq})>[];
+      while (true) {
+        final page = await segmentsAfter(
+          workspaceId,
+          meetingId,
+          afterSeq: out.isEmpty ? seq : out.last.seq,
+        );
+        out.addAll(page);
+        if (page.length < segmentPageSize) {
+          return out;
+        }
+      }
+    }
+
+    void emit() {
+      if (!controller.isClosed) {
+        emitted = true;
+        controller.add(List.unmodifiable([for (final s in segments) s.row]));
+      }
+    }
+
+    int byStart(
+      ({MeetingTranscriptSegmentsTableData row, int seq}) a,
+      ({MeetingTranscriptSegmentsTableData row, int seq}) b,
+    ) {
+      final byStartMs = a.row.startMs.compareTo(b.row.startMs);
+      return byStartMs != 0 ? byStartMs : a.seq.compareTo(b.seq);
+    }
+
+    Future<void> reload() async {
+      final fresh = await readAfter(0)
+        ..sort(byStart);
+      final changed =
+          !emitted ||
+          fresh.length != segments.length ||
+          [
+            for (var i = 0; i < fresh.length; i++)
+              fresh[i].row != segments[i].row,
+          ].any((different) => different);
+      segments = fresh;
+      lastSeq = fresh.fold(0, (m, s) => s.seq > m ? s.seq : m);
+      if (changed) {
+        emit();
+      }
+    }
+
+    Future<void> appendNew() async {
+      final added = await readAfter(lastSeq);
+      if (added.isEmpty) {
+        return;
+      }
+      lastSeq = added.last.seq;
+      segments = [...segments, ...added]..sort(byStart);
+      emit();
+    }
+
+    void schedule(Future<void> Function() step) {
+      chain = chain.then((_) => step()).catchError((Object e, StackTrace st) {
+        if (!controller.isClosed) {
+          controller.addError(e, st);
+        }
+      });
+    }
+
+    controller = StreamController(
+      onListen: () {
+        // Subscribe before the first read, so an insert landing during it
+        // is picked up by the append that follows.
+        updates = attachedDatabase
+            .tableUpdates(
+              TableUpdateQuery.onAllTables([
+                meetingTranscriptSegmentsTable,
+                meetingsTable,
+              ]),
             )
-            ..orderBy([(t) => OrderingTerm.asc(t.startMs)]))
-          .watch();
+            .listen((batch) {
+              final segmentsTable =
+                  meetingTranscriptSegmentsTable.actualTableName;
+              final reloadNeeded = batch.any(
+                (u) => u.table == segmentsTable
+                    ? u.kind != UpdateKind.insert
+                    : u.kind == UpdateKind.delete,
+              );
+              final appended = batch.any(
+                (u) => u.table == segmentsTable && u.kind == UpdateKind.insert,
+              );
+              if (reloadNeeded) {
+                schedule(reload);
+              } else if (appended) {
+                schedule(appendNew);
+              }
+            });
+        schedule(reload);
+      },
+      onCancel: () async {
+        await updates?.cancel();
+        await controller.close();
+      },
+    );
+    return controller.stream;
+  }
 
   /// Reads transcript segments for a meeting, oldest first.
   Future<List<MeetingTranscriptSegmentsTableData>> getSegments(
@@ -128,12 +286,35 @@ class MeetingDao extends DatabaseAccessor<WorkspaceDatabase>
                   t.meetingId.equals(meetingId) &
                   t.workspaceId.equals(workspaceId),
             )
-            ..orderBy([(t) => OrderingTerm.asc(t.startMs)]))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.startMs),
+              (t) => OrderingTerm.asc(const CustomExpression<int>('rowid')),
+            ]))
           .get();
 
-  /// Appends a single transcript segment.
+  /// Appends a single transcript segment, or rewrites it when its id is
+  /// already stored.
+  ///
+  /// The two cases are separate statements on purpose: an upsert that lands
+  /// on an existing row is announced as an insert, and [watchSegments] reads
+  /// an insert as "rows appended after the last sequence", which a rewrite
+  /// in place is not. As an update it reloads the meeting instead.
   Future<void> insertSegment(MeetingTranscriptSegmentsTableCompanion entry) =>
-      into(meetingTranscriptSegmentsTable).insertOnConflictUpdate(entry);
+      transaction(() async {
+        final table = meetingTranscriptSegmentsTable;
+        final existing =
+            await (selectOnly(table)
+                  ..addColumns([table.id])
+                  ..where(table.id.equals(entry.id.value)))
+                .getSingleOrNull();
+        if (existing == null) {
+          await into(table).insert(entry);
+        } else {
+          await (update(
+            table,
+          )..where((t) => t.id.equals(entry.id.value))).write(entry);
+        }
+      });
 
   /// Replaces a meeting's transcript segments wholesale (delete + insert) in one
   /// transaction. Used by `meeting.updateTranscript` to persist the diarized,
@@ -171,6 +352,7 @@ class MeetingDao extends DatabaseAccessor<WorkspaceDatabase>
             ..orderBy([
               (t) => OrderingTerm.asc(t.sortOrder),
               (t) => OrderingTerm.asc(t.createdAt),
+              (t) => OrderingTerm.asc(t.id),
             ]))
           .watch();
 
@@ -317,6 +499,7 @@ class MeetingDao extends DatabaseAccessor<WorkspaceDatabase>
             ..orderBy([
               (t) => OrderingTerm.asc(t.sortOrder),
               (t) => OrderingTerm.asc(t.createdAt),
+              (t) => OrderingTerm.asc(t.id),
             ]))
           .watch();
 
@@ -538,8 +721,9 @@ class MeetingDao extends DatabaseAccessor<WorkspaceDatabase>
   /// stable identity, so this is the by-label counterpart to
   /// [setSpeakerDisplayName]'s by-id rename. The transcript rename UI uses it so
   /// a `Person N` that diarization labeled on a segment but never (fully)
-  /// persisted a speaker row for is still renameable. Workspace-scoped: the
-  /// lookup and the inserted row both carry [workspaceId].
+  /// persisted a speaker row for is still renameable. One
+  /// `INSERT … ON CONFLICT` on that unique key; the inserted row carries
+  /// [workspaceId].
   Future<void> upsertSpeakerDisplayName({
     required String workspaceId,
     required String meetingId,
@@ -548,36 +732,25 @@ class MeetingDao extends DatabaseAccessor<WorkspaceDatabase>
     required String? displayName,
     required String newId,
     required DateTime createdAt,
-  }) => transaction(() async {
-    final existing =
-        await (select(meetingSpeakersTable)..where(
-              (t) =>
-                  t.meetingId.equals(meetingId) &
-                  t.workspaceId.equals(workspaceId) &
-                  t.channel.equals(channel) &
-                  t.label.equals(label),
-            ))
-            .getSingleOrNull();
-    if (existing != null) {
-      await (update(
-        meetingSpeakersTable,
-      )..where((t) => t.id.equals(existing.id))).write(
-        MeetingSpeakersTableCompanion(displayName: Value(displayName)),
-      );
-      return;
-    }
-    await into(meetingSpeakersTable).insert(
-      MeetingSpeakersTableCompanion.insert(
-        id: newId,
-        meetingId: meetingId,
-        workspaceId: workspaceId,
-        channel: channel,
-        label: label,
-        displayName: Value(displayName),
-        createdAt: Value(createdAt),
-      ),
-    );
-  });
+  }) => into(meetingSpeakersTable).insert(
+    MeetingSpeakersTableCompanion.insert(
+      id: newId,
+      meetingId: meetingId,
+      workspaceId: workspaceId,
+      channel: channel,
+      label: label,
+      displayName: Value(displayName),
+      createdAt: Value(createdAt),
+    ),
+    onConflict: DoUpdate(
+      (_) => MeetingSpeakersTableCompanion(displayName: Value(displayName)),
+      target: [
+        meetingSpeakersTable.meetingId,
+        meetingSpeakersTable.channel,
+        meetingSpeakersTable.label,
+      ],
+    ),
+  );
 
   /// Records (or clears, when null) the voice [profileName] this speaker's
   /// voiceprint was enrolled into, for the speaker identified by its

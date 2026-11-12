@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/paired_evaluation.dart';
 import 'package:cc_domain/features/observability/domain/benchmark.dart';
@@ -38,7 +39,7 @@ class EvaluationBenchmarkBridge {
     BenchmarkRun run, {
     BenchmarkScorer scorer = const BenchmarkScorer(),
   }) {
-    final adjusted = scorer.successAdjustedCostCents(run);
+    final adjusted = scorer.successAdjustedCostMicros(run);
     final unknown = run.totalCostMicros == null;
     return '${scorer.markdownReport(run)}\n'
         'success-adjusted cost: '
@@ -46,7 +47,7 @@ class EvaluationBenchmarkBridge {
             ? 'unknown (unpriced attempts)'
             : adjusted == null
             ? '∞ (no verified success)'
-            : '\$${(adjusted / 100).toStringAsFixed(6)} per verified success'}\n';
+            : '\$${(adjusted / microsPerDollar).toStringAsFixed(6)} per verified success'}\n';
   }
 
   static BenchmarkTrial _trial(EvaluationAttempt attempt) => BenchmarkTrial(
@@ -55,18 +56,10 @@ class EvaluationBenchmarkBridge {
         ? TrialStatus.error
         : (attempt.verifiedSuccess ? TrialStatus.pass : TrialStatus.fail),
     reward: attempt.completed ? (attempt.verifiedSuccess ? 1 : 0) : null,
-    costCents: attempt.cost.budgetMicros == null
-        ? null
-        : ((attempt.cost.budgetMicros! + (attempt.cost.auxMicros ?? 0)) /
-                  microsPerCent)
-              .round(),
     costMicros: attempt.cost.budgetMicros == null
         ? null
         : attempt.cost.budgetMicros! + (attempt.cost.auxMicros ?? 0),
-    advisorCostCents: attempt.cost.advisorMicros == null
-        ? 0
-        : (attempt.cost.advisorMicros! / microsPerCent).round(),
-    advisorCostMicros: attempt.cost.advisorMicros,
+    advisorCostMicros: attempt.cost.advisorMicros ?? 0,
     tokIn: attempt.tokens.inputTokens,
     tokOut: attempt.tokens.output,
     tokCache: attempt.tokens.cacheRead + attempt.tokens.cacheWrite,

@@ -52,9 +52,6 @@ class WebhookDeliveryRepositoryImpl implements WebhookDeliveryRepository {
   }
 
   @override
-  Future<bool> existsByDedupeKey(
-    String workspaceId,
-    String triggerId,
-    String dedupeKey,
-  ) => _dao(workspaceId).existsByDedupeKey(triggerId, dedupeKey);
+  Future<bool> claim(WebhookDelivery delivery) =>
+      _dao(delivery.workspaceId).claim(webhookDeliveryToCompanion(delivery));
 }

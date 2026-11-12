@@ -9,6 +9,7 @@ import 'package:cc_persistence/cc_persistence.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -276,6 +277,29 @@ void main() {
       expect(updated.first.content, 'Updated');
     });
 
+    test('an unknown message or sender type is refused as input', () async {
+      final space = await repo.createSpace('ws-1', 'Chat', ['agent-1']);
+      Future<String> send({String type = 'text', String sender = 'agent'}) =>
+          repo.sendMessage(
+            workspaceId: 'ws-1',
+            spaceId: space.id,
+            content: 'Message',
+            senderId: 'agent-1',
+            senderType: sender,
+            messageType: type,
+          );
+
+      await expectLater(
+        send(type: 'agentTurn'),
+        throwsA(isA<ValidationException>()),
+      );
+      await expectLater(
+        send(sender: 'bot'),
+        throwsA(isA<ValidationException>()),
+      );
+      expect(await repo.getMessages('ws-1', space.id), isEmpty);
+    });
+
     test('updates message metadata', () async {
       final space = await repo.createSpace('ws-1', 'Chat', ['agent-1']);
       await repo.sendMessage(
@@ -284,7 +308,7 @@ void main() {
         content: 'Message',
         senderId: 'agent-1',
         senderType: 'agent',
-        messageType: 'thinking',
+        messageType: 'agent_turn',
       );
 
       final messages = await repo.getMessages('ws-1', space.id);
@@ -428,25 +452,23 @@ void main() {
       await repo.setSpaceRepos('ws-1', space.id, ['r-3']);
       expect(await repo.spaceRepoSelection('ws-1', space.id), ['r-3']);
       // The replaced rows left no residue behind.
-      expect(
-        await db.spaceRepoDao.repoIdsForSpace('ws-1', space.id),
-        ['r-3'],
-      );
+      expect(await db.spaceRepoDao.repoIdsForSpace('ws-1', space.id), ['r-3']);
       expect((await db.messagingDao.getSpaceById(space.id))!.noRepos, isFalse);
     });
 
-    test('an empty selection is an explicit none, not the all-repos default',
-        () async {
-      final space = await repo.createSpace('ws-1', 'Chat', ['agent-1']);
+    test(
+      'an empty selection is an explicit none, not the all-repos default',
+      () async {
+        final space = await repo.createSpace('ws-1', 'Chat', ['agent-1']);
 
-      await repo.setSpaceRepos('ws-1', space.id, const []);
+        await repo.setSpaceRepos('ws-1', space.id, const []);
 
-      expect(await repo.spaceRepoSelection('ws-1', space.id), isEmpty);
-      expect((await db.messagingDao.getSpaceById(space.id))!.noRepos, isTrue);
-    });
+        expect(await repo.spaceRepoSelection('ws-1', space.id), isEmpty);
+        expect((await db.messagingDao.getSpaceById(space.id))!.noRepos, isTrue);
+      },
+    );
 
-    test('null restores the all-repos default from an explicit none',
-        () async {
+    test('null restores the all-repos default from an explicit none', () async {
       final space = await repo.createSpace('ws-1', 'Chat', ['agent-1']);
       await repo.setSpaceRepos('ws-1', space.id, const []);
       expect(await repo.spaceRepoSelection('ws-1', space.id), isEmpty);
@@ -963,6 +985,7 @@ void main() {
       // `workspaceId` is now the leading positional argument and it also picks
       // the database file the row lands in — so the assertion reads ws-77's own
       // database, not ws-1's.
+      await seedPipelineRun(dbs.of('ws-77'), 'run-1');
       final space = await repo.createSpace(
         'ws-77',
         'Managed',
@@ -999,26 +1022,6 @@ void main() {
       expect(withEmb, hasLength(1));
       expect(withEmb.first.message.id, 'e1');
     });
-
-    test(
-      'getMessagesWithoutEmbedding returns un-embedded text messages',
-      () async {
-        final space = await repo.createSpace('ws-1', 'Chat', ['agent-1']);
-        await repo.sendMessage(
-          workspaceId: 'ws-1',
-          spaceId: space.id,
-          content: 'no embedding',
-          senderId: 'user',
-          senderType: 'user',
-          id: 'ne1',
-        );
-        final without = await repo.getMessagesWithoutEmbedding(
-          'ws-1',
-          limit: 10,
-        );
-        expect(without.map((m) => m.id), contains('ne1'));
-      },
-    );
   });
 
   group('updateMessage no-op', () {

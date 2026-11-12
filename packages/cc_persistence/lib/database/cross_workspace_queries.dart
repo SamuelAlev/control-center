@@ -28,29 +28,49 @@ class CrossWorkspaceQueries {
   /// resident for the process's lifetime. A workspace someone is actually in
   /// stays open, because an ordinary `of()` claims it.
   ///
-  /// Soft-deleted workspaces are skipped unless [includeDeleted]: opening one
-  /// costs a cold open to contribute rows the operator asked to stop seeing.
+  /// Only live workspaces are read: a deleted workspace has no database.
+  ///
+  /// A caller that reads in order to write back ([backgroundWriter], its
+  /// name for the log) gets nothing from a read-only workspace: every write
+  /// it attempted there would fail, on every tick. The skipped workspaces
+  /// are logged once per call.
   Future<List<T>> fanOut<T>(
     Future<T> Function(WorkspaceDatabase db) read, {
     void Function(String workspaceId, Object error)? onError,
-    bool includeDeleted = false,
+    String? backgroundWriter,
   }) async {
-    final ids = await _idsFor(includeDeleted: includeDeleted);
-    final results = await _bounded(
-      ids,
-      (id) async {
-        try {
-          return _Ok<T>(await _manager.useTransiently(id, read));
-        } on Object catch (e) {
-          onError?.call(id, e);
+    final ids = await _manager.liveWorkspaceIds();
+    final skipped = <String>[];
+    final results = await _bounded(ids, (id) async {
+      try {
+        final value = await _manager.useTransiently(id, read);
+        // The integrity check runs on a file's first query, so a damaged
+        // file is only known once the read above has opened it.
+        if (backgroundWriter != null && _manager.integrityFailure(id) != null) {
+          skipped.add(id);
           return _Failed<T>();
         }
-      },
-    );
+        return _Ok<T>(value);
+      } on Object catch (e) {
+        onError?.call(id, e);
+        return _Failed<T>();
+      }
+    });
+    _logSkipped(backgroundWriter, skipped);
     return [
       for (final r in results)
         if (r is _Ok<T>) r.value,
     ];
+  }
+
+  void _logSkipped(String? writer, List<String> skipped) {
+    if (writer == null || skipped.isEmpty) {
+      return;
+    }
+    _manager.onWarn?.call(
+      'CrossWorkspaceQueries',
+      '$writer skipped read-only workspaces: ${(skipped..sort()).join(', ')}',
+    );
   }
 
   /// Like [fanOut] but keeps each result paired with its workspace id, for
@@ -58,9 +78,8 @@ class CrossWorkspaceQueries {
   Future<Map<String, T>> fanOutKeyed<T>(
     Future<T> Function(WorkspaceDatabase db) read, {
     void Function(String workspaceId, Object error)? onError,
-    bool includeDeleted = false,
   }) async {
-    final ids = await _idsFor(includeDeleted: includeDeleted);
+    final ids = await _manager.liveWorkspaceIds();
     final out = <String, T>{};
     await _bounded(ids, (id) async {
       try {
@@ -80,24 +99,36 @@ class CrossWorkspaceQueries {
   /// the server is trying to serve. Returns the number of workspaces that
   /// succeeded.
   ///
-  /// Includes soft-deleted workspaces by default, unlike the read fan-outs:
-  /// their files are still on disk and skipping them would leave them un-swept
-  /// and un-backed-up, which is the reason maintenance runs at all.
+  /// Live workspaces only, like the read fan-outs: a deleted workspace has no
+  /// database to maintain. A read-only workspace (its integrity check failed)
+  /// is skipped too, and the skipped ones are logged once per pass under
+  /// [backgroundWriter]: its file takes no writes, and a sweep that tried
+  /// would fail there on every pass.
   Future<int> forEachWorkspace(
     Future<void> Function(WorkspaceDatabase db) write, {
     void Function(String workspaceId, Object error)? onError,
-    bool includeDeleted = true,
+    String backgroundWriter = 'maintenance sweep',
   }) async {
-    final ids = await _idsFor(includeDeleted: includeDeleted);
+    final ids = await _manager.liveWorkspaceIds();
+    final skipped = <String>[];
     var ok = 0;
     for (final id in ids) {
       try {
-        await _manager.useTransiently(id, (db) async => write(db));
-        ok++;
+        await _manager.useTransiently(id, (db) async {
+          // The integrity check runs on a file's first query.
+          await db.customSelect('SELECT 1').get();
+          if (_manager.integrityFailure(id) != null) {
+            skipped.add(id);
+            return;
+          }
+          await write(db);
+          ok++;
+        });
       } on Object catch (e) {
         onError?.call(id, e);
       }
     }
+    _logSkipped(backgroundWriter, skipped);
     return ok;
   }
 
@@ -110,9 +141,8 @@ class CrossWorkspaceQueries {
     Stream<List<T>> Function(WorkspaceDatabase db) watch, {
     int Function(T a, T b)? sort,
     int? limit,
-    bool includeDeleted = false,
   }) async* {
-    final ids = await _idsFor(includeDeleted: includeDeleted);
+    final ids = await _manager.liveWorkspaceIds();
     if (ids.isEmpty) {
       yield const [];
       return;
@@ -163,10 +193,6 @@ class CrossWorkspaceQueries {
     yield* controller.stream;
   }
 
-  Future<List<String>> _idsFor({required bool includeDeleted}) => includeDeleted
-      ? _manager.allWorkspaceIds()
-      : _manager.liveWorkspaceIds();
-
   /// Runs [body] over [ids] with at most [_maxConcurrentReads] in flight,
   /// preserving input order in the result.
   Future<List<R>> _bounded<R>(
@@ -202,12 +228,10 @@ class CrossWorkspaceQueries {
     int limit, {
     required int Function(T a, T b) compare,
     void Function(String workspaceId, Object error)? onError,
-    bool includeDeleted = false,
   }) async {
     final perWorkspace = await fanOut(
       (db) => read(db, limit),
       onError: onError,
-      includeDeleted: includeDeleted,
     );
     final merged = [for (final rows in perWorkspace) ...rows]..sort(compare);
     return merged.length > limit ? merged.sublist(0, limit) : merged;

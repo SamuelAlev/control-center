@@ -60,9 +60,7 @@ class DaoIsolatedRepoRepository implements IsolatedRepoRepository {
   /// case validates and what [deleteById] then needs. Prefer [forSpace]
   /// whenever the workspace is still known.
   @override
-  Future<List<IsolatedRepo>> forSpaceAcrossWorkspaces(
-    String spaceId,
-  ) async {
+  Future<List<IsolatedRepo>> forSpaceAcrossWorkspaces(String spaceId) async {
     final perWorkspace = await _cross.fanOut(
       (db) => db.isolatedRepoDao.findBySpaceAcrossWorkspaces(spaceId),
     );
@@ -112,9 +110,20 @@ class DaoIsolatedRepoRepository implements IsolatedRepoRepository {
         ),
       );
 
+  /// Removes the worktree row and its code index partition, the partition
+  /// first: it lives in `code_index.db`, which no foreign key from
+  /// `isolated_repos` reaches.
   @override
-  Future<void> deleteById(String workspaceId, String id) =>
-      _dao(workspaceId).deleteById(id);
+  Future<void> deleteById(String workspaceId, String id) async {
+    final row = await _dao(workspaceId).findById(workspaceId, id);
+    if (row != null) {
+      await _dbs
+          .codeIndexOf(workspaceId)
+          .codeGraphDao
+          .deleteByCheckout(row.repoId, id);
+    }
+    await _dao(workspaceId).deleteById(id);
+  }
 
   IsolatedRepo _toEntity(IsolatedReposTableData row) => IsolatedRepo(
     id: row.id,

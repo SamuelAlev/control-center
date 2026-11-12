@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/orchestration/domain/value_objects/plan_annotations.dart';
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -464,8 +465,12 @@ class _EstimateDetail extends StatelessWidget {
     if (e == null || !e.hasHistory) {
       return Text(l10n.planEstimateNoHistory, style: style());
     }
-    final costLo = ((e.costCentsLow ?? 0) / 100).toStringAsFixed(2);
-    final costHi = ((e.costCentsHigh ?? 0) / 100).toStringAsFixed(2);
+    final costLo = ((e.costMicrosLow ?? 0) / microsPerDollar).toStringAsFixed(
+      2,
+    );
+    final costHi = ((e.costMicrosHigh ?? 0) / microsPerDollar).toStringAsFixed(
+      2,
+    );
     final durLo = _mins(e.durationMsLow);
     final durHi = _mins(e.durationMsHigh);
     return Column(

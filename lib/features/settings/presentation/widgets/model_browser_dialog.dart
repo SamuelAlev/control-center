@@ -4,6 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/model_browser_rail.dart';
 import 'package:control_center/features/settings/providers/model_browser_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -113,7 +114,7 @@ class _ModelBrowserDialogState extends ConsumerState<ModelBrowserDialog> {
               Center(child: CcSpinner(semanticLabel: l10n.loadingModels)),
           error: (e, _) => Center(
             child: Text(
-              l10n.failedWithError('$e'),
+              failureMessage(l10n, e),
               style: CcTypography.bodySm.copyWith(color: context.ds.danger),
             ),
           ),

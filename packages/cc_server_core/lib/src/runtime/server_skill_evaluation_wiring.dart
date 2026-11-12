@@ -336,14 +336,12 @@ SkillEvaluationService buildSkillEvaluationService({
                   return null;
                 }
                 return ProviderCallCost(
-                  (price.estimate(
-                            inputTokens: record.usage.inputTokens,
-                            outputTokens: record.usage.outputTokens,
-                            cacheReadTokens: record.usage.cacheReadTokens,
-                            cacheWriteTokens: record.usage.cacheWriteTokens,
-                          ) *
-                          1000000)
-                      .ceil(),
+                  price.estimateMicros(
+                    inputTokens: record.usage.inputTokens,
+                    outputTokens: record.usage.outputTokens,
+                    cacheReadTokens: record.usage.cacheReadTokens,
+                    cacheWriteTokens: record.usage.cacheWriteTokens,
+                  ),
                 );
               },
         maxCallMicros: (pin['maxCallMicros'] as num?)?.toInt(),

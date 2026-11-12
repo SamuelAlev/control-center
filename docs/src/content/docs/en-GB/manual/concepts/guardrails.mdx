@@ -2,7 +2,7 @@
 title: Guardrails — one policy for every mutating action
 description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
 slug: en-GB/manual/concepts/guardrails
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Agents in Control Center can delete files, push branches, publish pull
@@ -110,7 +110,7 @@ A constraint may name:
 - **commands** — command prefixes, matched on a word boundary
 - **tools** — the exact tool a call names, so an approval can cover one tool
   rather than every tool with the same effect
-- **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
+- **ceilings** — `maxCount` / `maxMicros`, so "delete up to 50 files" is
   expressible
 
 Three properties fall out of keeping the grammar closed and loop-free, and

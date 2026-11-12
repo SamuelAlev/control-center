@@ -1,13 +1,17 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
   late WorkspaceDatabase db;
 
-  setUp(() {
+  setUp(() async {
     db = createTestDatabase();
+    await seedPipelineTrigger(db, 'trig-1');
+    await seedPipelineTrigger(db, 'trig-2');
+    await seedPipelineRun(db, 'run-1');
   });
 
   tearDown(() async {
@@ -89,31 +93,86 @@ void main() {
       expect(row?.status, 'dispatched');
       expect(row?.runId, 'run-1');
     });
+  });
+
+  group('WebhookDeliveryDao.claim', () {
+    WebhookDeliveriesTableCompanion delivery(
+      String id, {
+      String triggerId = 'trig-1',
+      String? dedupeKey = 'abc',
+    }) => WebhookDeliveriesTableCompanion.insert(
+      id: id,
+      workspaceId: 'w-1',
+      triggerId: triggerId,
+      status: 'queued',
+      signatureStatus: 'valid',
+      dedupeKey: Value(dedupeKey),
+    );
+
+    Future<void> setStatus(String id, String status) =>
+        db.webhookDeliveryDao.updateDelivery(
+          id,
+          WebhookDeliveriesTableCompanion(status: Value(status)),
+        );
 
     test(
-      'existsByDedupeKey detects a prior delivery for (triggerId, key)',
+      'a key in flight or dispatched is held; a failed one is not',
       () async {
-        await record(
-          id: 'wd-1',
-          ws: 'w-1',
-          triggerId: 'trig-1',
-          dedupeKey: 'abc',
-        );
-        expect(
-          await db.webhookDeliveryDao.existsByDedupeKey('trig-1', 'abc'),
-          isTrue,
-        );
-        expect(
-          await db.webhookDeliveryDao.existsByDedupeKey('trig-1', 'other'),
-          isFalse,
-        );
-        expect(
-          await db.webhookDeliveryDao.existsByDedupeKey('other-trig', 'abc'),
-          isFalse,
-        );
+        final dao = db.webhookDeliveryDao;
+        expect(await dao.claim(delivery('d-1')), isTrue);
+        // In flight: the identical delivery is not claimed (and not recorded).
+        expect(await dao.claim(delivery('d-2')), isFalse);
+        expect(await dao.getById('w-1', 'd-2'), isNull);
+
+        await setStatus('d-1', 'failed');
+        // The provider's retry of a failed dispatch claims the key again.
+        expect(await dao.claim(delivery('d-3')), isTrue);
+
+        await setStatus('d-3', 'dispatched');
+        expect(await dao.claim(delivery('d-4')), isFalse);
       },
     );
 
+    test(
+      'keys are per trigger, and a delivery without one is never held',
+      () async {
+        final dao = db.webhookDeliveryDao;
+        expect(await dao.claim(delivery('d-1')), isTrue);
+        expect(await dao.claim(delivery('d-2', triggerId: 'trig-2')), isTrue);
+        expect(await dao.claim(delivery('d-3', dedupeKey: null)), isTrue);
+        expect(await dao.claim(delivery('d-4', dedupeKey: null)), isTrue);
+      },
+    );
+
+    test('rejected and ignored rows hold no key', () async {
+      final dao = db.webhookDeliveryDao;
+      await record(
+        id: 'r-1',
+        ws: 'w-1',
+        triggerId: 'trig-1',
+        status: 'rejected',
+        dedupeKey: 'abc',
+      );
+      await record(
+        id: 'i-1',
+        ws: 'w-1',
+        triggerId: 'trig-1',
+        status: 'ignored',
+        dedupeKey: 'abc',
+      );
+      expect(await dao.claim(delivery('d-1')), isTrue);
+    });
+
+    test('of concurrent identical claims exactly one wins', () async {
+      final dao = db.webhookDeliveryDao;
+      final results = await Future.wait([
+        for (var i = 0; i < 8; i++) dao.claim(delivery('d-$i')),
+      ]);
+      expect(results.where((won) => won), hasLength(1));
+    });
+  });
+
+  group('WebhookDeliveryDao retention', () {
     test('deleteOlderThan removes rows created before the cutoff', () async {
       await record(
         id: 'wd-1',

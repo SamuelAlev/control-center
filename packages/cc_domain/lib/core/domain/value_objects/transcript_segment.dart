@@ -83,9 +83,10 @@ String turnOutcomeToString(TurnOutcome o) => switch (o) {
 ///
 /// Segments are appended in the exact chronological order events arrive, so a
 /// transcript faithfully interleaves reasoning, tool calls and text the way a
-/// Codex-style UI renders them. Persisted under
-/// `Message.metadata['segments']` as a JSON list (discriminated by the
-/// `type` field) and streamed live via `TranscriptUpdate`.
+/// Codex-style UI renders them. Stored one row per segment ([toJson], keyed by
+/// position), carried on a message as `Message.metadata['segments']` (a JSON
+/// list discriminated by the `type` field) and streamed live via
+/// `TranscriptUpdate`.
 sealed class TranscriptSegment {
   /// Creates a [TranscriptSegment].
   const TranscriptSegment({required this.startedAt, this.durationMs});
@@ -543,7 +544,7 @@ class ViolationSegment extends TranscriptSegment {
   int get hashCode => Object.hash(message, action, target, startedAt);
 }
 
-/// Decodes a transcript from a persisted `metadata['segments']` value.
+/// Decodes a transcript from a `metadata['segments']` or wire `segments` value.
 ///
 /// Tolerant: non-list inputs yield an empty list and non-map entries are
 /// skipped rather than throwing.
@@ -557,6 +558,7 @@ List<TranscriptSegment> decodeTranscript(Object? raw) {
   ];
 }
 
-/// Encodes a transcript to a JSON list for persistence.
+/// Encodes a transcript to a JSON list, the `metadata['segments']` and wire
+/// shape.
 List<Map<String, dynamic>> encodeTranscript(List<TranscriptSegment> segments) =>
     segments.map((s) => s.toJson()).toList();

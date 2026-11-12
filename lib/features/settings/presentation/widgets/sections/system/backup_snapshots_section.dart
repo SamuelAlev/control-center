@@ -1,16 +1,14 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_flow.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_gate.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_snapshot_row.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/utils/human_bytes.dart';
-import 'package:control_center/shared/widgets/app_timestamp.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:control_center/shared/widgets/type_to_confirm_labels.dart';
 import 'package:flutter/widgets.dart';
@@ -32,6 +30,7 @@ class _BackupSnapshotsSectionState
   bool _backingUp = false;
   final Set<String> _expanded = {};
   String? _restoring;
+  ({String key, String message})? _restoreRefusal;
   String? _downloading;
   String? _deleting;
   ({int transferred, int? total})? _downloadProgress;
@@ -54,7 +53,7 @@ class _BackupSnapshotsSectionState
       }
       CcToastScope.maybeOf(
         context,
-      )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      )?.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     } finally {
       if (mounted) {
         setState(() => _backingUp = false);
@@ -65,19 +64,29 @@ class _BackupSnapshotsSectionState
   Future<void> _restore(
     BackupSnapshotWorkspaceView entry,
     String workspaceName,
-  ) => restoreWorkspaceFromBackup(
-    context,
-    actions: ref.read(backupActionsProvider),
-    entry: entry,
-    workspaceName: workspaceName,
-    onBusy: (busy) {
-      if (mounted) {
-        setState(
-          () => _restoring = busy ? '${entry.workspaceId}:${entry.path}' : null,
-        );
-      }
-    },
-  );
+  ) {
+    final key = '${entry.workspaceId}:${entry.path}';
+    return restoreWorkspaceFromBackup(
+      context,
+      actions: ref.read(backupActionsProvider),
+      entry: entry,
+      workspaceName: workspaceName,
+      onBusy: (busy) {
+        if (mounted) {
+          setState(() => _restoring = busy ? key : null);
+        }
+      },
+      onRefused: (message) {
+        if (mounted) {
+          setState(
+            () => _restoreRefusal = message == null
+                ? null
+                : (key: key, message: message),
+          );
+        }
+      },
+    );
+  }
 
   Future<void> _deleteSnapshot(BackupSnapshotView snapshot) async {
     final l10n = AppLocalizations.of(context);
@@ -111,7 +120,7 @@ class _BackupSnapshotsSectionState
       }
       CcToastScope.maybeOf(
         context,
-      )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      )?.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     } finally {
       if (mounted) {
         setState(() => _deleting = null);
@@ -196,7 +205,7 @@ class _BackupSnapshotsSectionState
           const SizedBox(height: AppSpacing.md),
           switch (snapshots) {
             AsyncError(:final error) => Text(
-              l10n.failedWithError('$error'),
+              failureMessage(l10n, error),
               style: CcTypography.bodySm.copyWith(
                 color: tokens.textErrorPrimary,
               ),
@@ -209,11 +218,12 @@ class _BackupSnapshotsSectionState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final snapshot in value)
-                  _SnapshotRow(
+                  BackupSnapshotRow(
                     snapshot: snapshot,
                     workspaceNames: workspaces,
                     expanded: _expanded.contains(snapshot.path),
                     restoringKey: _restoring,
+                    refusal: _restoreRefusal,
                     downloading: _downloading == snapshot.path,
                     deleting: _deleting == snapshot.name,
                     progress: _downloading == snapshot.path
@@ -238,153 +248,6 @@ class _BackupSnapshotsSectionState
               child: Center(child: CcSpinner(size: 16)),
             ),
           },
-        ],
-      ),
-    );
-  }
-}
-
-/// One snapshot: when it was taken, what it holds, and what can be restored.
-class _SnapshotRow extends StatelessWidget {
-  const _SnapshotRow({
-    required this.snapshot,
-    required this.workspaceNames,
-    required this.expanded,
-    required this.restoringKey,
-    required this.deleting,
-    required this.downloading,
-    required this.progress,
-    required this.canTransfer,
-    required this.onExpandedChanged,
-    required this.onRestore,
-    required this.onDownload,
-    required this.onDelete,
-  });
-
-  final BackupSnapshotView snapshot;
-  final Map<String, String> workspaceNames;
-  final bool expanded;
-  final String? restoringKey;
-  final bool downloading;
-  final bool deleting;
-  final ({int transferred, int? total})? progress;
-  final bool canTransfer;
-  final ValueChanged<bool> onExpandedChanged;
-  final Future<void> Function(BackupSnapshotWorkspaceView, String) onRestore;
-  final Future<void> Function(BackupSnapshotView) onDownload;
-  final Future<void> Function(BackupSnapshotView) onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final createdAt = snapshot.createdAt;
-
-    return SettingsEntityRow(
-      title: snapshot.name,
-      icon: AppIcons.archive,
-      tone: snapshot.complete ? CcStatusTone.positive : CcStatusTone.caution,
-      statusLabel: snapshot.complete
-          ? l10n.backupSnapshotComplete
-          : l10n.backupSnapshotIncomplete,
-      subtitleWidget: createdAt == null
-          ? null
-          : AppTimestamp.relative(createdAt),
-      meta: [
-        SettingsMetaFact(value: humanBytes(snapshot.bytes)),
-        SettingsMetaFact(
-          value: l10n.backupSnapshotWorkspaces(snapshot.workspaces.length),
-        ),
-        if (snapshot.skippedWorkspaceIds.isNotEmpty)
-          SettingsMetaFact(
-            value: l10n.backupSnapshotSkipped(
-              snapshot.skippedWorkspaceIds.length,
-            ),
-          ),
-      ],
-      expanded: expanded,
-      onExpandedChanged: onExpandedChanged,
-      detail: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (!snapshot.complete) ...[
-            Text(
-              l10n.backupSnapshotIncompleteNote,
-              style: CcTypography.caption.copyWith(
-                color: tokens.textWarningPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: CcButton(
-              size: CcButtonSize.sm,
-              icon: AppIcons.download,
-              loading: downloading,
-              onPressed: !canTransfer || downloading
-                  ? null
-                  : () => onDownload(snapshot),
-              child: Text(l10n.backupDownloadAction),
-            ),
-          ),
-          if (progress != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            BackupTransferProgressBar(
-              transferred: progress!.transferred,
-              total: progress!.total,
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            l10n.backupServerPathLabel,
-            style: CcTypography.caption.copyWith(color: tokens.textTertiary),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          SettingsCopyField(value: snapshot.path),
-          const SizedBox(height: AppSpacing.md),
-          const BackupRestoreOwnerOnlyNote(),
-          for (final entry in snapshot.workspaces)
-            BackupSnapshotWorkspaceRow(
-              entry: entry,
-              // A snapshot outlives the registry: a workspace can be deleted,
-              // or the whole file moved to another install. Naming the id and
-              // refusing the restore beats an import that fails server-side
-              // with "unknown workspace" after a type-to-confirm.
-              name: workspaceNames[entry.workspaceId],
-              busy: restoringKey == '${entry.workspaceId}:${entry.path}',
-              onRestore: onRestore,
-            ),
-          const SizedBox(height: AppSpacing.lg),
-          // The delete lives inside the callout that warns about it. It trails
-          // the copy where there is room and drops beneath it where a trailing
-          // button would squeeze the warning into a sliver.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final inline =
-                  constraints.maxWidth >= kSettingsFieldInlineBreakpoint;
-              final delete = CcButton(
-                size: CcButtonSize.sm,
-                variant: CcButtonVariant.destructive,
-                icon: AppIcons.trash2,
-                loading: deleting,
-                onPressed: deleting ? null : () => onDelete(snapshot),
-                child: Text(l10n.backupDeleteSnapshotAction),
-              );
-              return CcAlert(
-                variant: CcAlertVariant.danger,
-                title: l10n.backupDeleteSnapshotLabel,
-                description: Text(
-                  l10n.backupDeleteSnapshotDescription,
-                  style: CcTypography.bodySm.copyWith(
-                    color: tokens.textErrorPrimary,
-                  ),
-                ),
-                trailing: inline ? delete : null,
-                action: inline ? null : delete,
-              );
-            },
-          ),
         ],
       ),
     );

@@ -3,6 +3,7 @@ import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/agent_run_output_port.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
@@ -34,6 +35,7 @@ import 'package:cc_domain/features/memory/domain/usecases/supersede_policy_use_c
 import 'package:cc_domain/features/messaging/domain/ports/space_notes_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
+import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_validator.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
@@ -53,6 +55,9 @@ McpToolRegistry buildServerMcpRegistry({
   // repository resolves `of(workspaceId)` per call).
   required GlobalDatabase globalDb,
   required WorkspaceDatabaseManager workspaceDbs,
+  // The runtime's one trigger repository: it resolves webhook tokens through
+  // the server's secrets store, which a second instance must not duplicate.
+  required PipelineTriggerRepository pipelineTriggerRepository,
   // The repositories whose checkouts the server serves (`GuardedRepoRepository`):
   // `list_repos` hands agents a `local_path`, so a repository whose stored path
   // is refused is never listed.
@@ -75,8 +80,10 @@ McpToolRegistry buildServerMcpRegistry({
   // Per-conversation todo lists — the [TodoWriteTool]'s persistence backend.
   required TodoRepository todoRepository,
   // Pipeline structured-output contract: [SubmitOutputTool] resolves the
-  // calling agent's active run and writes its `outputJson`.
+  // calling agent's active run and writes its `outputJson` through
+  // [agentRunOutputs].
   required AgentRunLogRepository agentRunLogRepository,
+  required AgentRunOutputPort agentRunOutputs,
   // Memory cluster (read + write). These repos + use cases must be
   // constructed in [runCcServer] and passed here — the DAOs alone aren't
   // enough (the use cases enforce access grants + deduplication logic).
@@ -156,10 +163,6 @@ McpToolRegistry buildServerMcpRegistry({
 
   // ── Teams + pipeline triggers (PRD 10) ──
   final teamActivityRepository = TeamActivityRepositoryImpl(workspaceDbs);
-  final pipelineTriggerRepository = PipelineTriggerRepositoryImpl(
-    workspaceDbs,
-    globalDb.workspaceRouteDao,
-  );
   final pipelineTemplateRepository = PipelineTemplateRepositoryImpl(
     workspaceDbs,
     validator: PipelineValidator(schemaValidator: schemaValidator),
@@ -284,6 +287,7 @@ McpToolRegistry buildServerMcpRegistry({
     // and a schemaless one falls back to the agent's last chat message.
     SubmitOutputTool(
       runLogRepository: agentRunLogRepository,
+      runOutputs: agentRunOutputs,
       schemaValidator: schemaValidator,
     ),
     // ── Governance (PRD 09) ──

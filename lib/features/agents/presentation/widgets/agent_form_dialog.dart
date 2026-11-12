@@ -17,6 +17,7 @@ import 'package:control_center/features/settings/providers/settings_providers.da
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/widgets.dart';
@@ -311,7 +312,7 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
               kind: FieldPlaceholderKind.loading,
             ),
             error: (e, _) => FieldPlaceholder(
-              text: l10n.failedWithError('$e'),
+              text: failureMessage(l10n, e),
               kind: FieldPlaceholderKind.error,
             ),
             data: (agents) {
@@ -709,7 +710,7 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
 
       CcToastScope.of(
         context,
-      ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     } finally {
       if (mounted) {
         setState(() => _saving = false);

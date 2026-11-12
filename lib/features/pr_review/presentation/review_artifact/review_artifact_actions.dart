@@ -9,6 +9,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_run_provid
 import 'package:control_center/features/pr_review/providers/review_artifact_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -79,7 +80,7 @@ class _ReviewArtifactActionsState extends ConsumerState<ReviewArtifactActions> {
       if (!mounted) {
         return;
       }
-      toast?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      toast?.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     } finally {
       if (mounted) {
         setState(() => _publishing = false);

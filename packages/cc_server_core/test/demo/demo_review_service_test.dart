@@ -26,6 +26,14 @@ void main() {
     global = createTestGlobalDatabase();
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, workspaceId);
+    // The reviewer the scripted review files its report as; the demo seed
+    // creates it in a real demo workspace.
+    await dbs.of(workspaceId).customStatement(
+      'INSERT INTO agents '
+      '(id, name, title, agent_md_path, workspace_id, skills) '
+      "VALUES ('demo-agent-reviewer', 'Ravi', 'Reviewer', '', ?, '')",
+      [workspaceId],
+    );
     final templates = PipelineTemplateRepositoryImpl(dbs);
     final review = builtInTemplateSeeds(
       workspaceId: workspaceId,

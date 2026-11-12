@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
+import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
@@ -41,6 +43,7 @@ void main() {
       final triggerRepo = PipelineTriggerRepositoryImpl(
         dbs,
         global.workspaceRouteDao,
+        WebhookSecretVault(InMemorySecretStore()),
       );
 
       final seeder = WorkspaceSeeder(
@@ -109,6 +112,7 @@ void main() {
     final triggerRepo = PipelineTriggerRepositoryImpl(
       dbs,
       global.workspaceRouteDao,
+      WebhookSecretVault(InMemorySecretStore()),
     );
     final seeder = WorkspaceSeeder(
       agentRepository: DaoAgentRepository(dbs),

@@ -6,6 +6,7 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -108,7 +109,7 @@ class _ForgeTokenDialogState extends ConsumerState<ForgeTokenDialog> {
           _saving = false;
           _error =
               personTokenRefusalMessage(l10n, e, widget.forge) ??
-              l10n.failedWithError('$e');
+              failureMessage(l10n, e);
         });
       }
     }

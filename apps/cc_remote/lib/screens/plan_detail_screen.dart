@@ -66,8 +66,8 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
       setState(() => _error = l10n.mobilePlanEstimateRequired);
       return;
     }
-    final high = (estimate['total_cost_cents_high'] as num?)?.toInt();
-    final ceiling = (estimate['budget_ceiling_cents'] as num?)?.toInt();
+    final high = (estimate['total_cost_micros_high'] as num?)?.toInt();
+    final ceiling = (estimate['budget_ceiling_micros'] as num?)?.toInt();
     final cost = high == null
         ? l10n.mobilePlanCostUnknown
         : planMoney(context, high);
@@ -103,7 +103,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
           plan.id,
           workspaceId: workspaceId,
           approvedNodeKeys: partial ? approvedKeys : null,
-          maxCostCents: ceiling,
+          maxCostMicros: ceiling,
         ),
         ('approved', plan.id, workspaceId, partial),
       );

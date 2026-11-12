@@ -40,7 +40,7 @@
           "type": "cost_budget",
           "id": "within_budget",
           "params": {
-            "maxCents": 200
+            "maxMicros": 2000000
           }
         }
       ],
@@ -475,7 +475,7 @@
           "type": "cost_budget",
           "id": "within_budget",
           "params": {
-            "maxCents": 300
+            "maxMicros": 3000000
           }
         }
       ],

@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.d
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
+import 'package:cc_persistence/repositories/dao_pr_state_repositories.dart';
 import 'package:cc_server_core/src/cached_pr_review_repository.dart';
 import 'package:cc_server_core/src/forge/forge_pr_client_resolver.dart';
 import 'package:cc_server_core/src/pr_review/forge_client_pr_diff_source.dart';
@@ -66,6 +67,7 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
     return CachedPrReviewRepository(
       db: _dbs.of(ctx.workspaceId),
       cacheMemberId: ctx.linkedToWorkspace ? null : userId,
+      codeOwners: DaoPrCodeOwnerRepository(_dbs),
       forgeClient: client,
       owner: ctx.repo.remoteOwner,
       repo: ctx.repo.remoteName,

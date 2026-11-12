@@ -103,7 +103,7 @@ class ModelCost {
 
   /// Highest documented rate for each category across context/pricing tiers.
   /// Null means the base rates apply throughout the documented context window.
-  /// Only conservative admission reservations use this; [estimate] selects
+  /// Only conservative admission reservations use this; [estimateMicros] selects
   /// the published context tier matching observed usage instead.
   final ModelCost? reservationCeiling;
 
@@ -123,10 +123,14 @@ class ModelCost {
   /// Whether any non-zero rate is known (a free/unknown model scores 0).
   bool get isKnown => input > 0 || output > 0;
 
-  /// Estimates request cost at the applicable documented context-price tier.
-  /// Input and cache counts are disjoint. Context-price thresholds apply to
-  /// the full input prompt, not the generated output.
-  double estimate({
+  /// Estimates request cost in micro-dollars at the applicable documented
+  /// context-price tier. Input and cache counts are disjoint. Context-price
+  /// thresholds apply to the full input prompt, not the generated output.
+  ///
+  /// One token at one USD per million tokens is one micro-dollar, so the cost
+  /// is `tokens * rate` exactly; the sum is rounded once, to the nearest
+  /// micro-dollar.
+  int estimateMicros({
     int inputTokens = 0,
     int outputTokens = 0,
     int cacheReadTokens = 0,
@@ -142,8 +146,8 @@ class ModelCost {
     return (inputTokens * rate.input +
             outputTokens * rate.output +
             cacheReadTokens * rate.cacheRead +
-            cacheWriteTokens * rate.cacheWrite) /
-        1000000.0;
+            cacheWriteTokens * rate.cacheWrite)
+        .round();
   }
 
   @override

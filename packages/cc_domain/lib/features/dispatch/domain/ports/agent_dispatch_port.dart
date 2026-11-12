@@ -55,7 +55,7 @@ abstract interface class AgentDispatchPort {
   /// timing is measured against, so a CLI adapter's offsets line up with the
   /// run log's `startedAt` instead of restarting the clock after whatever
   /// happened before it launched.
-  /// [costCapCents] is the priced spend cap (a goal run passes its remaining
+  /// [costCapMicros] is the priced spend cap (a goal run passes its remaining
   /// budget). Null keeps the dispatcher default; adapters that cannot price
   /// usage ignore it.
   /// [claudeConfigDir] names the Claude credential directory; other adapters
@@ -111,7 +111,7 @@ abstract interface class AgentDispatchPort {
       required String credentialId,
     })?
     onHarnessCredentialExhausted,
-    int? costCapCents,
+    int? costCapMicros,
   });
 
   /// Stops the specific dispatch identified by [dispatchId].

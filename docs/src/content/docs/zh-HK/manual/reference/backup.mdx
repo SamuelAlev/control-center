@@ -2,7 +2,7 @@
 title: 備份、匯出與匯入
 description: 快照的目錄佈局、資訊清單、每一項備份操作與傳輸路由，以及備份究竟包含與不包含哪些檔案。
 slug: zh-HK/手冊/參考/備份
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Control Center 能夠複製、移交或採用的一切，以及每種成品確切的形態。要實際執行一次
@@ -39,10 +39,10 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 
 排定的工作區備份單獨存放在
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`。
-它們既不包含資訊清單，也不包含 `global.db`，並不是安裝快照。
+每一份都有一個只針對該檔案的 `manifest.json`，且不含 `global.db`；它們不是安裝快照。還原時，被取代的資料庫會保留在同一位置，名稱為 `<timestamp>-pre-restore`。
 每週管線的保留步驟只會移除它自己所屬工作區中早於所設定期限（預設 30 天）的備份；
 手動建立的安裝快照絕不會被該步驟輪換掉。`server.listBackups` 只會列出安裝快照，
-包括不完整的那些；`workspace.listBackups` 會列出單一工作區的排程備份。
+包括未驗證的那些；`workspace.listBackups` 會列出單一工作區的排程備份。
 
 刪除工作區會保留此目錄。工作區的排程隨之停止，因此不再有任何機制輪換這些備份，它們會
 一直留存，直到安裝擁有者將其移除。`server.listOrphanedBackups` 會回報它們。
@@ -52,30 +52,38 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 
 | 欄位                       | 類型            | 含義                                                                |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | 資訊清單格式版本。目前為 `1`                                        |
+| `format`                  | int             | 資訊清單格式。目前為 `2`                                        |
 | `created_at`               | ISO-8601 UTC    | 快照的建立時間                                                      |
-| `global.file`              | string          | 一律為 `global.db`                                                  |
-| `global.schema_version`    | int             | 擷取時 `GlobalDatabase` 的 schema 版本                              |
-| `global.bytes`             | int             | 寫出的 `global.db` 大小                                             |
-| `workspace_schema_version` | int             | 每個工作區檔案共用的 `WorkspaceDatabase` schema 版本                |
-| `workspaces[]`             | array           | 每個被擷取的工作區一個項目                                          |
+| `global`                   | object          | `global.db` 的記錄。排定的工作區備份中不會出現 |
+| `workspaces[]`             | array           | 每個被擷取的工作區一筆紀錄                                          |
 | `workspaces[].workspace_id`| string          | 該檔案所屬的工作區                                                  |
-| `workspaces[].file`        | string          | 相對於快照根目錄的路徑，`<workspaceId>/workspace.db`                |
-| `workspaces[].bytes`       | int             | 該檔案的大小                                                        |
-| `skipped_workspaces[]`     | array of string | 備份**未能**擷取的工作區                                            |
+| `skipped_workspaces[]`     | array           | 備份**未能**擷取的工作區                                            |
+| `skipped_workspaces[].workspace_id` | string | 被略過的工作區 |
+| `skipped_workspaces[].reason` | string       | `no_file`、`damaged` 或 `failed`                                    |
 
-當某個工作區已註冊但從未被寫入過（因此檔案尚未存在），或者它的 `VACUUM INTO` 失敗
-時，該工作區就會被略過。無論哪種情況，快照仍會完成，只是資訊清單會指明缺少了什麼。
+`global` 與 `workspaces[]` 的每一筆項目都會記錄一個已複製的檔案，數值是在寫入之後於副本上量度的：
+
+| 欄位             | 類型 | 含義 |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | 相對於快照根目錄的路徑：`global.db` 或 `<workspaceId>/workspace.db`                |
+| `bytes`       | int             | 副本的大小                                                        |
+| `sha256`         | string | 副本的 SHA-256，以小寫十六進位表示                                          |
+| `quick_check`    | string | SQLite 的 `quick_check` 對該副本所得的結果：`ok`，或其發現的問題                 |
+| `user_version`   | int    | 副本的 schema 版本                                                     |
+| `application_id` | int    | 副本的 SQLite `application_id`                                            |
+
+當某個工作區已註冊但從未被寫入過（因此檔案尚未存在，`no_file`）、其資料庫未通過完整性檢查（`damaged`；已損壞的副本絕不會被擷取），或其複製或該副本的檢查失敗（`failed`）時，該工作區就會被略過。無論哪種情況，快照仍會完成，只是資訊清單會指明缺少了什麼。資訊清單最後才寫入。
 
 ### 完整性
 
-`server.listBackups` 會為每個快照回報一個 `complete` 標誌。當資訊清單不存在或無法
-解析、`global.db` 遺失，或者資訊清單指向的工作區檔案不在磁碟上時，該標誌為 false。
+`server.listBackups` 會為每個快照回報一個 `complete` 標誌。當資訊清單不存在、無法解析、格式不同，它指名的某個檔案遺失或大小不同，或某份副本未通過其檢查時，該標誌為 false。應用程式會將此類快照顯示為**未驗證**。格式 `2` 之前取得的快照都處於此狀態。
 
-不完整的快照仍會列出，因為操作員看不見的快照，就是他們以為自己擁有的快照。當資訊清單
+未驗證的快照仍會列出，因為操作員看不見的快照，就是他們以為自己擁有的快照。當資訊清單
 無法讀取時，清單會退回目錄結構本身，並回報它找到的任何
 `<workspaceId>/workspace.db` 檔案 —— 即使整個快照無法還原一次安裝，這些檔案仍可
 逐一透過 `workspace.import` 採用。
+
+列出的快照或排程備份帶有 `pinned_reason: "last_good_copy"`，表示它保存著某個即時資料庫已損壞的工作區之最新已驗證副本。保留步驟會略過它，直至該工作區被還原為止。
 
 ## 備份不包含什麼
 
@@ -86,6 +94,7 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 | ----------------------------------- | -------------- | ---------------------- |
 | `global.db`                         | 是             | 否                     |
 | `<workspaceId>/workspace.db`        | 是             | 是（它*就是*那個檔案） |
+| `<workspaceId>/code_index.db`       | 否             | 否                     |
 | `<workspaceId>/blobs/`              | 否             | 否                     |
 | `<workspaceId>/skills/`             | 否             | 否                     |
 | `<workspaceId>/agents/`             | 否             | 否                     |
@@ -98,14 +107,14 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 | `rigs/`                             | 否             | 否                     |
 | `_agent_hooks/`                     | 否             | 否                     |
 
-其中有些可以捨棄 —— `spaces/` 保存的是會從程式庫重新佈建的寫入時複製 worktree，
-`pr_clones/` 是快取，`models/` 會重新下載，`rigs/` 是機器狀態。有些則不是：`blobs/`
+其中有些可以捨棄 —— `spaces/` 保存的是會從儲存庫重新佈建的寫入時複製 worktree，
+`pr_clones/` 是快取，`code_index.db` 會被重建，`models/` 會重新下載，`rigs/` 是機器狀態。有些則不是：`blobs/`
 保存著資料庫資料列所指向的貼上圖片，`skills/` 與 `agents/` 保存著代理執行時使用的
 檔案，而 `secrets.json` 保存著該安裝上的每一組配對金鑰、供應商憑證與 SSO 設定。要
 涵蓋其餘內容，請參閱
 [備份與還原](/zh-HK/手冊/操作指南/備份與還原/#將備份複製到機器之外)。
-:::caution[工作區資料庫含有 webhook 密鑰]
-`workspace.db` 就是整個工作區：對話、運行日誌、程式碼索引、儲存庫連結、環境定義與成員。它也以可讀形式保存工作區的管線 webhook 權杖與工單同步 webhook 密鑰，因此請把下載的匯出檔或備份視為機密。它不保存任何供應商登入、裝置金鑰或用戶密鑰；這些位於 `global.db` 與 `secrets.json` 中。
+:::note[機密不存放在資料庫中]
+`workspace.db` 就是整個工作區：對話、執行日誌、儲存庫連結、環境定義與成員。管線 webhook 權杖與工單同步 webhook 機密存放在 `secrets.json` 中：資料庫保存的是各自的參照，而路由索引保存的是每個權杖的金鑰雜湊。因此，還原到另一個安裝上的工作區，在其觸發器於該處重新儲存之前不會收到任何 webhook。供應商登入、裝置金鑰與使用者機密則存放在 `global.db` 與 `secrets.json` 中。
 :::
 
 :::note[聊天權杖刻意留在原處]
@@ -130,6 +139,8 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 | `workspace.deleteBackup` | mutate | 工作區 | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | 工作區    | `admin`           | 無            | `{ok, path}`                  |
 | `workspace.import`   | mutate | 工作區    | `owner`，並且是伺服器擁有者 | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | read | 工作區 | `owner`，並且是伺服器擁有者 | 無 | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutate | 工作區 | `owner`，並且是伺服器擁有者 | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | mutate | 安裝*     | `owner`           | `id`          | 註冊表資料列標記為已刪除      |
 
 * `workspace.delete` 沒有作用範圍，是因為它標記的那一列位於全域註冊表中；其處理程式
@@ -143,16 +154,18 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 仍由 `workspace.deleteBackup` 與該工作區自身的角色把關。這兩個刪除操作都只接受清單中的
 時間戳目錄名，不接受路徑。
 
+`workspace.importHolds.list` 會傳回匯入所暫存的內容。每個暫存項目都有 `id`、`kind`（`action_policy`、`sandbox_exec_grant`、`repo_grant`、`membership_role` 或 `invite`）、它會放回的 `payload`、`imported_at`，以及 `source_install_id`。`workspace.importHolds.resolve` 若設 `accept: true` 會重新授予該權限，設為 `false` 則將其捨棄。當該權限所對應的人或對象已不在工作區內時，`applied` 為 false。
+
 :::note[整個安裝的快照在兩條通道上都由擁有者把關]
 `server.backupNow`、`server.listBackups` 與 `server.deleteBackup` 都要求安裝
 **擁有者**（`ServerAuthority.serverOwner`），與 `GET /backup/snapshot` 是同一道
 關卡。一份快照會擷取每個工作區的資料庫，因此僅僅是一個工作區的管理員，還不足以管理
 其他工作區。刪除只接受清單中出現的那個時間戳目錄名，而不是任意的伺服器路徑，並且會
-移除整份快照（包括不完整的快照）。按工作區進行的匯出與排程備份下載仍只要求工作區管理員。
+移除整份快照（包括未驗證的快照）。按工作區進行的匯出與排程備份下載仍只要求工作區管理員。
 :::
 
 :::note[還原屬於伺服器擁有者]
-`workspace.import` 與 `POST /backup/restore` 會讓伺服器採用一個資料庫檔案，而它會把其中的資料列視為自己的：儲存庫連結及建立者、在主機上執行的環境定義、worktree 與日誌路徑。因此兩者都需要伺服器擁有者（`ServerAuthority.serverOwner`），而該擁有者也必須是工作區的擁有者。其他人，以及在沒有記錄擁有者的主機上的所有呼叫者，都會被以 `server_owner_required` 拒絕。檔案所帶來的任何觸發器或檢視都不會被採用。
+`workspace.import` 與 `POST /backup/restore` 會讓伺服器採用一個資料庫檔案，而它會把其中的資料列視為自己的：儲存庫連結及建立者、在主機上執行的環境定義、worktree 與日誌路徑。因此兩者都需要伺服器擁有者（`ServerAuthority.serverOwner`），而該擁有者也必須是工作區的擁有者。其他人，以及在沒有記錄擁有者的主機上的所有呼叫者，都會被以 `server_owner_required` 拒絕。檔案所帶來的任何觸發器、檢視、欄位或限制條件都不會被採用。
 :::
 
 ### `server.listBackups` 的回應
@@ -192,20 +205,21 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 
 ### `workspace.import` 的驗證
 
-在取代任何內容之前，候選檔案會以一條短生命週期的原生 SQLite 連線以唯讀方式開啟，並
-讀取它的 `workspace_meta` 資料列。
+在取代任何內容之前，候選檔案會先複製到目標旁的暫存檔，並在那裡檢查。遭拒時不會觸碰任何內容，其類別會以 `data.kind` 表示。
 
 | 條件                                             | 結果                                                          |
 | ------------------------------------------------ | ------------------------------------------------------------- |
-| 不是可讀的 SQLite 資料庫，或者沒有 `workspace_meta` | 拒絕。不會觸碰任何內容                                     |
-| 記錄的工作區 id ≠ 目標                            | **允許**並記錄下來。這正是把一個工作區複製或還原到新 id 之下的方式 |
-| 記錄的安裝 id ≠ 本安裝                            | **允許**並記錄下來。它已配對的裝置與使用者 id 屬於那次安裝，在這裡不會解析得到 |
-| 工作區 id 無效，或者檔案不存在                    | 拒絕                                                          |
+| 檔案不存在 | 拒絕，`import.missing_source` |
+| 不是可讀取的 SQLite 資料庫，或未通過 `quick_check` | 拒絕，`import.damaged` |
+| 它來自快照，而其 SHA-256 與資訊清單不同 | 拒絕，`import.checksum_mismatch` |
+| 較新版本的伺服器寫入了它 | 拒絕，`import.newer_schema` |
+| 其 `application_id` 不同，或沒有 `workspace_meta` | 拒絕，`import.foreign_file` |
+| 無法套用到本伺服器的 schema | 拒絕，`import.schema_mismatch` |
+| 其 webhook 或邀請已路由到另一個工作區 | 拒絕，`import.route_conflict` |
+| 記錄的工作區 id ≠ 目標                            | **允許**。其資料列會重新對應到目標的 id。這正是把一個工作區複製或還原到新 id 之下的方式 |
+| 記錄的安裝 id ≠ 本安裝                            | **允許**。它的使用者 id 屬於那次安裝，在這裡不會解析得到 |
 
-一旦接受，目標工作區的資料庫會先被關閉並從管理器卸下，然後才把檔案複製覆寫上去
-（一條仍然開啟的漂移連線會佔用該檔案及其 `-wal`），之後再重新開啟，好讓 `beforeOpen`
-重新裝上 FTS 與同步觸發器，並重建 FTS 索引 —— 匯入檔案的內容表有資料，但它的索引
-可能已經過期。
+接受時，暫存檔會被套用到本伺服器的 schema，之後必須與它完全一致。檔案不得自行授予的權限會被移出：在主機上執行環境定義的核准會被清除；允許或提示的動作規則、沙箱執行授權、高於讀取的儲存庫授權、高於成員的角色，以及開放予這些角色的邀請，都會成為供伺服器擁有者審查的暫存權限。匯入者會保留或取得擁有者角色。被取代的資料庫會以名為 `<timestamp>-pre-restore` 的排程備份保留；暫存檔會在關閉工作區連線的情況下改名到位；`code_index.db` 會被刪除以便重建；FTS 索引會被重建。
 
 ## 傳輸路由
 
@@ -230,7 +244,7 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 
 | 狀態碼 | 原因                                                                                |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | 缺少必需的查詢參數、備份名稱無效，或者上傳主體為空                                    |
+| `400`  | 缺少必需的查詢參數、備份名稱無效、上傳主體為空，或上傳的檔案遭拒（主體為 `{error, kind}`，其 kind 為 `import.*`） |
 | `403`  | 裝置未知或已撤銷、簽名錯誤，或者呼叫方不具備該角色                                    |
 | `404`  | 此主機上沒有備份連接埠，或者所指的快照、備份或工作區檔案不存在                         |
 | `405`  | 以 `POST` 以外的方法呼叫 `/backup/restore`                                            |
@@ -266,6 +280,8 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 | 快照                       | `<dataDir>/backups/<timestamp>/`                              |
 | 排定的工作區備份           | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | 工作區匯出                 | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`      |
+| 被還原取代的資料庫 | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| 更新改變格式之前的資料庫 | `<dataDir>/pre_upgrade/` 與 `<dataDir>/<workspaceId>/pre_upgrade/`，各自保留最新的兩份 |
 | 傳輸暫存                   | `<dataDir>/backups/transfer/` —— 一塊工作台，由寫入它的那條路由負責清掃 |
 | 快照封存檔名               | `<snapshot directory name>.zip`                               |
 | 上傳上限                   | 每次加密的 `/backup/restore` 上傳 8 GiB                        |

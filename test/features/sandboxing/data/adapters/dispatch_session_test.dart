@@ -125,12 +125,7 @@ class FakeAgentRunLogRepository implements AgentRunLogRepository {
       Stream.value([]);
 
   @override
-  Stream<List<AgentRunLog>> watchAll() => Stream.value([]);
-
-  @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  Stream<List<AgentRunLog>> watchRecent(int limit) => Stream.value([]);
 
   @override
   Stream<List<AgentRunLog>> watchByConversation(
@@ -237,7 +232,10 @@ SandboxDispatchDeps _makeDeps({
     runLogRepo: runLogRepo,
     eventBus: eventBus,
     resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
-        AgentCommitIdentity.person((name: 'Test User', email: 'test@example.test')),
+        AgentCommitIdentity.person((
+          name: 'Test User',
+          email: 'test@example.test',
+        )),
     backendRegistry: buildBackendRegistry(),
   );
 }
@@ -586,9 +584,7 @@ void main() {
 
       final errorEvents = events.whereType<ErrorEvent>().toList();
       expect(errorEvents, isNotEmpty);
-      final failMsg = errorEvents.any(
-        (e) => e.content == 'Stopped by user',
-      );
+      final failMsg = errorEvents.any((e) => e.content == 'Stopped by user');
       expect(failMsg, isTrue);
     });
 
@@ -1586,10 +1582,7 @@ void main() {
 
       // _failRun emits an ErrorEvent with the failure message.
       final errorEvents = events.whereType<ErrorEvent>().toList();
-      expect(
-        errorEvents.any((e) => e.content == 'Stopped by user'),
-        isTrue,
-      );
+      expect(errorEvents.any((e) => e.content == 'Stopped by user'), isTrue);
     });
 
     test('terminate no-ops when runLogId is null', () async {

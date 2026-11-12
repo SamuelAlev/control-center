@@ -26,27 +26,27 @@ class RecordObservationTool extends McpTool {
     'properties': {
       'workspace_id': {'type': 'string', 'description': 'The workspace ID.'},
       'agent_id': {'type': 'string', 'description': 'The agent ID.'},
-      'observation': {
+      'content': {
         'type': 'string',
         'description': 'The observation to record.',
       },
     },
-    'required': ['workspace_id', 'agent_id', 'observation'],
+    'required': ['workspace_id', 'agent_id', 'content'],
   };
 
   @override
   Future<CallResult> run(Map<String, dynamic> arguments) async {
     final workspaceId = arguments['workspace_id'];
     final agentId = arguments['agent_id'];
-    final observation = arguments['observation'];
+    final observation = arguments['content'];
     if (workspaceId is! String) {
       return CallResult.error('Missing or invalid argument: workspace_id');
     }
     if (agentId is! String) {
-      return CallResult.error('Missing agent_id');
+      return CallResult.error('Missing or invalid argument: agent_id');
     }
     if (observation is! String) {
-      return CallResult.error('Missing observation');
+      return CallResult.error('Missing or invalid argument: content');
     }
 
     final existing = await _repository.getByAgent(workspaceId, agentId);

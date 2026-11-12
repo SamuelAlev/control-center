@@ -2015,10 +2015,10 @@ packages:
   webcrypto:
     dependency: "direct dev"
     description:
-      path: ".dart_tool/patchwork/webcrypto@0.6.1"
+      path: ".dart_tool/patchwork/webcrypto@0.6.2"
       relative: true
     source: path
-    version: "0.6.1"
+    version: "0.6.2"
   webkit_inspection_protocol:
     dependency: transitive
     description:

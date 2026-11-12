@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_remote/analytics.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
@@ -45,16 +46,16 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
     super.dispose();
   }
 
-  int? get _budgetCents => parsePlanBudgetCents(context, _budget.text);
+  int? get _budgetMicros => parsePlanBudgetMicros(context, _budget.text);
 
   Future<void> _send() async {
     final l10n = AppLocalizations.of(context);
     final objective = _objective.text.trim();
-    final cents = _budgetCents;
+    final micros = _budgetMicros;
     final space = _spaceId;
     final agentId = _agentId;
     if (objective.isEmpty ||
-        cents == null ||
+        micros == null ||
         agentId == null ||
         (widget.conversationId == null && space == null)) {
       setState(() => _error = l10n.mobileGoalCreateInvalid);
@@ -63,7 +64,7 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
     final confirmed = await confirmOperation(
       context,
       title: l10n.mobileGoalCreate,
-      description: l10n.mobileGoalCreateConfirm(planMoney(context, cents)),
+      description: l10n.mobileGoalCreateConfirm(planMoney(context, micros)),
       action: l10n.mobileGoalCreate,
     );
     if (!confirmed ||
@@ -102,6 +103,9 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
           !(ref.read(workspaceRoleProvider).value?.canWrite ?? false)) {
         return;
       }
+      // The goal command takes dollars; the parser allows at most two
+      // decimals, so whole cents are exact here.
+      final cents = micros ~/ microsPerCent;
       final budget =
           '${cents ~/ 100}.${(cents % 100).toString().padLeft(2, '0')}';
       final analytics = ref.read(analyticsProvider);
@@ -119,7 +123,7 @@ class _PhoneGoalCreateState extends ConsumerState<PhoneGoalCreate> {
           spaceId: targetSpace,
           conversationId: conversationId,
           agentId: agentId,
-          budgetCents: cents,
+          budgetMicros: micros,
           accepted: runId != null,
         ),
       );

@@ -1,20 +1,7 @@
 /// Compact formatters for the observability surfaces, mirroring the reference
-/// `format.ts` helpers (tokens as k/M, cost as $, durations as ms/s/m/h).
+/// `format.ts` helpers (tokens as k/M, durations as ms/s/m/h). Money goes
+/// through `fmtMicros`.
 library;
-
-/// Formats a US-cents integer as a dollar string. Sub-dollar amounts show three
-/// decimals ($0.004) so small per-run costs stay legible; larger amounts use
-/// two ($4.20).
-String fmtCents(int cents) {
-  final dollars = cents / 100.0;
-  if (dollars == 0) {
-    return r'$0.00';
-  }
-  if (dollars.abs() < 1) {
-    return '\$${dollars.toStringAsFixed(3)}';
-  }
-  return '\$${dollars.toStringAsFixed(2)}';
-}
 
 /// Formats a token count compactly: `950`, `12.3k`, `1.2M`, `1.2B`.
 String fmtTokens(int n) {

@@ -29,6 +29,24 @@ class _InMemoryApprovals implements ApprovalRepository {
   }
 
   @override
+  Future<bool> recordDecision(
+    Approval decided, {
+    required ApprovalStatus expected,
+  }) async {
+    final i = rows.indexWhere(
+      (a) =>
+          a.id == decided.id &&
+          a.workspaceId == decided.workspaceId &&
+          a.status == expected,
+    );
+    if (i < 0) {
+      return false;
+    }
+    rows[i] = decided;
+    return true;
+  }
+
+  @override
   Stream<List<Approval>> watchByWorkspace(String workspaceId) =>
       Stream.value(_ws(workspaceId));
 

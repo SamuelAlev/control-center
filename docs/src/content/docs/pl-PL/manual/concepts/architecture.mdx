@@ -3,7 +3,7 @@ title: Architektura
 description: Jak zbudowany jest Control Center — model serwera z cienkim klientem, Clean Architecture w podejściu feature-first oraz porty i adaptery.
 dateModified: 2026-09-19
 slug: pl-PL/podrecznik/koncepcje/architektura
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Przegląd
@@ -100,9 +100,9 @@ Korzeń kompozycji aplikacji (`di/providers.dart`) wiąże porty po stronie klie
 **Drift** (SQLite), podzielony na dwie bazy danych, obie w `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — krótka lista tabel naprawdę wspólnych dla całego serwera: rejestr obszarów roboczych, użytkownicy/preferencje/sparowane urządzenia, połączenia SSO, ustawienia serwera dla całej instalacji, zarządzane polityki działań (ograniczenie dla całej instalacji, które może tylko zaostrzać guardraile obszarów roboczych), newsfeed dla każdego użytkownika, kolejka floty (log workerów/zadań/przydziałów), indeks `workspace_routes` używany przed uwierzytelnieniem oraz metadane instalacji. Rozruch otwiera tylko ten plik, więc koszt startu pozostaje stały niezależnie od tego, ile historii zgromadzą obszary robocze. Dodanie tutaj tabeli to decyzja o izolacji, którą test zapadkowy zmusza cię uzasadnić.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — jeden _katalog_ na obszar roboczy, zawierający jeden plik SQLite oraz wszystko inne, co należy wyłącznie do tego obszaru roboczego, dzięki czemu worktree rozmowy i pliki agentów leżą obok bazy danych i są usuwane razem z nią. Mieszka tu niemal wszystko: agenci, przestrzenie, zgłoszenia, pamięć, potoki, spotkania, graf kodu, recenzje, repozytoria. Pliki otwierają się leniwie przy pierwszym użyciu przez `WorkspaceDatabaseManager.of(workspaceId)` i dopiero wtedy płacą za własny `quick_check`, instalację FTS/wyzwalaczy oraz `vector_init`.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — jeden _katalog_ na obszar roboczy, zawierający jeden plik SQLite oraz wszystko inne, co należy wyłącznie do tego obszaru roboczego, dzięki czemu worktree rozmowy i pliki agentów leżą obok bazy danych i są usuwane razem z nią. Mieszka tu niemal wszystko: agenci, przestrzenie, zgłoszenia, pamięć, potoki, spotkania, recenzje, repozytoria. Graf kodu to drugi plik w tym samym katalogu, `code_index.db`, który jest odbudowywany zamiast być kopiowany zapasowo. Pliki otwierają się leniwie przy pierwszym użyciu przez `WorkspaceDatabaseManager.of(workspaceId)` i dopiero wtedy płacą za własny `quick_check`, instalację FTS/wyzwalaczy oraz `vector_init`.
 
-Obie połowy zaczęły od spłaszczonej bazy wyjściowej v1 — `onCreate` buduje bieżący schemat — a kroki migracji dopisuje się tylko wtedy, gdy wdrożoną bazę danych trzeba przenieść dalej.
+Żadna z obu połówek nie ma kroków migracji. Nowy plik buduje się z definicji tabel. Plik ze starszej wersji najpierw zostaje skopiowany na bok (`pre_upgrade/`), a potem przy otwarciu doprowadzany do tych samych definicji, tak że nowa i zaktualizowana instalacja kończą z tym samym schematem. Plik zapisany przez nowszą wersję zostaje odrzucony.
 
 Ponieważ jeden obszar roboczy to jeden plik, wyeksportowanie obszaru roboczego to pojedyncze polecenie `VACUUM INTO` (`workspace.export`), a nie zrzut tabela po tabeli; `workspace.import` przyjmuje taki plik i korzysta z osadzonego `workspace_meta`, aby odróżnić ponowne przyjęcie własnego pliku od pliku pochodzącego z innej instalacji.
 

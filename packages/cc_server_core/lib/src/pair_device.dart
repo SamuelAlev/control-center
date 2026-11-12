@@ -43,12 +43,13 @@ Future<PairResult> pairDevice({
   // `platform: 'web'` + label `Web client`, masking the actual device tier.
   final platform = _platformForDeviceId(deviceId);
   Directory(config.dataDir).createSync(recursive: true);
-  final db = GlobalDatabase(openGlobalDatabase(dataDir: config.dataDir));
+  final db = GlobalDatabase.atDataDir(config.dataDir);
   final workspaceDbs = WorkspaceDatabaseManager(
     dataDir: config.dataDir,
     global: db,
   );
   await workspaceDbs.loadInstallId();
+  await workspaceDbs.loadDeletedWorkspaces();
   try {
     // Bind the device's session seed to an existing workspace when the data
     // dir already has one. With none, leave it unbound — the connecting
@@ -73,12 +74,14 @@ Future<PairResult> pairDevice({
       PairedDevicesTableCompanion(
         id: Value(deviceId),
         userId: Value(ownerId),
-        workspaceId: Value(workspace?.id),
+        landingWorkspaceId: Value(workspace?.id),
         label: Value(label ?? _defaultLabelForPlatform(platform)),
         platform: Value(platform),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),
-        expiresAt: Value(RemotePairingLifecycle.credentialExpiry(DateTime.now())),
+        expiresAt: Value(
+          RemotePairingLifecycle.credentialExpiry(DateTime.now()),
+        ),
       ),
     );
     await FileSecretsStore(dataDir: config.dataDir).writePsk(deviceId, psk);

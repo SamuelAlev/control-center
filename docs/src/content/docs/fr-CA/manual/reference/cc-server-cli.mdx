@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Toutes les options, variables d’environnement, sous-commandes et chemins du répertoire de données du serveur sans interface.
 slug: fr-CA/manuel/reference/cc-server-cli
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Chaque paramètre du processus accepte une option de ligne de commande ou une
@@ -244,12 +244,16 @@ sur macOS, `%APPDATA%\control-center` sur Windows et
 `.cc_server` relatif au répertoire de travail courant n’est utilisé que lorsqu’aucun
 répertoire personnel ou de données d’application ne peut être résolu.
 
+Le serveur garde le répertoire de données privé à son propre compte (`0700`). Il refuse de démarrer (code de sortie `78`) lorsqu’il ne peut pas le faire, lorsque `global.db` est endommagé ou a été écrit par une version plus récente, ou lorsque son fichier d’identité ne peut pas être lu.
+
 | Chemin                            | Contenu                                                                         |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Le registre des espaces de travail, les utilisateurs, les appareils associés, le fil de nouvelles et la file d’attente de la flotte |
-| `<workspaceId>/workspace.db`      | Une base de données par espace de travail — agents, espaces, tickets, mémoire, graphe de code |
+| `<workspaceId>/workspace.db`      | Une base de données par espace de travail — agents, espaces, tickets, mémoire |
+| `<workspaceId>/code_index.db`     | Le graphe de code de cet espace de travail. Reconstruit lorsqu’il manque, jamais sauvegardé |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Les deux copies les plus récentes d’une base de données antérieure à une mise à jour qui a changé son format |
 | `<workspaceId>/chat_credentials/` | Jetons des robots de clavardage, en JSON brut, pour qu’ils suivent l’espace de travail |
-| `secrets.json`                    | Clés d’association, clé d’installation Connect, apps des fournisseurs, connexions des gens (scellées quand elles passent par Connect), SSO (`0600`) |
+| `secrets.json`                    | Clés d’association, clé d’installation Connect, apps des fournisseurs, connexions des gens (scellées quand elles passent par Connect), secrets de webhook, SSO (`0600`) |
 | `backups/<timestamp>/`            | Un instantané d’installation — `manifest.json`, `global.db` et une copie de chaque espace de travail |
 | `backups/exports/`                | Exportations d’un seul espace de travail, `<workspaceId>-<timestamp>.db`         |
 | `backups/transfer/`               | Zone de transit pour les téléchargements et téléversements de sauvegardes; purgée par la route qui l’écrit |

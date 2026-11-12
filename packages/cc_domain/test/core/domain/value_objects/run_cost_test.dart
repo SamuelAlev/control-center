@@ -13,7 +13,7 @@ void main() {
       expect(cost.thoughtTokens, 0);
       expect(cost.cachedReadTokens, 0);
       expect(cost.cachedWriteTokens, 0);
-      expect(cost.estimatedCostCents, 0);
+      expect(cost.costMicros, 0);
       expect(cost.durationMs, isNull);
       expect(cost.timeToFirstTokenMs, isNull);
     });
@@ -25,7 +25,7 @@ void main() {
         thoughtTokens: 2,
         cachedReadTokens: 3,
         cachedWriteTokens: 1,
-        estimatedCostCents: 7,
+        costMicros: 7,
         durationMs: 1234,
         timeToFirstTokenMs: 56,
       );
@@ -34,7 +34,7 @@ void main() {
       expect(cost.thoughtTokens, 2);
       expect(cost.cachedReadTokens, 3);
       expect(cost.cachedWriteTokens, 1);
-      expect(cost.estimatedCostCents, 7);
+      expect(cost.costMicros, 7);
       expect(cost.durationMs, 1234);
       expect(cost.timeToFirstTokenMs, 56);
     });
@@ -72,7 +72,7 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
+        costMicros: 6,
         durationMs: 7,
         timeToFirstTokenMs: 8,
       );
@@ -82,7 +82,7 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
+        costMicros: 6,
         durationMs: 7,
         timeToFirstTokenMs: 8,
       );
@@ -97,7 +97,7 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
+        costMicros: 6,
         durationMs: 7,
         timeToFirstTokenMs: 8,
       );
@@ -106,7 +106,7 @@ void main() {
       expect(base == const RunCost(thoughtTokens: 99), isFalse);
       expect(base == const RunCost(cachedReadTokens: 99), isFalse);
       expect(base == const RunCost(cachedWriteTokens: 99), isFalse);
-      expect(base == const RunCost(estimatedCostCents: 99), isFalse);
+      expect(base == const RunCost(costMicros: 99), isFalse);
       expect(base == const RunCost(durationMs: 99), isFalse);
       expect(base == const RunCost(timeToFirstTokenMs: 99), isFalse);
     });
@@ -125,7 +125,6 @@ void main() {
         thoughtTokens: 2,
         cachedReadTokens: 3,
         cachedWriteTokens: 1,
-        estimatedCostCents: 7,
         costMicros: 70000,
       );
       const b = RunCost(
@@ -134,7 +133,6 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
         costMicros: 60000,
       );
       final sum = a + b;
@@ -143,7 +141,6 @@ void main() {
       expect(sum.thoughtTokens, 5);
       expect(sum.cachedReadTokens, 7);
       expect(sum.cachedWriteTokens, 6);
-      expect(sum.estimatedCostCents, 13);
       expect(sum.costMicros, 130000);
     });
 
@@ -187,7 +184,7 @@ void main() {
         thoughtTokens: 6,
         cachedReadTokens: 7,
         cachedWriteTokens: 8,
-        estimatedCostCents: 9,
+        costMicros: 9,
       );
       expect(cost + RunCost.zero, cost);
     });
@@ -201,7 +198,7 @@ void main() {
       expect(usage.thoughtTokens, 0);
       expect(usage.cachedReadTokens, 0);
       expect(usage.cachedWriteTokens, 0);
-      expect(usage.estimatedCostCents, 0);
+      expect(usage.costMicros, 0);
       expect(usage.totalTokens, 0);
     });
 
@@ -223,7 +220,7 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
+        costMicros: 6,
       );
       final cost = usage.toCost(durationMs: 999, timeToFirstTokenMs: 11);
       expect(cost.inputTokens, 1);
@@ -231,7 +228,7 @@ void main() {
       expect(cost.thoughtTokens, 3);
       expect(cost.cachedReadTokens, 4);
       expect(cost.cachedWriteTokens, 5);
-      expect(cost.estimatedCostCents, 6);
+      expect(cost.costMicros, 6);
       expect(cost.durationMs, 999);
       expect(cost.timeToFirstTokenMs, 11);
     });
@@ -259,7 +256,7 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
+        costMicros: 6,
       );
       final b = RunUsage(
         inputTokens: seed,
@@ -267,7 +264,7 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
+        costMicros: 6,
       );
       expect(identical(a, b), isFalse, reason: 'distinct heap instances');
       expect(a, b);
@@ -281,14 +278,14 @@ void main() {
         thoughtTokens: 3,
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
-        estimatedCostCents: 6,
+        costMicros: 6,
       );
       expect(base == const RunUsage(inputTokens: 99), isFalse);
       expect(base == const RunUsage(outputTokens: 99), isFalse);
       expect(base == const RunUsage(thoughtTokens: 99), isFalse);
       expect(base == const RunUsage(cachedReadTokens: 99), isFalse);
       expect(base == const RunUsage(cachedWriteTokens: 99), isFalse);
-      expect(base == const RunUsage(estimatedCostCents: 99), isFalse);
+      expect(base == const RunUsage(costMicros: 99), isFalse);
     });
 
     test('refuses non-RunUsage operands', () {

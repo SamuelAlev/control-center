@@ -20,13 +20,20 @@ void main() {
     // references both; a conversation id is never the space id).
     await db
         .into(db.spacesTable)
-        .insert(const SpacesTableCompanion(id: Value('c'), name: Value('t')));
+        .insert(
+          const SpacesTableCompanion(
+            id: Value('c'),
+            name: Value('t'),
+            workspaceId: Value('test-workspace'),
+          ),
+        );
     await db
         .into(db.conversationsTable)
         .insert(
           const ConversationsTableCompanion(
             id: Value('conv-c'),
             spaceId: Value('c'),
+            workspaceId: Value('test-workspace'),
           ),
         );
   });
@@ -123,7 +130,11 @@ void main() {
     await db
         .into(db.spacesTable)
         .insert(
-          const SpacesTableCompanion(id: Value('other'), name: Value('o')),
+          const SpacesTableCompanion(
+            id: Value('other'),
+            name: Value('o'),
+            workspaceId: Value('test-workspace'),
+          ),
         );
     await db
         .into(db.conversationsTable)
@@ -131,6 +142,7 @@ void main() {
           const ConversationsTableCompanion(
             id: Value('secret'),
             spaceId: Value('other'),
+            workspaceId: Value('test-workspace'),
           ),
         );
     await db

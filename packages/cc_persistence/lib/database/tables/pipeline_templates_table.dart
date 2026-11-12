@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for pipeline templates.
@@ -7,11 +8,12 @@ import 'package:drift/drift.dart';
 /// Built-in templates are seeded on first launch and re-upserted on app
 /// start to keep their definition in sync with the code (`isBuiltIn = true`).
 /// Users can also create entirely custom templates from the editor.
-@TableIndex(name: 'idx_pipeline_templates_isBuiltIn', columns: {#isBuiltIn})
-@TableIndex(name: 'idx_pipeline_templates_workspaceId', columns: {#workspaceId})
+///
+/// A file holds one workspace, so the template id alone is the key; the
+/// lists read the whole (small) table and sort it in memory.
 class PipelineTemplatesTable extends Table {
-  /// Template identifier (e.g. 'pr_review'). Unique per workspace, used by
-  /// triggers and `PipelineEngine.start`.
+  /// Template identifier (e.g. 'pr_review'). Unique in the workspace's file,
+  /// used by triggers and `PipelineEngine.start`.
   TextColumn get id => text()();
 
   /// Workspace this template belongs to. Templates are per-workspace because
@@ -26,15 +28,24 @@ class PipelineTemplatesTable extends Table {
 
   /// JSON array of node objects, shape:
   /// `[{stepId, kind, bodyKey, config: {...}, x, y, waitForStepIds?: [...]}]`.
-  TextColumn get nodesJson => text().withDefault(const Constant('[]'))();
+  TextColumn get nodesJson => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(nodesJson))
+      .withDefault(const Constant('[]'))();
 
   /// JSON array of edges, shape: `[{from, to}]`.
-  TextColumn get edgesJson => text().withDefault(const Constant('[]'))();
+  TextColumn get edgesJson => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(edgesJson))
+      .withDefault(const Constant('[]'))();
 
   /// JSON array of declared input fields collected on a manual run, shape:
   /// `[{key, label, type, required, defaultValue, helpText, placeholder,
   /// options}]`. Empty for pipelines that take no user-supplied input.
-  TextColumn get inputsJson => text().withDefault(const Constant('[]'))();
+  TextColumn get inputsJson => text()
+      // ignore: recursive_getters
+      .check(isJsonArray(inputsJson))
+      .withDefault(const Constant('[]'))();
 
   /// Whether this template is enabled.
   BoolColumn get isEnabled => boolean().withDefault(const Constant(true))();
@@ -61,5 +72,5 @@ class PipelineTemplatesTable extends Table {
   String get tableName => 'pipeline_templates';
 
   @override
-  Set<Column> get primaryKey => {workspaceId, id};
+  Set<Column> get primaryKey => {id};
 }

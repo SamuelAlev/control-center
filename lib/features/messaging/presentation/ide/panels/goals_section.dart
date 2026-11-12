@@ -2,6 +2,7 @@ import 'package:cc_data/cc_data.dart' show RpcAgentGoalRunRepository;
 import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/todos/providers/goal_run_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -141,14 +142,14 @@ class GoalRunRow extends ConsumerWidget {
                   maxRuns == null
                       ? l10n.goalRunProgressNoCap(
                           goal.runCount,
-                          _dollars(goal.costCents),
-                          _dollars(goal.costCapCents),
+                          fmtMicros(goal.costMicros, decimals: 2),
+                          fmtMicros(goal.costCapMicros, decimals: 2),
                         )
                       : l10n.goalRunProgress(
                           goal.runCount,
                           maxRuns,
-                          _dollars(goal.costCents),
-                          _dollars(goal.costCapCents),
+                          fmtMicros(goal.costMicros, decimals: 2),
+                          fmtMicros(goal.costCapMicros, decimals: 2),
                         ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -160,9 +161,6 @@ class GoalRunRow extends ConsumerWidget {
       ),
     );
   }
-
-  /// `$x.xx` from cents — budgets are priced in dollars.
-  static String _dollars(int cents) => '\$${(cents / 100).toStringAsFixed(2)}';
 
   /// Pause/resume + stop on live goals; nothing once terminal — a finished
   /// goal takes no commands.
@@ -207,7 +205,9 @@ class GoalRunRow extends ConsumerWidget {
     AgentGoalStatus.budgetExhausted => [
       const SizedBox(width: AppSpacing.xs),
       _control(
-        label: l10n.goalRunResumeRaise(_dollars(goal.costCapCents * 2)),
+        label: l10n.goalRunResumeRaise(
+          fmtMicros(goal.costCapMicros * 2, decimals: 2),
+        ),
         icon: AppIcons.play,
         color: t.textTertiary,
         onTap: () => _act(
@@ -215,7 +215,7 @@ class GoalRunRow extends ConsumerWidget {
           (repo) => repo.resumeGoal(
             workspaceId,
             goal.id,
-            raiseCostCapCents: goal.costCapCents * 2,
+            raiseCostCapMicros: goal.costCapMicros * 2,
           ),
         ),
       ),

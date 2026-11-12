@@ -8,7 +8,7 @@ import 'package:drift/drift.dart';
 /// metadata only — it never grants trust; every install still passes the
 /// mandatory scan gate. `skills-lock.json` stays the file-based source of
 /// truth for what is installed.
-@TableIndex(name: 'idx_skill_sources_workspace', columns: {#workspaceId})
+@TableIndex(name: 'idx_skill_sources_created', columns: {#createdAt})
 class SkillSourcesTable extends Table {
   @override
   String get tableName => 'skill_sources';
@@ -54,6 +54,6 @@ class SkillSourcesTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, owner, repo},
+    {owner, repo},
   ];
 }

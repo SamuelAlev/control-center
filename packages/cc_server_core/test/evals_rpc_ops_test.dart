@@ -197,7 +197,7 @@ const _greenScorecard = EvalScorecard(
   batchSize: 4,
   passRate: 0.75,
   passRateStdDev: 0.1,
-  avgCostCents: 12,
+  avgCostMicros: 12,
   costStdDev: 1,
   avgTurns: 3,
   avgDurationMs: 1500,
@@ -246,7 +246,7 @@ void main() {
           scorecardJson: '{}',
           passRate: 0.5,
           status: 'done',
-          costCents: 9,
+          costMicros: 9,
           triggeredBy: 'ci',
           jobId: 'j-1',
           createdAt: DateTime.utc(2026, 1, 1),
@@ -261,7 +261,7 @@ void main() {
       expect(runWire['scorecardJson'], '{}');
       expect(runWire['passRate'], 0.5);
       expect(runWire['status'], 'done');
-      expect(runWire['costCents'], 9);
+      expect(runWire['costMicros'], 9);
       expect(runWire['triggeredBy'], 'ci');
       expect(runWire['jobId'], 'j-1');
       expect(runWire['startedAt'], contains('2026-01-02'));

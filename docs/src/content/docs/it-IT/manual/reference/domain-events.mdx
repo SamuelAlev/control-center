@@ -2,7 +2,7 @@
 title: Eventi di dominio
 description: Catalogo completo dei 54 eventi di dominio, dei loro payload e dei sottoscrittori lato server che li consumano.
 slug: it-IT/manuale/riferimento/eventi-di-dominio
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Bus di eventi
@@ -112,7 +112,7 @@ Vengono pubblicate solo le transizioni terminali. Non esiste alcun `PipelineRunS
 | Evento | Payload | Emesso quando |
 | --- | --- | --- |
 | `ActivityLogged` | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Viene creata una voce della traccia di controllo |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop` | La spesa supera la soglia |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop` | La spesa supera la soglia |
 
 ## Eventi di identità e appartenenza
 

@@ -14064,13 +14064,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get backupSnapshotComplete => '완료';
 
   @override
-  String get backupSnapshotIncomplete => '미완료';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      '매니페스트가 없거나 없는 파일을 가리켜 이 스냅샷으로는 설치 전체를 복원할 수 없습니다. 있는 워크스페이스 파일은 하나씩 가져올 수 있습니다.';
-
-  @override
   String get backupDeleteSnapshotLabel => '스냅샷 삭제';
 
   @override
@@ -18086,4 +18079,227 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       '이 머신은 볼 수 있습니다. 특정 사용자를 위해 열린 머신이며 그 사람의 로그인을 사용하므로, 조작, 포트 전달, 붙여넣기, 파일 놓기는 그 사람만 할 수 있습니다.';
+
+  @override
+  String get refusalStorageBusy => '서버 데이터베이스가 지금 사용 중입니다. 잠시 후 다시 시도하세요.';
+
+  @override
+  String get refusalStorageFull =>
+      '서버 디스크 공간이 부족해 아무것도 저장할 수 없습니다. 서버 소유자가 공간을 확보해야 합니다.';
+
+  @override
+  String get refusalStorageDamaged =>
+      '이 워크스페이스의 데이터가 손상되었습니다. 서버 소유자가 백업에서 복원해야 합니다.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      '데이터베이스 무결성 검사에 실패해서, 서버 소유자가 백업에서 복원하기 전까지 이 워크스페이스는 읽기 전용입니다. 변경 사항을 저장할 수 없습니다.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      '이 데이터는 더 최신 버전의 서버에서 작성되었습니다. 서버를 업데이트한 뒤 다시 시도하세요.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      '서버가 직접 작성하지 않은 데이터베이스 파일을 찾았습니다. 서버 소유자가 서버의 데이터 폴더를 확인해야 합니다.';
+
+  @override
+  String get refusalWorkspaceDeleted => '이 워크스페이스는 삭제되었습니다.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      '이 요청은 아직 처리 중입니다. 완료될 때까지 기다린 뒤 결과를 확인하세요.';
+
+  @override
+  String get refusalImportMissingSource =>
+      '서버의 해당 경로에 파일이 없습니다. 아무것도 바뀌지 않았습니다.';
+
+  @override
+  String get refusalImportDamaged => '해당 파일이 손상되어 복원할 수 없습니다. 아무것도 바뀌지 않았습니다.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      '해당 파일이 백업에 기록된 체크섬과 일치하지 않습니다. 변경되었거나 손상되었을 수 있습니다. 아무것도 바뀌지 않았습니다.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      '해당 파일은 더 최신 버전의 서버에서 작성되었습니다. 복원하려면 서버를 업데이트하세요. 아무것도 바뀌지 않았습니다.';
+
+  @override
+  String get refusalImportForeignFile =>
+      '해당 파일은 워크스페이스 데이터베이스가 아닙니다. 아무것도 바뀌지 않았습니다.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      '해당 파일을 이 서버의 형식으로 변환할 수 없습니다. 아무것도 바뀌지 않았습니다.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      '해당 파일에는 이 서버의 다른 워크스페이스에 속한 링크가 들어 있습니다. 복원하면 그 링크를 빼앗게 됩니다. 아무것도 바뀌지 않았습니다.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => '이 워크스페이스는 읽기 전용입니다';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      '데이터가 무결성 검사에 실패해 변경 사항을 저장할 수 없습니다. 모든 내용은 계속 볼 수 있습니다. 서버 소유자가 백업에서 복원할 수 있습니다.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      '데이터가 무결성 검사에 실패해 변경 사항을 저장할 수 없습니다. 모든 내용은 계속 볼 수 있습니다. 백업에서 복원하면 다시 편집할 수 있습니다.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => '백업 열기';
+
+  @override
+  String get serverNoticesLabel => '확인이 필요합니다';
+
+  @override
+  String get serverNoticeReadOnlyStatus => '읽기 전용';
+
+  @override
+  String serverNoticeSince(String time) {
+    return '$time부터';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      '데이터베이스가 무결성 검사에 실패해 읽기만 가능하며 모든 변경을 거부합니다. 아래 목록에서 백업으로 복원하세요. 복원하기 전까지 마지막 정상 사본이 보관됩니다.';
+
+  @override
+  String get serverNoticeDetails => '세부정보';
+
+  @override
+  String get backupSnapshotUnverified => '확인되지 않음';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      '이 스냅샷은 검증할 수 없습니다. 완료되지 않았거나 체크섬을 기록하기 전에 만들어졌기 때문에 설치 전체를 복원할 수 없습니다. 다만 여기에 담긴 워크스페이스 파일은 하나씩 복원할 수 있습니다.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => '마지막 정상 사본';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      '손상된 워크스페이스의 마지막 정상 사본이므로 보관됩니다. 해당 워크스페이스를 복원하기 전까지 정리 작업에서 제외됩니다.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      '손상된 워크스페이스의 마지막 정상 사본입니다. 삭제하면 이 워크스페이스를 복원할 수 있는 수단이 남지 않습니다.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '권한 $count개를 검토를 위해 보류했습니다. 이 페이지 상단에 나열되어 있습니다.',
+      one: '권한 1개를 검토를 위해 보류했습니다. 이 페이지 상단에 나열되어 있습니다.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => '복원된 사본에서 보류됨';
+
+  @override
+  String get importHoldsExplainer =>
+      '복원된 사본은 그 자체로 이 서버에서 아무 권한도 부여할 수 없습니다. 파일에 들어 있던 권한은 다음과 같습니다. 승인하면 권한이 다시 부여되고, 거부하면 삭제됩니다.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return '에이전트는 사람의 승인 없이 다음을 할 수 있습니다: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return '사람이 승인하면 에이전트가 다음을 할 수 있습니다: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return '$command(으)로 시작하는 명령 실행';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => '이 워크스페이스 전체';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return '스페이스 $space에서';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return '에이전트 $agent의 경우';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return '샌드박스가 $path을(를) 실행할 수 있음';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person이(가) $repo을(를) 변경할 수 있음';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person이(가) $repo의 풀 리퀘스트를 검토할 수 있음';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person이(가) $repo에 대해 $level 액세스 권한을 얻음';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person이(가) $role 역할을 얻음';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return '$role 역할로 가입하는 미사용 초대';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$role 역할로 가입하고 리포지토리 $count개에 검토 또는 쓰기 액세스 권한을 주는 미사용 초대',
+      one: '$role 역할로 가입하고 리포지토리 1개에 검토 또는 쓰기 액세스 권한을 주는 미사용 초대',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown => '이 버전의 앱이 설명할 수 없는 권한';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return '$time에 복원됨';
+  }
+
+  @override
+  String get importHoldAccept => '승인';
+
+  @override
+  String get importHoldDismiss => '거부';
+
+  @override
+  String get importHoldAcceptTitle => '이 권한을 부여할까요?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\n승인하면 이 권한이 서버에 즉시 부여됩니다.';
+  }
+
+  @override
+  String get importHoldAccepted => '권한을 부여했습니다.';
+
+  @override
+  String get importHoldNotApplied =>
+      '아무것도 부여되지 않았습니다. 대상이 된 구성원이나 리포지토리가 더 이상 이 워크스페이스에 없습니다.';
 }

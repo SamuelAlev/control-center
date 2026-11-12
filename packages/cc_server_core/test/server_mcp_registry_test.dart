@@ -1,7 +1,9 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/media_render_port.dart';
+import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
+import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
 import 'package:cc_domain/features/memory/domain/services/fact_extraction.dart';
 import 'package:cc_domain/features/memory/domain/services/memory_consolidation_service.dart';
 import 'package:cc_domain/features/memory/domain/usecases/extract_memory_use_case.dart';
@@ -79,9 +81,15 @@ void main() {
       conflictRepository: memoryConflictRepository,
     );
 
+    final runLogs = DaoAgentRunLogRepository(dbs);
     final registry = buildServerMcpRegistry(
       globalDb: global,
       workspaceDbs: dbs,
+      pipelineTriggerRepository: PipelineTriggerRepositoryImpl(
+        dbs,
+        global.workspaceRouteDao,
+        WebhookSecretVault(InMemorySecretStore()),
+      ),
       servedRepos: DaoRepoRepository(dbs),
       codeGraphRepos: (workspaceId, repoId) async => true,
       newsfeedRepository: DaoNewsfeedRepository(
@@ -97,7 +105,8 @@ void main() {
       agentQuestions: _SilentQuestions(),
       mediaRenderer: _NoopRenderer(),
       todoRepository: DaoTodoRepository(dbs),
-      agentRunLogRepository: DaoAgentRunLogRepository(dbs),
+      agentRunLogRepository: runLogs,
+      agentRunOutputs: runLogs,
       memoryFactRepository: memoryFactRepository,
       memoryPolicyRepository: memoryPolicyRepository,
       memoryDomainRepository: memoryDomainRepository,

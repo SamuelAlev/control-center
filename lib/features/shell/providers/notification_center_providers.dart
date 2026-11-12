@@ -117,8 +117,6 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
   }
   final markAsync = ref.watch(notificationReadMarkProvider);
   final mark = markAsync.value;
-  final lastSeenAt = mark?.lastSeenAt;
-  final clearedBefore = mark?.clearedBefore;
   final states =
       ref.watch(notificationItemStatesProvider).value ??
       const <String, NotificationItemState>{};
@@ -142,7 +140,7 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
     if (state != null && state.isDismissed) {
       continue;
     }
-    if (clearedBefore != null && !item.createdAt.isAfter(clearedBefore)) {
+    if (mark != null && mark.hides(item)) {
       continue;
     }
     final notification = mapNotificationFrame(
@@ -167,7 +165,7 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
         state?.isRead ??
         (item.isResolved ||
             !markAsync.hasValue ||
-            (lastSeenAt != null && !item.createdAt.isAfter(lastSeenAt)));
+            (mark != null && mark.hasSeen(item)));
     final owner = item.params['repo_owner'] as String?;
     final repoName = item.params['repo_name'] as String?;
     entries.add(

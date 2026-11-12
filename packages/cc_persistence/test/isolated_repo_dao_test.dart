@@ -1,6 +1,8 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -13,6 +15,9 @@ void main() {
         .insert(
           ReposTableCompanion.insert(id: 'r-1', name: 'o/r', path: '/src/r'),
         );
+    await seedRepo(db, 'r-2');
+    await seedTicket(db, 't-1');
+    await seedTicket(db, 't-2');
   });
 
   tearDown(() async {
@@ -23,13 +28,14 @@ void main() {
     required String id,
     required String workspaceId,
     required String spaceId,
+    String repoId = 'r-1',
     String? ticketId,
   }) => db.isolatedRepoDao.upsert(
     IsolatedReposTableCompanion.insert(
       id: id,
       workspaceId: workspaceId,
       spaceId: spaceId,
-      repoId: 'r-1',
+      repoId: repoId,
       path: '/iso/$id',
       branch: 'feature/$id',
       sourcePath: '/src/r',
@@ -39,15 +45,24 @@ void main() {
 
   group('IsolatedRepoDao — workspace isolation', () {
     test('findForUnit + forSpace are scoped by workspaceId', () async {
+      // A space holds one isolated copy per repo, so the second workspace's
+      // row in this one file isolates another repo.
       await seed(id: 'a', workspaceId: 'w-1', spaceId: 'ch', ticketId: 't-1');
-      await seed(id: 'b', workspaceId: 'w-2', spaceId: 'ch', ticketId: 't-2');
+      await seed(
+        id: 'b',
+        workspaceId: 'w-2',
+        spaceId: 'ch',
+        repoId: 'r-2',
+        ticketId: 't-2',
+      );
 
       final a = await db.isolatedRepoDao.findForUnit('w-1', 'ch', 'r-1');
       expect(a?.id, 'a');
 
       // A foreign workspace must not surface w-1's row even with same space.
-      final foreign = await db.isolatedRepoDao.findForUnit('w-2', 'ch', 'r-1');
-      expect(foreign?.id, 'b');
+      expect(await db.isolatedRepoDao.findForUnit('w-2', 'ch', 'r-1'), isNull);
+      final own = await db.isolatedRepoDao.findForUnit('w-2', 'ch', 'r-2');
+      expect(own?.id, 'b');
 
       final w1 = await db.isolatedRepoDao.forSpace('w-1', 'ch');
       expect(w1.map((r) => r.id), ['a']);
@@ -64,7 +79,13 @@ void main() {
 
     test('cross-workspace teardown lookups span all workspaces', () async {
       await seed(id: 'a', workspaceId: 'w-1', spaceId: 'ch', ticketId: 't-1');
-      await seed(id: 'b', workspaceId: 'w-2', spaceId: 'ch', ticketId: 't-1');
+      await seed(
+        id: 'b',
+        workspaceId: 'w-2',
+        spaceId: 'ch',
+        repoId: 'r-2',
+        ticketId: 't-1',
+      );
 
       final bySpace = await db.isolatedRepoDao.findBySpaceAcrossWorkspaces(
         'ch',
@@ -77,23 +98,28 @@ void main() {
       expect(byTicket.map((r) => r.id).toSet(), {'a', 'b'});
     });
 
-    test('unique (workspaceId, spaceId, repoId) — upsert replaces', () async {
-      await seed(id: 'a', workspaceId: 'w-1', spaceId: 'ch');
-      // Same unit, different row id → conflict on the unique index updates.
-      await db.isolatedRepoDao.upsert(
-        IsolatedReposTableCompanion.insert(
-          id: 'a',
-          workspaceId: 'w-1',
-          spaceId: 'ch',
-          repoId: 'r-1',
-          path: '/iso/updated',
-          branch: 'feature/updated',
-          sourcePath: '/src/r',
-        ),
-      );
-      final row = await db.isolatedRepoDao.findForUnit('w-1', 'ch', 'r-1');
-      expect(row?.path, '/iso/updated');
-    });
+    test(
+      'unique (spaceId, repoId) — upsert updates the unit in place',
+      () async {
+        await seed(id: 'a', workspaceId: 'w-1', spaceId: 'ch');
+        // Same unit, different row id → conflict on the unique index updates
+        // the existing row, which keeps its id.
+        await db.isolatedRepoDao.upsert(
+          IsolatedReposTableCompanion.insert(
+            id: 'a-again',
+            workspaceId: 'w-1',
+            spaceId: 'ch',
+            repoId: 'r-1',
+            path: '/iso/updated',
+            branch: 'feature/updated',
+            sourcePath: '/src/r',
+          ),
+        );
+        final row = await db.isolatedRepoDao.findForUnit('w-1', 'ch', 'r-1');
+        expect(row?.id, 'a');
+        expect(row?.path, '/iso/updated');
+      },
+    );
 
     test('deleteById removes the row', () async {
       await seed(id: 'a', workspaceId: 'w-1', spaceId: 'ch');

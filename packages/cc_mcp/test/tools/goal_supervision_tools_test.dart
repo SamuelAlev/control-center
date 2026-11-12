@@ -46,7 +46,7 @@ AgentGoalRun _goal() => AgentGoalRun(
   userText: 'Ship the thing',
   kind: AgentGoalKind.goal,
   deadlineAt: DateTime(2026, 8),
-  costCapCents: 5000,
+  costCapMicros: 50000000,
   maxRuns: 100,
   createdAt: DateTime(2026, 7, 27),
   updatedAt: DateTime(2026, 7, 27),

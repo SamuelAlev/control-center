@@ -4,6 +4,7 @@ import 'package:control_center/features/chat_bridges/presentation/chat_provider_
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,7 +129,7 @@ class _ChatConnectDialogState extends ConsumerState<_ChatConnectDialog> {
           ],
           if (state.hasError)
             Text(
-              l10n.failedWithError('${state.error}'),
+              failureMessage(l10n, state.error!),
               style: TextStyle(fontSize: 12, color: t.bgErrorSolid),
             ),
         ],

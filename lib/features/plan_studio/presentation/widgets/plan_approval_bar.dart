@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -8,31 +9,31 @@ class PlanTotalEstimate {
   /// Parses the `plan.estimate` wire payload.
   factory PlanTotalEstimate.fromWire(Map<String, dynamic> w) =>
       PlanTotalEstimate(
-        costCentsLow: (w['total_cost_cents_low'] as num?)?.toInt(),
-        costCentsHigh: (w['total_cost_cents_high'] as num?)?.toInt(),
+        costMicrosLow: (w['total_cost_micros_low'] as num?)?.toInt(),
+        costMicrosHigh: (w['total_cost_micros_high'] as num?)?.toInt(),
         durationMsLow: (w['total_duration_ms_low'] as num?)?.toInt(),
         durationMsHigh: (w['total_duration_ms_high'] as num?)?.toInt(),
-        budgetCeilingCents: (w['budget_ceiling_cents'] as num?)?.toInt(),
+        budgetCeilingMicros: (w['budget_ceiling_micros'] as num?)?.toInt(),
         isPartial: w['is_partial'] == true,
         exceedsBudget: w['exceeds_budget'] == true,
       );
 
   /// Creates a plan total.
   const PlanTotalEstimate({
-    this.costCentsLow,
-    this.costCentsHigh,
+    this.costMicrosLow,
+    this.costMicrosHigh,
     this.durationMsLow,
     this.durationMsHigh,
-    this.budgetCeilingCents,
+    this.budgetCeilingMicros,
     this.isPartial = false,
     this.exceedsBudget = false,
   });
 
-  /// Lower bound of the plan-total cost (US cents).
-  final int? costCentsLow;
+  /// Lower bound of the plan-total cost (micro-dollars).
+  final int? costMicrosLow;
 
   /// Upper bound of the plan-total cost.
-  final int? costCentsHigh;
+  final int? costMicrosHigh;
 
   /// Lower bound of the critical-path duration (ms).
   final int? durationMsLow;
@@ -41,7 +42,7 @@ class PlanTotalEstimate {
   final int? durationMsHigh;
 
   /// The budget ceiling, when set.
-  final int? budgetCeilingCents;
+  final int? budgetCeilingMicros;
 
   /// Whether totals cover only the estimable subset of nodes.
   final bool isPartial;
@@ -229,9 +230,9 @@ class PlanApprovalBar extends StatelessWidget {
       );
     }
     final parts = <String>[];
-    if (t.costCentsLow != null) {
-      final lo = (t.costCentsLow! / 100).toStringAsFixed(2);
-      final hi = (t.costCentsHigh! / 100).toStringAsFixed(2);
+    if (t.costMicrosLow != null) {
+      final lo = (t.costMicrosLow! / microsPerDollar).toStringAsFixed(2);
+      final hi = (t.costMicrosHigh! / microsPerDollar).toStringAsFixed(2);
       parts.add('\$$lo–$hi');
     } else {
       parts.add(l10n.planEstimateNoHistory);
@@ -241,10 +242,10 @@ class PlanApprovalBar extends StatelessWidget {
       final hi = (t.durationMsHigh! / 60000).toStringAsFixed(0);
       parts.add('$lo–${hi}m');
     }
-    if (t.budgetCeilingCents != null) {
+    if (t.budgetCeilingMicros != null) {
       parts.add(
         l10n.planBudgetCeiling(
-          (t.budgetCeilingCents! / 100).toStringAsFixed(2),
+          (t.budgetCeilingMicros! / microsPerDollar).toStringAsFixed(2),
         ),
       );
     }

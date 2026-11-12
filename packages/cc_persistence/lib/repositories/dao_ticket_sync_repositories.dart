@@ -1,8 +1,11 @@
+import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_config.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_link.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_log_entry.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_repositories.dart';
 import 'package:cc_persistence/database/daos/ticket_sync_dao.dart';
+import 'package:cc_persistence/database/workspace/workspace_database.dart'
+    show TicketSyncConfigsTableData;
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/ticket_sync_mappers.dart';
 
@@ -12,49 +15,83 @@ const _mapper = TicketSyncMapper();
 ///
 /// Sync configs are workspace-scoped rows in the workspace's own database file;
 /// the `workspaceId` on each method (or on the entity being written) picks the
-/// file.
+/// file. A config's webhook secret is kept in the server's secrets store
+/// through [WebhookSecretVault]: the row stores only its reference, every read
+/// resolves it, and deleting the config deletes it.
 class DaoTicketSyncConfigRepository implements TicketSyncConfigRepository {
   /// Creates a [DaoTicketSyncConfigRepository] over the per-workspace
-  /// databases.
-  DaoTicketSyncConfigRepository(this._dbs);
+  /// databases, keeping webhook secrets in [_secrets].
+  DaoTicketSyncConfigRepository(this._dbs, this._secrets);
 
   final WorkspaceDatabaseManager _dbs;
+  final WebhookSecretVault _secrets;
 
   TicketSyncDao _dao(String workspaceId) => _dbs.of(workspaceId).ticketSyncDao;
 
   @override
-  Future<void> upsert(TicketSyncConfig config) =>
-      _dao(config.workspaceId).upsertConfig(_mapper.configToCompanion(config));
+  Future<void> upsert(TicketSyncConfig config) async {
+    final ref = WebhookSecretVault.ticketSyncRef(config.workspaceId, config.id);
+    final secret = config.webhookSecret;
+    final hasSecret = secret != null && secret.isNotEmpty;
+    // Secret first: a row never names a reference with nothing behind it.
+    if (hasSecret) {
+      await _secrets.write(ref, secret);
+    }
+    await _dao(config.workspaceId).upsertConfig(
+      _mapper.configToCompanion(
+        config,
+        webhookSecretRef: hasSecret ? ref : null,
+      ),
+    );
+    if (!hasSecret) {
+      await _secrets.delete(ref);
+    }
+  }
 
   @override
   Future<List<TicketSyncConfig>> enabledForWorkspace(String workspaceId) async {
     final rows = await _dao(
       workspaceId,
     ).enabledConfigsForWorkspace(workspaceId);
-    return rows.map(_mapper.configFromRow).toList();
+    return _fromRows(rows);
   }
 
   @override
   Future<TicketSyncConfig?> forVendor(String workspaceId, String vendor) async {
     final row = await _dao(workspaceId).configForVendor(workspaceId, vendor);
-    return row == null ? null : _mapper.configFromRow(row);
+    return row == null ? null : _fromRow(row);
   }
 
   @override
-  Future<List<TicketSyncConfig>> forWorkspace(String workspaceId) async {
-    final rows = await _dao(workspaceId).configsForWorkspace(workspaceId);
-    return rows.map(_mapper.configFromRow).toList();
+  Future<List<TicketSyncConfig>> forWorkspace(String workspaceId) async =>
+      _fromRows(await _dao(workspaceId).configsForWorkspace(workspaceId));
+
+  @override
+  Stream<List<TicketSyncConfig>> watchForWorkspace(String workspaceId) => _dao(
+    workspaceId,
+  ).watchConfigsForWorkspace(workspaceId).asyncMap(_fromRows);
+
+  @override
+  Future<int> delete(String id, {required String workspaceId}) async {
+    final deleted = await _dao(workspaceId).deleteConfig(id, workspaceId);
+    if (deleted > 0) {
+      await _secrets.delete(WebhookSecretVault.ticketSyncRef(workspaceId, id));
+    }
+    return deleted;
   }
 
-  @override
-  Stream<List<TicketSyncConfig>> watchForWorkspace(String workspaceId) =>
-      _dao(workspaceId)
-          .watchConfigsForWorkspace(workspaceId)
-          .map((rows) => rows.map(_mapper.configFromRow).toList());
+  /// [row] as a config, its webhook secret resolved through the secrets store.
+  Future<TicketSyncConfig> _fromRow(TicketSyncConfigsTableData row) async {
+    final ref = row.webhookSecretRef;
+    return _mapper.configFromRow(
+      row,
+      webhookSecret: ref == null ? null : await _secrets.read(ref),
+    );
+  }
 
-  @override
-  Future<int> delete(String id, {required String workspaceId}) =>
-      _dao(workspaceId).deleteConfig(id, workspaceId);
+  Future<List<TicketSyncConfig>> _fromRows(
+    List<TicketSyncConfigsTableData> rows,
+  ) => Future.wait(rows.map(_fromRow));
 }
 
 /// Drift-backed [TicketSyncLinkRepository].
@@ -68,21 +105,9 @@ class DaoTicketSyncLinkRepository implements TicketSyncLinkRepository {
 
   @override
   Future<void> upsert(TicketSyncLink link) async {
-    final dao = _dao(link.workspaceId);
-    // Idempotent on (workspaceId, ticketId, vendor): update the existing row by
-    // id when present, else insert. (The PK is the synthetic id, so a plain
-    // insert-or-replace would not dedupe on the natural key.)
-    final existing = await dao.linkForTicketVendor(
-      link.workspaceId,
-      link.ticketId,
-      link.vendor,
-    );
-    final companion = _mapper.linkToCompanion(link);
-    if (existing == null) {
-      await dao.insertLink(companion);
-    } else {
-      await dao.updateLinkById(existing.id, companion);
-    }
+    // Idempotent on (ticketId, vendor), the table's unique key: one
+    // statement inserts or updates the existing link.
+    await _dao(link.workspaceId).upsertLink(_mapper.linkToCompanion(link));
   }
 
   @override

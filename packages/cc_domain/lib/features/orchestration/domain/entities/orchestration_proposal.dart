@@ -308,24 +308,24 @@ class SynthesisSpec {
 /// Budget for the whole orchestration.
 class BudgetSpec {
   /// Creates a [BudgetSpec].
-  const BudgetSpec({this.estimatedCostCents, this.maxCostCents});
+  const BudgetSpec({this.estimatedCostMicros, this.maxCostMicros});
 
-  /// Estimated total cost in US cents.
-  final int? estimatedCostCents;
+  /// Estimated total cost in micro-dollars.
+  final int? estimatedCostMicros;
 
-  /// Hard spending limit in US cents.
-  final int? maxCostCents;
+  /// Hard spending limit in micro-dollars.
+  final int? maxCostMicros;
 
   /// Builds from JSON.
   factory BudgetSpec.fromJson(Map<String, dynamic> json) => BudgetSpec(
-    estimatedCostCents: (json['estimatedCostCents'] as num?)?.toInt(),
-    maxCostCents: (json['maxCostCents'] as num?)?.toInt(),
+    estimatedCostMicros: (json['estimatedCostMicros'] as num?)?.toInt(),
+    maxCostMicros: (json['maxCostMicros'] as num?)?.toInt(),
   );
 
   /// Serializes to JSON.
   Map<String, dynamic> toJson() => {
-    if (estimatedCostCents != null) 'estimatedCostCents': estimatedCostCents,
-    if (maxCostCents != null) 'maxCostCents': maxCostCents,
+    if (estimatedCostMicros != null) 'estimatedCostMicros': estimatedCostMicros,
+    if (maxCostMicros != null) 'maxCostMicros': maxCostMicros,
   };
 }
 

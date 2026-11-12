@@ -11,37 +11,33 @@ class CronExecutionDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Creates a [CronExecutionDao].
   CronExecutionDao(super.db);
 
-  /// Atomically claims the `(triggerId, plannedAt)` slot. Returns `true` when
-  /// this call recorded the slot (the caller should fire), `false` when the
-  /// slot was already claimed (a duplicate fire to suppress).
+  /// Atomically claims the `(triggerId, plannedAt)` slot. Returns `true` only
+  /// when this call inserted the slot's row (the caller should fire), `false`
+  /// when the slot was already claimed (a duplicate fire to suppress). The
+  /// conflict target is the unique `(trigger_id, planned_at)` index
+  /// (`idx_cron_executions_slot`) and nothing else, so two overlapping ticks
+  /// cannot both win one slot while any other failure still throws.
   Future<bool> claimSlot({
     required String id,
     required String workspaceId,
     required String triggerId,
     required DateTime plannedAt,
-  }) async {
-    final slot = plannedAt.toUtc();
-    final existing =
-        await (select(cronExecutionsTable)
-              ..where(
-                (c) => c.triggerId.equals(triggerId) & c.plannedAt.equals(slot),
-              )
-              ..limit(1))
-            .getSingleOrNull();
-    if (existing != null) {
-      return false;
-    }
-    await into(cronExecutionsTable).insert(
-      CronExecutionsTableCompanion.insert(
-        id: id,
-        workspaceId: workspaceId,
-        triggerId: triggerId,
-        plannedAt: slot,
-      ),
-      mode: InsertMode.insertOrIgnore,
-    );
-    return true;
-  }
+  }) async =>
+      await into(cronExecutionsTable).insertReturningOrNull(
+        CronExecutionsTableCompanion.insert(
+          id: id,
+          workspaceId: workspaceId,
+          triggerId: triggerId,
+          plannedAt: plannedAt.toUtc(),
+        ),
+        onConflict: DoNothing(
+          target: [
+            cronExecutionsTable.triggerId,
+            cronExecutionsTable.plannedAt,
+          ],
+        ),
+      ) !=
+      null;
 
   /// Removes the claim on the `(triggerId, plannedAt)` slot so it can be claimed
   /// again. Used when the claimed slot's run failed to start.

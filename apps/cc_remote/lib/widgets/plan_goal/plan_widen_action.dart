@@ -56,7 +56,7 @@ class _PhonePlanWidenActionState extends ConsumerState<PhonePlanWidenAction> {
       add(key);
     }
     final additions = next.difference(oldKeys);
-    final cap = widget.execution.maxCostCents;
+    final cap = widget.execution.maxCostMicros;
     final label = cap == null
         ? l10n.mobilePlanNoHardCap
         : planMoney(context, cap);

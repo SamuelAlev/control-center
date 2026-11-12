@@ -75,6 +75,12 @@ void main() {
               role: const Value('owner'),
             ),
           );
+      // The run the executing orchestration points at.
+      await seed.workspaces.of(workspaceId).customStatement(
+        'INSERT INTO pipeline_runs (id, template_id, workspace_id) '
+        'VALUES (?, ?, ?)',
+        ['run-private', 'template', workspaceId],
+      );
       final orchestrations = DaoOrchestrationRepository(seed.workspaces);
       await orchestrations.insert(
         Orchestration(
@@ -111,6 +117,10 @@ void main() {
           updatedAt: now,
         ),
       );
+      await seed.workspaces.of(workspaceId).customStatement(
+        'INSERT INTO tickets (id, workspace_id, title) VALUES (?, ?, ?)',
+        ['ticket-private', workspaceId, 'Private ticket'],
+      );
       await DaoIsolatedRepoRepository(seed.workspaces).upsert(
         IsolatedRepo(
           id: 'iso-private',
@@ -128,7 +138,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(ownerDevice),
-          workspaceId: const Value(workspaceId),
+          landingWorkspaceId: const Value(workspaceId),
           label: const Value('owner'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),

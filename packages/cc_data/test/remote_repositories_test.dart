@@ -860,7 +860,7 @@ class _FakeHost {
       },
       'agent_run_log.watchByAgent' ||
       'agent_run_log.watchActiveByConversation' ||
-      'agent_run_log.watchAll' => {
+      'agent_run_log.watchActiveByWorkspace' => {
         'logs': [_runLogJson('rl1', 'a1')],
       },
       'isolated_repo.watchForWorkspace' => {
@@ -1009,7 +1009,7 @@ class _FakeHost {
     'workspace_id': 'ws1',
     'skills': ['dart', 'flutter'],
     'strict_mode': false,
-    'monthly_budget_cents': 0,
+    'monthly_budget_micros': 0,
     'created_at': '2026-01-01T00:00:00.000Z',
   };
 
@@ -1112,7 +1112,7 @@ class _FakeHost {
 
   Map<String, dynamic> _spaceReadJson(String spaceId) => {
     'space_id': spaceId,
-    'last_read_at': '2026-01-03T00:00:00.000Z',
+    'last_read': {'at': '2026-01-03T00:00:00.000Z', 'seq': 17},
   };
 
   Map<String, dynamic> _memoryDomainJson(String id, String name) => {
@@ -1194,7 +1194,7 @@ class _FakeHost {
     'status': 'running',
     'input_tokens': 10,
     'output_tokens': 20,
-    'estimated_cost_cents': 5,
+    'cost_micros': 50000,
     'output_contract_mode': 'strict',
     'output_rejections': 0,
     'retry_attempt': 0,
@@ -1252,7 +1252,7 @@ class _FakeHost {
     'dedup_key': ?dedupKey,
     'started_at': '2026-01-01T00:00:00.000Z',
     'template_version': 1,
-    'total_cost_cents': 7,
+    'total_cost_micros': 7,
     'total_tokens': 42,
     'dry_run': false,
   };
@@ -1861,7 +1861,7 @@ void main() {
     expect(host.sentRepos.last['workspace_id'], 'ws1');
   });
 
-  test('RpcSpaceReadRepository marks read + maps watch to DateTime', () async {
+  test('RpcSpaceReadRepository marks read + maps watch to a position', () async {
     final repo = RpcSpaceReadRepository(client);
 
     await repo.markSpaceRead('w1', 'c1', 'user-1');
@@ -1876,7 +1876,10 @@ void main() {
     expect(host.sentReadCursors.last['conversation_id'], 'conv-1');
 
     final cursor = await repo.watchUserLastReadAt('w1', 'c1', 'user-1').first;
-    expect(cursor, DateTime.parse('2026-01-03T00:00:00.000Z'));
+    expect(
+      cursor,
+      FeedPosition(at: DateTime.parse('2026-01-03T00:00:00.000Z'), seq: 17),
+    );
     // The subscription must carry the caller-validated workspace explicitly
     // (not rely on the client's ambient active workspace) so a workspace switch
     // can't pair this space with a different workspace server-side.
@@ -2090,8 +2093,8 @@ void main() {
     final active = await repo.watchActiveByConversation('ws1', 'conv-1').first;
     expect(active.single.id, 'rl1');
 
-    final all = await repo.watchAll().first;
-    expect(all.single.id, 'rl1');
+    final running = await repo.watchNonTerminalForWorkspace('ws1').first;
+    expect(running.single.id, 'rl1');
 
     final one = await repo.getById('ws1', 'rl1');
     expect(one, isNotNull);
@@ -2440,7 +2443,7 @@ void main() {
     expect(liveRun.status, PipelineRunStatus.running);
     expect(liveRun.workspaceId, 'ws1');
     expect(liveRun.state['k'], 'v');
-    expect(liveRun.totalCostCents, 7);
+    expect(liveRun.totalCostMicros, 7);
     expect(liveRun.totalTokens, 42);
 
     final all = await repo.watchAll().first;
@@ -2805,10 +2808,6 @@ void main() {
       );
       expect(
         () => repo.getMessagesWithEmbedding('ws1', 'c1'),
-        throwsUnsupportedError,
-      );
-      expect(
-        () => repo.getMessagesWithoutEmbedding('ws1'),
         throwsUnsupportedError,
       );
       expect(

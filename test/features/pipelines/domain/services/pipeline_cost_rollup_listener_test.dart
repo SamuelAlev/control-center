@@ -16,8 +16,8 @@ class FakePipelineRunRepository implements PipelineRunRepository {
   final Map<String, List<int>> costIncrements = {};
 
   @override
-  Future<void> incrementCost(String runId, int cents, int tokens) async {
-    costIncrements[runId] = [cents, tokens];
+  Future<void> incrementCost(String runId, int micros, int tokens) async {
+    costIncrements[runId] = [micros, tokens];
   }
 
   @override
@@ -30,7 +30,7 @@ AgentRunLog _log({
   required String id,
   String agentId = 'agent-1',
   String? pipelineRunId = 'pr-1',
-  int costCents = 100,
+  int costMicros = 1000000,
   int tokens = 500,
 }) => AgentRunLog(
   id: id,
@@ -40,7 +40,7 @@ AgentRunLog _log({
   startedAt: DateTime(2026),
   completedAt: DateTime(2026),
   pipelineRunId: pipelineRunId,
-  cost: RunCost(estimatedCostCents: costCents, inputTokens: tokens),
+  cost: RunCost(costMicros: costMicros, inputTokens: tokens),
 );
 
 AgentRunCompleted _event({
@@ -82,19 +82,19 @@ void main() {
       eventBus.publish(_event());
       await Future<void>.delayed(Duration.zero);
 
-      expect(runRepo.costIncrements['pr-1'], [100, 500]);
+      expect(runRepo.costIncrements['pr-1'], [1000000, 500]);
     });
 
     test(
       'increments the exact run log\'s cost (no fan-out, no heuristic)',
       () async {
-        logRepo.seed(_log(id: 'log-1', costCents: 200, tokens: 1000));
+        logRepo.seed(_log(id: 'log-1', costMicros: 2000000, tokens: 1000));
 
         listener0().start();
         eventBus.publish(_event());
         await Future<void>.delayed(Duration.zero);
 
-        expect(runRepo.costIncrements['pr-1'], [200, 1000]);
+        expect(runRepo.costIncrements['pr-1'], [2000000, 1000]);
       },
     );
 
@@ -119,7 +119,7 @@ void main() {
     });
 
     test('zero cost + zero tokens skips increment', () async {
-      logRepo.seed(_log(id: 'log-1', costCents: 0, tokens: 0));
+      logRepo.seed(_log(id: 'log-1', costMicros: 0, tokens: 0));
 
       listener0().start();
       eventBus.publish(_event());
@@ -157,7 +157,7 @@ void main() {
 
         eventBus.publish(_event());
         await Future<void>.delayed(Duration.zero);
-        expect(runRepo.costIncrements['pr-1'], [100, 500]);
+        expect(runRepo.costIncrements['pr-1'], [1000000, 500]);
 
         runRepo.costIncrements.clear();
         listener.dispose();

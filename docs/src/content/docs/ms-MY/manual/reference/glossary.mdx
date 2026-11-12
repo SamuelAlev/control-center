@@ -2,7 +2,7 @@
 title: Glosari
 description: Takrif istilah penting yang digunakan di seluruh Control Center.
 slug: ms-MY/manual-pengguna/rujukan/glosari
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), native (Seatbelt natif OS pada macOS, bubblewrap pada Linux dan WSL2) atau none. Diprobe sekali semasa but; native membalut penghantaran ejen apabila tersedia. Windows tiada bahagian belakang natif dan Linux memerlukan bwrap serta socat; pada hos sebegitu hanya larian pemilik pelayan dimulakan, tanpa balutan, dan larian orang lain ditolak. --sandbox off menjalankan setiap ahli ejen tanpa balutan.'],
 ['Stesen', 'Mesin pakai buang yang dipandu ejen secara masa nyata: penyemak imbas atau desktop Linux tertutup, emulator Android atau Simulator iOS yang diuruskan hos, atau terminal tertutup. Ditonton secara langsung melalui lorong resolusi penuhnya sendiri, dengan pengambilalihan dikuatkuasakan di pihak pelayan. Berskop pada satu perbualan supaya tab manusia dan alat ejen menuju ke satu mesin yang sama.'],
 ['Persekitaran terasing', 'Sifat pengasingan yang lebih kuat yang tersedia untuk stesen bersandarkan VM: sempadan kernel, cakera tindanan pakai buang, gerbang rangkaian tolak-secara-lalai dan broker kelayakan. Stesen Android dan iOS boleh dibuang tetapi menggunakan rangkaian yang diuruskan hos, jadi ia tidak menuntut sempadan ini. Memandu mana-mana stesen menggunakan kelas guardrail enclosureControl.'],
-['RunCost', 'Rekod token/kos (token input, token output, anggaran kos dalam sen) bagi satu larian ejen.'],
+['RunCost', 'Rekod token/kos (token input, token output, anggaran kos dalam mikrodolar) bagi satu larian ejen.'],
 ['WakeReason', 'Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.'],
 ['SandboxPort', 'Mengurus kitaran hayat kotak pasir (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Menempa kelayakan berskop untuk pelancaran kotak pasir (satu token bagi satu repo untuk persekitaran ejen, tulis hanya untuk laluan push di sebelah pelayan), kemudian melepaskannya apabila dimusnahkan.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Persekitaran terasing**: Sempadan stesen bersandarkan VM yang lebih kuat — sempadan kernel, cakera tindanan pakai buang, gerbang rangkaian tolak-secara-lalai dan broker kelayakan. Stesen Android dan iOS boleh dibuang tetapi menggunakan rangkaian yang diuruskan hos dan tidak menuntut sempadan ini. Memandu mana-mana stesen menggunakan kelas guardrail `enclosureControl`.
 
-**RunCost**: Rekod token/kos (token input, token output, anggaran kos dalam sen) bagi satu larian ejen.
+**RunCost**: Rekod token/kos (token input, token output, anggaran kos dalam mikrodolar) bagi satu larian ejen.
 
 **WakeReason**: Sebab ejen dihantar. Enam nilai: mesej pengguna, penugasan tiket, penghantaran semula pemulihan selepas kegagalan, tiket anak selesai, denyutan susulan berjadual dan langkah pipeline.
 

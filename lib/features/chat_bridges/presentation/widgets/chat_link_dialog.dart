@@ -7,6 +7,7 @@ import 'package:control_center/features/chat_bridges/providers/chat_bridge_provi
 import 'package:control_center/features/chat_bridges/providers/chat_link_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -95,7 +96,7 @@ class _ChatLinkDialogState extends ConsumerState<_ChatLinkDialog> {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return _Note(
-              text: l10n.failedWithError('${snapshot.error}'),
+              text: failureMessage(l10n, snapshot.error!),
               error: true,
             );
           }

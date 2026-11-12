@@ -183,7 +183,7 @@ class JobCompletionReport {
     required this.success,
     this.resultJson,
     this.error,
-    this.costCents = 0,
+    this.costMicros = 0,
     this.eventsLost = 0,
     this.lastSeq = 0,
   });
@@ -195,7 +195,7 @@ class JobCompletionReport {
         success: json['success'] as bool? ?? false,
         resultJson: json['resultJson'] as String?,
         error: json['error'] as String?,
-        costCents: (json['costCents'] as num?)?.toInt() ?? 0,
+        costMicros: (json['costMicros'] as num?)?.toInt() ?? 0,
         eventsLost: (json['eventsLost'] as num?)?.toInt() ?? 0,
         lastSeq: (json['lastSeq'] as num?)?.toInt() ?? 0,
       );
@@ -212,8 +212,8 @@ class JobCompletionReport {
   /// Failure reason on failure.
   final String? error;
 
-  /// Metered cost in cents.
-  final int costCents;
+  /// Metered cost in micro-dollars.
+  final int costMicros;
 
   /// Events dropped during a disconnect (surfaced, never silent).
   final int eventsLost;
@@ -227,7 +227,7 @@ class JobCompletionReport {
     'success': success,
     if (resultJson != null) 'resultJson': resultJson,
     if (error != null) 'error': error,
-    'costCents': costCents,
+    'costMicros': costMicros,
     'eventsLost': eventsLost,
     'lastSeq': lastSeq,
   };

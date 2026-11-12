@@ -33,7 +33,7 @@ class AgentMapper {
       effort: row.effort,
       contextSize: row.contextSize,
       role: AgentRole.tryParse(row.role),
-      monthlyBudgetCents: row.monthlyBudgetCents,
+      monthlyBudgetMicros: row.monthlyBudgetMicros,
       silenceTimeoutMinutes: row.silenceTimeoutMinutes,
       maxConcurrentTasks: row.maxConcurrentTasks,
       visibility: AgentVisibility.fromStorage(row.visibility),

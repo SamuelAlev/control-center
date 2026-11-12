@@ -14,6 +14,7 @@ import 'package:control_center/features/ticketing/presentation/widgets/ticket_vi
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_text_field.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_toolbar.dart';
 import 'package:flutter/services.dart';
@@ -142,7 +143,7 @@ class _NewTicketDialogState extends ConsumerState<_NewTicketDialog> {
       final l10n = AppLocalizations.of(context);
       CcToastScope.of(
         context,
-      ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     }
   }
 

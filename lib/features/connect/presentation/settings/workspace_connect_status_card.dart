@@ -10,6 +10,7 @@ import 'package:control_center/features/connect/presentation/widgets/connect_mod
 import 'package:control_center/features/connect/providers/workspace_connect_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,7 +95,7 @@ class _WorkspaceConnectStatusCardState
       if (mounted) {
         CcToastScope.maybeOf(
           context,
-        )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        )?.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
       return null;
     } finally {

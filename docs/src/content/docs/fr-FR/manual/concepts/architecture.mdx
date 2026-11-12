@@ -3,7 +3,7 @@ title: "Architecture"
 description: "Comment Control Center est structuré : modèle de serveur à client léger, Clean Architecture « feature-first » et ports et adaptateurs."
 dateModified: 2026-09-19
 slug: fr-FR/manuel/concepts/architecture
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Vue d’ensemble
@@ -100,9 +100,9 @@ La racine de composition de l’application (`di/providers.dart`) lie les ports 
 **Drift** (SQLite), réparti en deux bases de données, toutes deux dans `cc_persistence` :
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — une courte liste de tables réellement communes à tout le serveur : le registre des espaces de travail, les utilisateurs/préférences/appareils appairés, les connexions SSO, les paramètres de serveur à l’échelle de l’installation, les politiques d’actions gérées (un verrou à l’échelle de l’installation qui ne peut que resserrer les garde-fous des espaces de travail), le fil d’actualités par utilisateur, la file de la flotte (workers/tâches/journal de placement), l’index `workspace_routes` avant authentification et les métadonnées de l’installation. Le démarrage n’ouvre que ce fichier, si bien que le coût de démarrage reste constant, quelle que soit la quantité d’historique accumulée par les espaces de travail. Ajouter une table ici est une décision d’isolation qu’un test à cliquet vous oblige à justifier.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — un _répertoire_ par espace de travail, contenant un fichier SQLite et tout le reste qui n’appartient qu’à cet espace de travail, de sorte que les arbres de travail et les fichiers d’agent d’une conversation se trouvent à côté de la base de données et sont supprimés avec elle. Presque tout vit ici : agents, espaces, tickets, mémoire, pipelines, réunions, graphe de code, revues, dépôts. Les fichiers s’ouvrent de façon paresseuse au premier accès via `WorkspaceDatabaseManager.of(workspaceId)` et paient alors leur propre `quick_check`, l’installation FTS/déclencheurs et `vector_init`.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — un _répertoire_ par espace de travail, contenant un fichier SQLite et tout le reste qui n’appartient qu’à cet espace de travail, de sorte que les arbres de travail et les fichiers d’agent d’une conversation se trouvent à côté de la base de données et sont supprimés avec elle. Presque tout vit ici : agents, espaces, tickets, mémoire, pipelines, réunions, revues, dépôts. Le graphe de code est un second fichier du même répertoire, `code_index.db`, qui est reconstruit plutôt que sauvegardé. Les fichiers s’ouvrent de façon paresseuse au premier accès via `WorkspaceDatabaseManager.of(workspaceId)` et paient alors leur propre `quick_check`, l’installation FTS/déclencheurs et `vector_init`.
 
-Les deux moitiés sont parties d’un socle v1 consolidé — `onCreate` construit le schéma actuel — avec des étapes de migration ajoutées uniquement lorsqu’une base de données déployée doit être reprise.
+Aucune des deux moitiés ne comporte d'étapes de migration. Un fichier neuf est construit à partir des définitions de tables. Un fichier issu d'une version antérieure est d'abord copié à part (`pre_upgrade/`), puis amené aux mêmes définitions lors de son ouverture, de sorte qu'une installation neuve et une installation mise à jour aboutissent au même schéma. Un fichier écrit par une version plus récente est refusé.
 
 Comme un espace de travail correspond à un seul fichier, exporter un espace de travail se fait par une unique instruction `VACUUM INTO` (`workspace.export`), et non par un export table par table ; `workspace.import` adopte un tel fichier et se sert du `workspace_meta` intégré pour distinguer un fichier réadopté par sa propre installation d’un fichier provenant d’une autre.
 

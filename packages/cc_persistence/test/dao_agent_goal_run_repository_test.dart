@@ -3,6 +3,7 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_stat
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Exercises [DaoAgentGoalRunRepository] end-to-end against an in-memory
@@ -21,6 +22,16 @@ void main() {
     await seedTestWorkspace(global, dbs, 'w-1');
     await seedTestWorkspace(global, dbs, 'w-2');
     repo = DaoAgentGoalRunRepository(dbs);
+    for (final ws in ['w-1', 'w-2']) {
+      final db = dbs.of(ws);
+      await seedParents(
+        db,
+        agents: ['agent-1', 'agent-2'],
+        spaces: ['ch-1', 'w-1', 'w-2'],
+      );
+      await seedConversation(db, 'conv-1', spaceId: 'ch-1');
+      await seedRunLog(db, 'run-9', agentId: 'agent-1');
+    }
   });
 
   tearDown(() async {
@@ -38,8 +49,8 @@ void main() {
     AgentGoalKind kind = AgentGoalKind.goal,
     AgentGoalStatus status = AgentGoalStatus.active,
     DateTime? deadlineAt,
-    int costCapCents = 5000,
-    int costCents = 0,
+    int costCapMicros = 5000,
+    int costMicros = 0,
     int maxRuns = 100,
     bool uncapped = false,
     int runCount = 0,
@@ -59,8 +70,8 @@ void main() {
     kind: kind,
     status: status,
     deadlineAt: uncapped ? null : (deadlineAt ?? DateTime(2026, 8, 1)),
-    costCapCents: costCapCents,
-    costCents: costCents,
+    costCapMicros: costCapMicros,
+    costMicros: costMicros,
     maxRuns: uncapped ? null : maxRuns,
     runCount: runCount,
     activeRunId: activeRunId,
@@ -80,7 +91,7 @@ void main() {
       await repo.upsert(
         goal(
           kind: AgentGoalKind.loop,
-          costCents: 1250,
+          costMicros: 1250,
           runCount: 7,
           activeRunId: 'run-9',
           consecutiveFailures: 2,
@@ -99,8 +110,8 @@ void main() {
       expect(loaded.kind, AgentGoalKind.loop);
       expect(loaded.status, AgentGoalStatus.active);
       expect(loaded.deadlineAt, DateTime(2026, 8, 1));
-      expect(loaded.costCapCents, 5000);
-      expect(loaded.costCents, 1250);
+      expect(loaded.costCapMicros, 5000);
+      expect(loaded.costMicros, 1250);
       expect(loaded.maxRuns, 100);
       expect(loaded.runCount, 7);
       expect(loaded.activeRunId, 'run-9');

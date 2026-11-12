@@ -2,7 +2,7 @@
 title: Säkerhetskopiera och återställ
 description: Ta en ögonblicksbild av installationen, flytta en arbetsyta mellan maskiner, återställ en arbetsyta eller alla, och förvara kopior någon annanstans.
 slug: sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Den här guiden täcker de fem saker folk faktiskt gör med säkerhetskopior: tar en,
@@ -42,10 +42,10 @@ Båda artefakterna är **enbart databaser**:
 - En **ögonblicksbild av installationen** är en katalog med tidsstämpel: `manifest.json`, `global.db` och en `<workspaceId>/workspace.db` per arbetsyta.
 - En **arbetsytaexport** är just den enda filen `workspace.db`.
 
-En arbetsytas databas är hela arbetsytan: dess samtal, körloggar, kodindex, repolänkar, miljödefinitioner och medlemmar. Den innehåller också arbetsytans pipeline-webhook-tokens och webhook-hemligheter för ärendesynk, i läsbar form. Förvara en nedladdad säkerhetskopia eller export av en arbetsyta som du förvarar en hemlighet. Den innehåller inga leverantörsinloggningar, enhetsnycklar eller användarhemligheter; de ligger i den globala databasen och i serverns hemlighetslager.
+En arbetsytas databas är hela arbetsytan: dess samtal, körloggar, repolänkar, miljödefinitioner och medlemmar. Den innehåller inga hemligheter: arbetsytans pipeline-webhook-tokens, webhook-hemligheter för ärendesynk, leverantörsinloggningar, enhetsnycklar och användarhemligheter ligger i den globala databasen och i serverns hemlighetslager. Den innehåller ändå allt arbetsytan har sagt och gjort, så behandla en nedladdad säkerhetskopia eller export lika privat som arbetsytan själv. Kodindexet är en egen fil bredvid databasen, `code_index.db`. Ingen säkerhetskopia tar med den; servern bygger upp den på nytt.
 
 Ingen av dem tar med resten av datakatalogen: `secrets.json` (parkopplingsnycklar,
-leverantörsuppgifter, SSO), en arbetsytas `blobs/` (bilder som klistrats in i
+leverantörsuppgifter, webhook-hemligheter, SSO), en arbetsytas `blobs/` (bilder som klistrats in i
 meddelanden), `skills/`, `agents/`, `chat_credentials/`, inspelat mötesljud eller
 rig-bilder. En del av det är umbärligt och en del inte – den
 [fullständiga tabellen finns i referensen](/sv-SE/handbok/referens/sakerhetskopia/#vad-en-säkerhetskopia-inte-innehåller),
@@ -61,17 +61,13 @@ Servern fortsätter köra hela tiden. Varje fil skrivs med `VACUUM INTO`, som ä
 konsekvent mot en levande databas, så det behövs inget underhållsfönster och inga
 agenter behöver stoppas.
 
-Varje rad i listan visar tidsstämpeln, storleken på disken, hur många arbetsytor som
-fångades och om ögonblicksbilden är **Komplett** eller **Ofullständig**. Ofullständig
-betyder att manifestet saknas eller anger filer som inte finns – en säkerhetskopia som
-avbröts av en krasch eller en full disk. De listas fortfarande med avsikt: en
-ögonblicksbild du inte kan se är en du tror att du har. En ofullständig ögonblicksbild
-kan inte återställa en hel installation, men de arbetsytefiler den ändå innehåller kan
-fortfarande tas över en i taget.
+Varje rad i listan visar tidsstämpeln, storleken på disken, hur många arbetsytor som fångades och om ögonblicksbilden är **Komplett** eller **Overifierad**. Varje kopia kontrolleras efter att den har skrivits, och manifestet registrerar dess storlek och kontrollsumma. Overifierad betyder att servern inte kan gå i god för ögonblicksbilden: manifestet saknas eller går inte att läsa, eller så saknas en fil som det anger eller så har dess storlek ändrats. Det kan vara en säkerhetskopia som avbröts av en krasch eller en full disk, eller en som togs innan ögonblicksbilder registrerade kontrollsummor. De listas fortfarande med avsikt: en ögonblicksbild du inte kan se är en du tror att du har. En overifierad ögonblicksbild kan inte återställa en hel installation, men de arbetsytefiler den ändå innehåller kan fortfarande återställas en i taget.
 
 En rad kan också säga **_n_ arbetsytor inte fångade**. Det är en arbetsyta som är
-registrerad men aldrig har skrivits till (det finns ingen fil ännu), eller en vars kopia
+registrerad men aldrig har skrivits till (det finns ingen fil ännu), en vars databas är skadad (en skadad kopia tas aldrig), eller en vars kopia
 misslyckades – kontrollera serverloggen.
+
+En ögonblicksbild eller en schemalagd säkerhetskopia markerad **Senaste fungerande kopia** innehåller den senaste fungerande kopian av en arbetsyta vars databas sedan dess har skadats. Schemalagd rensning lämnar den orörd, och att ta bort den kräver bekräftelse, tills arbetsytan har återställts.
 
 ## Schemalägg säkerhetskopior av arbetsytan och bevarande
 
@@ -99,7 +95,7 @@ admin för säger det på sin rad i stället för att lista sina säkerhetskopio
 
 Fäll ut en rad för att se varje säkerhetskopia, nyast först:
 
-- **Återställ** ersätter arbetsytans aktuella databas med den här säkerhetskopian. Exportera arbetsytan först om du kan behöva ångra det. Kräver serverägaren, som dessutom måste äga arbetsytan.
+- **Återställ** ersätter arbetsytans aktuella databas med den här säkerhetskopian. Databasen den ersätter behålls i den här listan, under ett namn som slutar på `-pre-restore`, så att du kan gå tillbaka. Kräver serverägaren, som dessutom måste äga arbetsytan.
 - **Hämta** sparar filen på maskinen du använder. Säkerhetskopian ligger kvar på servern.
 - **Kopiera sökväg** kopierar dess plats på servern.
 - **Ta bort** tar bort den här säkerhetskopian permanent, när du har skrivit arbetsytans namn. Kräver **ägare**.
@@ -119,11 +115,7 @@ beskrivningen i
 
 ## Radera en ögonblicksbild av installationen
 
-Under **Installationsögonblicksbilder** fäller du ut ögonblicksbilden, även en
-ofullständig, och använder **Radera ögonblicksbild** i faroavsnittet. Bekräfta
-namnet. Hela katalogen för ögonblicksbilden tas bort permanent från servern;
-hämta den först om du behöver en kopia. En pipeline för säkerhetskopiering av
-arbetsytan raderar aldrig dessa ögonblicksbilder.
+Under **Installationsögonblicksbilder** fäller du ut ögonblicksbilden, även en overifierad, och använder **Radera ögonblicksbild** i faroavsnittet. Bekräfta namnet. Hela katalogen för ögonblicksbilden tas bort permanent från servern; hämta den först om du behöver en kopia. En pipeline för säkerhetskopiering av arbetsytan raderar aldrig dessa ögonblicksbilder.
 
 ## Hämta en kopia till din egen maskin
 
@@ -161,21 +153,14 @@ och sedan filens sökväg i **Arbetsytans databasfil** och **Importera** på des
 samma sak utan omvägen; den sökvägen löses upp på servervärden.
 
 :::caution[Importen ersätter allt]
-En import skriver över allt som målarbetsytan just nu innehåller, och den går inte att
-ångra. Exportera målet först om det innehåller något du kan vilja ha tillbaka.
+En import ersätter allt som målarbetsytan just nu innehåller. Databasen den ersätter behålls under **Schemalagda säkerhetskopior** med ett namn som slutar på `-pre-restore`; återställ den för att gå tillbaka.
 :::
 
-Två saker tillåts och loggas i stället för att avvisas: att importera en fil vars
-registrerade arbetsyte-id skiljer sig från målets (så här duplicerar du en arbetsyta
-eller återställer den under ett nytt id), och att importera en fil från en **annan
-installation**. I det andra fallet tillhör filens parkopplade enheter och användar-id:n
-installationen den kom från och löses inte upp i den här – arbetsytans egna data är
-intakta, men kontrollera medlemskapet igen efter att du tagit över den.
+En fil från en annan arbetsyta eller från en **annan installation** godtas: så här dupliceras en arbetsyta, återställs den under ett nytt id eller överlämnas till någon annan. Användar-id:n från en annan installation löses inte upp här. Arbetsytans egna data är intakta, men kontrollera medlemskapet igen efter att du tagit över den.
 
-Chattbot-tokens och leverantörsinloggningar ligger utanför databasen, så den mottagande
-installationen ansluter sina egna. Filen bär däremot arbetsytans pipeline-webhook-tokens
-och webhook-hemligheter för ärendesynk, så en arbetsyta du lämnar till någon annan lämnar
-dem med. Rotera dem efteråt om mottagaren inte ska ha dem.
+En återställd fil kan inte ge något på den här servern av egen kraft. Behörigheter som den bar utöver vanligt medlemskap plockas bort och listas under **Tillbakahållna från återställda kopior** högst upp på sidan: åtgärdsregler som låter agenter agera utan godkännande eller efter ett, sökvägar en sandlåda får köra, repoåtkomst utöver läsning, roller över medlem och öppna inbjudningar till de rollerna. **Godkänn** ger den tillbaka; **Avvisa** tar bort den. Godkännanden att köra en miljödefinition på värden rensas, så godkänn de definitionerna igen. Den som återställer behåller eller får ägarrollen.
+
+Chattbot-tokens, leverantörsinloggningar och webhook-hemligheter ligger utanför databasen, så den mottagande installationen ansluter sina egna. Webhook-triggers och webhooks för ärendesynk kommer utan sina hemligheter och tar emot ingenting på en annan server förrän du sparar dem där igen, vilket ger varje trigger en ny URL.
 
 ## Återställ en arbetsyta från en ögonblicksbild
 
@@ -187,7 +172,7 @@ Du behöver vara serverägaren och arbetsytans ägare.
 
 Det här är samma operation som en import, riktad mot ögonblicksbildens kopia av
 arbetsytans fil – med avsikt, så att det inte finns någon andra mekanism som skulle
-kunna behandla samma fil annorlunda.
+kunna behandla samma fil annorlunda. Kopian kontrolleras först mot den kontrollsumma som ögonblicksbilden registrerade.
 
 En rad kan säga **Inte på den här servern längre**, med **Återställ** inaktiverat:
 ögonblicksbilden innehåller en arbetsyta som den här installationen inte längre har. Ta
@@ -196,6 +181,10 @@ tillbaka den för hand – skapa en arbetsyta (bara serverägaren) och under **A
 **Importera**. Den utfällda
 ögonblicksbilden visar sin egen **Sökväg på servern** i ett kopieringsfält, och radens
 titel är det gamla arbetsyte-id:t, så du har båda halvorna av sökvägen framför dig.
+
+## Återställ en skadad arbetsyta
+
+En arbetsyta vars databas inte klarar integritetskontrollen blir skrivskyddad: allt går fortfarande att läsa och alla ändringar avvisas. Medlemmar ser **Den här arbetsytan är skrivskyddad** överst i arbetsytan, serverägaren ser det under **Kräver din uppmärksamhet** på den här sidan, och den senaste säkerhetskopian som innehåller en fungerande kopia behålls som **Senaste fungerande kopia**. Återställ arbetsytan från den kopian, som beskrivs ovan, för att göra den skrivbar igen. Den skadade databasen behålls som en `-pre-restore`-säkerhetskopia.
 
 ## Återställ en hel installation
 
@@ -324,7 +313,7 @@ och synkronisera `DEST` bort från värden efteråt. `VACUUM INTO` kräver SQLit
 nyare.
 
 Skriv den **utanför** `<dataDir>/backups/`. En handgjord katalog där har inget
-`manifest.json`, så appen skulle lista den som en ofullständig ögonblicksbild och listan
+`manifest.json`, så appen skulle lista den som en overifierad ögonblicksbild och listan
 skulle sluta vara en ärlig redogörelse för vad servern själv har skapat.
 
 ### Rensa gamla ögonblicksbilder av hela installationen
@@ -371,9 +360,11 @@ de lagras.
 | "Bara serverägaren kan återställa säkerhetskopior. Du kan fortfarande ladda ner dem." | Att återställa ersätter en arbetsytas databas på servervärden, så bara serverägaren återställer. Ladda ner säkerhetskopian och be dem |
 | "Den här servern har ingen säkerhetskopieringsyta."                      | Värden har ingen säkerhetskopieringsport inkopplad – en demoserver. Operationerna saknas i stället för att nekas              |
 | "Filen är större än servern accepterar."                                 | Uppladdningar är begränsade till 8 GiB. Lägg filen på servervärden och ange dess sökväg i **Arbetsytans databasfil**        |
-| Import nekad: inte en arbetsytedatabas från Control Center               | Filen har ingen `workspace_meta`-rad – den är inte en arbetsytaexport, eller så är den trunkerad. Inget ersattes              |
-| En ögonblicksbild listas som **Ofullständig**                            | Dess manifest saknas eller anger filer som inte finns. Ta en ny; ta under tiden över enskilda arbetsytefiler från den        |
-| En ögonblicksbild säger att arbetsytor inte fångades                     | De arbetsytorna har aldrig skrivits till, eller så misslyckades deras kopia. Kontrollera serverloggen                        |
+| Återställning avvisas, och inget ersätts | Filen klarade inte en kontroll, och meddelandet anger vilken: den är inte en arbetsytedatabas, den är skadad, den skiljer sig från kontrollsumman som ögonblicksbilden registrerade, en nyare version av servern skrev den, eller så tillhör dess webhooks eller inbjudningar redan en annan arbetsyta på den här servern. Använd en annan kopia, eller uppdatera servern först |
+| En ögonblicksbild listas som **Overifierad**                            | Den blev aldrig klar, eller så togs den innan ögonblicksbilder registrerade kontrollsummor. Ta en ny; återställ enskilda arbetsytefiler från den under tiden |
+| En ögonblicksbild säger att arbetsytor inte fångades                     | De arbetsytorna har aldrig skrivits till, är skadade, eller så misslyckades deras kopia. Kontrollera serverloggen                        |
+| En arbetsyta visar **Den här arbetsytan är skrivskyddad** | Dess databas klarade inte en integritetskontroll. Ingenting i den kan ändras förrän serverägaren återställer den från en säkerhetskopia |
+| Webhooks slutar komma fram efter att en arbetsyta flyttats till en annan server | Webhook-hemligheter följer inte med databasen. Spara varje webhook-trigger och anslutning för ärendesynk igen på den nya servern, och ge avsändaren den nya URL:en |
 | En återställd installation har inga uppgifter för kodvärd eller SSO      | `secrets.json` finns inte i en ögonblicksbild. Återställ den från var du än förvarade den, eller återanslut leverantörerna   |
 | En återställd arbetsyta saknar inklistrade bilder                        | Blobs ligger bredvid databasen, inte i den. Kopiera `<workspaceId>/blobs/` också                                             |
 

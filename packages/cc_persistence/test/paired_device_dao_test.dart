@@ -3,6 +3,7 @@ import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 /// Exercises [PairedDeviceDao] against an in-memory database. Devices are
@@ -12,21 +13,23 @@ import 'helpers/test_database.dart';
 void main() {
   late GlobalDatabase db;
 
-  setUp(() {
+  setUp(() async {
     db = createTestGlobalDatabase();
+    await seedUser(db, 'u-1');
+    await seedUser(db, 'u-2');
   });
 
   tearDown(() async => db.close());
 
   Future<void> insertDevice(
     String id, {
-    String? userId,
+    String userId = 'u-1',
     String status = PairedDeviceStatus.pendingConfirm,
     DateTime? pairedAt,
   }) => db.pairedDeviceDao.upsert(
     PairedDevicesTableCompanion.insert(
       id: id,
-      userId: userId == null ? const Value.absent() : Value(userId),
+      userId: userId,
       label: id,
       pskRef: 'psk-$id',
       status: Value(status),
@@ -99,6 +102,7 @@ void main() {
       await db.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion.insert(
           id: 'd-1',
+          userId: 'u-1',
           label: 'renamed',
           pskRef: 'psk-2',
         ),

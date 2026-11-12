@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_finding_status_port.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pr_review_cache_kinds.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
 import 'package:cc_harness/cc_harness.dart';
 import 'package:cc_host/cc_host.dart';
@@ -1083,7 +1084,7 @@ List<RepoOp> buildPrReviewOps({
       final number = (ctx.args['number'] as num).toInt();
       final preview = await previewSwr(
         workspaceId: ctx.workspaceId!,
-        kind: 'prPreview',
+        kind: PrReviewCacheKinds.prPreview,
         key: '${ctx.userId}|${c.owner}/${c.repo}#$number',
         fetch: () => fetchPrPreview(
           c.owner,
@@ -1108,7 +1109,7 @@ List<RepoOp> buildPrReviewOps({
       final sha = ctx.args['sha'] as String;
       final preview = await previewSwr(
         workspaceId: ctx.workspaceId!,
-        kind: 'commitPreview',
+        kind: PrReviewCacheKinds.commitPreview,
         key: '${ctx.userId}|${c.owner}/${c.repo}@$sha',
         fetch: () => fetchCommitPreview(
           c.owner,

@@ -2,14 +2,14 @@
 title: Urus kos
 description: Lihat apa yang dibelanjakan oleh ejen anda, hadkan larian autonomi dan kurangkan penggunaan token.
 slug: ms-MY/manual-pengguna/panduan-cara/urus-kos
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Panduan ini menunjukkan cara melihat kos larian ejen dan cara menghadkan larian autonomi.
 
 ## Bagaimana kos direkodkan
 
-Setiap larian ejen menulis log larian yang membawa token input, token output, token penaakulan, token bacaan cache dan token penulisan cache, anggaran kos dalam sen serta kos mana-mana subejen yang dilahirkannya.
+Setiap larian ejen menulis log larian yang membawa token input, token output, token penaakulan, token bacaan cache dan token penulisan cache, anggaran kos dalam mikrodolar (sepersejuta dolar AS) serta kos mana-mana subejen yang dilahirkannya.
 
 Harga datang daripada katalog models.dev, yang digunakan hanya untuk memperkayakan senarai model dengan harga dan tetingkap konteks — tidak pernah sebagai sumber id model. Model yang tidak dapat dihargakan oleh katalog merekodkan **$0**, dan larian berkos sifar dikecualikan daripada ringkasan **Penggunaan & kos**. Oleh itu, model Ollama tempatan tidak menunjukkan sebarang perbelanjaan, walaupun bilangan tokennya masih direkodkan. Pelan kadar tetap (kimi-code, langganan Claude) hanya sama apabila katalog tiada harga untuk model yang disajikan; jika ada, larian itu tetap dianggarkan pada kadar tersebut. Dalam rantaian sandaran, kos larian dikira berdasarkan model yang benar-benar menyajikannya, bukan model yang diminta.
 
@@ -78,7 +78,7 @@ Buka log larian dalam Wawasan (50 larian tertapis yang terbaharu) dan laci trans
 
 ## Apa yang berlaku jika belanjawan ditetapkan di luar jalur
 
-Untuk kesempurnaan, jika `monthlyBudgetCents` atau polisi belanjawan ditulis terus ke baris ejen:
+Untuk kesempurnaan, jika `monthlyBudgetMicros` atau polisi belanjawan ditulis terus ke baris ejen:
 
 - Belanjawan dinilai **selepas** larian selesai, bukan sebelum penghantaran. Pendengar pada penyempurnaan larian membandingkan perbelanjaan bulan semasa ejen dengan silingnya.
 - Melangkaui ambang lembut (80% secara lalai) merekodkan insiden amaran dan mencetuskan peristiwa `BudgetThresholdCrossed` yang boleh anda gantungkan pencetus pipeline padanya.

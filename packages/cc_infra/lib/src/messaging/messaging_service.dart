@@ -1037,7 +1037,7 @@ class MessagingService implements MessagingPort {
     String? conversationId,
     Map<String, dynamic>? expectedOutputSchema,
     OutputContractMode outputContractMode = OutputContractMode.strict,
-    int? costCapCents,
+    int? costCapMicros,
     List<String> mentionChain = const [],
     List<String> promptImageRefs = const [],
     String? modelOverride,
@@ -1145,7 +1145,7 @@ class MessagingService implements MessagingPort {
       outputContractMode: outputContractMode,
       wakeContext: wakeContext,
       mentionContext: mentionContext,
-      costCapCents: costCapCents,
+      costCapMicros: costCapMicros,
       promptImageRefs: promptImageRefs,
       modelOverride: modelOverride,
     );

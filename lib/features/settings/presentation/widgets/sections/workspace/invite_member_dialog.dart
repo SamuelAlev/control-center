@@ -5,6 +5,7 @@ import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/invite_result_view.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/membership_formatting.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,7 +68,7 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
       setState(() => _busy = false);
       CcToastScope.of(
         context,
-      ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     }
   }
 

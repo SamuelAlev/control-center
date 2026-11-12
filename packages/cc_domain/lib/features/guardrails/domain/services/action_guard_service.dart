@@ -643,7 +643,7 @@ class ActionGuardService {
         request.hosts,
         request.tool,
         request.magnitude,
-        request.cents,
+        request.micros,
       ]),
       actionClasses: wires,
       agentId: agentId,

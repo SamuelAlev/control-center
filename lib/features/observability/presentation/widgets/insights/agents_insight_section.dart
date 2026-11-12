@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/insights_providers.dart';
@@ -177,7 +178,7 @@ class _AgentInsightTile extends StatelessWidget {
                 ),
                 numCell(fmtCount(row.runs), 48),
                 numCell(fmtCount(row.errors), 56),
-                numCell(fmtCents(row.costCents), 72),
+                numCell(fmtMicros(row.costMicros), 72),
                 numCell(
                   row.avgDurationMs == null
                       ? '—'

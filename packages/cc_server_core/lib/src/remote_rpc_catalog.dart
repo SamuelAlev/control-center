@@ -28,7 +28,7 @@ import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
+import 'package:cc_domain/core/domain/repositories/editor_layout_repository.dart';
 import 'package:cc_domain/core/domain/repositories/file_catalog_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
@@ -54,6 +54,7 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
@@ -108,6 +109,7 @@ import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.d
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_template_removal.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
     show SkillAnalysisTemplate;
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
@@ -171,6 +173,7 @@ import 'package:cc_persistence/database/daos/notification_feed_dao.dart'
     show NotificationFeedDao;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart'
     show PairedDeviceDao, PairedDeviceStatus;
+import 'package:cc_persistence/repositories/dao_space_collab_repositories.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
 import 'package:cc_server_core/src/catalog/agent_goal_run_ops.dart';
 import 'package:cc_server_core/src/catalog/agent_run_log_write_ops.dart';
@@ -196,6 +199,7 @@ import 'package:cc_server_core/src/catalog/pr_data_gate.dart';
 import 'package:cc_server_core/src/catalog/pr_repo_visibility.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_server_core/src/catalog/presence_visibility.dart';
+import 'package:cc_server_core/src/catalog/reemit_on.dart';
 import 'package:cc_server_core/src/catalog/repo_forge_read.dart';
 import 'package:cc_server_core/src/catalog/repo_link_ops.dart';
 import 'package:cc_server_core/src/catalog/review_space_ops.dart';
@@ -210,7 +214,6 @@ import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_watch_queries.dart';
 import 'package:cc_server_core/src/catalog/user_profile_ops.dart';
 import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
-import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart'
     show providerOAuthHttpOrigin, providerOAuthRedirectUri;
@@ -240,6 +243,7 @@ import 'package:cc_server_core/src/run_log_reader.dart';
 import 'package:cc_server_core/src/skill_analysis_service.dart';
 import 'package:cc_server_core/src/skills/installed_skills_list.dart';
 import 'package:cc_server_core/src/usage/harness_usage_accounts.dart';
+import 'package:cc_server_core/src/workspace_run_teardown.dart';
 import 'package:cc_server_core/src/workspaces/workspace_logo.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:path/path.dart' as p;
@@ -597,11 +601,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   Future<
     List<({Repo repo, List<PullRequest> prs, bool hasMore, int? totalCount})>
   >
-  Function(
-    List<Repo> repos, {
-    String? userId,
-    String? workspaceId,
-  })?
+  Function(List<Repo> repos, {String? userId, String? workspaceId})?
   fetchMergedHistory,
   // GitHub org members (profile people picker). Null → empty.
   OrgMembersFetcher? fetchOrgMembers,
@@ -764,14 +764,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   /// unrelated. Kept in the signature because callers still pass it.
   // ignore: unused_element_parameter
   ConversationChangesFetcher? conversationChanges,
-  // Generic workspace-scoped key/value cache the SERVER owns (the Drift `cache`
-  // table). Backs the `cache.read` / `cache.write` ops, which the messaging IDE
-  // layout uses to persist + restore its editor split-tree per conversation —
-  // server-side storage is what lets a layout saved on one client (desktop) be
-  // restored on another (web) and vice versa. Always present on a host that owns
-  // the database (desktop in-process host / headless cc_server); the ops are
-  // workspace-scoped (the workspace filter is the isolation boundary).
-  CacheRepository? cacheRepository,
+  // Each person's editor layouts (the workspace's `editor_layouts` table).
+  // Backs the `cache.read` / `cache.write` ops the messaging IDE and the PR
+  // workbench persist + restore their split-tree through, so a layout saved
+  // on one client (desktop) is restored on another (web). Always present on a
+  // host that owns the database; the ops are workspace-scoped.
+  EditorLayoutRepository? editorLayouts,
+  // Whether a workspace's database is read-only (failed its integrity check),
+  // for `storage_state` on the workspace picker's rows. Null reports `ok`.
+  bool Function(String workspaceId)? isWorkspaceReadOnly,
+  // Fires when a workspace's answer to [isWorkspaceReadOnly] changes. That
+  // is not a change of its row, so `workspace.watchAll` renders again on it.
+  Stream<Object?>? workspaceStorageChanges,
   // Conversation revert/unrevert (undo/redo) executed on the SERVER. The two
   // `messaging.revertConversationTo` / `messaging.unrevertConversation` ops are
   // ALWAYS present (DB-backed transcript rollback via [messagingRepository]);
@@ -1010,7 +1014,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     required String workspaceId,
     required String planId,
     Set<String>? approvedNodeKeys,
-    int? maxCostCents,
+    int? maxCostMicros,
     String? approvedByUserId,
   })?
   approvePlanDocument,
@@ -1513,13 +1517,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
 
   /// One run's recorded activity for replay, from whichever store holds it.
   ///
-  /// * Subagent runs: `RunTranscriptRecorder` → `run_transcripts` by child run id
-  ///   (no message of their own).
-  /// * Top-level runs: turn is a space message (`messageId == runLog.id`);
-  ///   segments in `metadata['segments']` — nothing in `run_transcripts`.
+  /// * Subagent runs: `RunTranscriptRecorder` → a run-owned transcript by
+  ///   child run id (no message of their own).
+  /// * Top-level runs: turn is a space message (`messageId == runLog.id`)
+  ///   that owns the transcript; read back as `metadata['segments']`.
   ///
-  /// Live: `ActiveStreamRegistry` covers both (shared id). Returns the
-  /// `run_transcripts` row when present (`complete` drives crash normalization),
+  /// Live: `ActiveStreamRegistry` covers both (shared id). Returns the run's
+  /// own transcript when present (`complete` drives crash normalization),
   /// else message-backed segments.
   Future<({List<TranscriptSegment> segments, RunTranscript? row})>
   loadRunReplay(String workspaceId, String runId) async {
@@ -2093,9 +2097,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     final spaceArg = ctx.args['space_id'];
     final dbs = workspaceDbs;
     if (dbs != null && spaceArg is String && spaceArg.isNotEmpty) {
-      final space = await dbs.of(workspaceId).messagingDao.getSpaceById(
-        spaceArg,
-      );
+      final space = await dbs
+          .of(workspaceId)
+          .messagingDao
+          .getSpaceById(spaceArg);
       if (space != null && space.workspaceId != workspaceId) {
         throw const WorkspaceMismatchException(
           'Space belongs to a different workspace',
@@ -2345,7 +2350,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   final processes = processDetection;
   final shells = agentShells;
   final launcher = editorLauncher;
-  final cacheRepo = cacheRepository;
+  final layouts = editorLayouts;
   final repoCh = repoChanges;
   final repoChGrouped = repoChangesGrouped;
   final repoStageFn = repoStage;
@@ -2753,25 +2758,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final spaceId = ctx.args['space_id'] as String;
           final agentId = ctx.args['agent_id'];
           await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
+          final checkers = DaoSpaceCheckerRepository(workspaceDbs);
           if (agentId is String && agentId.isNotEmpty) {
-            await workspaceDbs
-                .of(ctx.workspaceId!)
-                .cacheDao
-                .put(
-                  ctx.workspaceId!,
-                  CheckerDispatchListener.cacheKind,
-                  spaceId,
-                  jsonEncode({'agent_id': agentId}),
-                );
+            await checkers.setChecker(ctx.workspaceId!, spaceId, agentId);
           } else {
-            await workspaceDbs
-                .of(ctx.workspaceId!)
-                .cacheDao
-                .deleteEntry(
-                  ctx.workspaceId!,
-                  CheckerDispatchListener.cacheKind,
-                  spaceId,
-                );
+            await checkers.clearChecker(ctx.workspaceId!, spaceId);
           }
           return {'ok': true};
         },
@@ -2783,23 +2774,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
-          final raw = await workspaceDbs
-              .of(ctx.workspaceId!)
-              .cacheDao
-              .read(
-                ctx.workspaceId!,
-                CheckerDispatchListener.cacheKind,
-                spaceId,
-              );
-          if (raw == null) {
-            return {'agent_id': null};
-          }
-          try {
-            final decoded = jsonDecode(raw);
-            return {'agent_id': decoded is Map ? decoded['agent_id'] : null};
-          } catch (_) {
-            return {'agent_id': null};
-          }
+          return {
+            'agent_id': await DaoSpaceCheckerRepository(
+              workspaceDbs,
+            ).checkerOf(ctx.workspaceId!, spaceId),
+          };
         },
       ),
     ],
@@ -2851,7 +2830,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             // your own extra device never mints someone else's credential.
             // (New collaborators get theirs through invite redemption.)
             userId: Value(ctx.userId),
-            workspaceId: Value(workspaceId),
+            landingWorkspaceId: Value(workspaceId),
             label: Value(ctx.args['label'] as String),
             platform: Value(platform),
             pskRef: const Value('file'),
@@ -2907,7 +2886,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {
           'devices': [
             for (final d in filtered)
-              pairedDeviceToWire(d, names[d.workspaceId]),
+              pairedDeviceToWire(d, names[d.landingWorkspaceId]),
           ],
         };
       },
@@ -2941,7 +2920,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final workspaces = await workspaceRepository.watchAll().first;
         final names = {for (final w in workspaces) w.id: w.name};
         return {
-          'device': pairedDeviceToWire(updated!, names[updated.workspaceId]),
+          'device': pairedDeviceToWire(
+            updated!,
+            names[updated.landingWorkspaceId],
+          ),
         };
       },
     ),
@@ -2973,7 +2955,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         await pairedDeviceSecretsPort.deletePsk(deviceId);
         await pairedDeviceDao.remove(deviceId);
         await webPushService?.revokeDevice(deviceId);
-        if (existing.userId != null) {}
         return {'ok': true};
       },
     ),
@@ -3049,13 +3030,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'users.updateProfile',
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
-        handler: (ctx) =>
-            updateOwnProfile(
-              ctx,
-              users: identityUsers,
-              serverOwnerUserId: serverOwnerUserId,
-              eventBus: eventBus,
-            ),
+        handler: (ctx) => updateOwnProfile(
+          ctx,
+          users: identityUsers,
+          serverOwnerUserId: serverOwnerUserId,
+          eventBus: eventBus,
+        ),
       ),
       // Records that the caller has finished first-run setup. Self-service
       // like `users.updateProfile`: the target is always `ctx.userId`, so
@@ -4463,7 +4443,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // open follows them from one device to another. See
     // [buildEditorLayoutCacheOps] for the kind allowlist and per-user keys.
     // Absent on a host that owns no database.
-    if (cacheRepo != null) ...buildEditorLayoutCacheOps(cacheRepo),
+    if (layouts != null) ...buildEditorLayoutCacheOps(layouts),
     // The messaging IDE view reads repo working-tree state from the SERVER (it
     // owns the checkouts). Each op is workspace-scoped + validates repo
     // ownership inside its fetcher, so a session cannot reach into another
@@ -5074,20 +5054,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // the snapshot wire map; the mutators return the fresh snapshot so the client
     // can refresh without a second round-trip.
     if (embeddingModel != null)
-      ...modelControlOps(
-        prefix: 'embedding',
-        control: embeddingModel,
-      ),
+      ...modelControlOps(prefix: 'embedding', control: embeddingModel),
     if (diarizationModel != null)
-      ...modelControlOps(
-        prefix: 'diarization',
-        control: diarizationModel,
-      ),
+      ...modelControlOps(prefix: 'diarization', control: diarizationModel),
     if (voiceModel != null)
-      ...modelControlOps(
-        prefix: 'voice',
-        control: voiceModel,
-      ),
+      ...modelControlOps(prefix: 'voice', control: voiceModel),
     // Voice is the only SELECTABLE model (the user picks the active ASR build),
     // so when the host wired a selectable voice control we also expose the
     // catalog + select ops on top of its status/install/… surface. A fixed
@@ -8968,27 +8939,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // it. This used to pull EVERY run log of EVERY workspace — each
         // carrying its serialized prompt context — and filter in Dart, to
         // summarize ONE workspace's spend over one week.
-        final costs = agentRunLogRepository;
-        final List<UsageCostHistoryEntry> entries;
-        if (costs case final AgentRunCostHistoryPort projected) {
-          entries = await projected.costHistory(ctx.workspaceId!, since);
-        } else {
-          // A host wired to a repository without the projected read (the thin
-          // client's RPC-backed one) answers from a full scan.
-          final logs = await agentRunLogRepository.watchAll().first;
-          entries = [
-            for (final log in logs)
-              if (log.workspaceId == ctx.workspaceId &&
-                  log.cost.costMicros > 0 &&
-                  !log.startedAt.isBefore(since))
-                UsageCostHistoryEntry(
-                  recordedAt: log.startedAt,
-                  provider: log.adapter ?? 'agent',
-                  accountKey: log.adapter ?? 'agent',
-                  costUsd: log.cost.costUsd,
-                ),
-          ];
-        }
+        // Only the host's own store can answer this without reading every
+        // run of every workspace; a host wired without it is misconfigured.
+        final costs = switch (agentRunLogRepository) {
+          final AgentRunCostHistoryPort port => port,
+          _ => throw StateError(
+            'usage.costSummary needs a run-log store with projected cost '
+            'history',
+          ),
+        };
+        final entries = await costs.costHistory(ctx.workspaceId!, since);
         final summary = UsageTracker.summarizeLast(
           entries,
           window: window,
@@ -9027,7 +8987,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     ),
     // One run's recorded activity timeline — the replay half of the activity
     // tab (the live half is `agent_run_log.watchRunTranscript`). Resolves a
-    // subagent's `run_transcripts` row OR a top-level run's own `agent_turn`
+    // subagent's own transcript OR a top-level run's own `agent_turn`
     // message via [loadRunReplay]. Absent when no transcript store is wired, so
     // a host without one is default-deny rather than silently empty.
     if (runTranscriptRepository != null)
@@ -9074,7 +9034,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {
             'run_id': runId,
             'segments': json,
-            // No `run_transcripts` row means a message-backed top-level run:
+            // No run-owned transcript means a message-backed top-level run:
             // the run log's own terminal state is then the completeness signal.
             'complete': transcript?.complete ?? (run.completedAt != null),
             'outcome': ?switch (transcript?.outcome) {
@@ -9784,7 +9744,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'authenticated': true,
             'repos': <Map<String, dynamic>>[],
             'hidden_repos': visibility.hiddenReposWire(),
-            'repo_access': await repoAccessFor(ctx.workspaceId!, ctx.userId, visibility),
+            'repo_access': await repoAccessFor(
+              ctx.workspaceId!,
+              ctx.userId,
+              visibility,
+            ),
           };
         }
         final groups = await fetch(repos, workspaceId: ctx.workspaceId!);
@@ -9801,7 +9765,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 },
           ],
           'hidden_repos': visibility.hiddenReposWire(),
-          'repo_access': await repoAccessFor(ctx.workspaceId!, ctx.userId, visibility),
+          'repo_access': await repoAccessFor(
+            ctx.workspaceId!,
+            ctx.userId,
+            visibility,
+          ),
         };
       },
     ),
@@ -11165,7 +11133,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             approvedNodeKeys: rawKeys is List
                 ? rawKeys.whereType<String>().toSet()
                 : null,
-            maxCostCents: (ctx.args['max_cost_cents'] as num?)?.toInt(),
+            maxCostMicros: (ctx.args['max_cost_micros'] as num?)?.toInt(),
             approvedByUserId: ctx.userId,
           );
         },
@@ -11623,11 +11591,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.mutate,
       requiredArgs: ['template_id'],
       handler: (ctx) async {
-        // deleteById scopes by (workspaceId, templateId), so a foreign row's id
-        // deletes nothing (returns 0) — the workspace binding is the boundary.
-        final deleted = await pipelineTemplateRepository.deleteById(
-          ctx.workspaceId!,
-          ctx.args['template_id'] as String,
+        // Both deletes scope by (workspaceId, templateId), so a foreign
+        // row's id deletes nothing (returns 0): the workspace binding is the
+        // boundary. The template's triggers go first, with their webhook
+        // routes and secrets.
+        final deleted = await deletePipelineTemplate(
+          templates: pipelineTemplateRepository,
+          triggers: pipelineTriggerRepository,
+          workspaceId: ctx.workspaceId!,
+          templateId: ctx.args['template_id'] as String,
         );
         return {'deleted': deleted};
       },
@@ -11941,7 +11913,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (logo != null &&
             logo != existing.logoPath &&
             (fs == null ||
-                !isWorkspaceLogoPath(await fs.workspaceDir(existing.id), logo))) {
+                !isWorkspaceLogoPath(
+                  await fs.workspaceDir(existing.id),
+                  logo,
+                ))) {
           throw const ValidationException(
             "A workspace logo must be the workspace's own logo file",
           );
@@ -12011,6 +11986,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           } on Object catch (e) {
             CcInfraLog.warning('rigs of workspace $id not closed: $e');
           }
+        }
+        // Then its runs, while their logs can still be closed.
+        if (dispatch != null) {
+          await stopRunsOfWorkspace(
+            id,
+            runLogs: agentRunLogRepository,
+            stopRun: dispatch.stopRun,
+          );
         }
         await workspaceRepository.delete(id);
         await workspaceGitHubApps?.deleteForWorkspace(id);
@@ -13169,7 +13152,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
           }
           await prData.requireRunLog(ctx.workspaceId!, ctx.userId, run);
-          // Replay covers BOTH stores: a subagent's `run_transcripts` row and a
+          // Replay covers BOTH owners: a subagent's own transcript and a
           // top-level run's own `agent_turn` message (`messageId == runLog.id`).
           // The live lane needs no such split — the registry is keyed by that
           // same shared id — which is why only replay-after-restart was blank.
@@ -13282,11 +13265,29 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     WatchQuery(
       name: 'workspace.watchAll',
       workspaceScoped: false,
-      handler: (ctx) => visibleRows(
-        ctx,
-        workspaceRepository.watchAll(),
-        (w) => w.id,
-      ).map((list) => {'workspaces': list.map(workspaceToWire).toList()}),
+      handler: (ctx) =>
+          visibleRows(
+            ctx,
+            reemitOn(workspaceRepository.watchAll(), workspaceStorageChanges),
+            (w) => w.id,
+          ).map(
+            (list) => {
+              'workspaces': [
+                for (final w in list)
+                  {
+                    ...workspaceToWire(w),
+                    // Members learn their workspace takes no writes before a
+                    // write is refused; the finding itself is the owner's
+                    // (`server.notices`).
+                    'storage_state':
+                        (isWorkspaceReadOnly?.call(w.id) ?? false
+                                ? WorkspaceStorageState.readOnly
+                                : WorkspaceStorageState.ok)
+                            .wire,
+                  },
+              ],
+            },
+          ),
     ),
     // CROSS-WORKSPACE BY DESIGN: the repo-link join is queryable for any
     // A named workspace's repos. Workspace-scoped, so the id is the access gate
@@ -13335,7 +13336,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         yield* spaceReadRepository
             .watchUserLastReadAt(ctx.workspaceId!, spaceId, ctx.userId)
-            .map((lastReadAt) => spaceReadToWire(spaceId, lastReadAt));
+            .map((lastRead) => spaceReadToWire(spaceId, lastRead));
       },
     ),
     WatchQuery(
@@ -13346,10 +13347,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             (reads) => {
               'reads': [
                 for (final entry in reads.entries)
-                  {
-                    'space_id': entry.key,
-                    'last_read_at': entry.value.toIso8601String(),
-                  },
+                  {'space_id': entry.key, 'last_read': entry.value.toJson()},
               ],
             },
           ),
@@ -13518,24 +13516,21 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ),
     ),
-    // The global all-runs view — membership-scoped via [visibleRows].
+    // The workspace's unfinished runs (pending or running), bounded — the
+    // "an agent is working in this space" set for a whole space list in one
+    // subscription. The status filter runs in SQL, so finished history is
+    // never read to answer it.
     WatchQuery(
-      name: 'agent_run_log.watchAll',
-      workspaceScoped: false,
-      handler: (ctx) => prData.runLogFramesAcross(
+      name: 'agent_run_log.watchActiveByWorkspace',
+      handler: (ctx) => prData.runLogFrames(
         ctx,
-        visibleRows(
-          ctx,
-          agentRunLogRepository.watchAll(),
-          (l) => l.workspaceId,
-        ),
+        agentRunLogRepository.watchNonTerminalForWorkspace(ctx.workspaceId!),
       ),
     ),
-    // CROSS-WORKSPACE BY DESIGN: the bounded companion to
-    // `agent_run_log.watchAll` — only the newest `limit` rows are read and
-    // shipped per change, so a client dashboard doesn't force the server to
-    // re-materialize (and re-encode) the entire run history on every run-log
-    // write. Prefer this from any live UI surface.
+    // CROSS-WORKSPACE BY DESIGN: the global run view, bounded — only the
+    // newest `limit` rows per workspace are read and shipped per change, so a
+    // client dashboard doesn't force the server to re-materialize (and
+    // re-encode) the entire run history on every run-log write.
     WatchQuery(
       name: 'agent_run_log.watchRecent',
       workspaceScoped: false,
@@ -13777,7 +13772,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // A run's entries are keyed by its conversation and quote it: its
           // space's gate applies.
           if (entityType == 'run') {
-            await assertConversationOwned(ctx.workspaceId!, entityId, ctx.userId);
+            await assertConversationOwned(
+              ctx.workspaceId!,
+              entityId,
+              ctx.userId,
+            );
           }
           yield* activityLogReader
               .watchForEntity(ctx.workspaceId!, entityType, entityId)

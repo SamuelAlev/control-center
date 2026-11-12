@@ -87,7 +87,7 @@ class _PhoneGoalDetailState extends ConsumerState<PhoneGoalDetail> {
       context,
       title: l10n.mobileGoalRaiseBudget,
       description: l10n.mobileGoalRaiseConfirm(
-        planMoney(context, widget.goal.costCapCents),
+        planMoney(context, widget.goal.costCapMicros),
         planMoney(context, newCap),
       ),
       action: l10n.mobileGoalRaiseBudget,
@@ -97,7 +97,7 @@ class _PhoneGoalDetailState extends ConsumerState<PhoneGoalDetail> {
         (r) => r.resumeGoal(
           widget.workspaceId,
           widget.goal.id,
-          raiseCostCapCents: newCap,
+          raiseCostCapMicros: newCap,
         ),
       );
     }
@@ -113,12 +113,12 @@ class _PhoneGoalDetailState extends ConsumerState<PhoneGoalDetail> {
     final writable = ref.watch(workspaceRoleProvider).value?.canWrite ?? false;
     final budgetOnly =
         g.status == AgentGoalStatus.budgetExhausted &&
-        g.costCents >= g.costCapCents &&
+        g.costMicros >= g.costCapMicros &&
         !g.deadlinePassed(DateTime.now()) &&
         (g.maxRuns == null || g.runCount < g.maxRuns!);
-    final nextCap = g.costCapCents > g.costCents
-        ? g.costCapCents * 2
-        : (g.costCents + 1) * 2;
+    final nextCap = g.costCapMicros > g.costMicros
+        ? g.costCapMicros * 2
+        : (g.costMicros + 1) * 2;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -157,8 +157,8 @@ class _PhoneGoalDetailState extends ConsumerState<PhoneGoalDetail> {
             g.maxRuns == null
                 ? l10n.mobileGoalNoRunLimit
                 : number.format(g.maxRuns!),
-            planMoney(context, g.costCents),
-            planMoney(context, g.costCapCents),
+            planMoney(context, g.costMicros),
+            planMoney(context, g.costCapMicros),
           ),
           style: TextStyle(fontSize: 14, color: t.textSecondary),
         ),

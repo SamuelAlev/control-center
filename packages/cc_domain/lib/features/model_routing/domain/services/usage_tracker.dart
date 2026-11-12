@@ -8,7 +8,7 @@ import 'package:cc_domain/features/model_routing/domain/entities/usage.dart';
 class CostSummary {
   /// Creates a [CostSummary].
   const CostSummary({
-    required this.totalUsd,
+    required this.totalMicros,
     required this.requestCount,
     required this.windowStart,
     required this.byProvider,
@@ -16,8 +16,8 @@ class CostSummary {
     this.nextResetAt,
   });
 
-  /// Total USD spent in the window.
-  final double totalUsd;
+  /// Total spent in the window, in micro-dollars.
+  final int totalMicros;
 
   /// Number of costed requests in the window.
   final int requestCount;
@@ -25,11 +25,11 @@ class CostSummary {
   /// The window's start.
   final DateTime windowStart;
 
-  /// Spend per provider id.
-  final Map<String, double> byProvider;
+  /// Spend per provider id, in micro-dollars.
+  final Map<String, int> byProvider;
 
-  /// Spend per `providerId/modelId`.
-  final Map<String, double> byModel;
+  /// Spend per `providerId/modelId`, in micro-dollars.
+  final Map<String, int> byModel;
 
   /// When the nearest quota window resets (from live usage reports), if known.
   final DateTime? nextResetAt;
@@ -48,25 +48,29 @@ abstract final class UsageTracker {
     required DateTime now,
     List<UsageReport> reports = const [],
   }) {
-    var total = 0.0;
+    var total = 0;
     var count = 0;
-    final byProvider = <String, double>{};
-    final byModel = <String, double>{};
+    final byProvider = <String, int>{};
+    final byModel = <String, int>{};
     for (final e in entries) {
       if (e.recordedAt.isBefore(since) || e.recordedAt.isAfter(now)) {
         continue;
       }
-      total += e.costUsd;
+      total += e.costMicros;
       count++;
       byProvider.update(
         e.provider,
-        (v) => v + e.costUsd,
-        ifAbsent: () => e.costUsd,
+        (v) => v + e.costMicros,
+        ifAbsent: () => e.costMicros,
       );
       final modelKey = e.modelId == null
           ? e.provider
           : '${e.provider}/${e.modelId}';
-      byModel.update(modelKey, (v) => v + e.costUsd, ifAbsent: () => e.costUsd);
+      byModel.update(
+        modelKey,
+        (v) => v + e.costMicros,
+        ifAbsent: () => e.costMicros,
+      );
     }
 
     DateTime? nextReset;
@@ -80,7 +84,7 @@ abstract final class UsageTracker {
     }
 
     return CostSummary(
-      totalUsd: total,
+      totalMicros: total,
       requestCount: count,
       windowStart: since,
       byProvider: byProvider,

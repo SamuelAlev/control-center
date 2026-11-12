@@ -2,7 +2,7 @@
 title: Back-uppen en herstellen
 description: Maak een momentopname van de installatie, verplaats een werkruimte tussen machines, herstel één werkruimte of allemaal, en bewaar kopieën ergens anders.
 slug: nl-NL/handleiding/gidsen/back-uppen-en-herstellen
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Deze handleiding behandelt de vijf dingen die mensen daadwerkelijk met back-ups doen:
@@ -43,10 +43,10 @@ Beide artefacten zijn **alleen databases**:
 - Een **momentopname van de installatie** is een map met tijdstempel: `manifest.json`, `global.db` en per werkruimte één `<workspaceId>/workspace.db`.
 - Een **werkruimte-export** is dat ene bestand `workspace.db`.
 
-Een werkruimte-database is de hele werkruimte: haar gesprekken, runlogboeken, codeindex, repokoppelingen, omgevingsdefinities en leden. Ze bevat ook de pipeline-webhooktokens en de webhookgeheimen van de ticketsynchronisatie van de werkruimte, in leesbare vorm. Bewaar een gedownloade back-up of export van een werkruimte zoals je een geheim bewaart. Ze bevat geen aanmeldingen bij aanbieders, apparaatsleutels of gebruikersgeheimen; die staan in de globale database en in de geheimenopslag van de server.
+Een werkruimte-database is de hele werkruimte: haar gesprekken, runlogboeken, repokoppelingen, omgevingsdefinities en leden. Ze bevat geen geheimen: pipeline-webhooktokens, webhookgeheimen van de ticketsynchronisatie, aanmeldingen bij aanbieders, apparaatsleutels en gebruikersgeheimen staan in de globale database en in de geheimenopslag van de server. Ze is wel alles wat de werkruimte heeft gezegd en gedaan, dus bewaar een gedownloade back-up of export even privé als de werkruimte zelf. Het codeindex is een apart bestand naast de database, `code_index.db`. Geen enkele back-up bevat het; de server bouwt het opnieuw op.
 
 Geen van beide bevat de rest van de gegevensmap: `secrets.json` (koppelingssleutels,
-inloggegevens van aanbieders, SSO), de `blobs/` van een werkruimte (afbeeldingen die in
+inloggegevens van aanbieders, webhookgeheimen, SSO), de `blobs/` van een werkruimte (afbeeldingen die in
 berichten zijn geplakt), `skills/`, `agents/`, `chat_credentials/`, opgenomen
 vergaderaudio of rig-afbeeldingen. Sommige daarvan kun je missen, andere niet — de
 [volledige tabel staat in de referentie](/nl-NL/handleiding/referentie/backup/#wat-een-back-up-niet-bevat),
@@ -62,17 +62,11 @@ De server blijft de hele tijd draaien. Elk bestand wordt geschreven met `VACUUM 
 wat consistent is tegen een live database, dus er is geen onderhoudsvenster en je hoeft
 geen agenten te stoppen.
 
-Elke rij in de lijst toont het tijdstempel, de grootte op schijf, hoeveel werkruimtes er
-zijn vastgelegd en of de momentopname **Volledig** of **Onvolledig** is. Onvolledig
-betekent dat het manifest ontbreekt of bestanden noemt die er niet zijn — een back-up die
-is onderbroken door een crash of een volle schijf. Die blijven bewust in de lijst staan:
-een momentopname die je niet ziet, is er een waarvan je denkt dat je hem hebt. Een
-onvolledige momentopname kan de hele installatie niet herstellen, maar de
-werkruimtebestanden die er wel in zitten kun je nog steeds één voor één overnemen.
+Elke rij in de lijst toont het tijdstempel, de grootte op schijf, hoeveel werkruimtes er zijn vastgelegd en of de momentopname **Volledig** of **Niet te verifiëren** is. Elke kopie wordt gecontroleerd nadat ze is geschreven, en het manifest legt de grootte en de checksum vast. Niet te verifiëren betekent dat de server niet kan instaan voor de momentopname: het manifest ontbreekt of is niet leesbaar, of een bestand dat het noemt ontbreekt of heeft een andere grootte. Dat is een back-up die door een crash of een volle schijf is onderbroken, of een die is gemaakt voordat momentopnamen checksums vastlegden. Die blijven bewust in de lijst staan: een momentopname die je niet ziet, is er een waarvan je denkt dat je hem hebt. Een niet te verifiëren momentopname kan de hele installatie niet herstellen, maar de werkruimtebestanden die er wel in zitten kun je nog steeds één voor één herstellen.
 
-Een rij kan ook **_n_ werkruimtes niet vastgelegd** zeggen. Dat is een werkruimte die wel
-geregistreerd is maar nooit beschreven (er is nog geen bestand), of een waarvan de kopie
-is mislukt — kijk in het serverlog.
+Een rij kan ook **_n_ werkruimtes niet vastgelegd** zeggen. Dat is een werkruimte die wel geregistreerd is maar nooit beschreven (er is nog geen bestand), een waarvan de database beschadigd is (een beschadigde kopie wordt nooit gemaakt), of een waarvan de kopie is mislukt — kijk in het serverlog.
+
+Een momentopname of geplande back-up die als **Laatste goede kopie** is gemarkeerd, bevat de nieuwste goede kopie van een werkruimte waarvan de database inmiddels beschadigd is. De geplande opschoning laat haar met rust, en bij verwijderen wordt om bevestiging gevraagd, totdat die werkruimte is hersteld.
 
 ## Back-ups van werkruimtes en bewaring plannen
 
@@ -100,7 +94,7 @@ geen beheerder bent, meldt dat in de rij in plaats van de back-ups te tonen.
 
 Klap een rij uit om elke back-up te zien, de nieuwste eerst:
 
-- **Herstellen** vervangt de huidige database van de werkruimte door deze back-up. Exporteer de werkruimte eerst als je dit misschien ongedaan wilt maken. Vereist de serverbeheerder, die ook de eigenaar van de werkruimte moet zijn.
+- **Herstellen** vervangt de huidige database van de werkruimte door deze back-up. De database die wordt vervangen, blijft in deze lijst staan onder een naam die eindigt op `-pre-restore`, zodat je terug kunt. Vereist de serverbeheerder, die ook de eigenaar van de werkruimte moet zijn.
 - **Downloaden** slaat het bestand op op de machine die je gebruikt. De back-up blijft op de server staan.
 - **Pad kopiëren** kopieert de locatie op de server.
 - **Verwijderen** verwijdert deze back-up definitief, nadat je de naam van de werkruimte hebt getypt. Vereist **eigenaar**.
@@ -120,11 +114,7 @@ beschreven in
 
 ## Een momentopname van de installatie verwijderen
 
-Klap onder **Momentopnamen van de installatie** de momentopname uit, ook een
-onvolledige, en gebruik **Momentopname verwijderen** in de gevarenzone. Bevestig de naam.
-De hele map van de momentopname wordt definitief van de server verwijderd; download hem
-eerst als je een kopie nodig hebt. Een pipeline voor werkruimteback-ups verwijdert deze
-momentopnamen nooit.
+Klap onder **Momentopnamen van de installatie** de momentopname uit, ook een niet te verifiëren, en gebruik **Momentopname verwijderen** in de gevarenzone. Bevestig de naam. De hele map van de momentopname wordt definitief van de server verwijderd; download hem eerst als je een kopie nodig hebt. Een pipeline voor werkruimteback-ups verwijdert deze momentopnamen nooit.
 
 ## Een kopie op je eigen machine ophalen
 
@@ -160,24 +150,14 @@ Stap 3 is een herstel, dus die vraagt om de serverbeheerder van de bestemming, d
 Staan beide servers op de machine waar je achter zit, dan doen **Op server opslaan** op de bron, daarna het pad van het bestand in **Databasebestand van de werkruimte** en **Importeren** op de bestemming, hetzelfde zonder de omweg; dat pad wordt opgelost op de serverhost.
 
 :::caution[Importeren vervangt alles]
-Importeren overschrijft alles wat de doelwerkruimte nu bevat, en dat kan niet ongedaan
-worden gemaakt. Exporteer de doelwerkruimte eerst als er iets in staat dat je misschien
-terug wilt.
+Importeren vervangt alles wat de doelwerkruimte nu bevat. De database die daarbij wordt vervangen, blijft bewaard onder **Geplande back-ups** met een naam die eindigt op `-pre-restore`; herstel die om terug te gaan.
 :::
 
-Twee dingen zijn toegestaan en worden gelogd in plaats van geweigerd: een bestand
-importeren waarvan het vastgelegde werkruimte-id afwijkt van het doel (zo dupliceer je
-een werkruimte of herstel je hem onder een nieuw id), en een bestand importeren uit een
-**andere installatie**. In het tweede geval horen de gekoppelde apparaten en
-gebruikers-id's van het bestand bij de installatie waar het vandaan komt en werken ze hier
-niet — de eigen gegevens van de werkruimte zijn intact, maar controleer het lidmaatschap
-opnieuw nadat je hem hebt overgenomen.
+Een bestand uit een andere werkruimte of uit een **andere installatie** wordt geaccepteerd: zo dupliceer je een werkruimte, herstel je hem onder een nieuw id of geef je hem aan iemand anders. Gebruikers-id's uit een andere installatie werken hier niet. De eigen gegevens van de werkruimte zijn intact, maar controleer het lidmaatschap opnieuw nadat je hem hebt overgenomen.
 
-Tokens van chatbots en aanmeldingen bij aanbieders staan buiten de database, dus de
-ontvangende installatie verbindt zijn eigen tokens opnieuw. Het bestand bevat wél de
-pipeline-webhooktokens en de webhookgeheimen van de ticketsynchronisatie van de
-werkruimte, dus een werkruimte die je aan iemand anders geeft, geeft die ook mee. Roteer
-ze daarna als de ontvanger ze niet mag hebben.
+Een teruggezet bestand kan op deze server zelf niets toekennen. De rechten die het naast het gewone lidmaatschap meebrengt, worden eruit gehaald en bovenaan de pagina vermeld onder **Tegengehouden bij teruggezette kopieën**: actieregels waarmee agents zonder goedkeuring of na een goedkeuring kunnen handelen, paden die een sandbox mag uitvoeren, repotoegang boven lezen, rollen boven lid en openstaande uitnodigingen voor die rollen. **Accepteren** verleent er weer één; **Afwijzen** verwijdert hem. Goedkeuringen om een omgevingsdefinitie op de host uit te voeren worden gewist, dus keur die definities opnieuw goed. Wie herstelt, behoudt of krijgt de rol eigenaar.
+
+Tokens van chatbots, aanmeldingen bij aanbieders en webhookgeheimen staan buiten de database, dus de ontvangende installatie verbindt zijn eigen tokens opnieuw. Webhooktriggers en webhooks van de ticketsynchronisatie komen zonder hun geheimen aan en ontvangen op een andere server niets totdat je ze daar opnieuw opslaat, waardoor elke trigger een nieuwe URL krijgt.
 
 ## Eén werkruimte uit een momentopname herstellen
 
@@ -187,9 +167,7 @@ Je moet de serverbeheerder en de eigenaar van de werkruimte zijn.
 2. Zoek de rij van de werkruimte en druk op **Herstellen**.
 3. Bevestig. Alles wat die werkruimte heeft gedaan sinds de momentopname is gemaakt, gaat verloren.
 
-Dit is dezelfde handeling als een import, gericht op de kopie van dat werkruimtebestand in
-de momentopname — bewust, zodat er geen tweede mechanisme is dat hetzelfde bestand anders
-zou kunnen behandelen.
+Dit is dezelfde handeling als een import, gericht op de kopie van dat werkruimtebestand in de momentopname — bewust, zodat er geen tweede mechanisme is dat hetzelfde bestand anders zou kunnen behandelen. De kopie wordt eerst gecontroleerd op de checksum die de momentopname heeft vastgelegd.
 
 Een rij kan **Staat niet meer op deze server** zeggen, met **Herstellen** uitgeschakeld:
 de momentopname bevat een werkruimte die deze installatie niet meer heeft. Haal hem
@@ -197,6 +175,10 @@ handmatig terug — maak een werkruimte aan (alleen de serverbeheerder) en voer 
 **Werkruimtegegevens** in het veld **Databasebestand van de werkruimte** `<snapshot path>/<old workspace id>/workspace.db` in en druk op **Importeren**. De
 uitgeklapte momentopname toont zijn eigen **Pad op de server** in een kopieerveld, en de
 titel van de rij is het oude werkruimte-id, dus je hebt beide helften van dat pad voor je.
+
+## Een beschadigde werkruimte herstellen
+
+Een werkruimte waarvan de database de integriteitscontrole niet doorstaat, wordt alleen-lezen: alles blijft leesbaar en elke wijziging wordt geweigerd. Leden zien **Deze werkruimte is alleen lezen** bovenaan de werkruimte, de serverbeheerder ziet het op deze pagina onder **Vraagt om jouw aandacht**, en de nieuwste back-up die een goede kopie bevat, wordt bewaard als **Laatste goede kopie**. Herstel de werkruimte uit die kopie, zoals hierboven beschreven, om hem weer beschrijfbaar te maken. De beschadigde database wordt bewaard als `-pre-restore`-back-up.
 
 ## Een hele installatie herstellen
 
@@ -323,9 +305,7 @@ Voer het uit als dezelfde gebruiker die eigenaar is van de gegevensmap, vanuit c
 systemd-timer, en synchroniseer `DEST` daarna van de host af. `VACUUM INTO` vereist SQLite
 3.27 of nieuwer.
 
-Schrijf het **buiten** `<dataDir>/backups/`. Een zelfgemaakte map daar heeft geen
-`manifest.json`, dus de app zou hem als een onvolledige momentopname weergeven en de
-lijst zou ophouden een eerlijk overzicht te zijn van wat de server zelf heeft gemaakt.
+Schrijf het **buiten** `<dataDir>/backups/`. Een zelfgemaakte map daar heeft geen `manifest.json`, dus de app zou hem als een niet te verifiëren momentopname weergeven en de lijst zou ophouden een eerlijk overzicht te zijn van wat de server zelf heeft gemaakt.
 
 ### Oude momentopnamen van de hele installatie opruimen
 
@@ -372,9 +352,11 @@ worden bewaard.
 | “Alleen de serverbeheerder kan back-ups herstellen. Je kunt ze nog wel downloaden.” | Herstellen vervangt de database van een werkruimte op de serverhost, dus alleen de serverbeheerder herstelt. Download de back-up en vraag de serverbeheerder om te herstellen |
 | “Deze server heeft geen back-upoppervlak.”                                | Op de host is geen back-uppoort aangesloten — een demoserver. De handelingen ontbreken in plaats van dat ze worden geweigerd                          |
 | “Het bestand is groter dan de server accepteert.”                         | Uploads zijn beperkt tot 8 GiB. Zet het bestand op de serverhost en voer het pad ervan in bij **Databasebestand van de werkruimte**                 |
-| Import geweigerd: geen werkruimtedatabase van Control Center             | Het bestand heeft geen rij `workspace_meta` — het is geen werkruimte-export, of het is afgekapt. Er is niets vervangen             |
-| Een momentopname staat als **Onvolledig** in de lijst                    | Het manifest ontbreekt of noemt bestanden die er niet zijn. Maak een nieuwe; neem ondertussen afzonderlijke werkruimtebestanden eruit over |
-| Een momentopname meldt dat werkruimtes niet zijn vastgelegd              | Die werkruimtes zijn nooit beschreven, of hun kopie is mislukt. Kijk in het serverlog                                  |
+| Een herstel wordt geweigerd, en er wordt niets vervangen | Het bestand heeft een controle niet doorstaan, en het bericht zegt welke: het is geen werkruimtedatabase, het is beschadigd, het wijkt af van de checksum die de momentopname heeft vastgelegd, een nieuwere versie van de server heeft het geschreven, of de webhooks of uitnodigingen horen al bij een andere werkruimte op deze server. Gebruik een andere kopie, of werk eerst de server bij |
+| Een momentopname staat als **Niet te verifiëren** in de lijst | Ze is nooit voltooid, of ze is gemaakt voordat momentopnamen checksums vastlegden. Maak een nieuwe; herstel ondertussen afzonderlijke werkruimtebestanden eruit |
+| Een momentopname meldt dat werkruimtes niet zijn vastgelegd              | Die werkruimtes zijn nooit beschreven, zijn beschadigd, of hun kopie is mislukt. Kijk in het serverlog                                  |
+| Een werkruimte meldt **Deze werkruimte is alleen lezen** | De database heeft een integriteitscontrole niet doorstaan. Er kan niets in worden gewijzigd totdat de serverbeheerder hem herstelt uit een back-up |
+| Webhooks komen niet meer aan nadat een werkruimte naar een andere server is verhuisd | Webhookgeheimen reizen niet mee met de database. Sla elke webhooktrigger en elke ticketsynchronisatieverbinding opnieuw op op de nieuwe server, en geef de afzender daarna de nieuwe URL |
 | Een herstelde installatie heeft geen forge- of SSO-inloggegevens         | `secrets.json` zit niet in een momentopname. Herstel het vanaf de plek waar je het hebt bewaard, of verbind de aanbieders opnieuw                     |
 | Een herstelde werkruimte mist geplakte afbeeldingen                      | Blobs staan naast de database, niet erin. Kopieer `<workspaceId>/blobs/` ook mee                                     |
 

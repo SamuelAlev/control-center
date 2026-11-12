@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:cc_persistence/database/tables/spaces.dart';
 import 'package:drift/drift.dart';
 
@@ -8,14 +9,17 @@ import 'package:drift/drift.dart';
 /// A space holds MANY conversations, all sharing its one worktree while keeping their own
 /// history + agent sessions.
 @TableIndex(name: 'idx_conversations_spaceId', columns: {#spaceId})
-@TableIndex(name: 'idx_conversations_workspaceId', columns: {#workspaceId})
+@TableIndex(
+  name: 'idx_conversations_anchorMessageId',
+  columns: {#anchorMessageId},
+)
+@TableIndex(name: 'idx_conversations_leafMessageId', columns: {#leafMessageId})
 class ConversationsTable extends Table {
   /// Conversation id — its own uuid, never the owning space's.
   TextColumn get id => text()();
 
-  /// Owning workspace (isolation scope). Nullable to mirror [SpacesTable]: a
-  /// conversation can never be more strictly scoped than its space.
-  TextColumn get workspaceId => text().nullable()();
+  /// Owning workspace (isolation scope), the same as its space's.
+  TextColumn get workspaceId => text()();
 
   /// The space this conversation belongs to.
   TextColumn get spaceId =>
@@ -27,18 +31,29 @@ class ConversationsTable extends Table {
   /// every mint path writes its title explicitly.
   TextColumn get title => text().withDefault(const Constant(''))();
 
-  /// `active` | `archived`.
-  TextColumn get status => text().withDefault(const Constant('active'))();
+  /// `active` | `archived` (`ConversationStatus.wire`).
+  TextColumn get status => text()
+      .check(
+        // ignore: recursive_getters
+        status.isIn(SpacesStoredValues.conversationStatus),
+      )
+      .withDefault(const Constant('active'))();
 
   /// Anchor message when this conversation is a thread: a message in a
   /// sibling conversation of the same space that seeds the thread's fresh
   /// agent context. Threads never nest — the anchor's own conversation must
   /// be unanchored.
+  ///
+  /// `ON DELETE SET NULL`: deleting the anchor deletes that one message, not
+  /// the thread hanging off it and every reply in it. The thread lives on as
+  /// an ordinary conversation of the space; a caller that means "this message
+  /// and its threads" says so (`MessagingDao.clearSpaceMessages`).
   TextColumn get anchorMessageId => text().nullable().customConstraint(
-    'REFERENCES conversation_messages(id) ON DELETE CASCADE',
+    'REFERENCES conversation_messages(id) ON DELETE SET NULL',
   )();
 
-  /// Principal that opened this conversation, when known.
+  /// Principal that opened this conversation, when known. No foreign key:
+  /// a principal is a user (in `global.db`) or an agent.
   TextColumn get createdByPrincipalId => text().nullable()();
 
   /// The tip of the branch this conversation is currently on.
@@ -50,7 +65,11 @@ class ConversationsTable extends Table {
   ///
   /// Null means "the newest message", which is what every conversation written
   /// before the tree existed means.
-  TextColumn get leafMessageId => text().nullable()();
+  ///
+  /// `ON DELETE SET NULL`: deleting the tip message falls back to that.
+  TextColumn get leafMessageId => text().nullable().customConstraint(
+    'REFERENCES conversation_messages(id) ON DELETE SET NULL',
+  )();
 
   /// Created at.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

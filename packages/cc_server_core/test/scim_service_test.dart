@@ -69,37 +69,35 @@ void main() {
     expect(fakes.users.byEmail.length, 1);
   });
 
-  test('patch active:false deprovisions: devices, memberships, stamp',
-      () async {
-    final created = await service.handle(
-      method: 'POST',
-      segments: ['scim', 'v2', 'Users'],
-      query: const {},
-      body: '{"userName":"eva@example.com","externalId":"ext-e"}',
-    );
-    final id = created.body['id'] as String;
-    fakes.members.seed(id);
-    fakes.devices.seed(id, 'device-1');
-    await secrets.writePsk('device-1', 'psk-1');
+  test(
+    'patch active:false deprovisions: devices, memberships, stamp',
+    () async {
+      final created = await service.handle(
+        method: 'POST',
+        segments: ['scim', 'v2', 'Users'],
+        query: const {},
+        body: '{"userName":"eva@example.com","externalId":"ext-e"}',
+      );
+      final id = created.body['id'] as String;
+      fakes.members.seed(id);
+      fakes.devices.seed(id, 'device-1');
+      await secrets.writePsk('device-1', 'psk-1');
 
-    final patched = await service.handle(
-      method: 'PATCH',
-      segments: ['scim', 'v2', 'Users', id],
-      query: const {},
-      body:
-          '{"Operations":[{"op":"replace","path":"active","value":false}]}',
-    );
-    expect(patched.status, 200);
-    expect(patched.body['active'], isFalse);
-    // Deprovision: device row + PSK gone, membership gone.
-    expect(fakes.devices.byId.containsKey('device-1'), isFalse);
-    expect(await secrets.readPsk('device-1'), isNull);
-    expect(
-      fakes.members.all.where((m) => m.userId == id).toList(),
-      isEmpty,
-    );
-    expect(fakes.users.byId[id]!.deactivatedAt, isNotNull);
-  });
+      final patched = await service.handle(
+        method: 'PATCH',
+        segments: ['scim', 'v2', 'Users', id],
+        query: const {},
+        body: '{"Operations":[{"op":"replace","path":"active","value":false}]}',
+      );
+      expect(patched.status, 200);
+      expect(patched.body['active'], isFalse);
+      // Deprovision: device row + PSK gone, membership gone.
+      expect(fakes.devices.byId.containsKey('device-1'), isFalse);
+      expect(await secrets.readPsk('device-1'), isNull);
+      expect(fakes.members.all.where((m) => m.userId == id).toList(), isEmpty);
+      expect(fakes.users.byId[id]!.deactivatedAt, isNotNull);
+    },
+  );
 
   test('DELETE deactivates without removing the row', () async {
     final created = await service.handle(
@@ -142,7 +140,8 @@ void main() {
       method: 'POST',
       segments: ['scim', 'v2', 'Users'],
       query: const {},
-      body: '{"userName":"gina@example.com","externalId":"ext-g",'
+      body:
+          '{"userName":"gina@example.com","externalId":"ext-g",'
           '"active":true}',
     );
     expect(recreated.status, 200);
@@ -215,27 +214,29 @@ void main() {
     expect(fakes.users.byId['local-1']!.deactivatedAt, isNull);
   });
 
-  test('a create colliding on a local account email does not adopt it',
-      () async {
-    fakes.users.byId['local-1'] = User(
-      id: 'local-1',
-      handle: 'owner',
-      displayName: 'Owner',
-      email: 'owner@example.com',
-      createdAt: DateTime(2026, 1, 1),
-    );
-    fakes.users.byEmail['owner@example.com'] = fakes.users.byId['local-1']!;
+  test(
+    'a create colliding on a local account email does not adopt it',
+    () async {
+      fakes.users.byId['local-1'] = User(
+        id: 'local-1',
+        handle: 'owner',
+        displayName: 'Owner',
+        email: 'owner@example.com',
+        createdAt: DateTime(2026, 1, 1),
+      );
+      fakes.users.byEmail['owner@example.com'] = fakes.users.byId['local-1']!;
 
-    final created = await service.handle(
-      method: 'POST',
-      segments: ['scim', 'v2', 'Users'],
-      query: const {},
-      body: '{"userName":"owner@example.com","active":false}',
-    );
-    // A distinct, SCIM-managed record — the local account is untouched.
-    expect(created.body['id'], isNot('local-1'));
-    expect(fakes.users.byId['local-1']!.deactivatedAt, isNull);
-  });
+      final created = await service.handle(
+        method: 'POST',
+        segments: ['scim', 'v2', 'Users'],
+        query: const {},
+        body: '{"userName":"owner@example.com","active":false}',
+      );
+      // A distinct, SCIM-managed record — the local account is untouched.
+      expect(created.body['id'], isNot('local-1'));
+      expect(fakes.users.byId['local-1']!.deactivatedAt, isNull);
+    },
+  );
 
   test('refuses to deactivate a workspace owner', () async {
     final created = await service.handle(
@@ -268,7 +269,9 @@ void main() {
     expect(fakes.users.byId[id]!.deactivatedAt, isNull);
     expect(fakes.devices.byId.containsKey('device-boss'), isTrue);
     expect(
-      fakes.members.all.any((m) => m.userId == id && m.role == WorkspaceRole.owner),
+      fakes.members.all.any(
+        (m) => m.userId == id && m.role == WorkspaceRole.owner,
+      ),
       isTrue,
     );
   });
@@ -310,9 +313,8 @@ class _FakeUserRepository implements UserRepository {
   Future<User?> getByHandle(String handle) async => byHandle[handle];
 
   @override
-  Future<User?> getByVerifiedEmail(String email) async => byId.values
-      .where((u) => u.email == email && u.emailVerified)
-      .firstOrNull;
+  Future<User?> getByVerifiedEmail(String email) async =>
+      byId.values.where((u) => u.email == email && u.emailVerified).firstOrNull;
 
   @override
   Future<List<User>> getAllByEmail(String email) async =>
@@ -336,6 +338,7 @@ class _FakeUserRepository implements UserRepository {
       byEmail[user.email!] = user;
     }
   }
+
   @override
   Future<User> insertWithFreeHandle(User user) async {
     final free = Username.candidates(
@@ -346,10 +349,9 @@ class _FakeUserRepository implements UserRepository {
     return stored;
   }
 
-
   @override
-  Future<List<User>> getAll() async => byId.values.toList()
-    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  Future<List<User>> getAll() async =>
+      byId.values.toList()..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
   @override
   Future<int> count() async => byId.length;
@@ -380,9 +382,7 @@ class _FakeMembershipRepository implements WorkspaceMembershipRepository {
 
   @override
   Future<void> remove(String workspaceId, String userId) async {
-    all.removeWhere(
-      (m) => m.workspaceId == workspaceId && m.userId == userId,
-    );
+    all.removeWhere((m) => m.workspaceId == workspaceId && m.userId == userId);
   }
 
   @override
@@ -407,7 +407,7 @@ class _FakeDeviceDao implements PairedDeviceDao {
     byId[deviceId] = PairedDevicesTableData(
       id: deviceId,
       userId: userId,
-      workspaceId: null,
+      landingWorkspaceId: null,
       label: 'test',
       platform: 'web',
       pskRef: 'file',

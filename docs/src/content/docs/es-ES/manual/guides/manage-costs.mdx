@@ -2,7 +2,7 @@
 title: Gestionar costes
 description: Consulta cuánto están gastando tus agentes, pon un tope a una ejecución autónoma y reduce el uso de tokens.
 slug: es-ES/manual/guias/gestionar-costes
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Esta guía muestra cómo ver cuánto cuestan las ejecuciones de un agente y cómo
@@ -12,7 +12,7 @@ poner un tope a una ejecución autónoma.
 
 Cada ejecución de un agente escribe un registro de ejecución con sus tokens de
 entrada, tokens de salida, tokens de razonamiento, tokens de lectura de caché y
-de escritura en caché, un coste estimado en céntimos y el coste de los
+de escritura en caché, un coste estimado en microdólares (millonésimas de dólar estadounidense) y el coste de los
 subagentes que haya lanzado.
 
 El precio proviene del catálogo de models.dev, que solo se usa para enriquecer
@@ -140,7 +140,7 @@ varias más pequeñas.
 
 ## Qué ocurre si se define un presupuesto fuera de banda
 
-Para que quede completo: si se escribe `monthlyBudgetCents` o una política de
+Para que quede completo: si se escribe `monthlyBudgetMicros` o una política de
 presupuesto directamente en la fila de un agente:
 
 - Los presupuestos se evalúan **después** de que termine una ejecución, no antes

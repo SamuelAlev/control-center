@@ -19,9 +19,20 @@ class TicketSyncDao extends DatabaseAccessor<WorkspaceDatabase>
 
   // ── configs ──
 
-  /// Inserts or updates a sync config (by primary key id).
+  /// Inserts or updates a sync config in one statement: the row with the
+  /// same id, else the vendor's existing row (a workspace has one config per
+  /// vendor, `uq_ticket_sync_configs_vendor`), which keeps its id.
   Future<void> upsertConfig(TicketSyncConfigsTableCompanion config) =>
-      into(ticketSyncConfigsTable).insertOnConflictUpdate(config);
+      into(ticketSyncConfigsTable).insert(
+        config,
+        onConflict: UpsertMultiple([
+          DoUpdate((_) => config, target: [ticketSyncConfigsTable.id]),
+          DoUpdate(
+            (_) => config.copyWith(id: const Value.absent()),
+            target: [ticketSyncConfigsTable.vendor],
+          ),
+        ]),
+      );
 
   /// Enabled configs for a workspace.
   Future<List<TicketSyncConfigsTableData>> enabledConfigsForWorkspace(
@@ -104,13 +115,17 @@ class TicketSyncDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .get();
 
-  /// Inserts a link.
-  Future<void> insertLink(TicketSyncLinksTableCompanion link) =>
-      into(ticketSyncLinksTable).insert(link);
-
-  /// Updates a link by id.
-  Future<void> updateLinkById(String id, TicketSyncLinksTableCompanion link) =>
-      (update(ticketSyncLinksTable)..where((t) => t.id.equals(id))).write(link);
+  /// Inserts [link], or updates the ticket's existing link to the same
+  /// vendor (which keeps its id) in the same statement: one link per ticket
+  /// per vendor is the table's unique key.
+  Future<void> upsertLink(TicketSyncLinksTableCompanion link) =>
+      into(ticketSyncLinksTable).insert(
+        link,
+        onConflict: DoUpdate(
+          (_) => link.copyWith(id: const Value.absent()),
+          target: [ticketSyncLinksTable.ticketId, ticketSyncLinksTable.vendor],
+        ),
+      );
 
   /// Deletes a link scoped to [workspaceId]. Returns rows deleted.
   Future<int> deleteLink(String id, String workspaceId) => (delete(

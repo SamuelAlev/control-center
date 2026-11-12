@@ -2,7 +2,7 @@
 title: Analityka użycia
 description: Co Control Center rejestruje, gdy analityka użycia jest włączona, kto o tym decyduje i co nigdy nie jest wysyłane.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/analityka-uzycia
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center może wysyłać **pseudonimowe zdarzenia użycia** do instancji [Umami](https://umami.is). Analityka użycia jest **wyłączona, dopóki operator serwera jej nie włączy**. Ustawienie należy do serwera i dotyczy każdego połączonego z nim klienta: aplikacji desktopowej, aplikacji webowej, telefonu i samego serwera.
@@ -109,7 +109,7 @@ Rejestrowane przez aplikację desktopową, aplikację webową i telefon w odpowi
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Zmieniono skille obszaru roboczego |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | Udzielono odpowiedzi na propozycję orkiestracji |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Plan został zatwierdzony lub odrzucony (telefon) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | Rozpoczęto nadzorowany cel lub pętlę (telefon) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | Rozpoczęto nadzorowany cel lub pętlę (telefon) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | Utworzono rozmowę lub jej rozwidlenie |
 | `conversation_rewound` | `conversation_id` | Rozmowę kontynuowano od wcześniejszej wiadomości |
 | `space_archived` | `workspace_id`, `space_id` | Zarchiwizowano przestrzeń |
@@ -128,7 +128,7 @@ Rejestrowane przez `cc_server` dla faktów, których żaden pojedynczy klient ni
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | Uruchomienie agenta się zakończyło |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Agent zatrzymał się, czekając na człowieka |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | Polityka akcji odrzuciła akcję agenta |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | Uruchomienie potoku się zakończyło. `trigger` to `manual`, typ zdarzenia, które je rozpoczęło, albo tylko rodzaj nazwanego wyzwalacza (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | Uruchomienie potoku się zakończyło. `trigger` to `manual`, typ zdarzenia, które je rozpoczęło, albo tylko rodzaj nazwanego wyzwalacza (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | Opublikowano pull request z przestrzeni |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | Scalono pull request otwarty przez agenta |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | Zapisano nagranie spotkania |
@@ -142,7 +142,7 @@ Rejestrowane przez `cc_server` dla faktów, których żaden pojedynczy klient ni
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Skill obszaru roboczego został zainstalowany, zaktualizowany lub zmieniony na dysku |
 | `calendar_auth_expired` | `workspace_id` | Połączenie z kalendarzem wymaga ponownego zalogowania |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Wydarzenie w kalendarzu zaraz się rozpocznie |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | Wydatki przekroczyły próg budżetu |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | Wydatki przekroczyły próg budżetu |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | Poproszono o recenzję śledzonego PR |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | Zmieniła się decyzja recenzji śledzonego PR |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | PR otwarty nie przez agenta został scalony w połączonym repozytorium |

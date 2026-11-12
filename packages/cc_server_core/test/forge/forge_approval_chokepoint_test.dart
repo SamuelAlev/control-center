@@ -93,8 +93,7 @@ void main() {
       final dbs = createTestWorkspaceDatabases(global: global);
       await seedTestWorkspace(global, dbs, 'w1');
       final requesters = AgentPrRequesters(
-        cacheFor: (ws) => dbs.of(ws).cacheDao,
-        crossWorkspace: CrossWorkspaceQueries(dbs),
+        records: DaoAgentPullRequestRequesterRepository(global),
         viewer: (_, _, _) async => null,
       );
       for (final forge in [

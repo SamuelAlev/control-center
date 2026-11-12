@@ -8,8 +8,19 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
-    // Scope this test to DAO query logic, not FK enforcement.
-    await db.customStatement('PRAGMA foreign_keys = OFF');
+    // The meetings the child rows below hang off, already finished so the
+    // stale sweep leaves them alone. A test that needs one in a particular
+    // workspace or state upserts it again.
+    for (final id in ['m1', 'm2']) {
+      await db.meetingDao.upsertMeeting(
+        MeetingsTableCompanion.insert(
+          id: id,
+          workspaceId: db.workspaceId,
+          title: 'M $id',
+          status: const Value('done'),
+        ),
+      );
+    }
   });
 
   tearDown(() async {
@@ -773,6 +784,94 @@ void main() {
           (s) => s.label,
         ),
         ['Other'],
+      );
+    });
+  });
+
+  group('MeetingDao.watchSegments', () {
+    MeetingTranscriptSegmentsTableCompanion segment(
+      String id, {
+      String meetingId = 'm1',
+      required int startMs,
+      String content = 'words',
+    }) => MeetingTranscriptSegmentsTableCompanion.insert(
+      id: id,
+      meetingId: meetingId,
+      workspaceId: 'w1',
+      speaker: 'me',
+      content: content,
+      startMs: startMs,
+      endMs: startMs + 1000,
+    );
+
+    Future<void> settle() =>
+        Future<void>.delayed(const Duration(milliseconds: 50));
+
+    test('appends inserts in start order and reloads on rewrites', () async {
+      await db.meetingDao.upsertMeeting(meeting('m1', 'w1'));
+      await db.meetingDao.upsertMeeting(meeting('m2', 'w1'));
+      await db.meetingDao.insertSegment(segment('s2', startMs: 2000));
+
+      final emissions = <List<String>>[];
+      final labels = <String?>[];
+      final sub = db.meetingDao.watchSegments('w1', 'm1').listen((rows) {
+        emissions.add([for (final r in rows) '${r.id}:${r.content}']);
+        labels.add(rows.isEmpty ? null : rows.first.speakerLabel);
+      });
+      await settle();
+      expect(emissions, [
+        ['s2:words'],
+      ]);
+
+      // A segment that starts earlier but is written later sorts first.
+      await db.meetingDao.insertSegment(segment('s1', startMs: 1000));
+      await settle();
+      expect(emissions.last, ['s1:words', 's2:words']);
+
+      // Another meeting's segment adds nothing to this list: no emission.
+      await db.meetingDao.insertSegment(
+        segment('other', meetingId: 'm2', startMs: 0),
+      );
+      await settle();
+      expect(emissions, hasLength(2));
+
+      // Rewriting a stored segment by id is not an append: it reloads.
+      await db.meetingDao.insertSegment(
+        segment('s2', startMs: 2000, content: 'fixed'),
+      );
+      await settle();
+      expect(emissions.last, ['s1:words', 's2:fixed']);
+
+      await db.meetingDao.setSegmentSpeakerLabel('w1', 's1', 'Speaker 1');
+      await settle();
+      expect(labels.last, 'Speaker 1');
+
+      await db.meetingDao.replaceSegments('w1', 'm1', [
+        segment('t1', startMs: 0, content: 'diarized'),
+      ]);
+      await settle();
+      expect(emissions.last, ['t1:diarized']);
+
+      await sub.cancel();
+    });
+
+    test('segmentsAfter reads only rows appended after a sequence', () async {
+      await db.meetingDao.upsertMeeting(meeting('m1', 'w1'));
+      for (final (id, start) in [('a', 3000), ('b', 1000), ('c', 2000)]) {
+        await db.meetingDao.insertSegment(segment(id, startMs: start));
+      }
+
+      final all = await db.meetingDao.segmentsAfter('w1', 'm1', afterSeq: 0);
+      expect(all.map((s) => s.row.id), ['a', 'b', 'c']);
+      final rest = await db.meetingDao.segmentsAfter(
+        'w1',
+        'm1',
+        afterSeq: all.first.seq,
+      );
+      expect(rest.map((s) => s.row.id), ['b', 'c']);
+      expect(
+        await db.meetingDao.segmentsAfter('w2', 'm1', afterSeq: 0),
+        isEmpty,
       );
     });
   });

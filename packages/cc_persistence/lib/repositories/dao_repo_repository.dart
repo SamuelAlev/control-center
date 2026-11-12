@@ -45,7 +45,7 @@ class DaoRepoRepository implements RepoRepository {
 
   @override
   Future<String> upsert(String workspaceId, Repo repo) async {
-    await _dbs
+    final stored = await _dbs
         .of(workspaceId)
         .repoDao
         .upsertRepo(
@@ -62,12 +62,18 @@ class DaoRepoRepository implements RepoRepository {
             updatedAt: drift.Value(repo.updatedAt),
           ),
         );
-    return repo.id;
+    return stored.id;
   }
 
+  /// Removes the repo and its code index. The index first: it lives in
+  /// `code_index.db`, which no foreign key from `repos` reaches, and a failure
+  /// between the two leaves a linked repo with an empty index (rebuilt by the
+  /// next run, which finds no checkpoint) rather than an index nobody owns.
   @override
-  Future<void> delete(String workspaceId, String repoId) =>
-      _dbs.of(workspaceId).repoDao.deleteRepo(repoId).then((_) {});
+  Future<void> delete(String workspaceId, String repoId) async {
+    await _dbs.codeIndexOf(workspaceId).codeGraphDao.deleteByRepo(repoId);
+    await _dbs.of(workspaceId).repoDao.deleteRepo(repoId);
+  }
 
   @override
   Future<void> reorder(String workspaceId, List<String> orderedIds) =>

@@ -24,11 +24,16 @@ abstract class PipelineRunReader {
   /// Resolves the owning workspace from the id, like [getRun].
   Stream<PipelineRun?> watchRun(String id);
 
-  /// Watches all pipeline runs across every workspace, most recent first — the
-  /// operator's all-workspace view. Workspace surfaces use [watchForWorkspace].
+  /// Watches the newest pipeline runs across every workspace (bounded), most
+  /// recent first — the operator's all-workspace view. Workspace surfaces use
+  /// [watchForWorkspace]. Rows are list rows, as in [watchForWorkspace].
   Stream<List<PipelineRun>> watchAll();
 
-  /// Watches runs for a specific workspace.
+  /// Watches the newest runs of a workspace (bounded), most recent first.
+  ///
+  /// These are list rows: [PipelineRun.state] holds only the keys naming the
+  /// run's repository or space, and [PipelineRun.templateSnapshot] is absent.
+  /// A run's full state is read on demand with [getRun] / [watchRun].
   Stream<List<PipelineRun>> watchForWorkspace(String workspaceId);
 
   /// Returns the active non-terminal run for `(templateId, workspaceId,
@@ -68,7 +73,7 @@ abstract class PipelineRunRepository implements PipelineRunReader {
   /// Updates an existing pipeline run's LIFECYCLE: status, the timing fields,
   /// the error pair and the run's identity columns.
   ///
-  /// [PipelineRun.state], [PipelineRun.totalCostCents] and
+  /// [PipelineRun.state], [PipelineRun.totalCostMicros] and
   /// [PipelineRun.totalTokens] on the passed object are ignored. Those three
   /// have single-purpose writers ([updateRunState], [incrementCost]) that run
   /// CONCURRENTLY with every transition — a fan-out's agents publish their cost
@@ -83,8 +88,8 @@ abstract class PipelineRunRepository implements PipelineRunReader {
   /// Updates the state JSON for a pipeline run.
   Future<void> updateRunState(String runId, Map<String, dynamic> state);
 
-  /// Adds [cents] and [tokens] to the run's aggregated cost totals.
-  Future<void> incrementCost(String runId, int cents, int tokens);
+  /// Adds [micros] and [tokens] to the run's aggregated cost totals.
+  Future<void> incrementCost(String runId, int micros, int tokens);
 
   /// Returns all non-terminal runs, across every workspace, for resume on
   /// startup — the reconciler runs before any workspace is chosen.

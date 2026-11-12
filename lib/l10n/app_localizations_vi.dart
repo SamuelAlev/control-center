@@ -14353,13 +14353,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get backupSnapshotComplete => 'Hoàn tất';
 
   @override
-  String get backupSnapshotIncomplete => 'Chưa hoàn tất';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Manifest thiếu hoặc liệt kê tệp không tồn tại, nên ảnh chụp này không thể khôi phục cả cài đặt. Các tệp không gian làm việc có sẵn vẫn có thể được nhận từng cái.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Xóa ảnh chụp';
 
   @override
@@ -18498,4 +18491,235 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Bạn có thể xem máy này. Máy dùng tài khoản đăng nhập của người mà máy được mở cho, nên chỉ người đó mới có thể điều khiển, chuyển tiếp cổng, dán nội dung vào hoặc thả tệp vào máy.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Cơ sở dữ liệu của máy chủ đang bận. Vui lòng thử lại sau ít phút.';
+
+  @override
+  String get refusalStorageFull =>
+      'Ổ đĩa của máy chủ đã đầy nên không lưu được gì. Chủ sở hữu máy chủ cần giải phóng bớt dung lượng.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Dữ liệu của không gian làm việc này bị hỏng. Chủ sở hữu máy chủ cần khôi phục từ bản sao lưu.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Không gian làm việc này chỉ đọc cho đến khi chủ sở hữu máy chủ khôi phục từ bản sao lưu, nên không thể lưu thay đổi.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Dữ liệu này được ghi bởi phiên bản máy chủ mới hơn. Hãy cập nhật máy chủ rồi thử lại.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Máy chủ tìm thấy một tệp cơ sở dữ liệu không do nó ghi. Chủ sở hữu máy chủ cần kiểm tra thư mục dữ liệu của máy chủ.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Không gian làm việc này đã bị xóa.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Yêu cầu này vẫn đang được xử lý. Hãy đợi xong rồi kiểm tra kết quả.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Không có tệp nào ở đường dẫn này trên máy chủ. Chưa thay thế gì cả.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Tệp này bị hỏng nên không thể khôi phục. Chưa thay thế gì cả.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Tệp này không khớp với checksum mà bản sao lưu đã ghi, nên có thể đã bị thay đổi hoặc hỏng. Chưa thay thế gì cả.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Tệp này được ghi bởi phiên bản máy chủ mới hơn. Hãy cập nhật máy chủ để khôi phục. Chưa thay thế gì cả.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Tệp này không phải cơ sở dữ liệu của không gian làm việc. Chưa thay thế gì cả.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Tệp này không thể chuyển sang định dạng của máy chủ này. Chưa thay thế gì cả.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Tệp này chứa các liên kết thuộc về không gian làm việc khác trên máy chủ này, và việc khôi phục sẽ chiếm các liên kết đó. Chưa thay thế gì cả.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'Không gian làm việc này chỉ đọc';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Dữ liệu của không gian làm việc này không vượt qua kiểm tra toàn vẹn, nên không thể lưu thay đổi. Mọi thứ vẫn có thể đọc được. Chủ sở hữu máy chủ có thể khôi phục từ bản sao lưu.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Dữ liệu của không gian làm việc này không vượt qua kiểm tra toàn vẹn, nên không thể lưu thay đổi. Mọi thứ vẫn có thể đọc được. Hãy khôi phục từ bản sao lưu để cho phép ghi lại.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Mở bản sao lưu';
+
+  @override
+  String get serverNoticesLabel => 'Cần bạn chú ý';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Chỉ đọc';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Từ $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Cơ sở dữ liệu của không gian làm việc không vượt qua kiểm tra toàn vẹn, nên nó chỉ cho phép đọc và từ chối mọi thay đổi. Hãy khôi phục từ bản sao lưu trong danh sách bên dưới; bản sao tốt gần nhất được giữ lại cho đến khi bạn làm vậy.';
+
+  @override
+  String get serverNoticeDetails => 'Chi tiết';
+
+  @override
+  String get backupSnapshotUnverified => 'Chưa xác minh';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Ảnh chụp này không thể xác minh. Nó chưa hoàn tất, hoặc được chụp trước khi ảnh chụp ghi checksum, nên không thể khôi phục toàn bộ cài đặt. Các tệp không gian làm việc trong đó vẫn có thể khôi phục từng tệp một.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Bản sao tốt gần nhất';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Được giữ lại vì nó chứa bản sao tốt gần nhất của một không gian làm việc bị hỏng. Dọn dẹp sẽ không xóa nó cho đến khi không gian làm việc đó được khôi phục.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Đây là bản sao tốt gần nhất của một không gian làm việc bị hỏng. Nếu xóa, sẽ không còn gì để khôi phục không gian làm việc đó.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count quyền đã bị giữ lại để bạn xem xét. Các quyền này được liệt kê ở đầu trang.',
+      one:
+          '1 quyền đã bị giữ lại để bạn xem xét. Quyền này được liệt kê ở đầu trang.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Bị giữ lại từ các bản sao đã khôi phục';
+
+  @override
+  String get importHoldsExplainer =>
+      'Một bản sao đã khôi phục không thể tự cấp bất kỳ quyền nào trên máy chủ này. Các quyền sau có trong bản sao: chấp nhận một quyền để cấp lại, hoặc từ chối để xóa nó.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agent có thể làm việc này mà không cần phê duyệt: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agent có thể làm việc này khi một người phê duyệt: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Chạy các lệnh bắt đầu bằng $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace =>
+      'Ở mọi nơi trong không gian làm việc này';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'Trong space $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Cho agent $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandbox có thể chạy $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person có thể thay đổi $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person có thể xem xét pull request trong $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person được truy cập mức $level vào $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person nhận vai trò $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Một lời mời đang mở để tham gia với vai trò $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Một lời mời đang mở để tham gia với vai trò $role và quyền xem xét hoặc ghi vào $count kho lưu trữ',
+      one:
+          'Một lời mời đang mở để tham gia với vai trò $role và quyền xem xét hoặc ghi vào 1 kho lưu trữ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Một quyền mà phiên bản ứng dụng này không thể mô tả';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Đã khôi phục $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Chấp nhận';
+
+  @override
+  String get importHoldDismiss => 'Từ chối';
+
+  @override
+  String get importHoldAcceptTitle => 'Cấp quyền này?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nChấp nhận sẽ cấp quyền này trên máy chủ ngay lập tức.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Đã cấp quyền.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Chưa cấp quyền nào: người hoặc thứ mà quyền này dành cho không còn trong không gian làm việc này.';
 }

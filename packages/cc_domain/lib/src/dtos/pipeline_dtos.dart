@@ -27,7 +27,7 @@ class PipelineRunDto {
     this.parentStepId,
     this.templateVersion = 1,
     this.templateSnapshot,
-    this.totalCostCents = 0,
+    this.totalCostMicros = 0,
     this.totalTokens = 0,
     this.dryRun = false,
   }) : state = state ?? <String, dynamic>{};
@@ -58,7 +58,7 @@ class PipelineRunDto {
     templateVersion: (json['template_version'] as num?)?.toInt() ?? 1,
     templateSnapshot: (json['template_snapshot'] as Map?)
         ?.cast<String, dynamic>(),
-    totalCostCents: (json['total_cost_cents'] as num?)?.toInt() ?? 0,
+    totalCostMicros: (json['total_cost_micros'] as num?)?.toInt() ?? 0,
     totalTokens: (json['total_tokens'] as num?)?.toInt() ?? 0,
     dryRun: json['dry_run'] as bool? ?? false,
   );
@@ -86,7 +86,7 @@ class PipelineRunDto {
   /// The pinned template graph (`PipelineDefinition.toJson`). Sent on the
   /// single-run reads only (`getRun` / `watchRun`), never in list views.
   final Map<String, dynamic>? templateSnapshot;
-  final int totalCostCents;
+  final int totalCostMicros;
   final int totalTokens;
   final bool dryRun;
 
@@ -112,7 +112,7 @@ class PipelineRunDto {
     if (parentStepId != null) 'parent_step_id': parentStepId,
     'template_version': templateVersion,
     'template_snapshot': ?templateSnapshot,
-    'total_cost_cents': totalCostCents,
+    'total_cost_micros': totalCostMicros,
     'total_tokens': totalTokens,
     'dry_run': dryRun,
   };

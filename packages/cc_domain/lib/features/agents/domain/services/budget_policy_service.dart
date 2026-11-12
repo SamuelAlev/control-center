@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/observability_events.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/governance/domain/services/budget_forecast.dart';
 
@@ -25,16 +26,16 @@ class BudgetBlock {
 /// A budget policy defining spending limits and thresholds for a scope.
 class BudgetPolicy {
   /// Creates a budget policy with required [id], [scopeType], [scopeId],
-  /// and [monthlyBudgetCents], plus optional thresholds and tracking fields.
+  /// and [monthlyBudgetMicros], plus optional thresholds and tracking fields.
   const BudgetPolicy({
     required this.id,
     required this.scopeType,
     required this.scopeId,
-    required this.monthlyBudgetCents,
+    required this.monthlyBudgetMicros,
     this.workspaceId = '',
     this.softThresholdPercent = 80,
     this.hardStopEnabled = true,
-    this.spentCents = 0,
+    this.spentMicros = 0,
     this.status = 'active',
     this.periodStart,
     this.periodEnd,
@@ -53,8 +54,8 @@ class BudgetPolicy {
   /// Identifier of the scope this policy governs.
   final String scopeId;
 
-  /// Monthly budget in cents (0 or negative means unlimited).
-  final int monthlyBudgetCents;
+  /// Monthly budget in micro-dollars (0 or negative means unlimited).
+  final int monthlyBudgetMicros;
 
   /// Percentage of budget at which a soft threshold warning fires.
   final int softThresholdPercent;
@@ -62,8 +63,8 @@ class BudgetPolicy {
   /// Whether to hard-stop invocations when the budget is exhausted.
   final bool hardStopEnabled;
 
-  /// Total cents spent in the current billing period.
-  final int spentCents;
+  /// Total micro-dollars spent in the current billing period.
+  final int spentMicros;
 
   /// Current status of this budget policy ('active', 'paused', etc.).
   final String status;
@@ -78,26 +79,26 @@ class BudgetPolicy {
   final DateTime? createdAt;
 
   /// Whether this policy has no spending limit.
-  bool get isUnlimited => monthlyBudgetCents <= 0;
+  bool get isUnlimited => monthlyBudgetMicros <= 0;
 
   /// Whether the budget has been fully consumed.
   bool get isExhausted =>
-      spentCents >= monthlyBudgetCents && monthlyBudgetCents > 0;
+      spentMicros >= monthlyBudgetMicros && monthlyBudgetMicros > 0;
 
   /// Whether spending has crossed the soft threshold.
   bool get isNearLimit =>
-      monthlyBudgetCents > 0 &&
-      spentCents >= (monthlyBudgetCents * softThresholdPercent ~/ 100);
+      monthlyBudgetMicros > 0 &&
+      spentMicros >= (monthlyBudgetMicros * softThresholdPercent ~/ 100);
 
-  /// Cents remaining before the budget is exhausted.
-  int get remainingCents => monthlyBudgetCents - spentCents;
+  /// Micro-dollars remaining before the budget is exhausted.
+  int get remainingMicros => monthlyBudgetMicros - spentMicros;
 
   /// Percentage of the budget that has been spent (0–100).
   int get spentPercent {
-    if (monthlyBudgetCents <= 0) {
+    if (monthlyBudgetMicros <= 0) {
       return 0;
     }
-    return ((spentCents * 100) ~/ monthlyBudgetCents).clamp(0, 100);
+    return ((spentMicros * 100) ~/ monthlyBudgetMicros).clamp(0, 100);
   }
 
   @override
@@ -109,10 +110,10 @@ class BudgetPolicy {
           workspaceId == other.workspaceId &&
           scopeType == other.scopeType &&
           scopeId == other.scopeId &&
-          monthlyBudgetCents == other.monthlyBudgetCents &&
+          monthlyBudgetMicros == other.monthlyBudgetMicros &&
           softThresholdPercent == other.softThresholdPercent &&
           hardStopEnabled == other.hardStopEnabled &&
-          spentCents == other.spentCents &&
+          spentMicros == other.spentMicros &&
           status == other.status &&
           periodStart == other.periodStart &&
           periodEnd == other.periodEnd &&
@@ -124,10 +125,10 @@ class BudgetPolicy {
     workspaceId,
     scopeType,
     scopeId,
-    monthlyBudgetCents,
+    monthlyBudgetMicros,
     softThresholdPercent,
     hardStopEnabled,
-    spentCents,
+    spentMicros,
     status,
     periodStart,
     periodEnd,
@@ -140,10 +141,10 @@ class BudgetPolicy {
     String? workspaceId,
     String? scopeType,
     String? scopeId,
-    int? monthlyBudgetCents,
+    int? monthlyBudgetMicros,
     int? softThresholdPercent,
     bool? hardStopEnabled,
-    int? spentCents,
+    int? spentMicros,
     String? status,
     DateTime? periodStart,
     bool removePeriodStart = false,
@@ -157,10 +158,10 @@ class BudgetPolicy {
       workspaceId: workspaceId ?? this.workspaceId,
       scopeType: scopeType ?? this.scopeType,
       scopeId: scopeId ?? this.scopeId,
-      monthlyBudgetCents: monthlyBudgetCents ?? this.monthlyBudgetCents,
+      monthlyBudgetMicros: monthlyBudgetMicros ?? this.monthlyBudgetMicros,
       softThresholdPercent: softThresholdPercent ?? this.softThresholdPercent,
       hardStopEnabled: hardStopEnabled ?? this.hardStopEnabled,
-      spentCents: spentCents ?? this.spentCents,
+      spentMicros: spentMicros ?? this.spentMicros,
       status: status ?? this.status,
       periodStart: removePeriodStart ? null : (periodStart ?? this.periodStart),
       periodEnd: removePeriodEnd ? null : (periodEnd ?? this.periodEnd),
@@ -203,23 +204,23 @@ class BudgetEnforcementService {
       );
     }
 
-    if (agent.monthlyBudgetCents <= 0) {
+    if (agent.monthlyBudgetMicros <= 0) {
       return null;
     }
 
-    final spent = await _currentMonthSpentCents(agent.workspaceId, agentId);
+    final spent = await _currentMonthSpentMicros(agent.workspaceId, agentId);
 
-    if (spent >= agent.monthlyBudgetCents) {
+    if (spent >= agent.monthlyBudgetMicros) {
       CcDomainLog.warning(
-        '$_tag: Budget exhausted for $agentId: $spent / ${agent.monthlyBudgetCents} cents',
+        '$_tag: Budget exhausted for $agentId: ${formatUsdMicros(spent)} / ${formatUsdMicros(agent.monthlyBudgetMicros)}',
       );
       _eventBus.publish(
         BudgetThresholdCrossed(
           workspaceId: agent.workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
-          spentCents: spent,
-          budgetCents: agent.monthlyBudgetCents,
+          spentMicros: spent,
+          budgetMicros: agent.monthlyBudgetMicros,
           isHardStop: true,
           occurredAt: DateTime.now(),
         ),
@@ -231,18 +232,18 @@ class BudgetEnforcementService {
       );
     }
 
-    final thresholdAmount = agent.monthlyBudgetCents * 80 ~/ 100;
+    final thresholdAmount = agent.monthlyBudgetMicros * 80 ~/ 100;
     if (spent >= thresholdAmount) {
       CcDomainLog.warning(
-        '$_tag: Budget near limit for $agentId: $spent / ${agent.monthlyBudgetCents} cents',
+        '$_tag: Budget near limit for $agentId: ${formatUsdMicros(spent)} / ${formatUsdMicros(agent.monthlyBudgetMicros)}',
       );
       _eventBus.publish(
         BudgetThresholdCrossed(
           workspaceId: agent.workspaceId,
           scopeType: 'agent',
           scopeId: agentId,
-          spentCents: spent,
-          budgetCents: agent.monthlyBudgetCents,
+          spentMicros: spent,
+          budgetMicros: agent.monthlyBudgetMicros,
           isHardStop: false,
           occurredAt: DateTime.now(),
         ),
@@ -256,18 +257,18 @@ class BudgetEnforcementService {
   /// within [workspaceId], which scopes the agent lookup.
   Future<int> getSpentPercent(String workspaceId, String agentId) async {
     final agent = await _agentRepository.getById(workspaceId, agentId);
-    if (agent == null || agent.monthlyBudgetCents <= 0) {
+    if (agent == null || agent.monthlyBudgetMicros <= 0) {
       return 0;
     }
 
-    final spent = await _currentMonthSpentCents(agent.workspaceId, agentId);
-    return ((spent * 100) ~/ agent.monthlyBudgetCents).clamp(0, 100);
+    final spent = await _currentMonthSpentMicros(agent.workspaceId, agentId);
+    return ((spent * 100) ~/ agent.monthlyBudgetMicros).clamp(0, 100);
   }
 
-  /// Returns the cents [agentId] has spent in the current UTC calendar month.
+  /// Returns the micro-dollars [agentId] has spent in the current UTC calendar month.
   /// Shared with the governance layer (incident logging + auto-pause).
-  Future<int> currentMonthSpentCents(String workspaceId, String agentId) =>
-      _currentMonthSpentCents(workspaceId, agentId);
+  Future<int> currentMonthSpentMicros(String workspaceId, String agentId) =>
+      _currentMonthSpentMicros(workspaceId, agentId);
 
   /// Projects [agentId]'s month-end spend from its recent burn rate (FINDINGS
   /// §16.1), so a warning can fire *before* the hard-stop lands mid-task.
@@ -279,22 +280,22 @@ class BudgetEnforcementService {
     int lookbackDays = 7,
   }) async {
     final agent = await _agentRepository.getById(workspaceId, agentId);
-    final budgetCents = agent?.monthlyBudgetCents ?? 0;
+    final budgetMicros = agent?.monthlyBudgetMicros ?? 0;
     final logs = await _agentRunLogRepository
         .watchByAgent(workspaceId, agentId)
         .first;
     return forecastBudget(
       spend: [
         for (final l in logs)
-          SpendPoint(at: l.startedAt, costCents: l.cost.estimatedCostCents),
+          SpendPoint(at: l.startedAt, costMicros: l.cost.costMicros),
       ],
       now: DateTime.now(),
-      budgetCents: budgetCents,
+      budgetMicros: budgetMicros,
       lookbackDays: lookbackDays,
     );
   }
 
-  Future<int> _currentMonthSpentCents(
+  Future<int> _currentMonthSpentMicros(
     String workspaceId,
     String agentId,
   ) async {
@@ -313,6 +314,6 @@ class BudgetEnforcementService {
               ) ||
               log.startedAt.isAtSameMomentAs(monthStart),
         )
-        .fold<int>(0, (sum, log) => sum + log.cost.estimatedCostCents);
+        .fold<int>(0, (sum, log) => sum + log.cost.costMicros);
   }
 }

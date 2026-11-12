@@ -3,6 +3,7 @@ import 'package:control_center/features/settings/presentation/widgets/field_plac
 import 'package:control_center/features/settings/presentation/widgets/model_browser_dialog.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,7 +48,7 @@ class ModelPickerField extends ConsumerWidget {
         kind: FieldPlaceholderKind.loading,
       ),
       error: (e, _) => FieldPlaceholder(
-        text: l10n.failedWithError('$e'),
+        text: failureMessage(l10n, e),
         kind: FieldPlaceholderKind.error,
       ),
       data: (models) {

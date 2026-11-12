@@ -1,16 +1,21 @@
 /// Status of a review space association.
 enum ReviewSpaceStatus {
   /// Requested but no reviewer has started.
-  requested,
+  requested('requested'),
 
   /// Reviewers actively working.
-  inProgress,
+  inProgress('in_progress'),
 
   /// CEO has finalized; waiting for human approval to publish.
-  awaitingApproval,
+  awaitingApproval('awaiting_approval'),
 
   /// Published / closed.
-  completed,
+  completed('completed');
+
+  const ReviewSpaceStatus(this.wire);
+
+  /// The value stored in `review_spaces.status`.
+  final String wire;
 }
 
 /// The longest a review space's name may be (sidebar + tab budgets).

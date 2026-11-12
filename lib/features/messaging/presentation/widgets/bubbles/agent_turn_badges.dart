@@ -82,7 +82,7 @@ class _FailedBadgeState extends ConsumerState<_FailedBadge> {
     } on Object catch (e) {
       if (mounted) {
         CcToastScope.maybeOf(context)?.show(
-          AppLocalizations.of(context).failedWithError('$e'),
+          failureMessage(AppLocalizations.of(context), e),
           variant: CcToastVariant.danger,
         );
       }

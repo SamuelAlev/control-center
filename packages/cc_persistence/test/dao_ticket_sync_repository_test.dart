@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
+import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/sync_direction.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_field_conflict_policy.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_config.dart';
@@ -12,10 +14,12 @@ import 'helpers/test_database.dart';
 void main() {
   late GlobalDatabase global;
   late WorkspaceDatabaseManager dbs;
+  late InMemorySecretStore secrets;
   final now = DateTime.utc(2026);
 
   setUp(() async {
     global = createTestGlobalDatabase();
+    secrets = InMemorySecretStore();
     dbs = createTestWorkspaceDatabases(global: global);
     // Registering a workspace is what materialises its database file; there is
     // no `workspaces` row inside a workspace database to seed any more.
@@ -48,7 +52,10 @@ void main() {
   });
 
   test('sync config round-trips and is workspace-scoped', () async {
-    final repo = DaoTicketSyncConfigRepository(dbs);
+    final repo = DaoTicketSyncConfigRepository(
+      dbs,
+      WebhookSecretVault(secrets),
+    );
     await repo.upsert(
       TicketSyncConfig(
         id: 'cfg-1',
@@ -81,6 +88,45 @@ void main() {
       reason: 'config must not leak across workspaces',
     );
   });
+
+  test(
+    'the webhook secret is kept by reference and dies with its config',
+    () async {
+      final repo = DaoTicketSyncConfigRepository(
+        dbs,
+        WebhookSecretVault(secrets),
+      );
+      final config = TicketSyncConfig(
+        id: 'cfg-1',
+        workspaceId: 'ws-1',
+        vendor: 'linear',
+        webhookSecret: 'shh',
+        createdAt: now,
+        updatedAt: now,
+      );
+      await repo.upsert(config);
+
+      final rows = await dbs
+          .of('ws-1')
+          .customSelect('SELECT * FROM ticket_sync_configs')
+          .get();
+      final cells = [for (final row in rows) ...row.data.values];
+      expect(cells, isNot(contains('shh')));
+      final ref = WebhookSecretVault.ticketSyncRef('ws-1', 'cfg-1');
+      expect(cells, contains(ref));
+      expect(secrets.values[ref], 'shh');
+      expect((await repo.forWorkspace('ws-1')).single.webhookSecret, 'shh');
+
+      // Clearing the secret clears the reference and the stored value.
+      await repo.upsert(config.copyWith(removeWebhookSecret: true));
+      expect(secrets.values, isNot(contains(ref)));
+      expect((await repo.forVendor('ws-1', 'linear'))?.webhookSecret, isNull);
+
+      await repo.upsert(config);
+      expect(await repo.delete('cfg-1', workspaceId: 'ws-1'), 1);
+      expect(secrets.values, isNot(contains(ref)));
+    },
+  );
 
   test('sync link upsert is idempotent on (ws, ticket, vendor)', () async {
     final repo = DaoTicketSyncLinkRepository(dbs);
@@ -208,7 +254,10 @@ void main() {
     );
 
     test('forWorkspace lists all configs (enabled + disabled)', () async {
-      final repo = DaoTicketSyncConfigRepository(dbs);
+      final repo = DaoTicketSyncConfigRepository(
+        dbs,
+        WebhookSecretVault(secrets),
+      );
       await repo.upsert(config(id: 'cfg-1', vendor: 'linear', enabled: true));
       await repo.upsert(config(id: 'cfg-2', vendor: 'github', enabled: false));
 
@@ -217,13 +266,19 @@ void main() {
     });
 
     test('forWorkspace is workspace-scoped', () async {
-      final repo = DaoTicketSyncConfigRepository(dbs);
+      final repo = DaoTicketSyncConfigRepository(
+        dbs,
+        WebhookSecretVault(secrets),
+      );
       await repo.upsert(config(workspaceId: 'ws-1'));
       expect(await repo.forWorkspace('ws-2'), isEmpty);
     });
 
     test('watchForWorkspace emits configs ordered by vendor', () async {
-      final repo = DaoTicketSyncConfigRepository(dbs);
+      final repo = DaoTicketSyncConfigRepository(
+        dbs,
+        WebhookSecretVault(secrets),
+      );
       await repo.upsert(config(id: 'z', vendor: 'zenhub'));
       await repo.upsert(config(id: 'a', vendor: 'asana'));
 
@@ -232,7 +287,10 @@ void main() {
     });
 
     test('delete removes the config scoped to the workspace', () async {
-      final repo = DaoTicketSyncConfigRepository(dbs);
+      final repo = DaoTicketSyncConfigRepository(
+        dbs,
+        WebhookSecretVault(secrets),
+      );
       await repo.upsert(config(id: 'cfg-1'));
 
       // Wrong workspace → 0 rows, config survives.
@@ -244,7 +302,10 @@ void main() {
     });
 
     test('delete of an unknown id deletes nothing', () async {
-      final repo = DaoTicketSyncConfigRepository(dbs);
+      final repo = DaoTicketSyncConfigRepository(
+        dbs,
+        WebhookSecretVault(secrets),
+      );
       expect(await repo.delete('no-such', workspaceId: 'ws-1'), 0);
     });
   });

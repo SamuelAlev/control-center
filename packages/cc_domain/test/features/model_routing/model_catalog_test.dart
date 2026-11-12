@@ -237,12 +237,15 @@ void main() {
       final cost = parsed.modelGet('openai', 'm')!.cost!;
       expect(cost.pricingComplete, isTrue);
       expect(cost.reservationRates.output, 18);
-      expect(cost.estimate(inputTokens: 1000, outputTokens: 100), 0.0032);
-      expect(cost.estimate(inputTokens: 220000), 0.88);
-      expect(cost.estimate(inputTokens: 200000, outputTokens: 1000), 0.412);
+      expect(cost.estimateMicros(inputTokens: 1000, outputTokens: 100), 3200);
+      expect(cost.estimateMicros(inputTokens: 220000), 880000);
       expect(
-        cost.estimate(inputTokens: 199999, cacheReadTokens: 2),
-        closeTo(0.7999968, 1e-12),
+        cost.estimateMicros(inputTokens: 200000, outputTokens: 1000),
+        412000,
+      );
+      expect(
+        cost.estimateMicros(inputTokens: 199999, cacheReadTokens: 2),
+        799997,
       );
       expect(
         parsed.modelGet('openai', 'incomplete')!.cost!.pricingComplete,

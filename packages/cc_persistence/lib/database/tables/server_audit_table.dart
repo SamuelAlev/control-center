@@ -1,3 +1,5 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for the server-scope audit trail.
@@ -11,10 +13,13 @@ class ServerAuditTable extends Table {
   /// Unique entry identifier.
   TextColumn get id => text()();
 
-  /// The person who made the call.
+  /// The person who made the call. No foreign key: the row is written after
+  /// the call, which may itself have removed the person's row, and the trail
+  /// must keep it either way.
   TextColumn get userId => text()();
 
-  /// The device the call came from, when known.
+  /// The device the call came from, when known. No foreign key, for the same
+  /// reason (revoking a device is an audited call).
   TextColumn get deviceId => text().nullable()();
 
   /// The client address the session observed, when known.
@@ -24,10 +29,13 @@ class ServerAuditTable extends Table {
   TextColumn get op => text()();
 
   /// JSON array of the argument names, sorted.
-  TextColumn get argNames => text()();
+  // ignore: recursive_getters
+  TextColumn get argNames => text().check(isJsonArray(argNames))();
 
-  /// `ok`, `denied` or `failed`.
-  TextColumn get outcome => text()();
+  /// An `AuditOutcome` name: `ok`, `denied` or `failed`.
+  TextColumn get outcome =>
+      // ignore: recursive_getters
+      text().check(outcome.isIn(PlatformStoredValues.auditOutcome))();
 
   /// When the call ended.
   DateTimeColumn get createdAt => dateTime()();

@@ -4,6 +4,7 @@ import 'package:control_center/features/ticketing/providers/ticketing_providers.
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,7 +45,7 @@ class TicketDetailPanel extends ConsumerWidget {
       color: t.bgPrimary,
       child: ticketAsync.when(
         loading: () => const Center(child: CcSpinner()),
-        error: (e, _) => Center(child: Text(l10n.failedWithError('$e'))),
+        error: (e, _) => Center(child: Text(failureMessage(l10n, e))),
         data: (ticket) {
           if (ticket == null) {
             return _SelectPrompt(message: l10n.ticketSelectPrompt);

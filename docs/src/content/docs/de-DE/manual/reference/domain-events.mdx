@@ -2,7 +2,7 @@
 title: Domain-Ereignisse
 description: Vollständiger Katalog der 54 Domain-Ereignisse, ihrer Payloads und der serverseitigen Abonnenten, die sie entgegennehmen.
 slug: de-DE/handbuch/referenz/domain-ereignisse
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Ereignisbus
@@ -112,7 +112,7 @@ Veröffentlicht werden nur Übergänge in einen Endzustand. `PipelineRunStarted`
 | Ereignis                 | Payload                                                                                                  | Auslöser                  |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Eintrag im Audit-Protokoll angelegt |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Die Ausgaben überschreiten die Schwelle |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Die Ausgaben überschreiten die Schwelle |
 
 ## Ereignisse zu Identität und Mitgliedschaft
 

@@ -100,15 +100,10 @@ class DaoNewsfeedRepository implements NewsfeedRepository {
     String description = '',
     String userAgent = '',
   }) async {
-    final existing = await _dao.getFeedByUrl(userId, url);
-    if (existing != null) {
-      return _mapper.feedToDomain(existing);
-    }
-    final id = _uuid.v4();
     final now = DateTime.now();
-    await _dao.upsertFeed(
+    final stored = await _dao.addFeed(
       RssFeedsTableCompanion(
-        id: drift.Value(id),
+        id: drift.Value(_uuid.v4()),
         userId: drift.Value(userId),
         name: drift.Value(name),
         url: drift.Value(url),
@@ -118,8 +113,7 @@ class DaoNewsfeedRepository implements NewsfeedRepository {
         updatedAt: drift.Value(now),
       ),
     );
-    final row = await _dao.getFeedByUrl(userId, url);
-    return _mapper.feedToDomain(row!);
+    return _mapper.feedToDomain(stored);
   }
 
   @override

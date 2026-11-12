@@ -14505,13 +14505,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get backupSnapshotComplete => 'Πλήρες';
 
   @override
-  String get backupSnapshotIncomplete => 'Ημιτελές';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Το μανιφέστο λείπει ή ονομάζει αρχεία που δεν υπάρχουν, οπότε αυτό το στιγμιότυπο δεν μπορεί να επαναφέρει ολόκληρη την εγκατάσταση. Τα αρχεία χώρου εργασίας που έχει μπορούν ακόμη να υιοθετηθούν ένα προς ένα.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Διαγραφή στιγμιότυπου';
 
   @override
@@ -18705,4 +18698,235 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Μπορείτε να παρακολουθείτε αυτό το μηχάνημα. Χρησιμοποιεί τις συνδέσεις του ατόμου για το οποίο ανοίχτηκε, οπότε μόνο εκείνο μπορεί να το ελέγχει, να προωθεί τις θύρες του, να επικολλά σε αυτό ή να αφήνει αρχεία πάνω του.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Η βάση δεδομένων του διακομιστή είναι απασχολημένη αυτή τη στιγμή. Δοκιμάστε ξανά σε λίγο.';
+
+  @override
+  String get refusalStorageFull =>
+      'Ο διακομιστής έχει εξαντλήσει τον χώρο στον δίσκο, οπότε τίποτα δεν μπορεί να αποθηκευτεί. Ο κάτοχος του διακομιστή πρέπει να ελευθερώσει λίγο χώρο.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Τα δεδομένα αυτού του χώρου εργασίας είναι κατεστραμμένα. Ο κάτοχος του διακομιστή πρέπει να τα επαναφέρει από ένα αντίγραφο ασφαλείας.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Αυτός ο χώρος εργασίας είναι μόνο για ανάγνωση έως ότου ο κάτοχος του διακομιστή τον επαναφέρει από ένα αντίγραφο ασφαλείας, οπότε οι αλλαγές δεν μπορούν να αποθηκευτούν.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Αυτά τα δεδομένα γράφτηκαν από μια νεότερη έκδοση του διακομιστή. Ενημερώστε τον διακομιστή και δοκιμάστε ξανά.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Ο διακομιστής βρήκε ένα αρχείο βάσης δεδομένων που δεν έγραψε ο ίδιος. Ο κάτοχος του διακομιστή πρέπει να ελέγξει τον φάκελο δεδομένων του διακομιστή.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Αυτός ο χώρος εργασίας διαγράφηκε.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Αυτό το αίτημα εξακολουθεί να υποβάλλεται σε επεξεργασία. Περιμένετε να ολοκληρωθεί και μετά ελέγξτε το αποτέλεσμα.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Δεν υπάρχει αρχείο σε αυτή τη διαδρομή στον διακομιστή. Δεν αντικαταστάθηκε τίποτα.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Αυτό το αρχείο είναι κατεστραμμένο, οπότε δεν μπορεί να επαναφερθεί. Δεν αντικαταστάθηκε τίποτα.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Αυτό το αρχείο δεν ταιριάζει με το άθροισμα ελέγχου που κατέγραψε το αντίγραφο ασφαλείας του, οπότε ίσως έχει αλλοιωθεί ή καταστραφεί. Δεν αντικαταστάθηκε τίποτα.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Αυτό το αρχείο γράφτηκε από μια νεότερη έκδοση του διακομιστή. Ενημερώστε τον διακομιστή για να το επαναφέρετε. Δεν αντικαταστάθηκε τίποτα.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Αυτό το αρχείο δεν είναι βάση δεδομένων χώρου εργασίας. Δεν αντικαταστάθηκε τίποτα.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Αυτό το αρχείο δεν μπόρεσε να μετατραπεί στη μορφή αυτού του διακομιστή. Δεν αντικαταστάθηκε τίποτα.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Αυτό το αρχείο περιέχει συνδέσμους που ανήκουν σε άλλον χώρο εργασίας σε αυτόν τον διακομιστή, και η επαναφορά θα τους αποσπούσε. Δεν αντικαταστάθηκε τίποτα.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Αυτός ο χώρος εργασίας είναι μόνο για ανάγνωση';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Τα δεδομένα του απέτυχαν στον έλεγχο ακεραιότητας, οπότε δεν μπορούν να αποθηκευτούν αλλαγές. Όλα είναι ακόμη αναγνώσιμα. Ο κάτοχος του διακομιστή μπορεί να τον επαναφέρει από ένα αντίγραφο ασφαλείας.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Τα δεδομένα του απέτυχαν στον έλεγχο ακεραιότητας, οπότε δεν μπορούν να αποθηκευτούν αλλαγές. Όλα είναι ακόμη αναγνώσιμα. Επαναφέρετέ τον από ένα αντίγραφο ασφαλείας για να είναι ξανά εγγράψιμος.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Άνοιγμα αντιγράφων ασφαλείας';
+
+  @override
+  String get serverNoticesLabel => 'Χρειάζεται την προσοχή σας';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Μόνο για ανάγνωση';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Από $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Η βάση δεδομένων του απέτυχε στον έλεγχο ακεραιότητας, οπότε εξυπηρετεί μόνο αναγνώσεις και απορρίπτει κάθε αλλαγή. Επαναφέρετέ την από ένα αντίγραφο ασφαλείας στις λίστες παρακάτω· το τελευταίο καλό αντίγραφό της διατηρείται μέχρι να το κάνετε.';
+
+  @override
+  String get serverNoticeDetails => 'Λεπτομέρειες';
+
+  @override
+  String get backupSnapshotUnverified => 'Μη επαληθευμένο';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Αυτό το στιγμιότυπο δεν μπορεί να επαληθευτεί. Δεν ολοκληρώθηκε ποτέ, ή λήφθηκε πριν τα στιγμιότυπα καταγράφουν αθροίσματα ελέγχου, οπότε δεν μπορεί να επαναφέρει ολόκληρη την εγκατάσταση. Τα αρχεία χώρου εργασίας που περιέχει μπορούν ακόμη να επαναφερθούν ένα ένα.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Τελευταίο καλό αντίγραφο';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Διατηρείται επειδή περιέχει το τελευταίο καλό αντίγραφο ενός κατεστραμμένου χώρου εργασίας. Ο καθαρισμός το αφήνει ανέπαφο μέχρι να επαναφερθεί αυτός ο χώρος εργασίας.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Αυτό είναι το τελευταίο καλό αντίγραφο ενός κατεστραμμένου χώρου εργασίας. Αν το διαγράψετε, δεν θα υπάρχει τίποτα άλλο από το οποίο να επαναφερθεί αυτός ο χώρος εργασίας.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count δικαιώματα συγκρατήθηκαν για έλεγχο. Εμφανίζονται στην κορυφή αυτής της σελίδας.',
+      one:
+          '1 δικαίωμα συγκρατήθηκε για έλεγχο. Εμφανίζεται στην κορυφή αυτής της σελίδας.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Συγκρατήθηκαν από τα επαναφερθέντα αντίγραφα';
+
+  @override
+  String get importHoldsExplainer =>
+      'Ένα επαναφερθέν αντίγραφο δεν μπορεί να χορηγήσει τίποτα από μόνο του σε αυτόν τον διακομιστή. Αυτά τα δικαιώματα υπήρχαν σε αυτό: αποδεχτείτε ένα για να το χορηγήσετε ξανά, ή απορρίψτε το για να το αφαιρέσετε.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Οι πράκτορες μπορούν να το κάνουν χωρίς έγκριση: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Οι πράκτορες μπορούν να το κάνουν όταν το εγκρίνει ένα άτομο: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Εκτέλεση εντολών που ξεκινούν με $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Παντού σε αυτόν τον χώρο εργασίας';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'Στον χώρο $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Για τον πράκτορα $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Τα sandbox μπορούν να εκτελούν $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return 'Ο/Η $person μπορεί να αλλάζει το $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return 'Ο/Η $person μπορεί να ελέγχει pull requests στο $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return 'Ο/Η $person αποκτά πρόσβαση $level στο $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return 'Ο/Η $person αποκτά τον ρόλο $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Ανοιχτή πρόσκληση για συμμετοχή με τον ρόλο $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ανοιχτή πρόσκληση για συμμετοχή με τον ρόλο $role και πρόσβαση ελέγχου ή εγγραφής σε $count αποθετήρια',
+      one:
+          'Ανοιχτή πρόσκληση για συμμετοχή με τον ρόλο $role και πρόσβαση ελέγχου ή εγγραφής σε $count αποθετήριο',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Ένα δικαίωμα που αυτή η έκδοση της εφαρμογής δεν μπορεί να περιγράψει';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Επαναφέρθηκε $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Αποδοχή';
+
+  @override
+  String get importHoldDismiss => 'Απόρριψη';
+
+  @override
+  String get importHoldAcceptTitle => 'Να χορηγηθεί αυτό το δικαίωμα;';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nΗ αποδοχή το χορηγεί αμέσως στον διακομιστή.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Το δικαίωμα χορηγήθηκε.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Δεν χορηγήθηκε τίποτα: αυτός ή αυτό για το οποίο ήταν δεν υπάρχει πλέον σε αυτόν τον χώρο εργασίας.';
 }

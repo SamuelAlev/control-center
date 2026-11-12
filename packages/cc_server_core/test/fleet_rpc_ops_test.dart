@@ -110,7 +110,7 @@ class _FakeFleetRepository implements FleetRepository {
       workerId: workerId,
       leaseExpiresAt: leaseExpiresAt,
       submittedBy: job.submittedBy,
-      costCents: job.costCents,
+      costMicros: job.costMicros,
       attempts: job.attempts,
       maxAttempts: job.maxAttempts,
       lastAckedSeq: job.lastAckedSeq,
@@ -127,29 +127,42 @@ class _FakeFleetRepository implements FleetRepository {
   }
 
   @override
-  Future<void> renewLease(
+  Future<bool> renewLease(
     String jobId,
+    String workerId,
     DateTime leaseExpiresAt, {
     int? lastAckedSeq,
   }) async {
-    renewLeaseCalls.add(jobId);
+    renewLeaseCalls.add('$jobId@$workerId');
+    return true;
   }
 
   @override
-  Future<void> markJobRunning(String jobId, DateTime now) async {}
+  Future<bool> markJobRunning(
+    String jobId,
+    String workerId,
+    DateTime now,
+  ) async => true;
 
   @override
-  Future<void> markJobTerminal(
+  Future<bool> markJobTerminal(
     String jobId,
     JobStatus status,
     DateTime now, {
+    required Set<JobStatus> from,
+    String? leasedTo,
     String? resultJson,
     String? error,
-    int? costCents,
-  }) async {}
+    int? costMicros,
+  }) async => true;
 
   @override
-  Future<void> requeueJob(String jobId, int attempts) async {}
+  Future<bool> requeueJob(
+    String jobId,
+    int attempts, {
+    required JobStatus from,
+    required String? leasedTo,
+  }) async => true;
 
   @override
   Future<void> logPlacement({
@@ -382,7 +395,7 @@ void main() {
         pinnedWorkerId: 'w-2',
         workerId: 'w-1',
         leaseExpiresAt: DateTime.utc(2026, 1, 5),
-        costCents: 42,
+        costMicros: 42,
         attempts: 1,
         maxAttempts: 3,
         error: 'nope',
@@ -401,7 +414,7 @@ void main() {
       expect(jobWire['priority'], 5);
       expect(jobWire['pinnedWorkerId'], 'w-2');
       expect(jobWire['workerId'], 'w-1');
-      expect(jobWire['costCents'], 42);
+      expect(jobWire['costMicros'], 42);
       expect(jobWire['attempts'], 1);
       expect(jobWire['maxAttempts'], 3);
       expect(jobWire['error'], 'nope');
@@ -950,7 +963,8 @@ void main() {
         );
 
         expect(result['ackedSeq'], 2);
-        expect(repo.renewLeaseCalls, ['j-1']);
+        // Renewed for the worker holding the lease, never just by job id.
+        expect(repo.renewLeaseCalls, ['j-1@w-1']);
       });
 
       test(
@@ -1005,7 +1019,7 @@ void main() {
           workerId: 'w-1',
           createdAt: DateTime.utc(2026, 1, 1),
         );
-        remoteRegistry.register(repo.jobs['j-1']!);
+        final execution = remoteRegistry.register(repo.jobs['j-1']!);
 
         final result = await op0('fleet.workerComplete').handler(
           _ctx({
@@ -1013,7 +1027,8 @@ void main() {
               'jobId': 'j-1',
               'success': true,
               'resultJson': '{}',
-              'costCents': 9,
+              // Less than a cent: kept exactly, never rounded to zero.
+              'costMicros': 9,
               'eventsLost': 0,
               'lastSeq': 5,
             },
@@ -1021,6 +1036,7 @@ void main() {
         );
 
         expect(result['ok'], isTrue);
+        expect((await execution.result).costMicros, 9);
       });
 
       test('rejects a device that does not own the job worker', () async {

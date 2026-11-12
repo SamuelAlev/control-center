@@ -1,18 +1,19 @@
+import 'package:cc_persistence/database/tables/budget_policy_table.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
+import 'package:cc_persistence/database/tables/runtime_profiles_table.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_agents_workspaceId', columns: {#workspaceId})
-@TableIndex(
-  name: 'idx_agents_workspace_name',
-  columns: {#workspaceId, #name},
-  unique: true,
-)
+@TableIndex(name: 'uq_agents_name', columns: {#name}, unique: true)
+@TableIndex(name: 'idx_agents_reports_to', columns: {#reportsTo})
+@TableIndex(name: 'idx_agents_budget_policy', columns: {#budgetPolicyId})
+@TableIndex(name: 'idx_agents_runtime_profile', columns: {#runtimeProfileId})
 /// Drift table definition for agents.
 class AgentsTable extends Table {
   /// Unique agent identifier.
   TextColumn get id => text()();
 
-  /// Short agent name. Unique per workspace (enforced by
-  /// `idx_agents_workspace_name` unique index).
+  /// Short agent name. Unique in its workspace, whose file this is
+  /// (`uq_agents_name`).
   TextColumn get name => text()();
 
   /// Human-readable title.
@@ -24,7 +25,8 @@ class AgentsTable extends Table {
   /// Id of the workspace this agent belongs to.
   TextColumn get workspaceId => text()();
 
-  /// Id of the agent this one reports to, if any.
+  /// Id of the agent this one reports to, if any. `SET NULL`: deleting a
+  /// manager leaves its reports at the top of the chart.
   TextColumn get reportsTo => text().nullable().references(
     AgentsTable,
     #id,
@@ -40,31 +42,30 @@ class AgentsTable extends Table {
   /// System prompt override for the agent.
   TextColumn get systemPrompt => text().nullable()();
 
-  /// Selected adapter identifier.
+  /// Selected adapter identifier. Open set: registered adapter ids.
   TextColumn get adapterId => text().nullable()();
 
-  /// Selected model identifier.
+  /// Selected model identifier. Open set: provider model ids.
   TextColumn get modelId => text().nullable()();
 
   /// Whether strict identity checking is enabled.
   BoolColumn get strictMode => boolean().withDefault(const Constant(false))();
 
-  /// Reasoning effort level: low, medium, or high.
+  /// Reasoning effort level (`low`, `medium`, `high`, `xhigh`, …). Open set:
+  /// each adapter names its own levels.
   TextColumn get effort => text().nullable()();
 
   /// Context window size in tokens.
   IntColumn get contextSize => integer().nullable()();
 
-  /// JSON-encoded per-agent command policy delta (deny/allow/prompt lists
-  /// merged over the profile default). Empty string falls back to the
-  /// mode-based default at dispatch time.
-  TextColumn get commandPolicyJson => text().withDefault(const Constant(''))();
+  /// Agent role: an `AgentRole` name. Null when unassigned.
+  TextColumn get role =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(role.isIn(AgentsStoredValues.agentRole))();
 
-  /// Agent role (e.g. 'ceo', 'coder', 'reviewer'). Null when unassigned.
-  TextColumn get role => text().nullable()();
-
-  /// Monthly budget in US cents for this agent.
-  IntColumn get monthlyBudgetCents =>
+  /// Monthly budget in micro-dollars for this agent (0 means unlimited).
+  IntColumn get monthlyBudgetMicros =>
       integer().withDefault(const Constant(0))();
 
   /// Per-agent silence-timeout override in minutes. Null falls back to the
@@ -76,22 +77,40 @@ class AgentsTable extends Table {
   IntColumn get maxConcurrentTasks =>
       integer().withDefault(const Constant(1))();
 
-  /// Agent visibility: `workspace` (shared across the workspace) or `private`.
-  TextColumn get visibility =>
-      text().withDefault(const Constant('workspace'))();
+  /// Agent visibility: an `AgentVisibility` name.
+  TextColumn get visibility => text()
+      .check(
+        // ignore: recursive_getters
+        visibility.isIn(AgentsStoredValues.agentVisibility),
+      )
+      .withDefault(const Constant('workspace'))();
 
-  /// Governance lifecycle status: `active`, `paused` (e.g. budget hard-stop),
-  /// or `archived`.
-  TextColumn get lifecycleStatus =>
-      text().withDefault(const Constant('active'))();
+  /// Governance lifecycle status: an `AgentLifecycleStatus` name (`paused`
+  /// e.g. after a budget hard-stop).
+  TextColumn get lifecycleStatus => text()
+      .check(
+        // ignore: recursive_getters
+        lifecycleStatus.isIn(AgentsStoredValues.agentLifecycleStatus),
+      )
+      .withDefault(const Constant('active'))();
 
   /// Shared budget policy this agent draws from, if any. Null means the
-  /// per-agent `monthlyBudgetCents` applies directly.
-  TextColumn get budgetPolicyId => text().nullable()();
+  /// per-agent `monthlyBudgetMicros` applies directly, which is what `SET
+  /// NULL` leaves when the policy is deleted.
+  TextColumn get budgetPolicyId => text().nullable().references(
+    BudgetPolicyTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// Custom runtime profile backing this agent, if any. Null means the
-  /// adapter's default launch configuration applies.
-  TextColumn get runtimeProfileId => text().nullable()();
+  /// adapter's default launch configuration applies, which is what `SET
+  /// NULL` leaves when the profile is deleted.
+  TextColumn get runtimeProfileId => text().nullable().references(
+    RuntimeProfilesTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// Creation timestamp.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

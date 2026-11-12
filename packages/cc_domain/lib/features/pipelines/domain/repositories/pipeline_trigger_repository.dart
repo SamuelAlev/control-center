@@ -66,6 +66,6 @@ abstract class PipelineTriggerRepository
   /// Looks up the enabled webhook trigger bound to [token], across all
   /// workspaces (the inbound webhook URL carries only the token; the workspace
   /// is resolved from the matched trigger). Returns `null` when no enabled
-  /// trigger matches.
+  /// trigger matches, or when the matched trigger's stored token is gone.
   Future<PipelineTrigger?> byWebhookToken(String token);
 }

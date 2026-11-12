@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
-import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/activity_logger.dart';
+import 'package:cc_domain/features/governance/domain/repositories/approval_escalation_repository.dart';
 import 'package:cc_domain/features/governance/domain/repositories/approval_repository.dart';
 import 'package:cc_domain/features/governance/domain/repositories/approval_routing_policy_repository.dart';
 import 'package:cc_domain/features/governance/domain/services/approval_routing_service.dart';
@@ -32,7 +32,7 @@ class ApprovalEscalationSweeper {
     required this._approvals,
     required this._workspaces,
     required this._members,
-    required this._cache,
+    required this._escalations,
     required this._policies,
     required this._workflow,
     DomainEventBus? eventBus,
@@ -42,17 +42,12 @@ class ApprovalEscalationSweeper {
   }) : _activity = ActivityLogger(eventBus: eventBus),
        _now = now ?? DateTime.now;
 
-  /// Cache kind holding per-approval sweep STATE (escalation tiers). The
-  /// POLICY lives in the durable [ApprovalRoutingPolicyRepository], never
-  /// here: `caches` rows are pruned by `updatedAt` age. Tier state is
-  /// staleness-bounded (a pruned row costs at most one duplicate escalation
-  /// comment), so the cache suits it.
-  static const cacheKind = 'approval_routing';
-
   final ApprovalRepository _approvals;
   final WorkspaceRepository _workspaces;
   final WorkspaceMembershipRepository _members;
-  final CacheRepository _cache;
+  /// How far each approval escalated (durable: a lost tier would repeat an
+  /// escalation people already saw). The POLICY is [_policies].
+  final ApprovalEscalationRepository _escalations;
   final ApprovalRoutingPolicyRepository _policies;
   final ApprovalWorkflowService _workflow;
   final ActivityLogger _activity;
@@ -138,9 +133,7 @@ class ApprovalEscalationSweeper {
       if (tier == 0) {
         continue;
       }
-      final stateKey = 'tier_${approval.id}';
-      final lastRaw = await _cache.read(workspaceId, cacheKind, stateKey);
-      final last = int.tryParse(lastRaw ?? '') ?? 0;
+      final last = await _escalations.tierOf(workspaceId, approval.id);
       if (tier <= last) {
         continue;
       }
@@ -174,7 +167,7 @@ class ApprovalEscalationSweeper {
             : 'tier $tier → ${targets.join(', ')}',
         workspaceId: workspaceId,
       );
-      await _cache.put(workspaceId, cacheKind, stateKey, '$tier');
+      await _escalations.recordTier(workspaceId, approval.id, tier);
       escalated++;
     }
     return escalated;

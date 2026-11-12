@@ -1,9 +1,7 @@
+import 'package:cc_persistence/database/tables/agents.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(
-  name: 'idx_memory_consolidation_log_workspaceId',
-  columns: {#workspaceId},
-)
+@TableIndex(name: 'idx_memory_consolidation_log_agent', columns: {#agentId})
 /// One row per consolidation (`sleep`) pass: a workspace-scoped audit of how
 /// many hot items were considered, rolled to durable facts and evicted.
 class MemoryConsolidationLogTable extends Table {
@@ -14,7 +12,12 @@ class MemoryConsolidationLogTable extends Table {
   TextColumn get workspaceId => text()();
 
   /// Agent whose working memory was consolidated, when scoped to one.
-  TextColumn get agentId => text().nullable()();
+  /// `ON DELETE SET NULL`: the pass stays in the audit after its agent goes.
+  TextColumn get agentId => text().nullable().references(
+    AgentsTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// Working items examined.
   IntColumn get itemsConsidered => integer().withDefault(const Constant(0))();

@@ -11,6 +11,7 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/server_owner_required.dart'
     show serverOwnerRequiredKind;
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart';
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_domain/features/remote_control/domain/services/remote_pairing_lifecycle.dart';
@@ -25,6 +26,7 @@ import 'package:cc_infra/cc_infra.dart' show ChatDeepLinks, CodeServerService;
 import 'package:cc_mcp/cc_mcp.dart' show McpRequestHandler;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
+import 'package:cc_persistence/database/utils/storage_errors.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/src/catalog/rig_access.dart';
@@ -309,6 +311,7 @@ class LocalRpcServer implements McpHostServer {
     this.codeServerReportDirty,
     this.codeServerCommandStream,
     this.codeGraphStatus,
+    this.readOnlyWorkspaceCount,
     this.inviteRedeemer,
     this.invitePskResolver,
     this.mediaProxyEnabled = true,
@@ -485,6 +488,12 @@ class LocalRpcServer implements McpHostServer {
   /// slow host raises). Null on a host without code-graph indexing — the
   /// field is then omitted. Must be cheap and synchronous (pure in-memory).
   final Map<String, Object?> Function()? codeGraphStatus;
+
+  /// How many workspaces this process has found damaged and serves
+  /// read-only, for the `/healthz` `storage` block: a monitor can alert on a
+  /// non-zero count without a session. Only the count, never the ids — the
+  /// endpoint is unauthenticated. Null omits the block.
+  final int Function()? readOnlyWorkspaceCount;
 
   /// Receives bridge-extension open-file reports POSTed to
   /// `/proxy/vscode/<sid>/__cc_open__` (authorized by the same capability the
@@ -1160,6 +1169,8 @@ class LocalRpcServer implements McpHostServer {
           // Additive and default-false: a real server's payload is unchanged.
           if (isDemo) 'demo': true,
           if (codeGraphStatus != null) 'codeGraph': codeGraphStatus!(),
+          if (readOnlyWorkspaceCount != null)
+            'storage': {'readOnlyWorkspaces': readOnlyWorkspaceCount!()},
           // Cache hit/miss/eviction counters. Cheap (three ints per cache,
           // incremented in place) and the only way anyone can tell whether the
           // capacities and TTLs in this codebase are the right ones — none of
@@ -1225,9 +1236,7 @@ class LocalRpcServer implements McpHostServer {
       res.statusCode = result.status;
       res.write(result.body);
     } on Object catch (e, st) {
-      _e('ticket webhook handler failed', e, st);
-      res.statusCode = HttpStatus.internalServerError;
-      res.write('internal error');
+      _webhookFailed(res, 'ticket webhook handler failed', e, st);
     }
     await res.close();
   }
@@ -1279,11 +1288,32 @@ class LocalRpcServer implements McpHostServer {
       res.statusCode = result.status;
       res.write(result.body);
     } on Object catch (e, st) {
-      _e('webhook handler failed', e, st);
-      res.statusCode = HttpStatus.internalServerError;
-      res.write('internal error');
+      _webhookFailed(res, 'webhook handler failed', e, st);
     }
     await res.close();
+  }
+
+  /// Answers a webhook whose handler threw. A write the workspace's damaged
+  /// database refused is a 503 naming [workspaceReadOnlyKind] — the sender
+  /// redelivers later, after a restore, instead of the delivery being lost
+  /// as a server bug. Anything else is a 500.
+  void _webhookFailed(
+    HttpResponse res,
+    String label,
+    Object error,
+    StackTrace st,
+  ) {
+    if (storageFailureOf(error) == StorageFailure.readOnly) {
+      _w('$label: workspace is read-only');
+      res
+        ..statusCode = HttpStatus.serviceUnavailable
+        ..headers.contentType = ContentType.json
+        ..write(jsonEncode({'kind': workspaceReadOnlyKind}));
+      return;
+    }
+    _e(label, error, st);
+    res.statusCode = HttpStatus.internalServerError;
+    res.write('internal error');
   }
 
   /// Streams a meeting's `mixed.wav` with HTTP Range (seek). Waveform/duration
@@ -2248,10 +2278,10 @@ class LocalRpcServer implements McpHostServer {
     }
     final transport = auth.channel;
     final userId = auth.row.userId;
-    if (userId == null || userId.isEmpty) {
+    if (userId.isEmpty) {
       // A device credential with no user binding cannot act as a principal.
-      // Every writer binds one, so this only fires for a corrupt or
-      // hand-edited row — fail closed, generic wire error.
+      // The schema requires one, so this only fires for a hand-edited row —
+      // fail closed, generic wire error.
       _w('Rejecting session for device ${auth.row.id} — no bound user');
       try {
         await transport.send(const {'type': 'auth_denied'});

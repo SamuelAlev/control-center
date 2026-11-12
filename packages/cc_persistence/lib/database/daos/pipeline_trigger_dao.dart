@@ -74,19 +74,20 @@ class PipelineTriggerDao extends DatabaseAccessor<WorkspaceDatabase>
     ),
   );
 
-  /// Looks up the enabled webhook trigger bound to [token], **across every
-  /// workspace** — the inbound `/webhooks/<token>` URL carries only the token,
-  /// and the workspace is resolved from the matched trigger.
+  /// The enabled webhook trigger whose token is stored under [ref].
   ///
-  /// The token is a per-trigger secret. An inbound webhook carries nothing but
-  /// the token, so the workspace is resolved first through the global
-  /// `workspace_routes` index (`WorkspaceRouteKind.webhookToken`) and the lookup
-  /// then runs against that workspace's database.
-  Future<PipelineTriggersTableData?> byWebhookToken(String token) =>
-      (select(pipelineTriggersTable)
-            ..where(
-              (t) => t.webhookToken.equals(token) & t.enabled.equals(true),
-            )
-            ..limit(1))
+  /// An inbound `/webhooks/<token>` carries nothing but the token: the global
+  /// `workspace_routes` index resolves its route key to a workspace first, and
+  /// the reference derived from that key finds the row here.
+  Future<PipelineTriggersTableData?> byWebhookTokenRef(String ref) =>
+      (select(pipelineTriggersTable)..where(
+            (t) => t.webhookTokenRef.equals(ref) & t.enabled.equals(true),
+          ))
           .getSingleOrNull();
+
+  /// The trigger (enabled or not) whose token is stored under [ref].
+  Future<PipelineTriggersTableData?> anyByWebhookTokenRef(String ref) =>
+      (select(
+        pipelineTriggersTable,
+      )..where((t) => t.webhookTokenRef.equals(ref))).getSingleOrNull();
 }

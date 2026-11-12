@@ -23,7 +23,7 @@ class _StubEnforcement extends BudgetEnforcementService {
       );
   final int _spent;
   @override
-  Future<int> currentMonthSpentCents(
+  Future<int> currentMonthSpentMicros(
     String workspaceId,
     String agentId,
   ) async => _spent;
@@ -86,7 +86,7 @@ Agent _agent({int budget = 0, String? policyId}) => Agent(
   agentMdPath: '/tmp/a1.md',
   workspaceId: 'ws1',
   skills: AgentSkills(const []),
-  monthlyBudgetCents: budget,
+  monthlyBudgetMicros: budget,
   budgetPolicyId: policyId,
   createdAt: DateTime.utc(2026, 1, 1),
 );
@@ -161,13 +161,13 @@ void main() {
       workspaceId: 'ws1',
       scopeType: 'agent',
       scopeId: 'a1',
-      monthlyBudgetCents: 500,
+      monthlyBudgetMicros: 5000000,
     );
     await agents.upsert(_agent(policyId: 'p1'));
     final decision = await service(
-      600,
+      6000000,
     ).evaluateAgent(workspaceId: 'ws1', agentId: 'a1');
     expect(decision.isHardStop, isTrue);
-    expect(decision.budgetCents, 500);
+    expect(decision.budgetMicros, 5000000);
   });
 }

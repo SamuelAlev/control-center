@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, variabel lingkungan, subperintah, dan jalur direktori data server headless.
 slug: id-ID/panduan-pengguna/referensi/cli-cc-server
-sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
+sourceHash: a5565a6730c0677c219a299a974326e90301f0d0
 ---
 
 Setiap flag proses diisi lewat flag CLI atau variabel lingkungan; flag menang,
@@ -224,12 +224,16 @@ Direktori data bawaannya adalah `~/Library/Application Support/control-center` d
 hanya digunakan bila tidak ada direktori home atau direktori data aplikasi yang dapat
 ditentukan.
 
+Server menjaga direktori data tetap pribadi untuk akunnya sendiri (`0700`). Server menolak untuk mulai (kode keluar `78`) jika tidak bisa melakukannya, ketika `global.db` rusak atau ditulis oleh versi yang lebih baru, atau ketika berkas identitasnya tidak bisa dibaca.
+
 | Jalur                             | Isi                                                                             |
 | --------------------------------- | ------------------------------------------------------------------------------- |
 | `global.db`                       | Registri ruang kerja, pengguna, perangkat yang dipasangkan, umpan berita, dan antrean fleet |
-| `<workspaceId>/workspace.db`      | Satu basis data per ruang kerja — agen, space, tiket, memori, graf kode          |
+| `<workspaceId>/workspace.db`      | Satu basis data per ruang kerja — agen, space, tiket, memori          |
+| `<workspaceId>/code_index.db` | Graf kode ruang kerja itu. Dibangun ulang saat hilang, tidak pernah dicadangkan |
+| `pre_upgrade/`, `<workspaceId>/pre_upgrade/` | Dua salinan terbaru basis data dari sebelum pembaruan mengubah formatnya |
 | `<workspaceId>/chat_credentials/` | Token bot chat, sebagai JSON biasa, sehingga ikut bersama ruang kerja            |
-| `secrets.json`                    | Kunci pairing, kunci instalasi Connect, aplikasi penyedia, proses masuk pengguna (tersegel bila dibuat lewat Connect), SSO (`0600`) |
+| `secrets.json`                    | Kunci pairing, kunci instalasi Connect, aplikasi penyedia, proses masuk pengguna (tersegel bila dibuat lewat Connect), rahasia webhook, SSO (`0600`) |
 | `backups/<timestamp>/`            | Satu snapshot instalasi — `manifest.json`, `global.db`, dan salinan setiap ruang kerja |
 | `backups/exports/`                | Ekspor satu ruang kerja, `<workspaceId>-<timestamp>.db`                          |
 | `backups/transfer/`               | Area penampungan untuk unduhan dan unggahan cadangan; dibersihkan oleh rute yang menulisnya |

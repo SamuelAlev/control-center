@@ -96,7 +96,8 @@ enum MessageType {
   ticketCard,
 
   /// A complete agent turn: an ordered transcript of reasoning, tool calls,
-  /// and answer text, persisted under `metadata['segments']`.
+  /// and answer text, carried as `metadata['segments']` by the reads that
+  /// render it (the server stores one row per segment).
   agentTurn,
 
   /// Structured review finding from an agent.
@@ -140,7 +141,31 @@ enum MessageType {
   /// first). The lifecycle rides in metadata — see `Message.steerState`. A
   /// queued one renders in the composer's steering queue strip, not the trail;
   /// an injected one renders in the trail with a "steered" badge.
-  steering,
+  steering;
+
+  /// The stored/wire value: the case name in snake_case (`agent_turn`,
+  /// `user_question`, …).
+  String get wire => switch (this) {
+    MessageType.text => 'text',
+    MessageType.system => 'system',
+    MessageType.ticketCard => 'ticket_card',
+    MessageType.agentTurn => 'agent_turn',
+    MessageType.reviewNode => 'review_node',
+    MessageType.hireProposal => 'hire_proposal',
+    MessageType.reviewSummary => 'review_summary',
+    MessageType.plan => 'plan',
+    MessageType.userQuestion => 'user_question',
+    MessageType.orchestrationProposal => 'orchestration_proposal',
+    MessageType.artifact => 'artifact',
+    MessageType.compaction => 'compaction',
+    MessageType.steering => 'steering',
+  };
+
+  /// Decodes a stored or wire message type; an unknown value renders as
+  /// plain [text].
+  static MessageType fromWire(String? value) =>
+      MessageType.values.where((t) => t.wire == value).firstOrNull ??
+      MessageType.text;
 }
 
 /// Who sent a space message.
@@ -429,7 +454,8 @@ class Message {
 
   /// Ordered transcript segments decoded from `metadata['segments']`.
   ///
-  /// Returns an empty list when the message carries no transcript. Used by the
+  /// Returns an empty list when the message carries no transcript: a list
+  /// read leaves it out and marks the row `segments_elided` instead. Used by the
   /// transcript UI to render reasoning, tool calls and text in chronological
   /// order.
   ///
@@ -452,8 +478,8 @@ class Message {
   /// Total tokens consumed by the turn (`metadata['turn']['totalTokens']`).
   int? get turnTotalTokens => (_turnMeta?['totalTokens'] as num?)?.toInt();
 
-  /// Estimated cost of the turn in cents (`metadata['turn']['costCents']`).
-  int? get turnCostCents => (_turnMeta?['costCents'] as num?)?.toInt();
+  /// Cost of the turn in micro-dollars (`metadata['turn']['costMicros']`).
+  int? get turnCostMicros => (_turnMeta?['costMicros'] as num?)?.toInt();
 
   Map<String, dynamic>? get _turnMeta {
     final raw = metadata?['turn'];

@@ -3,6 +3,7 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/forge/presentation/widgets/repo_access_banner.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 
 /// After linking repositories: what automation cannot reach in them yet, with
@@ -58,6 +59,6 @@ String describeRepoLinkError(AppLocalizations l10n, Object error) {
     'repo_path.workspace_root' => l10n.repoPathWorkspaceRoot,
     'repo_path.origin_mismatch' => l10n.repoPathOriginMismatch,
     'repo_link.forge_remote_required' => l10n.repoLinkForgeRemoteRequired,
-    _ => error.message,
+    _ => storageRefusalMessage(l10n, error) ?? error.message,
   };
 }

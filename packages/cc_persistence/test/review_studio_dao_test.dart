@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -8,9 +9,9 @@ void main() {
 
   setUp(() async {
     db = createTestDatabase();
-    // Seed workspaces; the Review Studio tables reference only workspace_id
-    // (repo_id / pr_external_id are plain text with no FK — they mirror the code
-    // graph), so no other FK-referenced rows are required.
+    // Contract and visual snapshots belong to a linked repo; pr_external_id
+    // is the forge's id, with no row behind it.
+    await seedRepo(db, 'repo-1');
   });
 
   tearDown(() async {
@@ -157,10 +158,10 @@ void main() {
       await db.reviewStudioDao.updateCohortDiagrams(
         'w-1',
         'c-1',
-        '{"diagram":1}',
+        '[{"diagram":1}]',
       );
       final row = (await db.reviewStudioDao.cohortsForPr('w-1', 'pr-1')).single;
-      expect(row.diagramsJson, '{"diagram":1}');
+      expect(row.diagramsJson, '[{"diagram":1}]');
     });
   });
 

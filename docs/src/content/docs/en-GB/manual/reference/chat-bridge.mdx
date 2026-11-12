@@ -2,7 +2,7 @@
 title: Chat bridge
 description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
 slug: en-GB/manual/reference/chat-bridge
-sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
+sourceHash: 0d2a6d4f5890ef44f6a957dbb37621e9801a6dfb
 ---
 
 ## Providers
@@ -259,7 +259,7 @@ Credentials live beside the workspace's database, not inside it: deleting a work
 
 ## Database tables
 
-Both live in the workspace database, which carries a squashed v1 baseline — so a cross-workspace read does not compile.
+Both live in the workspace database, so a cross-workspace read does not compile.
 
 `chat_space_links` — one external conversation ↔ one Control Center space:
 

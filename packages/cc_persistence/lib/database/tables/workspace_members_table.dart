@@ -1,16 +1,17 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for workspace membership.
 ///
-/// One row per (workspace, user): the workspace access boundary. Role is one
-/// of `owner` / `admin` / `member` / `viewer` / `guest`. Every read filters by
-/// [workspaceId] or [userId]; deleting a workspace or user cascades its
-/// memberships.
-@TableIndex(name: 'idx_workspace_members_workspaceId', columns: {#workspaceId})
-@TableIndex(name: 'idx_workspace_members_userId', columns: {#userId})
+/// One row per user: the workspace access boundary. [userId] is unique in
+/// the file, and writing a membership is one upsert on it. Role is one of
+/// `owner` / `admin` / `member` / `viewer` / `guest`, or a custom role.
+/// Deleting the workspace removes its file and every membership with it;
+/// users live in the global database, so a membership names its user without
+/// a foreign key.
 @TableIndex(
-  name: 'uq_workspace_members_workspace_user',
-  columns: {#workspaceId, #userId},
+  name: 'uq_workspace_members_user',
+  columns: {#userId},
   unique: true,
 )
 class WorkspaceMembersTable extends Table {
@@ -20,13 +21,22 @@ class WorkspaceMembersTable extends Table {
   /// The workspace (isolation boundary).
   TextColumn get workspaceId => text()();
 
-  /// The member.
+  /// The member. No foreign key: users live in the global database.
   TextColumn get userId => text()();
 
-  /// Membership role wire name (`WorkspaceRole`).
-  TextColumn get role => text().withDefault(const Constant('member'))();
+  /// Membership role: a `WorkspaceRole` wire name, or a custom role's
+  /// `custom:<id>`.
+  TextColumn get role => text()
+      .check(
+        // ignore: recursive_getters
+        role.isIn(PlatformStoredValues.workspaceRole) |
+            // ignore: recursive_getters
+            role.like('${PlatformStoredValues.customRolePrefix}_%'),
+      )
+      .withDefault(const Constant('member'))();
 
-  /// The user who invited this member (null for the bootstrap owner).
+  /// The user who invited this member (null for the bootstrap owner). No
+  /// foreign key: users live in the global database.
   TextColumn get invitedBy => text().nullable()();
 
   /// When the membership was created.

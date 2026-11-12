@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/agents/domain/services/budget_policy_service.dart';
 import 'package:cc_domain/features/governance/domain/entities/budget_incident.dart';
+import 'package:cc_domain/features/governance/domain/value_objects/budget_scope.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
@@ -15,10 +16,10 @@ class BudgetMapper {
     workspaceId: row.workspaceId,
     scopeType: row.scopeType,
     scopeId: row.scopeId,
-    monthlyBudgetCents: row.monthlyBudgetCents,
+    monthlyBudgetMicros: row.monthlyBudgetMicros,
     softThresholdPercent: row.softThresholdPercent,
     hardStopEnabled: row.hardStopEnabled,
-    spentCents: row.spentCents,
+    spentMicros: row.spentMicros,
     status: row.status,
     periodStart: row.periodStart,
     periodEnd: row.periodEnd,
@@ -34,13 +35,13 @@ class BudgetMapper {
       BudgetPolicyTableCompanion(
         id: Value(p.id),
         workspaceId: Value(p.workspaceId),
-        scopeType: Value(p.scopeType),
+        scopeType: Value(BudgetScopeType.parse(p.scopeType).wire),
         scopeId: Value(p.scopeId),
-        monthlyBudgetCents: Value(p.monthlyBudgetCents),
+        monthlyBudgetMicros: Value(p.monthlyBudgetMicros),
         softThresholdPercent: Value(p.softThresholdPercent),
         hardStopEnabled: Value(p.hardStopEnabled),
-        spentCents: Value(p.spentCents),
-        status: Value(p.status),
+        spentMicros: Value(p.spentMicros),
+        status: Value(BudgetPolicyStatus.parse(p.status).wire),
         periodStart: p.periodStart == null
             ? const Value.absent()
             : Value(p.periodStart!),
@@ -58,8 +59,8 @@ class BudgetMapper {
         policyId: row.policyId,
         scopeType: row.scopeType,
         scopeId: row.scopeId,
-        spentCents: row.spentCents,
-        budgetCents: row.budgetCents,
+        spentMicros: row.spentMicros,
+        budgetMicros: row.budgetMicros,
         isHardStop: row.isHardStop,
         reason: row.reason,
         triggeredAt: row.triggeredAt,
@@ -75,10 +76,10 @@ class BudgetMapper {
         id: Value(i.id),
         workspaceId: Value(i.workspaceId),
         policyId: Value(i.policyId),
-        scopeType: Value(i.scopeType),
+        scopeType: Value(BudgetScopeType.parse(i.scopeType).wire),
         scopeId: Value(i.scopeId),
-        spentCents: Value(i.spentCents),
-        budgetCents: Value(i.budgetCents),
+        spentMicros: Value(i.spentMicros),
+        budgetMicros: Value(i.budgetMicros),
         isHardStop: Value(i.isHardStop),
         reason: Value(i.reason),
         triggeredAt: Value(i.triggeredAt),

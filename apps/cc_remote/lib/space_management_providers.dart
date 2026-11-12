@@ -126,7 +126,7 @@ final remoteSpaceActivityProvider = StreamProvider.autoDispose
 
 /// Missing cursor means the user never opened this space, not an unread space.
 final remoteSpaceReadProvider = StreamProvider.autoDispose
-    .family<Map<String, DateTime>, String>((ref, workspaceId) {
+    .family<Map<String, FeedPosition>, String>((ref, workspaceId) {
       final client = ref.watch(rpcClientProvider).value;
       if (ref.watch(activeWorkspaceIdProvider).value != workspaceId ||
           client == null) {
@@ -143,13 +143,12 @@ final remoteRunningSpacesProvider = StreamProvider.autoDispose
           client == null) {
         return const Stream.empty();
       }
-      return RemoteAgentRunLogRepository(client).watchAll().map(
+      return RemoteAgentRunLogRepository(
+        client,
+      ).watchActiveByWorkspace(workspaceId).map(
         (runs) => {
           for (final run in runs)
-            if (run.workspaceId == workspaceId &&
-                run.spaceId != null &&
-                (run.status == 'running' || run.status == 'pending'))
-              run.spaceId!,
+            if (run.spaceId != null) run.spaceId!,
         },
       );
     });

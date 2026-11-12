@@ -2,7 +2,7 @@
 title: 护栏——为每一种会改变状态的操作统一策略
 description: 为什么 Control Center 让智能体的每一个副作用都经过同一个允许／先询问／拒绝引擎，ActionClass 分类法为何刻意保持精简，以及自主程度旋钮究竟改变了什么。
 slug: zh-CN/手册/概念/护栏
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Control Center 中的智能体可以删除文件、推送分支、发布 pull request，
@@ -97,7 +97,7 @@ Control Center 中的智能体可以删除文件、推送分支、发布 pull re
 - **主机**——网络目标，支持子域通配（`*.internal`）
 - **命令**——命令前缀，按词边界匹配
 - **工具**——调用所指定的确切工具，使一次批准能够只涵盖一个工具，而不是所有效果相同的工具
-- **上限**——`maxCount` / `maxCents`，因此“最多删除 50 个文件”也能表达
+- **上限**——`maxCount` / `maxMicros`，因此“最多删除 50 个文件”也能表达
   出来
 
 保持这套文法封闭且无环，会带出三个特性，而这三者正是重点：每条规则都能表述

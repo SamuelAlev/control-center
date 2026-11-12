@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
@@ -195,14 +196,14 @@ class _NoopSpaceReads implements SpaceReadRepository {
   }) async {}
 
   @override
-  Stream<DateTime?> watchUserLastReadAt(
+  Stream<FeedPosition?> watchUserLastReadAt(
     String workspaceId,
     String spaceId,
     String userId,
   ) => Stream.value(null);
 
   @override
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
     String workspaceId,
     String userId,
   ) => Stream.value(const {});

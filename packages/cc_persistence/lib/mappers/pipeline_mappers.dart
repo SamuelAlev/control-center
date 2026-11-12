@@ -6,10 +6,12 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_attempt.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
+import 'package:cc_persistence/database/daos/pipeline_dao.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
 
-/// Converts a domain [PipelineRun] to a Drift companion for insert.
+/// Converts a domain [PipelineRun] to a Drift companion for insert. The
+/// template graph is not part of it: see [pipelineRunSnapshotJson].
 PipelineRunsTableCompanion pipelineRunToCompanion(PipelineRun run) {
   return PipelineRunsTableCompanion(
     id: Value(run.id),
@@ -33,14 +35,18 @@ PipelineRunsTableCompanion pipelineRunToCompanion(PipelineRun run) {
     parentPipelineRunId: Value(run.parentPipelineRunId),
     parentStepId: Value(run.parentStepId),
     templateVersion: Value(run.templateVersion),
-    templateSnapshotJson: run.templateSnapshot != null
-        ? Value(jsonEncode(run.templateSnapshot!.toJson()))
-        : const Value.absent(),
-    totalCostCents: Value(run.totalCostCents),
+    totalCostMicros: Value(run.totalCostMicros),
     totalTokens: Value(run.totalTokens),
     dryRun: Value(run.dryRun),
     isProjection: Value(run.isProjection),
   );
+}
+
+/// The `pipeline_run_snapshots` value for [run]: its pinned graph, encoded,
+/// or null when it has none.
+String? pipelineRunSnapshotJson(PipelineRun run) {
+  final snapshot = run.templateSnapshot;
+  return snapshot == null ? null : jsonEncode(snapshot.toJson());
 }
 
 /// Converts a domain [PipelineRun] to a Drift companion for UPDATE.
@@ -49,12 +55,10 @@ PipelineRunsTableCompanion pipelineRunToCompanion(PipelineRun run) {
 /// snapshot must never speak for are left absent, so an update writes nothing
 /// to them:
 ///
-/// * `template_snapshot_json` — the graph the run was pinned to at insert.
-///   It never changes, and a run rebuilt without it must not erase it.
 /// * `state_json` — merged by `PipelineDao.updateRunState` under the engine's
 ///   per-run state lock, from branches a terminal transition never saw.
 /// * `is_projection` — fixed by the reporter that inserted the row.
-/// * `total_cost_cents` / `total_tokens` — accumulated by
+/// * `total_cost_micros` / `total_tokens` — accumulated by
 ///   `PipelineDao.incrementRunCost` as each dispatched agent finishes, which is
 ///   the same instant the run completes.
 ///
@@ -65,15 +69,23 @@ PipelineRunsTableCompanion pipelineRunToUpdateCompanion(PipelineRun run) {
   final full = pipelineRunToCompanion(run);
   return full.copyWith(
     stateJson: const Value.absent(),
-    templateSnapshotJson: const Value.absent(),
     isProjection: const Value.absent(),
-    totalCostCents: const Value.absent(),
+    totalCostMicros: const Value.absent(),
     totalTokens: const Value.absent(),
   );
 }
 
-/// Converts a Drift row to a domain [PipelineRun].
-PipelineRun pipelineRunFromRow(PipelineRunsTableData row) {
+/// Converts a run read with its snapshot row to a full domain [PipelineRun].
+PipelineRun pipelineRunFromRowWithSnapshot(PipelineRunWithSnapshot row) =>
+    pipelineRunFromRow(row.run, row.snapshot?.templateSnapshotJson);
+
+/// Converts a Drift row to a domain [PipelineRun], with the pinned graph
+/// decoded from [templateSnapshotJson] when the read joined it. A list row
+/// has none, and its [PipelineRun.templateSnapshot] is null.
+PipelineRun pipelineRunFromRow(
+  PipelineRunsTableData row, [
+  String? templateSnapshotJson,
+]) {
   final state = row.stateJson.isNotEmpty
       ? jsonDecode(row.stateJson) as Map<String, dynamic>
       : <String, dynamic>{};
@@ -101,8 +113,8 @@ PipelineRun pipelineRunFromRow(PipelineRunsTableData row) {
     parentPipelineRunId: row.parentPipelineRunId,
     parentStepId: row.parentStepId,
     templateVersion: row.templateVersion,
-    templateSnapshot: _snapshotFromJson(row.templateSnapshotJson),
-    totalCostCents: row.totalCostCents,
+    templateSnapshot: _snapshotFromJson(templateSnapshotJson),
+    totalCostMicros: row.totalCostMicros,
     totalTokens: row.totalTokens,
     dryRun: row.dryRun,
     isProjection: row.isProjection,

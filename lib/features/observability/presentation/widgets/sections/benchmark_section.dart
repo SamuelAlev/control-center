@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/observability/domain/benchmark.dart';
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/benchmark_providers.dart';
@@ -29,8 +30,8 @@ class BenchmarkSection extends ConsumerWidget {
     final run = ref.watch(workspaceBenchmarkRunProvider);
     final scorer = ref.watch(benchmarkScorerProvider);
 
-    final totalCost = run.totalCostCents;
-    final costPerTaskCents = totalCost != null && run.done > 0
+    final totalCost = run.totalCostMicros;
+    final costPerTaskMicros = totalCost != null && run.done > 0
         ? (totalCost / run.done).round()
         : null;
 
@@ -67,11 +68,13 @@ class BenchmarkSection extends ConsumerWidget {
             ),
             ObsStatStripEntry(
               label: l10n.obsBenchmarkSpend,
-              value: totalCost == null ? '—' : fmtCents(totalCost),
+              value: totalCost == null ? '—' : fmtMicros(totalCost),
             ),
             ObsStatStripEntry(
               label: l10n.obsBenchmarkCostPerTask,
-              value: costPerTaskCents == null ? '—' : fmtCents(costPerTaskCents),
+              value: costPerTaskMicros == null
+                  ? '—'
+                  : fmtMicros(costPerTaskMicros),
             ),
           ],
         ),
@@ -218,9 +221,9 @@ class _TrialRow extends StatelessWidget {
           const SizedBox(width: AppSpacing.lg),
           _TrialMetric(
             label: l10n.obsColCost,
-            value: trial.costCents == null
+            value: trial.costMicros == null
                 ? '—'
-                : fmtCents(trial.costCents!),
+                : fmtMicros(trial.costMicros!),
             t: t,
           ),
           const SizedBox(width: AppSpacing.lg),

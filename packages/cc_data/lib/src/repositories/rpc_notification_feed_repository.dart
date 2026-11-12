@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
@@ -24,6 +25,7 @@ NotificationFeedItem? _itemFromWire(Map<String, dynamic> w) {
         ? rawParams.cast<String, dynamic>()
         : const <String, dynamic>{},
     createdAt: _parseDate(w['created_at']),
+    seq: (w['seq'] as num?)?.toInt() ?? 0,
   );
 }
 
@@ -37,13 +39,11 @@ NotificationReadMark? _markFromWire(Object? raw) {
   if (workspaceId == null || userId == null) {
     return null;
   }
-  final lastSeen = w['last_seen_at'];
-  final cleared = w['cleared_before'];
   return NotificationReadMark(
     workspaceId: workspaceId,
     userId: userId,
-    lastSeenAt: lastSeen is String ? DateTime.tryParse(lastSeen) : null,
-    clearedBefore: cleared is String ? DateTime.tryParse(cleared) : null,
+    lastSeen: FeedPosition.fromJson(w['last_seen']),
+    cleared: FeedPosition.fromJson(w['cleared']),
   );
 }
 

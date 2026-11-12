@@ -2,7 +2,7 @@
 title: Glossar
 description: Definitionen der zentralen Begriffe in Control Center.
 slug: de-DE/handbuch/referenz/glossar
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (eine gekapselte VM, das einzige Backend mit Kernel-Grenze, für interaktive Terminals), native (das betriebssystemeigene Seatbelt unter macOS, bubblewrap unter Linux und WSL2) oder none. Einmal beim Start geprüft; native umhüllt die Agenten-Ausführung, wenn es verfügbar ist. Windows hat kein natives Backend, und Linux braucht bwrap plus socat; auf einem solchen Host starten nur die Läufe des Serverinhabers, ohne Umhüllung, und andere werden abgelehnt. --sandbox off lässt alle Agenten der Mitglieder ohne Umhüllung laufen.'],
 ['Rig', 'Eine Wegwerfmaschine, die ein Agent in Echtzeit steuert: ein gekapselter Browser oder Linux-Desktop, ein vom Host verwalteter Android-Emulator oder iOS-Simulator, oder ein gekapseltes Terminal. Live beobachtet über eine eigene Spur in voller Auflösung, mit serverseitig erzwungener Übernahme. An eine Unterhaltung gebunden, sodass der Tab des Menschen und das Werkzeug des Agenten eine Maschine ansprechen.'],
 ['Kapsel', 'Die stärkere Isolation, die Rigs auf einer VM haben: eine Kernel-Grenze, eine Wegwerf-Overlay-Platte, ein Netz-Tor, das standardmäßig verweigert, und ein Zugangsdaten-Broker. Android- und iOS-Rigs sind Wegwerfmaschinen, nutzen aber vom Host verwaltetes Netz und beanspruchen diese Grenze nicht. Jedes Rig zu steuern nutzt die Schutzregel-Klasse enclosureControl.'],
-['RunCost', 'Token- und Kostenaufstellung (Eingabe-Token, Ausgabe-Token, geschätzte Kosten in Cent) für einen einzelnen Agentenlauf.'],
+['RunCost', 'Token- und Kostenaufstellung (Eingabe-Token, Ausgabe-Token, geschätzte Kosten in Mikrodollar) für einen einzelnen Agentenlauf.'],
 ['WakeReason', 'Warum ein Agent gestartet wurde. Sechs Werte: Nutzernachricht, Ticketzuweisung, erneute Ausführung durch die Wiederherstellung nach einem Fehler, abgeschlossenes untergeordnetes Ticket, geplanter Folge-Heartbeat und Pipeline-Schritt.'],
 ['SandboxPort', 'Steuert den Lebenszyklus der Sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Stellt begrenzte Zugangsdaten für den Start der Sandbox aus (ein Token für ein einzelnes Repository für die Umgebung eines Agenten, Schreiben nur für den Push-Pfad auf dem Server) und gibt sie beim Aufräumen frei.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Kapsel**: Die stärkere Grenze eines Rigs auf einer VM: eine Kernel-Grenze, eine Wegwerf-Overlay-Platte, ein Netz-Tor, das standardmäßig verweigert, und ein Zugangsdaten-Broker. Android- und iOS-Rigs sind Wegwerfmaschinen, nutzen aber vom Host verwaltetes Netz und beanspruchen diese Grenze nicht. Jedes Rig zu steuern nutzt die Schutzregel-Klasse `enclosureControl`.
 
-**RunCost**: Token- und Kostenaufstellung (Eingabe-Token, Ausgabe-Token, geschätzte Kosten in Cent) für einen einzelnen Agentenlauf.
+**RunCost**: Token- und Kostenaufstellung (Eingabe-Token, Ausgabe-Token, geschätzte Kosten in Mikrodollar) für einen einzelnen Agentenlauf.
 
 **WakeReason**: Warum ein Agent gestartet wurde. Sechs Werte: Nutzernachricht, Ticketzuweisung, erneute Ausführung durch die Wiederherstellung nach einem Fehler, abgeschlossenes untergeordnetes Ticket, geplanter Folge-Heartbeat und Pipeline-Schritt.
 

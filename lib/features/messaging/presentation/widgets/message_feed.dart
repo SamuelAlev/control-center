@@ -20,6 +20,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/semantics.dart' show SemanticsService;
@@ -285,9 +286,7 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
       final fresh = windowAsync.value ?? _frozenWindow;
       if (fresh == null) {
         if (windowAsync.hasError) {
-          return Center(
-            child: Text(l10n.failedWithError('${windowAsync.error}')),
-          );
+          return Center(child: Text(failureMessage(l10n, windowAsync.error!)));
         }
         return const Center(child: CcSpinner());
       }

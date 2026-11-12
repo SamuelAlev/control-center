@@ -4,6 +4,7 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_run_sna
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// A finalized pass freezes its findings' statuses at the instant it ends. But
@@ -25,6 +26,9 @@ void main() {
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, ws);
     await seedTestWorkspace(global, dbs, 'w-2');
+    for (final workspaceId in [ws, 'w-2']) {
+      await seedSpace(dbs.of(workspaceId), 'space-1');
+    }
     repo = DaoReviewRunSnapshotRepository(dbs);
   });
 
@@ -173,7 +177,12 @@ void main() {
     // would refuse a legitimate press.
     await record(fingerprints: [fp('m1')]);
     expect(
-      await repo.applyFindingStatus(ws, pr, 'unknown', ReviewNodeStatus.resolved),
+      await repo.applyFindingStatus(
+        ws,
+        pr,
+        'unknown',
+        ReviewNodeStatus.resolved,
+      ),
       0,
     );
   });

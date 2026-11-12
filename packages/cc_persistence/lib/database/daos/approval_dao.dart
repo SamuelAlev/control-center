@@ -45,6 +45,24 @@ class ApprovalDao extends DatabaseAccessor<WorkspaceDatabase>
   Future<void> upsert(ApprovalsTableCompanion entry) =>
       into(approvalsTable).insertOnConflictUpdate(entry);
 
+  /// Writes [entry] over the approval [id] within [workspaceId] only while the
+  /// row still holds [expectedStatus]. Returns the rows written: 0 means another
+  /// decision landed first (or the approval is gone), so the caller must reload
+  /// rather than overwrite it.
+  Future<int> updateIfStatus(
+    String workspaceId,
+    String id,
+    String expectedStatus,
+    ApprovalsTableCompanion entry,
+  ) =>
+      (update(approvalsTable)..where(
+            (t) =>
+                t.workspaceId.equals(workspaceId) &
+                t.id.equals(id) &
+                t.status.equals(expectedStatus),
+          ))
+          .write(entry);
+
   /// Deletes an approval by [id] within [workspaceId]. Returns rows deleted.
   Future<int> deleteById(String workspaceId, String id) => (delete(
     approvalsTable,

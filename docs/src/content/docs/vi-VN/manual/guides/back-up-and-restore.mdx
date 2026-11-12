@@ -2,7 +2,7 @@
 title: Sao lưu và khôi phục
 description: Tạo ảnh chụp bản cài đặt, chuyển một không gian làm việc giữa các máy, khôi phục một không gian làm việc hoặc toàn bộ, và giữ bản sao ở nơi khác.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Hướng dẫn này bao quát năm việc người ta thực sự làm với bản sao lưu: tạo một bản,
@@ -43,10 +43,10 @@ Cả hai artifact đều **chỉ là cơ sở dữ liệu**:
 - Một **ảnh chụp cài đặt** là một thư mục có dấu thời gian: `manifest.json`, `global.db` và một `<workspaceId>/workspace.db` cho mỗi không gian làm việc.
 - Một **bản xuất không gian làm việc** là chính tệp `workspace.db` đó.
 
-Cơ sở dữ liệu của một không gian làm việc là toàn bộ không gian làm việc: các cuộc hội thoại, nhật ký chạy, chỉ mục mã, liên kết kho mã, định nghĩa môi trường và thành viên. Nó cũng giữ, ở dạng đọc được, các token webhook pipeline và bí mật webhook đồng bộ ticket của không gian làm việc. Hãy cất một bản sao lưu hoặc bản xuất không gian làm việc đã tải xuống như cách bạn cất một bí mật. Nó không giữ đăng nhập nhà cung cấp, khóa thiết bị hay bí mật người dùng nào; những thứ đó nằm trong cơ sở dữ liệu toàn cục và kho bí mật của máy chủ.
+Cơ sở dữ liệu của một không gian làm việc là toàn bộ không gian làm việc: các cuộc hội thoại, nhật ký chạy, liên kết kho mã, định nghĩa môi trường và thành viên. Nó không chứa bí mật: token webhook pipeline, bí mật webhook đồng bộ ticket, đăng nhập nhà cung cấp, khóa thiết bị và bí mật người dùng nằm trong cơ sở dữ liệu toàn cục và kho bí mật của máy chủ. Dù vậy, đó vẫn là toàn bộ những gì không gian làm việc đã nói và đã làm, nên hãy giữ bản sao lưu hoặc bản xuất đã tải về riêng tư như chính không gian làm việc. Chỉ mục mã là một tệp riêng nằm cạnh cơ sở dữ liệu, `code_index.db`. Không bản sao lưu nào mang theo tệp này; máy chủ sẽ tự dựng lại.
 
 Cả hai đều không mang theo phần còn lại của thư mục dữ liệu: `secrets.json` (khóa
-ghép nối, thông tin xác thực nhà cung cấp, SSO), `blobs/` của một không gian làm việc
+ghép nối, thông tin xác thực nhà cung cấp, bí mật webhook, SSO), `blobs/` của một không gian làm việc
 (ảnh được dán vào tin nhắn), `skills/`, `agents/`, `chat_credentials/`, âm thanh cuộc
 họp đã ghi hay ảnh rig. Phần nào trong đó có thể bỏ đi, phần nào thì không —
 [bảng đầy đủ nằm trong tham chiếu](/vi-VN/so-tay/tham-chieu/sao-luu/#ảnh-chụp-không-chứa-những-gì),
@@ -62,17 +62,13 @@ Máy chủ vẫn chạy suốt quá trình. Mỗi tệp được ghi bằng `VAC
 ngay cả với một cơ sở dữ liệu đang sống, nên không cần cửa sổ bảo trì và không cần
 dừng agent.
 
-Mỗi hàng trong danh sách hiển thị dấu thời gian, kích thước trên đĩa, số không gian
-làm việc đã được chụp và liệu ảnh chụp là **Hoàn tất** hay **Chưa hoàn tất**. Chưa
-hoàn tất nghĩa là manifest bị thiếu hoặc nêu những tệp không tồn tại — một bản sao lưu
-bị ngắt giữa chừng do sự cố hoặc do đĩa đầy. Những ảnh chụp đó vẫn được liệt kê là có
-chủ đích: một ảnh chụp bạn không nhìn thấy là một ảnh chụp bạn tưởng mình đang có. Một
-ảnh chụp chưa hoàn tất không thể khôi phục toàn bộ bản cài đặt, nhưng các tệp không
-gian làm việc mà nó có vẫn có thể được nhận về từng cái một.
+Mỗi hàng trong danh sách hiển thị dấu thời gian, kích thước trên đĩa, số không gian làm việc đã được chụp và liệu ảnh chụp là **Hoàn tất** hay **Chưa xác minh**. Mỗi bản sao được kiểm tra sau khi ghi xong, và manifest ghi lại kích thước cùng checksum của nó. Chưa xác minh nghĩa là máy chủ không thể bảo đảm ảnh chụp: manifest của nó bị thiếu hoặc không đọc được, hoặc một tệp mà nó nêu tên không có mặt hoặc đã đổi kích thước. Đó là một bản sao lưu bị ngắt giữa chừng do sự cố hoặc đĩa đầy, hoặc một bản được tạo trước khi ảnh chụp bắt đầu ghi checksum. Những ảnh chụp đó vẫn được liệt kê là có chủ đích: một ảnh chụp bạn không nhìn thấy là một ảnh chụp bạn tưởng mình đang có. Một ảnh chụp chưa xác minh không thể khôi phục toàn bộ bản cài đặt, nhưng các tệp không gian làm việc mà nó có vẫn có thể được khôi phục từng cái một.
 
 Một hàng cũng có thể ghi **_n_ không gian làm việc không được chụp**. Đó là một không
-gian làm việc đã đăng ký nhưng chưa từng được ghi vào (chưa có tệp), hoặc một không
+gian làm việc đã đăng ký nhưng chưa từng được ghi vào (chưa có tệp), một không gian làm việc mà cơ sở dữ liệu bị hỏng (bản sao hỏng không bao giờ được tạo), hoặc một không
 gian làm việc mà bản sao của nó thất bại — hãy kiểm tra nhật ký máy chủ.
+
+Một ảnh chụp hoặc sao lưu theo lịch được đánh dấu **Bản sao tốt gần nhất** giữ bản sao tốt mới nhất của một không gian làm việc có cơ sở dữ liệu đã bị hỏng sau đó. Việc dọn dẹp theo lịch sẽ không đụng tới nó, và khi xóa nó sẽ yêu cầu bạn xác nhận, cho đến khi không gian làm việc đó được khôi phục.
 
 ## Lên lịch sao lưu không gian làm việc và lưu giữ
 
@@ -99,7 +95,7 @@ ra gì sẽ hiện **Chưa có bản sao lưu**. Không gian làm việc mà b�
 
 Mở rộng một hàng để xem từng bản sao lưu, mới nhất trước:
 
-- **Khôi phục** thay thế cơ sở dữ liệu hiện tại của không gian làm việc bằng bản sao lưu này. Hãy xuất không gian làm việc trước nếu bạn có thể cần hoàn tác. Cần chủ sở hữu máy chủ, người cũng phải là owner của không gian làm việc đó.
+- **Khôi phục** thay thế cơ sở dữ liệu hiện tại của không gian làm việc bằng bản sao lưu này. Cơ sở dữ liệu bị thay thế được giữ trong danh sách này, dưới một tên kết thúc bằng `-pre-restore`, để bạn có thể quay lại. Cần chủ sở hữu máy chủ, người cũng phải là owner của không gian làm việc đó.
 - **Tải xuống** lưu tệp trên máy bạn đang dùng. Bản sao lưu vẫn ở trên máy chủ.
 - **Sao chép đường dẫn** sao chép vị trí của nó trên máy chủ.
 - **Xóa** xóa vĩnh viễn bản sao lưu này, sau khi bạn nhập tên không gian làm việc. Cần **owner**.
@@ -119,7 +115,7 @@ tả trong
 
 ## Xóa một ảnh chụp cài đặt
 
-Dưới **Ảnh chụp cài đặt**, mở rộng ảnh chụp, kể cả ảnh chụp chưa hoàn tất, và dùng
+Dưới **Ảnh chụp cài đặt**, mở rộng ảnh chụp, kể cả ảnh chụp chưa xác minh, và dùng
 **Xóa ảnh chụp** trong vùng nguy hiểm. Xác nhận tên của nó. Toàn bộ thư mục ảnh chụp
 bị xóa vĩnh viễn khỏi máy chủ; hãy tải nó xuống trước nếu bạn cần một bản sao. Quy
 trình sao lưu không gian làm việc không bao giờ xóa những ảnh chụp này.
@@ -160,20 +156,14 @@ làm đúng việc đó mà không cần đi vòng; đường dẫn đó
 được phân giải trên máy chủ.
 
 :::caution[Nhập thay thế mọi thứ]
-Nhập sẽ ghi đè mọi thứ mà không gian làm việc đích đang giữ, và không thể hoàn tác.
-Hãy xuất đích trước nếu nó giữ bất cứ thứ gì bạn có thể muốn lấy lại.
+Nhập sẽ thay thế mọi thứ mà không gian làm việc đích đang giữ. Cơ sở dữ liệu bị thay thế được giữ trong **Sao lưu theo lịch** với tên kết thúc bằng `-pre-restore`; hãy khôi phục bản đó để quay lại.
 :::
 
-Hai trường hợp được cho phép và ghi nhật ký thay vì bị từ chối: nhập một tệp có id
-không gian làm việc được ghi khác với đích (đây là cách bạn nhân bản một không gian làm
-việc hoặc khôi phục nó dưới một id mới), và nhập một tệp từ một **bản cài đặt khác**.
-Trong trường hợp thứ hai, các thiết bị đã ghép nối và id người dùng của tệp thuộc về
-bản cài đặt gốc và sẽ không phân giải được trên bản cài đặt này — dữ liệu của chính
-không gian làm việc vẫn nguyên vẹn, nhưng hãy kiểm tra lại tư cách thành viên sau khi
-nhận nó.
+Tệp từ không gian làm việc khác hoặc từ **bản cài đặt khác** đều được chấp nhận: đó là cách bạn nhân bản một không gian làm việc, khôi phục nó dưới một id mới hoặc trao nó cho người khác. Các id người dùng từ bản cài đặt khác sẽ không phân giải được ở bản cài đặt này — dữ liệu của chính không gian làm việc vẫn nguyên vẹn, nhưng hãy kiểm tra lại tư cách thành viên sau khi nhận nó.
 
-Token của bot chat và đăng nhập nhà cung cấp nằm ngoài cơ sở dữ liệu, nên bản cài đặt nhận sẽ tự kết nối lại của nó. Tệp thì có mang theo các token webhook pipeline và bí mật webhook đồng bộ ticket của không gian làm việc, nên một không
-gian làm việc bạn trao cho người khác cũng trao luôn chúng. Hãy đổi chúng sau đó nếu người nhận không nên có chúng.
+Một tệp được khôi phục không thể tự cấp bất cứ quyền nào trên máy chủ này. Các quyền mà nó mang theo ngoài tư cách thành viên thông thường sẽ bị lấy ra và liệt kê dưới **Bị giữ lại từ các bản sao đã khôi phục** ở đầu trang: các quy tắc hành động cho phép agent hành động mà không cần phê duyệt hoặc sau khi được phê duyệt, các đường dẫn mà sandbox có thể chạy, quyền truy cập kho mã cao hơn quyền đọc, vai trò cao hơn thành viên và lời mời đang mở cho các vai trò đó. **Chấp nhận** cấp lại một quyền, còn **Từ chối** thì loại bỏ nó. Phê duyệt chạy một định nghĩa môi trường trên máy chủ sẽ bị xóa, nên hãy phê duyệt lại các định nghĩa đó. Người khôi phục giữ hoặc nhận vai trò chủ sở hữu.
+
+Token của bot chat, đăng nhập nhà cung cấp và bí mật webhook nằm ngoài cơ sở dữ liệu, nên bản cài đặt nhận sẽ tự kết nối lại bằng của mình. Trigger webhook và webhook đồng bộ ticket đến mà không kèm bí mật, và trên một máy chủ khác chúng sẽ không nhận gì cho tới khi bạn lưu lại chúng ở đó, điều này khiến mỗi trigger có một URL mới.
 
 ## Khôi phục một không gian làm việc từ ảnh chụp
 
@@ -185,7 +175,7 @@ Bạn cần là chủ sở hữu máy chủ và owner của không gian làm vi�
 
 Đây là cùng thao tác như một lần nhập, trỏ vào bản sao trong ảnh chụp của tệp không
 gian làm việc đó — là có chủ đích, để không tồn tại cơ chế thứ hai có thể xử lý cùng
-một tệp theo cách khác.
+một tệp theo cách khác. Bản sao trước hết được đối chiếu với checksum mà ảnh chụp đã ghi lại.
 
 Một hàng có thể ghi **Không còn trên máy chủ này**, với **Khôi phục** bị vô hiệu hóa:
 ảnh chụp chứa một không gian làm việc mà bản cài đặt này không còn nữa. Hãy đưa nó trở
@@ -194,6 +184,10 @@ nhập đường dẫn `<snapshot path>/<old workspace id>/workspace.db` vào tr
 hiển thị **Đường dẫn trên máy chủ** của chính nó trong một trường sao chép, và tiêu đề
 của hàng là id không gian làm việc cũ, nên bạn có cả hai nửa của đường dẫn đó ngay
 trước mắt.
+
+## Khôi phục một không gian làm việc bị hỏng
+
+Một không gian làm việc có cơ sở dữ liệu không qua kiểm tra toàn vẹn sẽ chuyển sang chỉ đọc: mọi thứ vẫn đọc được, nhưng mọi thay đổi đều bị từ chối. Thành viên sẽ thấy **Không gian làm việc này chỉ đọc** ở đầu không gian làm việc, chủ sở hữu máy chủ thấy nó dưới **Cần bạn chú ý** trên trang này, và bản sao lưu mới nhất có một bản sao tốt được giữ lại là **Bản sao tốt gần nhất**. Hãy khôi phục không gian làm việc từ bản sao đó, như mô tả ở trên, để nó lại có thể ghi. Cơ sở dữ liệu bị hỏng được giữ lại dưới dạng một bản sao lưu `-pre-restore`.
 
 ## Khôi phục toàn bộ bản cài đặt
 
@@ -319,7 +313,7 @@ Hãy chạy nó bằng chính người dùng sở hữu thư mục dữ liệu, 
 systemd, rồi đồng bộ `DEST` ra khỏi máy chủ sau đó. `VACUUM INTO` cần SQLite 3.27 trở lên.
 
 Hãy ghi nó ra **bên ngoài** `<dataDir>/backups/`. Một thư mục do bạn tự tạo ở đó không
-có `manifest.json`, nên ứng dụng sẽ liệt kê nó như một ảnh chụp chưa hoàn tất và danh
+có `manifest.json`, nên ứng dụng sẽ liệt kê nó như một ảnh chụp chưa xác minh và danh
 sách sẽ không còn là bản ghi trung thực về những gì chính máy chủ đã tạo.
 
 ### Dọn các ảnh chụp toàn bộ cài đặt cũ
@@ -365,9 +359,11 @@ lưu chúng.
 | "Chỉ chủ sở hữu máy chủ mới có thể khôi phục bản sao lưu. Bạn vẫn có thể tải chúng xuống." | Khôi phục thay thế cơ sở dữ liệu của một không gian làm việc trên máy chủ, nên chỉ chủ sở hữu máy chủ mới khôi phục. Hãy tải bản sao lưu xuống và hỏi họ |
 | "Máy chủ này không có bề mặt sao lưu." | Máy chủ không có cổng sao lưu nào được nối — một máy chủ demo. Các thao tác vắng mặt thay vì bị từ chối |
 | "Tệp lớn hơn mức máy chủ chấp nhận." | Tải lên bị giới hạn ở 8 GiB. Hãy đặt tệp lên máy chủ và nhập đường dẫn của nó vào **Tệp cơ sở dữ liệu không gian làm việc** |
-| Nhập bị từ chối: không phải cơ sở dữ liệu không gian làm việc của Control Center | Tệp không có hàng `workspace_meta` — nó không phải một bản xuất không gian làm việc, hoặc nó bị cắt cụt. Không có gì bị thay thế |
-| Một ảnh chụp được liệt kê là **Chưa hoàn tất** | Manifest của nó bị thiếu hoặc nêu những tệp không tồn tại. Hãy tạo một ảnh chụp mới; trong lúc chờ, hãy nhận từng tệp không gian làm việc từ nó |
-| Một ảnh chụp báo có không gian làm việc không được chụp | Những không gian làm việc đó chưa từng được ghi vào, hoặc bản sao của chúng thất bại. Hãy kiểm tra nhật ký máy chủ |
+| Việc khôi phục bị từ chối và không có gì bị thay thế | Tệp không vượt qua một kiểm tra, và thông báo cho biết kiểm tra nào: không phải cơ sở dữ liệu không gian làm việc, bị hỏng, khác với checksum mà ảnh chụp đã ghi lại, một phiên bản máy chủ mới hơn đã ghi nó, hoặc webhook hay lời mời của nó đã thuộc về một không gian làm việc khác trên máy chủ này. Hãy dùng một bản sao khác, hoặc cập nhật máy chủ trước |
+| Một ảnh chụp được liệt kê là **Chưa xác minh** | Ảnh chụp chưa kết thúc, hoặc được tạo trước khi ảnh chụp bắt đầu ghi checksum. Hãy tạo một ảnh chụp mới; trong lúc chờ, hãy khôi phục từng tệp không gian làm việc từ nó |
+| Một ảnh chụp báo có không gian làm việc không được chụp | Những không gian làm việc đó chưa từng được ghi vào, bị hỏng, hoặc bản sao của chúng thất bại. Hãy kiểm tra nhật ký máy chủ |
+| Một không gian làm việc hiển thị **Không gian làm việc này chỉ đọc** | Cơ sở dữ liệu của nó không vượt qua kiểm tra toàn vẹn. Không có gì trong đó được thay đổi cho đến khi chủ sở hữu máy chủ khôi phục nó từ một bản sao lưu |
+| Webhook ngừng đến sau khi không gian làm việc chuyển sang máy chủ khác | Bí mật webhook không đi cùng cơ sở dữ liệu. Lưu lại từng trigger webhook và kết nối đồng bộ ticket trên máy chủ mới, rồi gửi URL mới cho bên gửi |
 | Một bản cài đặt đã khôi phục không có thông tin xác thực forge hay SSO | `secrets.json` không nằm trong ảnh chụp. Hãy khôi phục nó từ nơi bạn đã cất, hoặc kết nối lại các nhà cung cấp |
 | Một không gian làm việc đã khôi phục bị thiếu ảnh đã dán | Blob nằm bên cạnh cơ sở dữ liệu chứ không nằm trong đó. Hãy sao chép cả `<workspaceId>/blobs/` sang |
 

@@ -69,13 +69,13 @@ class RemoteExecutionRegistry {
             ? JobResult(
                 success: true,
                 resultJson: report.resultJson,
-                costCents: report.costCents,
+                costMicros: report.costMicros,
                 eventsLost: report.eventsLost,
               )
             : JobResult(
                 success: false,
                 error: report.error ?? 'Worker reported failure.',
-                costCents: report.costCents,
+                costMicros: report.costMicros,
                 eventsLost: report.eventsLost,
               ),
       );

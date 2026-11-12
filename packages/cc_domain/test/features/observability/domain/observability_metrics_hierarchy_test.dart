@@ -10,7 +10,6 @@ AgentRunLog _run({
   String? parentRunId,
   RunStatus status = RunStatus.completed,
   int costMicros = 0,
-  int estimatedCostCents = 0,
   int childCostMicros = 0,
   RunVerification? verification,
 }) => AgentRunLog(
@@ -21,7 +20,7 @@ AgentRunLog _run({
   parentRunId: parentRunId,
   childCostMicros: childCostMicros,
   verification: verification,
-  cost: RunCost(estimatedCostCents: estimatedCostCents, costMicros: costMicros),
+  cost: RunCost(costMicros: costMicros),
 );
 
 void main() {
@@ -95,23 +94,21 @@ void main() {
   // ---- sub-cent cost precision ----
 
   group('sub-cent cost precision', () {
-    test('two 7-micro runs stay exact in micros and round to zero cents', () {
+    test('two 7-micro runs stay exact in micros', () {
       final m = calc.compute([
         _run(id: 'a', costMicros: 7),
         _run(id: 'b', costMicros: 7),
       ]);
 
       expect(m.totalCostMicros, 14);
-      expect(m.totalCostCents, 0);
     });
 
-    test('200 runs of 7 micros still round to zero cents', () {
+    test('200 runs of 7 micros add up to 1400 micros', () {
       final m = calc.compute([
         for (var i = 0; i < 200; i++) _run(id: 'r$i', costMicros: 7),
       ]);
 
       expect(m.totalCostMicros, 1400);
-      expect(m.totalCostCents, 0);
     });
 
     test(
@@ -124,7 +121,6 @@ void main() {
         ]);
 
         expect(m.totalCostMicros, 500014);
-        expect(m.totalCostCents, 50);
       },
     );
   });

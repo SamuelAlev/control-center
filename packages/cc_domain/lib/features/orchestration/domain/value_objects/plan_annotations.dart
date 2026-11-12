@@ -18,8 +18,8 @@ library;
 class PlanNodeEstimate {
   /// Creates an estimate.
   const PlanNodeEstimate({
-    this.costCentsLow,
-    this.costCentsHigh,
+    this.costMicrosLow,
+    this.costMicrosHigh,
     this.durationMsLow,
     this.durationMsHigh,
     this.sampleSize = 0,
@@ -27,11 +27,11 @@ class PlanNodeEstimate {
     this.blastRadiusSymbols,
   });
 
-  /// Lower bound of predicted cost (US cents), from similar-run history.
-  final int? costCentsLow;
+  /// Lower bound of predicted cost (micro-dollars), from similar-run history.
+  final int? costMicrosLow;
 
-  /// Upper bound of predicted cost (US cents).
-  final int? costCentsHigh;
+  /// Upper bound of predicted cost (micro-dollars).
+  final int? costMicrosHigh;
 
   /// Lower bound of predicted duration (milliseconds).
   final int? durationMsLow;
@@ -56,8 +56,8 @@ class PlanNodeEstimate {
   /// Builds from JSON.
   factory PlanNodeEstimate.fromJson(Map<String, dynamic> json) =>
       PlanNodeEstimate(
-        costCentsLow: (json['costCentsLow'] as num?)?.toInt(),
-        costCentsHigh: (json['costCentsHigh'] as num?)?.toInt(),
+        costMicrosLow: (json['costMicrosLow'] as num?)?.toInt(),
+        costMicrosHigh: (json['costMicrosHigh'] as num?)?.toInt(),
         durationMsLow: (json['durationMsLow'] as num?)?.toInt(),
         durationMsHigh: (json['durationMsHigh'] as num?)?.toInt(),
         sampleSize: (json['sampleSize'] as num?)?.toInt() ?? 0,
@@ -67,8 +67,8 @@ class PlanNodeEstimate {
 
   /// Serializes to JSON.
   Map<String, dynamic> toJson() => {
-    if (costCentsLow != null) 'costCentsLow': costCentsLow,
-    if (costCentsHigh != null) 'costCentsHigh': costCentsHigh,
+    if (costMicrosLow != null) 'costMicrosLow': costMicrosLow,
+    if (costMicrosHigh != null) 'costMicrosHigh': costMicrosHigh,
     if (durationMsLow != null) 'durationMsLow': durationMsLow,
     if (durationMsHigh != null) 'durationMsHigh': durationMsHigh,
     'sampleSize': sampleSize,

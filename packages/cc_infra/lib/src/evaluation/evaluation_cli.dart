@@ -392,13 +392,14 @@ Future<_CatalogLookups> _catalogLookups(String? explicitPath) async {
         // Unpriced: return null so the run records UNKNOWN spend, never zero.
         return null;
       }
-      final usd = cost.estimate(
-        inputTokens: record.usage.inputTokens,
-        outputTokens: record.usage.outputTokens,
-        cacheReadTokens: record.usage.cacheReadTokens,
-        cacheWriteTokens: record.usage.cacheWriteTokens,
+      return ProviderCallCost(
+        cost.estimateMicros(
+          inputTokens: record.usage.inputTokens,
+          outputTokens: record.usage.outputTokens,
+          cacheReadTokens: record.usage.cacheReadTokens,
+          cacheWriteTokens: record.usage.cacheWriteTokens,
+        ),
       );
-      return ProviderCallCost((usd * 1000000).round());
     },
     vision: (qualifiedModel) =>
         catalog.resolve(qualifiedModel)?.supportsImageInput ?? false,

@@ -1,3 +1,6 @@
+import 'package:cc_persistence/database/tables/agents.dart';
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
 /// Enclosure (rig) sessions: a disposable VM/microVM an agent or human drives.
@@ -5,15 +8,12 @@ import 'package:drift/drift.dart';
 /// Workspace-scoped. The rig itself is ephemeral — the machine is destroyed
 /// and its disk overlay discarded — but the ROW outlives it, so a run can be
 /// reviewed after the fact and a reaped session can say why it went.
-@TableIndex(name: 'idx_rig_sessions_workspace', columns: {#workspaceId})
 @TableIndex(
   name: 'idx_rig_sessions_phase',
-  columns: {#workspaceId, #phase, #lastActivityAt},
+  columns: {#phase, #lastActivityAt},
 )
-@TableIndex(
-  name: 'idx_rig_sessions_conversation',
-  columns: {#workspaceId, #conversationId},
-)
+@TableIndex(name: 'idx_rig_sessions_conversation', columns: {#conversationId})
+@TableIndex(name: 'idx_rig_sessions_agent', columns: {#agentId})
 class RigSessionsTable extends Table {
   @override
   String get tableName => 'rig_sessions';
@@ -24,26 +24,38 @@ class RigSessionsTable extends Table {
   /// Workspace scope.
   TextColumn get workspaceId => text()();
 
-  /// `computer` / `browser` / `mobile`.
-  TextColumn get surface => text()();
+  /// The `RigSurface` wire name (`computer`, `browser`, `ios`, …).
+  TextColumn get surface =>
+      // ignore: recursive_getters
+      text().check(surface.isIn(PlatformStoredValues.rigSurface))();
 
   /// The `EnclosureBackend` wire name (`qemu-hvf`, `smolvm`, …).
-  TextColumn get backend => text()();
+  TextColumn get backend =>
+      // ignore: recursive_getters
+      text().check(backend.isIn(PlatformStoredValues.enclosureBackend))();
 
   /// The `RigPhase` wire name.
-  TextColumn get phase =>
-      text().withDefault(const Constant('provisioning'))();
+  TextColumn get phase => text()
+      // ignore: recursive_getters
+      .check(phase.isIn(PlatformStoredValues.rigPhase))
+      .withDefault(const Constant('provisioning'))();
 
   /// Phase detail: the current boot step, or the failure message.
   TextColumn get statusDetail => text().nullable()();
 
   /// The `RigCloseReason` wire name, once closed.
-  TextColumn get closeReason => text().nullable()();
+  TextColumn get closeReason => text()
+      .nullable()
+      // ignore: recursive_getters
+      .check(closeReason.isIn(PlatformStoredValues.rigCloseReason))();
 
   /// The full `RigSpec` as JSON. Stored whole rather than exploded into
   /// columns because it is read back as one object and never queried by its
   /// parts — a spec field is not a search key.
-  TextColumn get specJson => text().withDefault(const Constant('{}'))();
+  TextColumn get specJson => text()
+      // ignore: recursive_getters
+      .check(isJsonObject(specJson))
+      .withDefault(const Constant('{}'))();
 
   /// Guest display width in pixels, once the guest has a mode.
   IntColumn get displayWidth => integer().nullable()();
@@ -56,20 +68,31 @@ class RigSessionsTable extends Table {
   /// other surfaces and before the first navigation.
   TextColumn get currentUrl => text().nullable()();
 
-  /// The conversation this rig belongs to, when opened from one.
+  /// The conversation this rig belongs to, when opened from one. No foreign
+  /// key: the opener names whatever scope it runs in (a conversation, a
+  /// space, or the rig's own id for a scratch machine), not always a
+  /// `conversations` row.
   TextColumn get conversationId => text().nullable()();
 
-  /// The agent driving it, when an agent opened it.
-  TextColumn get agentId => text().nullable()();
+  /// The agent driving it, when an agent opened it. The session row outlives
+  /// a deleted agent, unattributed.
+  TextColumn get agentId => text().nullable().references(
+    AgentsTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
-  /// The fleet worker hosting it, when it is not local.
+  /// The fleet worker hosting it, when it is not local. No foreign key:
+  /// workers live in the global database.
   TextColumn get workerId => text().nullable()();
 
   /// Wire-encoded `Principal` that opened it (`user:<id>` / `agent:<id>`).
+  /// No foreign key: a principal is a user or an agent.
   TextColumn get createdBy => text()();
 
   /// Wire-encoded `Principal` currently holding exclusive input control, or
   /// null when the owning agent is free to drive. This is the take-over lock.
+  /// No foreign key, as for [createdBy].
   TextColumn get controller => text().nullable()();
 
   /// When [controller] took control.
@@ -97,11 +120,8 @@ class RigSessionsTable extends Table {
 /// The watch-lane frames are never persisted, so without this table a human
 /// take-over leaves no trace once the stream ends. `seq` is the authority on
 /// ordering — two actions can share a millisecond, and "who clicked first"
-/// is exactly the question this table exists to answer.
-@TableIndex(
-  name: 'idx_rig_action_log_rig',
-  columns: {#workspaceId, #rigId, #seq},
-)
+/// is exactly the question this table exists to answer. The `(rigId, seq)`
+/// unique key serves every per-rig read.
 class RigActionLogTable extends Table {
   @override
   String get tableName => 'rig_action_log';
@@ -112,22 +132,30 @@ class RigActionLogTable extends Table {
   /// Workspace scope.
   TextColumn get workspaceId => text()();
 
-  /// The rig acted upon.
-  TextColumn get rigId => text()();
+  /// The rig acted upon; its actions go with its session row.
+  TextColumn get rigId => text().references(
+    RigSessionsTable,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// Monotonic per-rig sequence.
   IntColumn get seq => integer()();
 
-  /// The action verb.
+  /// The action verb. Open set: each surface's driver names its own verbs.
   TextColumn get verb => text()();
 
-  /// The action arguments as JSON.
-  TextColumn get argsJson => text().withDefault(const Constant('{}'))();
+  /// The action arguments as a JSON object.
+  TextColumn get argsJson => text()
+      // ignore: recursive_getters
+      .check(isJsonObject(argsJson))
+      .withDefault(const Constant('{}'))();
 
   /// One-line human summary for the action feed.
   TextColumn get summary => text().withDefault(const Constant(''))();
 
-  /// Wire-encoded `Principal` that sent it.
+  /// Wire-encoded `Principal` that sent it. No foreign key: a principal is a
+  /// user or an agent.
   TextColumn get actor => text()();
 
   /// Whether a human sent this while holding control.

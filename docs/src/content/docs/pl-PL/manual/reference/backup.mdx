@@ -2,7 +2,7 @@
 title: Kopia zapasowa, eksport i import
 description: Układ migawki, manifest, każda operacja kopii zapasowej i trasa transferu oraz dokładnie to, które pliki kopia zapasowa zawiera, a których nie.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Wszystko, co Control Center potrafi skopiować, przekazać lub przejąć, oraz dokładny kształt
@@ -47,11 +47,11 @@ i sortuje się chronologicznie jako zwykły ciąg znaków.
 
 Zaplanowane kopie zapasowe obszarów roboczych leżą osobno w
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Nie zawierają manifestu ani `global.db` i nie są migawkami instalacji.
+Każda ma `manifest.json` tylko dla tego jednego pliku i nie zawiera `global.db`; nie są to migawki instalacji. Przywracanie zachowuje bazę danych, którą zastępuje, w tym samym miejscu jako `<timestamp>-pre-restore`.
 Krok retencji cotygodniowego potoku usuwa wyłącznie kopie jego własnego obszaru roboczego
 starsze niż skonfigurowany wiek (domyślnie 30 dni); ręcznie utworzone migawki instalacji
 nigdy nie są przez ten krok rotowane. `server.listBackups` wymienia tylko migawki instalacji,
-w tym niekompletne; `workspace.listBackups` wymienia zaplanowane kopie zapasowe jednego
+w tym niezweryfikowane; `workspace.listBackups` wymienia zaplanowane kopie zapasowe jednego
 obszaru roboczego.
 
 Usunięcie obszaru roboczego pozostawia ten katalog na miejscu. Harmonogram obszaru roboczego
@@ -63,33 +63,39 @@ właściciel instalacji ich nie usunie. `server.listOrphanedBackups` je zgłasza
 
 | Pole                       | Typ             | Znaczenie                                                           |
 | -------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                  | int             | Wersja formatu manifestu. Obecnie `1`                               |
+| `format`                  | int             | Format manifestu. Obecnie `2`                               |
 | `created_at`               | ISO-8601 UTC    | Kiedy wykonano migawkę                                              |
-| `global.file`              | string          | Zawsze `global.db`                                                  |
-| `global.schema_version`    | int             | Wersja schematu `GlobalDatabase` w momencie wykonania migawki       |
-| `global.bytes`             | int             | Rozmiar zapisanego pliku `global.db`                                |
-| `workspace_schema_version` | int             | Wersja schematu `WorkspaceDatabase` wspólna dla każdego pliku obszaru roboczego |
-| `workspaces[]`             | array           | Jeden wpis na każdy przechwycony obszar roboczy                     |
+| `global`                   | object          | Zapis `global.db`. Nieobecny w zaplanowanej kopii zapasowej obszaru roboczego |
+| `workspaces[]`             | array           | Jeden rekord na każdy przechwycony obszar roboczy                     |
 | `workspaces[].workspace_id`| string          | Obszar roboczy przechowywany w tym pliku                            |
-| `workspaces[].file`        | string          | Ścieżka względem katalogu głównego migawki, `<workspaceId>/workspace.db` |
-| `workspaces[].bytes`       | int             | Rozmiar tego pliku                                                  |
-| `skipped_workspaces[]`     | array of string | Obszary robocze, których kopia **nie** zdołała przechwycić          |
+| `skipped_workspaces[]`     | array           | Obszary robocze, których kopia **nie** zdołała przechwycić          |
+| `skipped_workspaces[].workspace_id` | string | Obszar roboczy, który został pominięty                                     |
+| `skipped_workspaces[].reason` | string       | `no_file`, `damaged` lub `failed`                                    |
 
-Obszar roboczy zostaje pominięty, gdy jest zarejestrowany, ale nigdy nie był zapisywany (więc
-nie istnieje jeszcze żaden plik), albo gdy jego `VACUUM INTO` się nie powiodło. Tak czy inaczej
-migawka i tak się kończy, a manifest wymienia, czego brakuje.
+`global` i każdy wpis w `workspaces[]` opisują jeden skopiowany plik, mierzony na kopii po jej zapisaniu:
+
+| Pole             | Typ    | Znaczenie                                                                      |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | string          | Ścieżka względem katalogu głównego migawki: `global.db` lub `<workspaceId>/workspace.db` |
+| `bytes`       | int             | Rozmiar kopii                                                  |
+| `sha256`         | string | SHA-256 kopii, małymi literami w zapisie szesnastkowym                         |
+| `quick_check`    | string | Co SQLite `quick_check` powiedział o kopii: `ok` albo jego ustalenie           |
+| `user_version`   | int    | Wersja schematu kopii                                                          |
+| `application_id` | int    | Identyfikator SQLite `application_id` kopii                                    |
+
+Obszar roboczy zostaje pominięty, gdy jest zarejestrowany, ale nigdy nie był zapisywany (`no_file`), gdy jego baza danych nie przechodzi kontroli integralności (`damaged`; uszkodzonej kopii nigdy nie tworzy się), albo gdy jego kopiowanie lub sprawdzenie tej kopii się nie powiodło (`failed`). W każdym z tych przypadków migawka i tak się kończy, a manifest wymienia, czego brakuje. Manifest jest zapisywany jako ostatni.
 
 ### Kompletność
 
-`server.listBackups` zwraca flagę `complete` dla każdej migawki. Jest fałszywa, gdy manifestu
-nie ma lub nie da się go sparsować, gdy brakuje `global.db` albo gdy manifest wymienia plik
-obszaru roboczego, którego nie ma na dysku.
+`server.listBackups` zwraca flagę `complete` dla każdej migawki. Jest fałszywa, gdy manifestu nie ma, nie da się go sparsować albo jest w innym formacie, gdy plik, który wymienia, brakuje lub ma inny rozmiar, albo gdy kopia nie przeszła swojego sprawdzenia. Aplikacja pokazuje taką migawkę jako **Niezweryfikowana**. Migawki wykonane przed formatem `2` są w tym stanie.
 
-Niekompletna migawka nadal trafia na listę, bo migawka, której operator nie widzi, to migawka,
+Niezweryfikowana migawka nadal trafia na listę, bo migawka, której operator nie widzi, to migawka,
 o której operator myśli, że ją ma. Gdy manifestu nie da się odczytać, lista opiera się na samym
 układzie katalogów i zgłasza te pliki `<workspaceId>/workspace.db`, które znajdzie —
 każdy z nich można nadal adoptować pojedynczo przez `workspace.import`, choć migawka jako całość
 nie potrafi przywrócić instalacji.
+
+Wypisana migawka lub zaplanowana kopia zapasowa ma `pinned_reason: "last_good_copy"`, dopóki przechowuje najnowszą zweryfikowaną kopię obszaru roboczego, którego żywa baza danych jest uszkodzona. Krok retencji ją pomija, dopóki ten obszar roboczy nie zostanie przywrócony.
 
 ## Czego kopia zapasowa nie zawiera
 
@@ -100,6 +106,7 @@ jego bazę danych, a nic z reszty nie podróżuje:
 | ----------------------------------- | -------------- | ---------------------- |
 | `global.db`                         | Tak            | Nie                    |
 | `<workspaceId>/workspace.db`        | Tak            | Tak (to *jest* ten plik) |
+| `<workspaceId>/code_index.db`       | Nie             | Nie                     |
 | `<workspaceId>/blobs/`              | Nie            | Nie                    |
 | `<workspaceId>/skills/`             | Nie            | Nie                    |
 | `<workspaceId>/agents/`             | Nie            | Nie                    |
@@ -112,19 +119,9 @@ jego bazę danych, a nic z reszty nie podróżuje:
 | `rigs/`                             | Nie            | Nie                    |
 | `_agent_hooks/`                     | Nie            | Nie                    |
 
-Część z tego jest jednorazowa — `spaces/` przechowuje drzewa robocze z kopiowaniem przy zapisie,
-które są odtwarzane z repozytoriów, `pr_clones/` to cache, `models/` pobiera się ponownie,
-a `rigs/` to stan maszyny. Część jednak nie: `blobs/` przechowuje wklejone obrazy, na które
-wskazują wiersze w bazie danych, `skills/` i `agents/` przechowują pliki, z którymi działa agent,
-a `secrets.json` przechowuje każdy klucz parowania, poświadczenie dostawcy i ustawienie SSO
-w instalacji. Jak objąć resztę, opisano w [Kopia zapasowa i przywracanie](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/#kopiowanie-kopii-zapasowych-poza-maszynę).
-:::caution[Baza danych obszaru roboczego przechowuje sekrety webhooków]
-`workspace.db` to cały obszar roboczy: rozmowy, dzienniki uruchomień, indeks kodu,
-powiązania z repozytoriami, definicje środowisk i członkowie. Przechowuje też w czytelnej
-postaci tokeny webhooków potoków obszaru roboczego i sekrety webhooków synchronizacji
-zgłoszeń, więc traktuj pobrany eksport lub kopię zapasową jak sekret. Nie przechowuje
-żadnego logowania do dostawcy, klucza urządzenia ani sekretu użytkownika; te są w
-`global.db` i `secrets.json`.
+Część z tego jest jednorazowa — `spaces/` przechowuje drzewa robocze z kopiowaniem przy zapisie, które są odtwarzane z repozytoriów, `pr_clones/` to cache, `code_index.db` jest odbudowywany, `models/` pobiera się ponownie, a `rigs/` to stan maszyny. Część jednak nie: `blobs/` przechowuje wklejone obrazy, na które wskazują wiersze w bazie danych, `skills/` i `agents/` przechowują pliki, z którymi działa agent, a `secrets.json` przechowuje każdy klucz parowania, poświadczenie dostawcy i ustawienie SSO w instalacji. Jak objąć resztę, opisano w [Kopia zapasowa i przywracanie](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/#kopiowanie-kopii-zapasowych-poza-maszynę).
+:::note[Sekrety pozostają poza bazami danych]
+`workspace.db` to cały obszar roboczy: rozmowy, dzienniki uruchomień, powiązania z repozytoriami, definicje środowisk i członkowie. Tokeny webhooków potoków i sekrety webhooków synchronizacji zgłoszeń znajdują się w `secrets.json`: baza danych zawiera odwołanie do każdego z nich, a indeks tras zawiera skrót z kluczem każdego tokenu. Obszar roboczy przywrócony na innej instalacji dlatego nie otrzyma żadnych webhooków, dopóki jego wyzwalacze nie zostaną tam zapisane ponownie. Logowania do dostawców, klucze urządzeń i sekrety użytkowników są w `global.db` i `secrets.json`.
 :::
 
 :::note[Tokeny czatu celowo zostają poza kopią]
@@ -151,6 +148,8 @@ zapasowych, takim jak serwer demonstracyjny.
 | `workspace.deleteBackup` | zapis | Obszar roboczy | `owner` | `name` | `{ok}` |
 | `workspace.export`   | odczyt | Obszar roboczy | `admin`      | brak          | `{ok, path}`                  |
 | `workspace.import`   | zapis  | Obszar roboczy | `owner` i właściciel serwera | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | odczyt | Obszar roboczy | `owner` i właściciel serwera | brak | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | zapis | Obszar roboczy | `owner` i właściciel serwera | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | zapis  | Instalacja* | `owner`         | `id`          | wiersz rejestru oznaczony jako usunięty |
 
 * `workspace.delete` nie ma zakresu, bo wiersz, który oznacza, mieszka w globalnym
@@ -167,13 +166,15 @@ roboczy, którego kopie pozostają chronione przez `workspace.deleteBackup` i ro
 roboczego. Obie operacje usuwania przyjmują tylko nazwę katalogu ze znacznikiem czasu z
 listy, a nie ścieżkę.
 
+`workspace.importHolds.list` zwraca to, co import wstrzymał. Każde wstrzymanie ma `id`, `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` lub `invite`), `payload`, który zostałby przywrócony, `imported_at` i `source_install_id`. `workspace.importHolds.resolve` z `accept: true` przyznaje je ponownie, a z `false` odrzuca. `applied` ma wartość false, gdy osoba lub rzecz, której dotyczyło przyznanie, nie należy już do obszaru roboczego.
+
 :::note[Migawka całej instalacji wymaga roli właściciela na obu torach]
 `server.backupNow`, `server.listBackups` i `server.deleteBackup` wymagają roli
 **właściciela** instalacji (`ServerAuthority.serverOwner`) — tego samego warunku co
 `GET /backup/snapshot`. Migawka obejmuje bazę danych każdego obszaru roboczego, więc
 bycie administratorem jednego obszaru roboczego nie wystarcza do zarządzania pozostałymi.
 Usuwanie przyjmuje wyłącznie nazwę katalogu ze znacznikiem czasu z listy, a nie dowolną
-ścieżkę serwera, i usuwa całą migawkę (w tym migawki niekompletne).
+ścieżkę serwera, i usuwa całą migawkę (w tym migawki niezweryfikowane).
 Eksport obszaru roboczego i pobieranie zaplanowanych kopii zapasowych pozostają przy roli
 administratora obszaru roboczego.
 :::
@@ -184,7 +185,7 @@ którego wiersze traktuje jako własne: powiązania z repozytoriami i to, kto je
 definicje środowisk uruchamiane na hoście, ścieżki worktree i logów. Dlatego obie operacje
 wymagają właściciela serwera (`ServerAuthority.serverOwner`), który musi być też właścicielem
 obszaru roboczego. Każdy inny, a także każde wywołanie na hoście bez zapisanego właściciela,
-jest odrzucane z `server_owner_required`. Żadne wyzwalacze ani widoki, które przynosi plik,
+jest odrzucane z `server_owner_required`. Żadne wyzwalacze, widoki, kolumny ani ograniczenia, które przynosi plik,
 nie są przejmowane.
 :::
 
@@ -226,21 +227,21 @@ się rozjechać w różne traktowanie tego samego pliku.
 
 ### Walidacja `workspace.import`
 
-Zanim cokolwiek zostanie zastąpione, plik-kandydat jest otwierany tylko do odczytu przez
-krótkotrwałe surowe połączenie SQLite i odczytywany jest jego wiersz `workspace_meta`.
+Zanim cokolwiek zostanie zastąpione, plik-kandydat jest kopiowany do pliku pośredniego obok celu i tam sprawdzany. Odrzucenie niczego nie rusza, a jego rodzaj jest podawany jako `data.kind`.
 
 | Warunek                                          | Wynik                                                           |
 | ------------------------------------------------ | ---------------------------------------------------------------- |
-| Nieczytelna baza danych SQLite albo brak `workspace_meta` | Odmowa. Nic nie zostaje tknięte                        |
-| Zapisany identyfikator obszaru roboczego ≠ docelowy | **Dozwolone**, rejestrowane w logu. W ten sposób obszar roboczy jest duplikowany lub przywracany pod nowym identyfikatorem |
-| Zapisany identyfikator instalacji ≠ ta instalacja | **Dozwolone**, rejestrowane w logu. Jego sparowane urządzenia i identyfikatory użytkowników należą do tamtej instalacji i nie zostaną tu rozwiązane |
-| Nieprawidłowy identyfikator obszaru roboczego albo plik nie istnieje | Odmowa                            |
+| Plik nie istnieje | Odmowa, `import.missing_source` |
+| Nieczytelna baza danych SQLite albo nie przechodzi `quick_check` | Odmowa, `import.damaged` |
+| Pochodzi z migawki, a jego SHA-256 różni się od tego z manifestu | Odmowa, `import.checksum_mismatch` |
+| Zapisała go nowsza wersja serwera | Odmowa, `import.newer_schema` |
+| Inny `application_id` albo brak `workspace_meta` | Odmowa, `import.foreign_file` |
+| Nie da się doprowadzić do schematu tego serwera | Odmowa, `import.schema_mismatch` |
+| Jego webhooki albo zaproszenia już kierują do innego obszaru roboczego | Odmowa, `import.route_conflict` |
+| Zapisany identyfikator obszaru roboczego ≠ docelowy | **Dozwolone**. Jego wiersze zostają przypisane do celu. W ten sposób obszar roboczy jest duplikowany lub przywracany pod nowym identyfikatorem |
+| Zapisany identyfikator instalacji ≠ ta instalacja | **Dozwolone**. Identyfikatory użytkowników z niej należą do tamtej instalacji i nie zostaną tu rozwiązane |
 
-Po zaakceptowaniu baza danych docelowego obszaru roboczego jest zamykana i usuwana z menedżera,
-zanim plik zostanie na nią skopiowany (otwarte połączenie driftu trzyma plik i jego `-wal`),
-a następnie otwierana ponownie, tak aby `beforeOpen` ponownie zainstalował wyzwalacze FTS
-i synchronizacji, i indeksy FTS są odbudowywane — tabele treści zaimportowanego pliku są
-wypełnione, ale jego indeks może być nieaktualny.
+Po zaakceptowaniu przygotowany plik zostaje doprowadzony do schematu tego serwera i musi mu potem dokładnie odpowiadać. Uprawnienia, których plik nie może sam sobie przyznać, zostają z niego usunięte: zatwierdzenia uruchamiania definicji środowiska na hoście są czyszczone, a reguły akcji, które zezwalają lub pytają, granty sandbox exec, granty repozytoriów wyższe niż odczyt, role wyższe niż członek i zaproszenia do tych ról stają się wstrzymaniami do przejrzenia przez właściciela serwera. Importujący zachowuje rolę właściciela albo ją otrzymuje. Zastępowana baza danych zostaje zachowana jako zaplanowana kopia zapasowa o nazwie `<timestamp>-pre-restore`, przygotowany plik zostaje przemianowany na miejsce docelowe przy zamkniętych połączeniach obszaru roboczego, `code_index.db` zostaje usunięty, aby został odbudowany, a indeksy FTS są odbudowywane.
 
 ## Trasy transferu
 
@@ -270,7 +271,7 @@ w katalogu kopii zapasowych tego właśnie obszaru roboczego.
 
 | Status | Przyczyna                                                                          |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Brakuje wymaganego parametru zapytania, nazwa kopii zapasowej jest nieprawidłowa albo treść wysyłki jest pusta |
+| `400`  | Brakuje wymaganego parametru zapytania, nazwa kopii zapasowej jest nieprawidłowa, treść wysyłki jest pusta albo wysłany plik został odrzucony (treść to `{error, kind}` z rodzajem `import.*`) |
 | `403`  | Nieznane lub unieważnione urządzenie, nieprawidłowy podpis albo wywołującemu brakuje roli |
 | `404`  | Brak portu kopii zapasowych na tym hoście albo wskazany plik migawki, kopii zapasowej lub obszaru roboczego nie istnieje |
 | `405`  | `/backup/restore` wywołane czymkolwiek innym niż `POST`                             |
@@ -310,6 +311,8 @@ sparowanego urządzenia, podpisu celu i właściwej roli obszaru roboczego lub i
 | Migawki                        | `<dataDir>/backups/<timestamp>/`                             |
 | Zaplanowane kopie zapasowe obszarów roboczych | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Eksporty obszarów roboczych    | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Baza danych zastąpiona przywróceniem | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Bazy danych sprzed aktualizacji, która zmieniła ich format | `<dataDir>/pre_upgrade/` i `<dataDir>/<workspaceId>/pre_upgrade/`, po dwie najnowsze z każdej |
 | Obszar tymczasowy transferu    | `<dataDir>/backups/transfer/` — miejsce robocze, czyszczone przez trasę, która do niego pisze |
 | Nazwa archiwum migawki         | `<snapshot directory name>.zip`                              |
 | Limit wysyłki                  | 8 GiB na szyfrowaną wysyłkę `/backup/restore`               |

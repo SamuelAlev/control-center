@@ -2,7 +2,7 @@
 title: Ajan yapılandırması
 description: Ajan varlığındaki her alan ve kullandığı enum'lar.
 slug: tr-TR/kilavuz/referans/ajan-yapilandirmasi
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Bu referans, ajan varlığındaki her alanı ve ajanın kullandığı enum'ları ve bayrakları listeler. Uygulamada bir ajan oluşturma ya da düzenlemenin adım adım anlatımı için [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/) sayfasına bakın.
@@ -26,17 +26,17 @@ Bu referans, ajan varlığındaki her alanı ve ajanın kullandığı enum'ları
 | `effort`                | `String?`              | Hayır   | Akıl yürütme düzeyi kimliği (örn. `'low'`, `'xhigh'`), seçilen modelin `thinkingLevels` değerinden alınır                                                                                     |
 | `contextSize`           | `int?`                 | Hayır   | En büyük bağlam penceresi boyutu                                                                                                                                                              |
 | `role`                  | `AgentRole?`           | Hayır   | Ajan rolü                                                                                                                                                                                     |
-| `monthlyBudgetCents`    | `int`                  | Hayır   | Sent cinsinden aylık harcama üst sınırı (varsayılan `0`, sınırsız)                                                                                                                            |
+| `monthlyBudgetMicros`    | `int`                  | Hayır   | Mikrodolar cinsinden aylık harcama üst sınırı (varsayılan `0`, sınırsız)                                                                                                                            |
 | `silenceTimeoutMinutes` | `int?`                 | Hayır   | Dakika cinsinden sessizlik zaman aşımı geçersiz kılması; null olmalı ya da 1–240 arasında bulunmalıdır (kurucu tarafından doğrulanır)                                                         |
 | `maxConcurrentTasks`    | `int`                  | Hayır   | Varsayılan `1`. Varlık modelinin bildirdiği kapasite rakamı (çalışan ve kuyruktaki sayımlar bununla karşılaştırılır)                                                                          |
 | `visibility`            | `AgentVisibility`      | Hayır   | Varsayılan `workspace`                                                                                                                                                                        |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Hayır   | Yönetişim durumu (varsayılan `active`). Bütçe katı durdurması tarafından yazılır ve organizasyon şemasında ve varlık listesinde gösterilir. Gönderim, `paused` bir ajandan hâlâ iş kabul eder |
-| `budgetPolicyId`        | `String?`              | Hayır   | Paylaşılan bütçe politikası kimliği; null olduğunda doğrudan `monthlyBudgetCents` uygulanır                                                                                                   |
+| `budgetPolicyId`        | `String?`              | Hayır   | Paylaşılan bütçe politikası kimliği; null olduğunda doğrudan `monthlyBudgetMicros` uygulanır                                                                                                   |
 | `runtimeProfileId`      | `String?`              | Hayır   | Özel çalışma zamanı profili kimliği                                                                                                                                                           |
 | `createdAt`             | `DateTime`             | Evet    | Oluşturma zaman damgası                                                                                                                                                                       |
 
 `name` ve `title` ikisi de boş olmamalıdır (kurucu tarafından doğrulanır). Varsayılan
-`monthlyBudgetCents` değeri `0` sınırsız anlamına gelir. `agents.upsert` ile bir üst sınır yazın.
+`monthlyBudgetMicros` değeri `0` sınırsız anlamına gelir. `agents.upsert` ile bir üst sınır yazın.
 
 ## AgentRole enum
 

@@ -2,7 +2,7 @@
 title: Sikkerhetskopier og gjenopprett
 description: Ta et øyeblikksbilde av installasjonen, flytt et arbeidsområde mellom maskiner, gjenopprett ett arbeidsområde eller alle, og oppbevar kopier et annet sted.
 slug: nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Denne guiden dekker de fem tingene folk faktisk gjør med sikkerhetskopier: tar én, henter
@@ -44,10 +44,10 @@ Begge artefaktene er **bare databaser**:
 - Et **installasjonsøyeblikksbilde** er en katalog med tidsstempel: `manifest.json`, `global.db` og én `<workspaceId>/workspace.db` per arbeidsområde.
 - En **arbeidsområdeeksport** er den ene filen `workspace.db`.
 
-Et arbeidsområdes database er hele arbeidsområdet: samtalene, kjøringslogger, kodeindeksen, repokoblingene, miljødefinisjoner og medlemmene. Den holder også arbeidsområdets webhook-tokener for pipelinen og hemmelighetene for webhooks for sakssynkronisering, i lesbar form. Behandle en nedlastet sikkerhetskopi eller eksport av et arbeidsområde som en hemmelighet. Den inneholder ingen leverandørinnlogginger, enhetsnøkler eller brukerhemmeligheter; de ligger i den globale databasen og serverens hemmelighetslager.
+Et arbeidsområdes database er hele arbeidsområdet: samtalene, kjøringslogger, repokoblingene, miljødefinisjoner og medlemmene. Den inneholder ingen hemmeligheter: webhook-tokener for pipelinen, webhook-hemmeligheter for sakssynkronisering, leverandørpålogginger, enhetsnøkler og brukerhemmeligheter ligger i den globale databasen og serverens hemmelighetslager. Den er likevel alt arbeidsområdet har sagt og gjort, så behandle en nedlastet sikkerhetskopi eller eksport like privat som selve arbeidsområdet. Kodeindeksen er en egen fil ved siden av databasen, `code_index.db`. Ingen sikkerhetskopi tar den med; serveren bygger den på nytt.
 
 Ingen av dem tar med resten av datakatalogen: `secrets.json` (paringsnøkler,
-leverandørpåloggingsinformasjon, SSO), et arbeidsområdes `blobs/` (bilder limt inn i
+leverandørpåloggingsinformasjon, webhook-hemmeligheter, SSO), et arbeidsområdes `blobs/` (bilder limt inn i
 meldinger), `skills/`, `agents/`, `chat_credentials/`, opptak av møtelyd eller bilder fra
 stasjoner. Noe av dette er unødvendig å ta vare på, og noe er det ikke — den
 [fulle tabellen står i referansen](/nb-NO/handbok/referanse/sikkerhetskopi/#hva-en-sikkerhetskopi-ikke-inneholder),
@@ -64,17 +64,13 @@ Serveren kjører videre hele tiden. Hver fil skrives med `VACUUM INTO`, som er k
 mot en aktiv database, så det trengs ingen vedlikeholdsstopp og ingen grunn til å stanse
 agenter.
 
-Hver rad i listen viser tidsstempelet, størrelsen på disken, hvor mange arbeidsområder som
-ble fanget opp, og om øyeblikksbildet er **Fullstendig** eller **Ufullstendig**.
-Ufullstendig betyr at manifestet mangler eller navngir filer som ikke finnes — en
-sikkerhetskopi som ble avbrutt av et krasj eller en full disk. De listes fortsatt opp med
-vilje: et øyeblikksbilde du ikke ser, er ett du tror du har. Et ufullstendig
-øyeblikksbilde kan ikke gjenopprette en hel installasjon, men arbeidsområdefilene det
-faktisk inneholder, kan fortsatt tas i bruk ett om gangen.
+Hver rad i listen viser tidsstempelet, størrelsen på disken, hvor mange arbeidsområder som ble fanget opp, og om øyeblikksbildet er **Fullstendig** eller **Ikke verifisert**. Hver kopi kontrolleres etter at den er skrevet, og manifestet registrerer størrelsen og sjekksummen. Ikke verifisert betyr at serveren ikke kan stå inne for øyeblikksbildet: manifestet mangler eller kan ikke leses, eller en fil det navngir, finnes ikke eller har endret størrelse. Det kan være en sikkerhetskopi som ble avbrutt av et krasj eller en full disk, eller en som ble tatt før øyeblikksbilder registrerte sjekksummer. De listes fortsatt opp med vilje: et øyeblikksbilde du ikke ser, er ett du tror du har. Et uverifisert øyeblikksbilde kan ikke gjenopprette en hel installasjon, men arbeidsområdefilene det faktisk inneholder, kan fortsatt gjenopprettes ett om gangen.
 
 En rad kan også si **_n_ arbeidsområder ikke fanget opp**. Det er et arbeidsområde som er
-registrert, men aldri skrevet til (det finnes ingen fil ennå), eller ett der kopien
+registrert, men aldri skrevet til (det finnes ingen fil ennå), ett der databasen er skadet (en skadet kopi tas aldri), eller ett der kopien
 mislyktes — sjekk serverloggen.
+
+Et øyeblikksbilde eller en planlagt sikkerhetskopi merket **Siste gode kopi** holder den nyeste gode kopien av et arbeidsområde hvis database siden er blitt skadet. Planlagt opprydding lar den ligge, og å slette den krever bekreftelse, helt til arbeidsområdet er gjenopprettet.
 
 ## Planlegg sikkerhetskopier av arbeidsområder og oppbevaring
 
@@ -103,7 +99,7 @@ admin i, sier det i raden i stedet for å liste sikkerhetskopiene.
 
 Utvid en rad for å se hver sikkerhetskopi, med den nyeste først:
 
-- **Gjenopprett** erstatter arbeidsområdets gjeldende database med denne sikkerhetskopien. Eksporter arbeidsområdet først hvis du kan komme til å angre det. Krever serverens eier, som også må eie arbeidsområdet.
+- **Gjenopprett** erstatter arbeidsområdets gjeldende database med denne sikkerhetskopien. Databasen den erstatter beholdes i denne listen, under et navn som slutter på `-pre-restore`, så du kan gå tilbake. Krever serverens eier, som også må eie arbeidsområdet.
 - **Last ned** lagrer filen på maskinen du bruker. Sikkerhetskopien blir liggende på serveren.
 - **Kopier sti** kopierer plasseringen på serveren.
 - **Slett** fjerner denne sikkerhetskopien permanent når du har skrevet inn navnet på arbeidsområdet. Krever **eier**.
@@ -123,10 +119,7 @@ beskrevet i
 
 ## Slett et installasjonsøyeblikksbilde
 
-Under **Installasjonsøyeblikksbilder** utvider du øyeblikksbildet, også et ufullstendig
-ett, og bruker **Slett øyeblikksbilde** i faresonen. Bekreft navnet. Hele
-øyeblikksbildekatalogen fjernes permanent fra serveren; last den ned først hvis du trenger
-en kopi. En pipeline for arbeidsområdesikkerhetskopi sletter aldri disse øyeblikksbildene.
+Under **Installasjonsøyeblikksbilder** utvider du øyeblikksbildet, også et uverifisert, og bruker **Slett øyeblikksbilde** i faresonen. Bekreft navnet. Hele øyeblikksbildekatalogen fjernes permanent fra serveren; last den ned først hvis du trenger en kopi. En pipeline for arbeidsområdesikkerhetskopi sletter aldri disse øyeblikksbildene.
 
 ## Hent en kopi til din egen maskin
 
@@ -162,18 +155,14 @@ Steg 3 er en gjenoppretting, så den krever serverens eier på **mål**serveren,
 Hvis begge serverne er maskinen du sitter ved, gjør **Lagre på server** på kilden, og deretter filens sti i **Arbeidsområdets databasefil** og **Importer** på målet, det samme uten rundturen; stien løses opp på serververten.
 
 :::caution[Import erstatter alt]
-Import overskriver alt målarbeidsområdet inneholder nå, og det kan ikke angres. Eksporter
-målet først hvis det inneholder noe du kan komme til å ville ha tilbake.
+Import erstatter alt målarbeidsområdet inneholder nå. Databasen den erstatter beholdes under **Planlagte sikkerhetskopier** med et navn som slutter på `-pre-restore`; gjenopprett den for å gå tilbake.
 :::
 
-To ting er tillatt og loggføres i stedet for å avvises: å importere en fil der den
-registrerte arbeidsområde-id-en avviker fra målet (slik dupliserer du et arbeidsområde
-eller gjenoppretter det under en ny id), og å importere en fil fra en **annen
-installasjon**. I det andre tilfellet tilhører filens parede enheter og bruker-id-er
-installasjonen den kom fra, og de løses ikke opp på denne — arbeidsområdets egne data er
-intakte, men sjekk medlemskapet på nytt etter at du har tatt det i bruk.
+En fil fra et annet arbeidsområde eller fra en **annen installasjon** godtas: slik dupliserer du et arbeidsområde, gjenoppretter det under en ny id eller overleverer det til noen andre. Bruker-id-er fra en annen installasjon løses ikke opp på denne. Arbeidsområdets egne data er intakte, men sjekk medlemskapet på nytt etter at du har tatt det i bruk.
 
-Chatbot-tokener og leverandørinnlogginger ligger utenfor databasen, så installasjonen som mottar det, kobler til sine egne. Filen inneholder arbeidsområdets webhook-tokener for pipelinen og hemmelighetene for webhooks for sakssynkronisering, så et arbeidsområde du gir til noen andre, gir dem også disse. Roter dem etterpå hvis mottakeren ikke skal ha dem.
+En gjenopprettet fil kan ikke gi noe på denne serveren på egen hånd. Tillatelser den bar utover vanlig medlemskap, fjernes og listes under **Holdt tilbake fra gjenopprettede kopier** øverst på siden: handlingsregler som lar agenter handle uten godkjenning eller etter en, stier en sandkasse kan kjøre, repotilgang over lesetilgang, roller over medlem og åpne invitasjoner til disse rollene. **Godta** gir den tilbake; **Avvis** fjerner den. Godkjenninger til å kjøre en miljødefinisjon på verten fjernes, så godkjenn disse definisjonene på nytt. Den som gjenoppretter, beholder eller får eierrollen.
+
+Chatbot-tokener, leverandørpålogginger og webhook-hemmeligheter ligger utenfor databasen, så installasjonen som mottar det, kobler til sine egne. Webhook-utløsere og webhooks for sakssynkronisering kommer uten sine hemmeligheter og mottar ingenting på en annen server før du lagrer dem der igjen, noe som gir hver utløser en ny URL.
 
 ## Gjenopprett ett arbeidsområde fra et øyeblikksbilde
 
@@ -185,7 +174,7 @@ Du må være serverens eier og arbeidsområdets eier.
 
 Dette er samme operasjon som en import, rettet mot øyeblikksbildets kopi av
 arbeidsområdets fil — med vilje, slik at det ikke finnes en andre mekanisme som kan
-behandle den samme filen annerledes.
+behandle den samme filen annerledes. Kopien kontrolleres først mot sjekksummen som øyeblikksbildet registrerte.
 
 En rad kan si **Ikke lenger på denne serveren**, med **Gjenopprett** deaktivert:
 øyeblikksbildet inneholder et arbeidsområde denne installasjonen ikke lenger har. Hent det
@@ -193,6 +182,10 @@ tilbake manuelt — opprett et arbeidsområde (bare serverens eier), og skriv de
 `<snapshot path>/<old workspace id>/workspace.db` i feltet **Arbeidsområdets databasefil** under **Arbeidsområdedata**, og trykk **Importer**. Det
 utvidede øyeblikksbildet viser sin egen **Sti på serveren** i et kopifelt, og radens tittel
 er den gamle arbeidsområde-id-en, så du har begge halvdelene av stien foran deg.
+
+## Gjenopprett et skadet arbeidsområde
+
+Et arbeidsområde hvis database ikke består integritetssjekken, blir skrivebeskyttet: alt forblir lesbart, og alle endringer avvises. Medlemmer ser **Dette arbeidsområdet er skrivebeskyttet** øverst i arbeidsområdet, serverens eier ser det under **Krever din oppmerksomhet** på denne siden, og den nyeste sikkerhetskopien som har en god kopi, beholdes som **Siste gode kopi**. Gjenopprett arbeidsområdet fra den kopien, som beskrevet ovenfor, for å gjøre det skrivbart igjen. Den skadede databasen beholdes som en `-pre-restore`-sikkerhetskopi.
 
 ## Gjenopprett en hel installasjon
 
@@ -319,7 +312,7 @@ Kjør den som samme bruker som eier datakatalogen, fra cron eller en systemd-tim
 synkroniser `DEST` ut av verten etterpå. `VACUUM INTO` krever SQLite 3.27 eller nyere.
 
 Skriv den **utenfor** `<dataDir>/backups/`. En håndlaget katalog der har ingen
-`manifest.json`, så appen ville listet den opp som et ufullstendig øyeblikksbilde, og
+`manifest.json`, så appen ville listet den opp som et uverifisert øyeblikksbilde, og
 listen ville slutte å være en ærlig oversikt over det serveren selv har laget.
 
 ### Rydd bort gamle øyeblikksbilder av hele installasjonen
@@ -366,9 +359,11 @@ lagres.
 | «Bare serverens eier kan gjenopprette sikkerhetskopier. Du kan fortsatt laste dem ned.» | Å gjenopprette erstatter et arbeidsområdes database på serververten, så bare serverens eier gjenoppretter. Last ned sikkerhetskopien og be dem om det |
 | «Denne serveren har ingen sikkerhetskopiflate.»                          | Verten har ingen sikkerhetskopiport koblet opp — en demoserver. Operasjonene mangler i stedet for å bli avvist         |
 | «Filen er større enn serveren godtar.»                                   | Opplastinger er begrenset til 8 GiB. Legg filen på serververten og skriv inn stien i **Arbeidsområdets databasefil** i stedet |
-| Import avvist: ikke en Control Center-arbeidsområdedatabase              | Filen har ingen `workspace_meta`-rad — den er ikke en arbeidsområdeeksport, eller den er avkortet. Ingenting ble erstattet |
-| Et øyeblikksbilde står som **Ufullstendig**                              | Manifestet mangler eller navngir filer som ikke finnes. Ta et nytt; ta i mellomtiden i bruk enkeltfiler for arbeidsområder fra det |
-| Et øyeblikksbilde sier at arbeidsområder ikke ble fanget opp             | Disse arbeidsområdene har aldri blitt skrevet til, eller kopien deres mislyktes. Sjekk serverloggen                     |
+| Gjenoppretting avvises, og ingenting erstattes | Filen besto ikke en kontroll, og meldingen sier hvilken: den er ikke en arbeidsområdedatabase, den er skadet, den avviker fra sjekksummen øyeblikksbildet registrerte, en nyere versjon av serveren skrev den, eller webhooks eller invitasjoner i den tilhører allerede et annet arbeidsområde på denne serveren. Bruk en annen kopi, eller oppdater serveren først |
+| Et øyeblikksbilde står som **Ikke verifisert**                              | Det ble aldri fullført, eller det ble tatt før øyeblikksbilder registrerte sjekksummer. Ta et nytt; gjenopprett enkeltfiler for arbeidsområder fra det i mellomtiden |
+| Et øyeblikksbilde sier at arbeidsområder ikke ble fanget opp             | Disse arbeidsområdene har aldri blitt skrevet til, er skadet, eller kopien deres mislyktes. Sjekk serverloggen                     |
+| Et arbeidsområde sier **Dette arbeidsområdet er skrivebeskyttet** | Databasen besto ikke integritetssjekken. Ingenting i den kan endres før serverens eier gjenoppretter den fra en sikkerhetskopi |
+| Webhooks slutter å komme inn etter at et arbeidsområde flyttes til en annen server | Webhook-hemmeligheter følger ikke databasen. Lagre hver webhook-utløser og tilkobling for sakssynkronisering på nytt på den nye serveren, og gi avsenderen den nye URL-en |
 | En gjenopprettet installasjon mangler kodevert- eller SSO-påloggingsinformasjon | `secrets.json` ligger ikke i et øyeblikksbilde. Gjenopprett den fra stedet der du oppbevarte den, eller koble til leverandørene på nytt |
 | Et gjenopprettet arbeidsområde mangler innlimte bilder                   | Blobs ligger ved siden av databasen, ikke i den. Kopier `<workspaceId>/blobs/` over også                                  |
 

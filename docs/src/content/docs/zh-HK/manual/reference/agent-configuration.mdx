@@ -2,7 +2,7 @@
 title: 代理設定
 description: 代理實體上的每個欄位，以及它所用的列舉。
 slug: zh-HK/手冊/參考/代理設定
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 本參考列出代理實體上的每個欄位，以及它所用的列舉與旗標。若要在應用程式中逐步了解如何建立或編輯代理，請參見[建立並設定代理](/zh-HK/手冊/操作指南/建立代理/)。
@@ -26,16 +26,16 @@ sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 | `effort`                | `String?`              | 否   | 推理等級 id（例如 `'low'`、`'xhigh'`），取自所選模型的 `thinkingLevels`                                                                                                                             |
 | `contextSize`           | `int?`                 | 否   | 上下文窗口的大小上限                                                                                                                                                                                |
 | `role`                  | `AgentRole?`           | 否   | 代理的角色                                                                                                                                                                                          |
-| `monthlyBudgetCents`    | `int`                  | 否   | 以分為單位的每月支出上限（預設 `0`，即不限）                                                                                                                                                        |
+| `monthlyBudgetMicros`    | `int`                  | 否   | 以微美元為單位的每月支出上限（預設 `0`，即不限）                                                                                                                                                        |
 | `silenceTimeoutMinutes` | `int?`                 | 否   | 靜默逾時的覆寫值，以分鐘計；必須為 null 或落於 1–240 之間（由建構函式斷言）                                                                                                                         |
 | `maxConcurrentTasks`    | `int`                  | 否   | 預設 `1`。線上狀態模型所報告的容量數值（執行中與已排隊的計數都會與它比較）                                                                                                                          |
 | `visibility`            | `AgentVisibility`      | 否   | 預設 `workspace`                                                                                                                                                                                    |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | 否   | 治理狀態（預設 `active`）。由預算硬性停止寫入，並渲染在組織圖與線上狀態名冊上。派發仍會接受來自 `paused` 代理的工作                                                                                 |
-| `budgetPolicyId`        | `String?`              | 否   | 共享預算政策 id；為 null 時直接套用 `monthlyBudgetCents`                                                                                                                                            |
+| `budgetPolicyId`        | `String?`              | 否   | 共享預算政策 id；為 null 時直接套用 `monthlyBudgetMicros`                                                                                                                                            |
 | `runtimeProfileId`      | `String?`              | 否   | 自訂執行階段設定檔 id                                                                                                                                                                               |
 | `createdAt`             | `DateTime`             | 是   | 建立時間戳                                                                                                                                                                                          |
 
-`name` 與 `title` 都必須非空（由建構函式斷言）。`monthlyBudgetCents` 的預設值
+`name` 與 `title` 都必須非空（由建構函式斷言）。`monthlyBudgetMicros` 的預設值
 `0` 代表不限。要寫入上限，請使用 `agents.upsert`。
 
 ## AgentRole 列舉

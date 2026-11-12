@@ -1,11 +1,33 @@
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
+import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
+
+/// Embeds every text to the same unit vector and counts the texts, so a test
+/// can tell a write that embedded from one that did not.
+class _FakeEmbedder extends EmbeddingPort {
+  _FakeEmbedder({this.isReady = true});
+
+  @override
+  bool isReady;
+
+  final List<String> texts = [];
+
+  @override
+  int get dimension => 384;
+
+  @override
+  Future<Float32List> embed(String text) async {
+    texts.add(text);
+    return Float32List(384)..[0] = 1;
+  }
+}
 
 void main() {
   late GlobalDatabase global;
@@ -45,6 +67,11 @@ void main() {
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, 'ws-1');
     await seedTestWorkspace(global, dbs, 'ws-2');
+    for (final ws in ['ws-1', 'ws-2']) {
+      for (final agent in ['agent-a', 'agent-b', 'agent-42']) {
+        await seedAgent(dbs.of(ws), agent);
+      }
+    }
     repo = DaoMemoryFactRepository(dbs);
   });
 
@@ -52,6 +79,17 @@ void main() {
     await dbs.closeAll();
     await global.close();
   });
+
+  Future<List<String>> vectorIds(String workspaceId) async => [
+    for (final row
+        in await dbs
+            .of(workspaceId)
+            .customSelect(
+              'SELECT fact_id FROM memory_fact_embeddings ORDER BY fact_id',
+            )
+            .get())
+      row.read<String>('fact_id'),
+  ];
 
   // ── CRUD ─────────────────────────────────────────────────────────────
 
@@ -80,23 +118,36 @@ void main() {
       expect(result!.content, 'Changed content');
     });
 
-    test('updating without an embedder clears both old vectors', () async {
-      await repo.upsert(makeFact());
-      // Simulate a vector computed by an embedder that is now unavailable.
-      await dbs.of('ws-1').customStatement(
-        'UPDATE memory_facts SET embedding = ?, binary_embedding = ? '
-        'WHERE id = ?',
-        [
-          Uint8List.fromList([1, 2, 3, 4]),
-          Uint8List.fromList([255]),
-          'f-1',
-        ],
+    test('updating without an embedder drops the vector of the old text '
+        'and keeps one that still fits', () async {
+      final embedder = _FakeEmbedder();
+      final embedding = DaoMemoryFactRepository(
+        dbs,
+        embeddingService: embedder,
       );
-      await repo.upsert(makeFact(content: 'A different meaning'));
+      await embedding.upsert(makeFact());
+      expect(await vectorIds('ws-1'), ['f-1']);
+
+      embedder.isReady = false;
+      // Same text (a confidence or counter change): the vector still fits.
+      await embedding.upsert(makeFact(confidence: 0.4));
+      expect(await vectorIds('ws-1'), ['f-1']);
+
+      await embedding.upsert(makeFact(content: 'A different meaning'));
       final row = await dbs.of('ws-1').memoryFactDao.getById('ws-1', 'f-1');
       expect(row!.content, 'A different meaning');
-      expect(row.embedding, isNull);
-      expect(row.binaryEmbedding, isNull);
+      expect(await vectorIds('ws-1'), isEmpty);
+    });
+
+    test('upsert with an embedder stores the vector beside the fact', () async {
+      final embedder = _FakeEmbedder();
+      await DaoMemoryFactRepository(
+        dbs,
+        embeddingService: embedder,
+      ).upsert(makeFact());
+
+      expect(embedder.texts, ['testing Use integration tests']);
+      expect(await vectorIds('ws-1'), ['f-1']);
     });
 
     test('getById returns null for unknown id', () async {
@@ -465,6 +516,51 @@ void main() {
       await repo.upsert(makeFact(supersededBy: null));
       final result = await repo.getById('ws-1', 'f-1');
       expect(result!.isSuperseded, isFalse);
+    });
+  });
+
+  // ── Backfill ──────────────────────────────────────────────────────────
+
+  group('backfillEmbeddings', () {
+    test(
+      'embeds the active facts that have no vector, and only those',
+      () async {
+        await repo.upsert(makeFact(id: 'f-1'));
+        await repo.upsert(makeFact(id: 'f-2', content: 'Prefer fakes'));
+        await repo.upsert(makeFact(id: 'f-3', supersededBy: 'f-1'));
+        await repo.upsert(makeFact(id: 'f-4', workspaceId: 'ws-2'));
+        final embedder = _FakeEmbedder();
+        final backfill = DaoMemoryFactRepository(
+          dbs,
+          embeddingService: embedder,
+        );
+
+        expect(await backfill.backfillEmbeddings('ws-1', batchSize: 1), 2);
+        expect(await vectorIds('ws-1'), ['f-1', 'f-2']);
+        expect(await vectorIds('ws-2'), isEmpty);
+        expect(embedder.texts, {
+          'testing Use integration tests',
+          'testing Prefer fakes',
+        });
+
+        expect(await backfill.backfillEmbeddings('ws-1'), 0);
+      },
+    );
+
+    test('embeds nothing while the model is not installed', () async {
+      await repo.upsert(makeFact());
+      final embedder = _FakeEmbedder(isReady: false);
+
+      expect(
+        await DaoMemoryFactRepository(
+          dbs,
+          embeddingService: embedder,
+        ).backfillEmbeddings('ws-1'),
+        0,
+      );
+      expect(await repo.backfillEmbeddings('ws-1'), 0);
+      expect(embedder.texts, isEmpty);
+      expect(await vectorIds('ws-1'), isEmpty);
     });
   });
 }

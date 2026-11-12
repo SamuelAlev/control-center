@@ -11,18 +11,17 @@ Map<String, dynamic> _rootJson(CodeSymbolsTableData symbol) => {
 /// blast-radius view. A file with no indexed symbols reports `indexed: false`.
 Future<Map<String, dynamic>> fileBlastRadiusPayload({
   required CodeGraphDao dao,
-  required String workspaceId,
   required String repoId,
   required String filePath,
   required int depth,
 }) async {
-  final symbols = await dao.getSymbolsByFiles(workspaceId, repoId, [filePath]);
+  final symbols = await dao.getSymbolsByFiles(repoId, [filePath]);
   if (symbols.isEmpty) {
     return {'nodes': const [], 'edges': const [], 'indexed': false};
   }
   symbols.sort((a, b) => (b.endLine - b.startLine) - (a.endLine - a.startLine));
   final root = symbols.first;
-  final impact = await dao.getImpactRadius(workspaceId, root.id, depth: depth);
+  final impact = await dao.getImpactRadius(root.id, depth: depth);
   return {
     'indexed': true,
     'root': _rootJson(root),
@@ -52,13 +51,12 @@ Future<Map<String, dynamic>> fileBlastRadiusPayload({
 /// root, and a symbol reached from several keeps its shortest distance.
 Future<Map<String, dynamic>> cohortImpactPayload({
   required CodeGraphDao dao,
-  required String workspaceId,
   required String repoId,
   required List<String> filePaths,
   required String cohortKey,
   required int depth,
 }) async {
-  final symbols = await dao.getSymbolsByFiles(workspaceId, repoId, filePaths);
+  final symbols = await dao.getSymbolsByFiles(repoId, filePaths);
   if (symbols.isEmpty) {
     return {'indexed': false, 'nodes': const [], 'edges': const []};
   }
@@ -77,11 +75,7 @@ Future<Map<String, dynamic>> cohortImpactPayload({
   final nodes = <String, Map<String, dynamic>>{};
   final edges = <String, Map<String, dynamic>>{};
   for (final dominant in dominantByFile.values) {
-    final impact = await dao.getImpactRadius(
-      workspaceId,
-      dominant.id,
-      depth: depth,
-    );
+    final impact = await dao.getImpactRadius(dominant.id, depth: depth);
     for (final n in impact.nodes) {
       final hop = impact.depthById[n.id] ?? 0;
       final existing = nodes[n.id];

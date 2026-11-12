@@ -19,14 +19,14 @@ void main() {
     required String ws,
     required String scopeType,
     required String scopeId,
-    int monthlyBudgetCents = 1000,
+    int monthlyBudgetMicros = 1000,
   }) => db.budgetDao.upsertPolicy(
     BudgetPolicyTableCompanion.insert(
       id: id,
-      workspaceId: Value(ws),
+      workspaceId: ws,
       scopeType: scopeType,
       scopeId: scopeId,
-      monthlyBudgetCents: Value(monthlyBudgetCents),
+      monthlyBudgetMicros: Value(monthlyBudgetMicros),
     ),
   );
 
@@ -67,17 +67,17 @@ void main() {
         ws: 'w-1',
         scopeType: 'agent',
         scopeId: 'a-1',
-        monthlyBudgetCents: 1000,
+        monthlyBudgetMicros: 1000,
       );
       await seedPolicy(
         id: 'bp-1',
         ws: 'w-1',
         scopeType: 'agent',
         scopeId: 'a-1',
-        monthlyBudgetCents: 2000,
+        monthlyBudgetMicros: 2000,
       );
       final row = await db.budgetDao.getPolicyById('w-1', 'bp-1');
-      expect(row?.monthlyBudgetCents, 2000);
+      expect(row?.monthlyBudgetMicros, 2000);
     });
 
     test('getPolicyById is workspace-scoped', () async {
@@ -99,11 +99,13 @@ void main() {
         scopeType: 'agent',
         scopeId: 'a-1',
       );
+      // One file holds one workspace, where a scope has one policy; the
+      // second workspace's policy caps another agent.
       await seedPolicy(
         id: 'bp-2',
         ws: 'w-2',
         scopeType: 'agent',
-        scopeId: 'a-1',
+        scopeId: 'a-2',
       );
       expect(
         (await db.budgetDao.getPolicyForScope('w-1', 'agent', 'a-1'))?.id,
@@ -111,7 +113,11 @@ void main() {
       );
       expect(
         await db.budgetDao.getPolicyForScope('w-2', 'agent', 'a-1'),
-        isNotNull,
+        isNull,
+      );
+      expect(
+        (await db.budgetDao.getPolicyForScope('w-2', 'agent', 'a-2'))?.id,
+        'bp-2',
       );
       // Uncapped scope returns null.
       expect(
@@ -150,8 +156,8 @@ void main() {
         workspaceId: ws,
         scopeType: scopeType,
         scopeId: scopeId,
-        spentCents: 800,
-        budgetCents: 1000,
+        spentMicros: const Value(800),
+        budgetMicros: const Value(1000),
         isHardStop: Value(hardStop),
         reason: 'soft_threshold',
       ),

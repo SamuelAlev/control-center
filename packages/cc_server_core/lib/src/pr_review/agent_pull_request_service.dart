@@ -146,7 +146,6 @@ class AgentPullRequestService implements AgentPullRequestPort {
     final String url;
     try {
       final pr = await _requesters.open(
-        workspaceId: workspaceId,
         repo: repo,
         head: draft.head,
         approvalOwnerUserIds: approvalOwners,

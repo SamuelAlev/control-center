@@ -748,16 +748,13 @@ void main() {
             .toList();
 
         expect(turns, hasLength(2));
-        expect(turns[0].usage.estimatedCostCents, 100);
-        expect(turns[1].usage.estimatedCostCents, 50);
+        expect(turns[0].usage.costMicros, 1000000);
+        expect(turns[1].usage.costMicros, 500000);
         expect(turns[1].usage.inputTokens, 40);
 
-        // The absolute snapshot carries the CLI's own running total, and keeps
-        // the legacy cents axis at zero so a cents-summing consumer cannot add
-        // it on top of the deltas.
+        // The absolute snapshot carries the CLI's own running total.
         expect(cumulative, isNotEmpty);
         expect(cumulative.last.usage.costMicros, 1500000);
-        expect(cumulative.last.usage.estimatedCostCents, 0);
         expect(cumulative.last.usage.costBasis, CostBasis.subscription);
         expect(cumulative.last.usage.inputTokens, 140);
 

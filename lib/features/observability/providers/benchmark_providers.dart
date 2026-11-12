@@ -42,13 +42,13 @@ BenchmarkTrial _trialFromRun(AgentRunLog run) {
       TrialStatus.fail => 0,
       _ => null,
     },
-    costCents: run.cost.estimatedCostCents,
+    costMicros: run.cost.costMicros,
     // Each run is its own trial and contributes only its own spend. Subagent
     // cost already appears as the subagent's own trial, so folding the parent's
-    // rolled-up `childCostCents` in here too would double-count it in the
+    // rolled-up `childCostMicros` in here too would double-count it in the
     // report's total spend. Keep advisor cost at 0 (no separate advisor spend
     // is tracked per trial).
-    advisorCostCents: 0,
+    advisorCostMicros: 0,
     // tokIn includes cache-read (the reference counts cached prefix in input);
     // tokOut folds reasoning into output; tokCache is the cached-read overlap.
     tokIn: run.cost.inputTokens + run.cost.cachedReadTokens,

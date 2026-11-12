@@ -1,12 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
+import 'package:cc_persistence/database/code_index/code_index_database.dart';
 import 'package:cc_persistence/database/tables/code_edges.dart';
 import 'package:cc_persistence/database/tables/code_files.dart';
 import 'package:cc_persistence/database/tables/code_index_checkpoints.dart';
+import 'package:cc_persistence/database/tables/code_symbol_embeddings.dart';
 import 'package:cc_persistence/database/tables/code_symbols.dart';
 import 'package:cc_persistence/database/utils/fts_query_utils.dart';
-import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/search/rrf.dart';
 import 'package:drift/drift.dart';
 
@@ -15,18 +16,24 @@ part 'code_graph_dao.g.dart';
 /// Data access for the code graph: symbols, edges and per-file index state.
 ///
 /// Search mirrors MemoryFactDao exactly — FTS5 (BM25), sqlite_vector KNN,
-/// and RRF fusion of the two — scoped by `workspaceId` (and `repoId`). Graph
-/// traversal (callers / callees / impact radius) walks `code_edges`, also
-/// scoped by `workspaceId` so it never crosses workspace boundaries.
+/// and RRF fusion of the two — scoped by `repoId` and the checkout partition.
+/// Graph traversal (callers / callees / impact radius) walks `code_edges`.
+/// A symbol row carries no vector (`code_symbol_embeddings` does), so only
+/// the vector search and the embedding bookkeeping touch the side table.
+///
+/// Hangs off one workspace's [CodeIndexDatabase], which holds that workspace's
+/// index and nothing else, so no method takes a workspace id: the caller
+/// picked the file by it (`WorkspaceDatabaseManager.codeIndexOf`).
 @DriftAccessor(
   tables: [
     CodeSymbolsTable,
+    CodeSymbolEmbeddingsTable,
     CodeEdgesTable,
     CodeFilesTable,
     CodeIndexCheckpointsTable,
   ],
 )
-class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
+class CodeGraphDao extends DatabaseAccessor<CodeIndexDatabase>
     with _$CodeGraphDaoMixin {
   /// Creates a [CodeGraphDao].
   CodeGraphDao(super.attachedDatabase);
@@ -99,8 +106,81 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   // Ingest
 
   /// Batch-upserts symbols (deterministic ids → in-place update on re-index).
+  ///
+  /// An upsert updates in place, so a symbol keeps its vector row; whether
+  /// that vector still fits is the caller's call ([putEmbeddings],
+  /// [deleteEmbeddings]).
   Future<void> upsertSymbols(List<CodeSymbolsTableCompanion> rows) =>
       batch((b) => b.insertAllOnConflictUpdate(codeSymbolsTable, rows));
+
+  /// Stores each vector of [embeddings] (symbol id to FLOAT32 bytes),
+  /// replacing the one a symbol had. The symbols must exist: this is the
+  /// ingest's write, inside the transaction that just upserted them.
+  Future<void> putEmbeddings(Map<String, Uint8List> embeddings) {
+    if (embeddings.isEmpty) {
+      return Future.value();
+    }
+    return batch(
+      (b) => b.insertAllOnConflictUpdate(codeSymbolEmbeddingsTable, [
+        for (final MapEntry(key: id, value: vector) in embeddings.entries)
+          CodeSymbolEmbeddingsTableCompanion.insert(
+            symbolId: id,
+            embedding: vector,
+          ),
+      ]),
+    );
+  }
+
+  /// Removes the vectors of the symbols [ids], chunked at
+  /// [_maxInListVariables] per statement. The symbol rows stay.
+  ///
+  /// For a re-index that changed a symbol's text without a vector to go with
+  /// it (the model is not installed): the old vector would rank the symbol
+  /// for what it no longer says.
+  Future<void> deleteEmbeddings(List<String> ids) async {
+    for (var i = 0; i < ids.length; i += _maxInListVariables) {
+      final chunk = ids.sublist(
+        i,
+        (i + _maxInListVariables).clamp(0, ids.length),
+      );
+      await (delete(
+        codeSymbolEmbeddingsTable,
+      )..where((t) => t.symbolId.isIn(chunk))).go();
+    }
+  }
+
+  /// Stores each backfilled vector for a symbol that has none yet and whose
+  /// stored text is still the text the vector was computed from. Returns how
+  /// many were stored.
+  ///
+  /// The backfill embeds outside any transaction, so by the time it writes a
+  /// symbol may be gone (its file was re-indexed), changed, or embedded by an
+  /// ingest; each of those is skipped instead of failing the batch on a
+  /// foreign key or overwriting a fresher vector.
+  Future<int> putBackfilledEmbeddings(
+    List<({CodeSymbolsTableData symbol, Uint8List embedding})> embeddings,
+  ) => transaction(() async {
+    var stored = 0;
+    for (final e in embeddings) {
+      stored += await customUpdate(
+        'INSERT INTO code_symbol_embeddings (symbol_id, embedding) '
+        'SELECT id, ? FROM code_symbols '
+        'WHERE id = ? AND qualified_name = ? AND signature = ? '
+        'AND docstring IS ? '
+        'ON CONFLICT (symbol_id) DO NOTHING',
+        variables: [
+          Variable<Uint8List>(e.embedding),
+          Variable<String>(e.symbol.id),
+          Variable<String>(e.symbol.qualifiedName),
+          Variable<String>(e.symbol.signature),
+          Variable<String>(e.symbol.docstring),
+        ],
+        updates: {codeSymbolEmbeddingsTable},
+        updateKind: UpdateKind.insert,
+      );
+    }
+    return stored;
+  });
 
   /// Batch-upserts edges.
   Future<void> upsertEdges(List<CodeEdgesTableCompanion> rows) => batch(
@@ -116,14 +196,12 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Reads the code-file index entry for a single file in the [checkoutId]
   /// partition (null = linked checkout).
   Future<CodeFilesTableData?> getFile(
-    String workspaceId,
     String repoId,
     String path, {
     String? checkoutId,
   }) =>
       (select(codeFilesTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
                 t.repoId.equals(repoId) &
                 _checkoutFilter(t.checkoutId, checkoutId) &
                 t.path.equals(path),
@@ -133,15 +211,10 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Whether the [checkoutId] partition holds any indexed file (null = linked
   /// checkout). `LIMIT 1` — the existence probe on the read path, so it never
   /// pays for the full partition the way [getFiles] does.
-  Future<bool> hasFiles(
-    String workspaceId,
-    String repoId, {
-    String? checkoutId,
-  }) async =>
+  Future<bool> hasFiles(String repoId, {String? checkoutId}) async =>
       await (select(codeFilesTable)
             ..where(
               (t) =>
-                  t.workspaceId.equals(workspaceId) &
                   t.repoId.equals(repoId) &
                   _checkoutFilter(t.checkoutId, checkoutId),
             )
@@ -152,13 +225,11 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Reads all code-file index entries for a repo in the [checkoutId]
   /// partition (null = linked checkout).
   Future<List<CodeFilesTableData>> getFiles(
-    String workspaceId,
     String repoId, {
     String? checkoutId,
   }) =>
       (select(codeFilesTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
                 t.repoId.equals(repoId) &
                 _checkoutFilter(t.checkoutId, checkoutId),
           ))
@@ -172,7 +243,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// rows each, on the ONE shared database connection every RPC read also
   /// queues behind. Chunked because the paths ride as bound variables.
   Future<List<CodeFilesTableData>> getFilesByPaths(
-    String workspaceId,
     String repoId,
     List<String> paths, {
     String? checkoutId,
@@ -189,7 +259,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
       out.addAll(
         await (select(codeFilesTable)..where(
               (t) =>
-                  t.workspaceId.equals(workspaceId) &
                   t.repoId.equals(repoId) &
                   _checkoutFilter(t.checkoutId, checkoutId) &
                   t.path.isIn(chunk),
@@ -204,12 +273,11 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// and vector indexes never observe a half-removed file. Scoped to the
   /// [checkoutId] partition (null = linked checkout).
   Future<void> deleteByFile(
-    String workspaceId,
     String repoId,
     String filePath, {
     String? checkoutId,
   }) => transaction(
-    () => deleteFileRows(workspaceId, repoId, filePath, checkoutId: checkoutId),
+    () => deleteFileRows(repoId, filePath, checkoutId: checkoutId),
   );
 
   /// The three per-file delete statements of [deleteByFile] WITHOUT the
@@ -217,14 +285,12 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// ingest path) — a nested `transaction()` per file would open a savepoint
   /// per file inside the outer transaction.
   Future<void> deleteFileRows(
-    String workspaceId,
     String repoId,
     String filePath, {
     String? checkoutId,
   }) async {
     await (delete(codeSymbolsTable)..where(
           (t) =>
-              t.workspaceId.equals(workspaceId) &
               t.repoId.equals(repoId) &
               _checkoutFilter(t.checkoutId, checkoutId) &
               t.filePath.equals(filePath),
@@ -232,7 +298,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         .go();
     await (delete(codeEdgesTable)..where(
           (t) =>
-              t.workspaceId.equals(workspaceId) &
               t.repoId.equals(repoId) &
               _checkoutFilter(t.checkoutId, checkoutId) &
               t.sourceFilePath.equals(filePath),
@@ -240,7 +305,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         .go();
     await (delete(codeFilesTable)..where(
           (t) =>
-              t.workspaceId.equals(workspaceId) &
               t.repoId.equals(repoId) &
               _checkoutFilter(t.checkoutId, checkoutId) &
               t.path.equals(filePath),
@@ -250,17 +314,16 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// The EDGE half of [deleteFileRows] on its own, for the ingest path, which
   /// replaces a file's edges wholesale but must NOT drop its symbol rows — a
-  /// surviving symbol row carries an embedding worth keeping (see
-  /// [getSymbolEmbedInputs]). Edges hold no vector, so churning them is free.
+  /// surviving symbol has a vector worth keeping, and deleting the symbol
+  /// cascades to it (see [getSymbolEmbedInputs]). Edges hold no vector, so
+  /// churning them is free.
   Future<void> deleteFileEdgeRows(
-    String workspaceId,
     String repoId,
     String filePath, {
     String? checkoutId,
   }) =>
       (delete(codeEdgesTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
                 t.repoId.equals(repoId) &
                 _checkoutFilter(t.checkoutId, checkoutId) &
                 t.sourceFilePath.equals(filePath),
@@ -271,10 +334,10 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   ///
   /// The ingest path's replacement for "delete every symbol of this file": it
   /// removes only the symbols a fresh extraction no longer defines, leaving the
-  /// rest to be upserted in place. Scoped to [workspaceId] so it can never
-  /// touch another workspace's row (ids are already partition-unique — the
-  /// hash includes the checkout).
-  Future<void> deleteSymbolsByIds(String workspaceId, List<String> ids) async {
+  /// rest to be upserted in place. Ids are partition-unique (the hash includes
+  /// the checkout), so no further scope is needed. Their vectors go with them
+  /// (`ON DELETE CASCADE`).
+  Future<void> deleteSymbolsByIds(List<String> ids) async {
     if (ids.isEmpty) {
       return;
     }
@@ -283,20 +346,17 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         i,
         (i + _maxInListVariables).clamp(0, ids.length),
       );
-      await (delete(
-            codeSymbolsTable,
-          )..where((t) => t.workspaceId.equals(workspaceId) & t.id.isIn(chunk)))
-          .go();
+      await (delete(codeSymbolsTable)..where((t) => t.id.isIn(chunk))).go();
     }
   }
 
   /// PROJECTION-ONLY read of what each already-indexed symbol in [filePaths]
-  /// was embedded FROM, without dragging its embedding blob along: the id, the
-  /// three text fields the embed text is built out of and whether the row
-  /// already carries a vector.
+  /// was embedded FROM: the id, the three text fields the embed text is built
+  /// out of and whether the symbol has a vector (a probe of the side table's
+  /// primary key, never a read of the vector).
   ///
   /// This is what lets a re-index skip inference for a symbol whose text did
-  /// not change. Reading the blobs to compare them would defeat the point (a
+  /// not change. Reading the vectors to compare them would defeat the point (a
   /// 384-float vector is ~1.5KB and a generated file can hold thousands of
   /// symbols), so the comparison is on the INPUTS.
   ///
@@ -304,7 +364,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// caller is about to rewrite that partition's rows and a base row's
   /// embedding is not a worktree row's to reuse.
   Future<List<CodeSymbolEmbedRow>> getSymbolEmbedInputs(
-    String workspaceId,
     String repoId,
     List<String> filePaths, {
     String? checkoutId,
@@ -312,7 +371,13 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     if (filePaths.isEmpty) {
       return const [];
     }
-    final hasEmbedding = codeSymbolsTable.embedding.isNotNull();
+    final hasEmbedding = existsQuery(
+      selectOnly(codeSymbolEmbeddingsTable)
+        ..addColumns([codeSymbolEmbeddingsTable.symbolId])
+        ..where(
+          codeSymbolEmbeddingsTable.symbolId.equalsExp(codeSymbolsTable.id),
+        ),
+    );
     final out = <CodeSymbolEmbedRow>[];
     for (var i = 0; i < filePaths.length; i += _maxInListVariables) {
       final chunk = filePaths.sublist(
@@ -321,8 +386,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
       );
       final query = selectOnly(codeSymbolsTable)
         ..where(
-          codeSymbolsTable.workspaceId.equals(workspaceId) &
-              codeSymbolsTable.repoId.equals(repoId) &
+          codeSymbolsTable.repoId.equals(repoId) &
               _checkoutFilter(codeSymbolsTable.checkoutId, checkoutId) &
               codeSymbolsTable.filePath.isIn(chunk),
         )
@@ -350,12 +414,12 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     return out;
   }
 
-  /// Deletes many files' symbols/edges/file rows in ONE transaction with
+  /// Deletes many files' symbols (and with them their vectors), edges and
+  /// file rows in ONE transaction with
   /// `IN (...)` predicates, chunked at [_maxInListVariables] paths per
   /// statement (portable under SQLite's historical 999-variable ceiling).
   /// Replaces the prune path's one-transaction-per-path loop.
   Future<void> deleteFilesBatch(
-    String workspaceId,
     String repoId,
     List<String> filePaths, {
     String? checkoutId,
@@ -371,7 +435,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         );
         await (delete(codeSymbolsTable)..where(
               (t) =>
-                  t.workspaceId.equals(workspaceId) &
                   t.repoId.equals(repoId) &
                   _checkoutFilter(t.checkoutId, checkoutId) &
                   t.filePath.isIn(chunk),
@@ -379,7 +442,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
             .go();
         await (delete(codeEdgesTable)..where(
               (t) =>
-                  t.workspaceId.equals(workspaceId) &
                   t.repoId.equals(repoId) &
                   _checkoutFilter(t.checkoutId, checkoutId) &
                   t.sourceFilePath.isIn(chunk),
@@ -387,7 +449,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
             .go();
         await (delete(codeFilesTable)..where(
               (t) =>
-                  t.workspaceId.equals(workspaceId) &
                   t.repoId.equals(repoId) &
                   _checkoutFilter(t.checkoutId, checkoutId) &
                   t.path.isIn(chunk),
@@ -402,51 +463,65 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// a name used in two lists ([getSymbolNameIndex]).
   static const _maxInListVariables = 400;
 
-  /// Removes the entire index for a repo within a workspace — ALL checkout
-  /// partitions (repo unlink must not strand a worktree partition whose
-  /// `isolated_repos` row is already gone).
+  /// Removes the entire index for a repo, vectors included — ALL checkout
+  /// partitions (repo
+  /// unlink must not strand a worktree partition whose `isolated_repos` row is
+  /// already gone).
+  ///
+  /// Explicit because the rows live in a file of their own and no foreign key
+  /// reaches them from `repos`: the code that removes a repo from
+  /// `workspace.db` calls this.
   ///
   /// The index CHECKPOINTS go with it and that is load-bearing: a checkpoint
   /// says "this partition is current as of fingerprint X", so leaving one
   /// behind after wiping the rows makes the next run short-circuit on a match
   /// and serve an empty graph forever. Index state and its checkpoint are
   /// deleted together, always.
-  Future<void> deleteByRepo(String workspaceId, String repoId) =>
+  Future<void> deleteByRepo(String repoId) => transaction(() async {
+    await (delete(
+      codeSymbolsTable,
+    )..where((t) => t.repoId.equals(repoId))).go();
+    await (delete(codeEdgesTable)..where((t) => t.repoId.equals(repoId))).go();
+    await (delete(codeFilesTable)..where((t) => t.repoId.equals(repoId))).go();
+    await (delete(
+      codeIndexCheckpointsTable,
+    )..where((t) => t.repoId.equals(repoId))).go();
+  });
+
+  /// Removes one worktree partition ([checkoutId], an `isolated_repos` id of
+  /// [repoId]) with its vectors and its checkpoint, for the code that deletes the worktree's
+  /// row from `workspace.db`. The linked checkout's partition is never
+  /// touched: only [deleteByRepo] removes that.
+  Future<void> deleteByCheckout(String repoId, String checkoutId) =>
       transaction(() async {
         await (delete(codeSymbolsTable)..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) & t.repoId.equals(repoId),
+              (t) => t.repoId.equals(repoId) & t.checkoutId.equals(checkoutId),
             ))
             .go();
         await (delete(codeEdgesTable)..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) & t.repoId.equals(repoId),
+              (t) => t.repoId.equals(repoId) & t.checkoutId.equals(checkoutId),
             ))
             .go();
         await (delete(codeFilesTable)..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) & t.repoId.equals(repoId),
+              (t) => t.repoId.equals(repoId) & t.checkoutId.equals(checkoutId),
             ))
             .go();
         await (delete(codeIndexCheckpointsTable)..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) & t.repoId.equals(repoId),
+              (t) => t.repoId.equals(repoId) & t.checkoutId.equals(checkoutId),
             ))
             .go();
       });
 
   // Reads
 
-  /// Reads a symbol by id, scoped to [workspaceId].
-  Future<CodeSymbolsTableData?> getSymbolById(String workspaceId, String id) =>
-      (select(codeSymbolsTable)
-            ..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id)))
-          .getSingleOrNull();
+  /// Reads a symbol by id.
+  Future<CodeSymbolsTableData?> getSymbolById(String id) => (select(
+    codeSymbolsTable,
+  )..where((t) => t.id.equals(id))).getSingleOrNull();
 
   /// Reads symbols matching a name as seen from the [checkoutId] partition
   /// (null = linked checkout): the worktree's delta merged over the base.
   Future<List<CodeSymbolsTableData>> getSymbolsByName(
-    String workspaceId,
     String repoId,
     String name, {
     int limit = 20,
@@ -455,7 +530,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     await (select(codeSymbolsTable)
           ..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
                 t.repoId.equals(repoId) &
                 _mergedCheckoutFilter(t.checkoutId, checkoutId) &
                 t.name.equals(name),
@@ -470,14 +544,12 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Watches symbols in a repo as seen from the [checkoutId] partition, sorted
   /// by file path (null = linked checkout).
   Stream<List<CodeSymbolsTableData>> watchSymbolsByRepo(
-    String workspaceId,
     String repoId, {
     String? checkoutId,
   }) =>
       (select(codeSymbolsTable)
             ..where(
               (t) =>
-                  t.workspaceId.equals(workspaceId) &
                   t.repoId.equals(repoId) &
                   _mergedCheckoutFilter(t.checkoutId, checkoutId),
             )
@@ -485,38 +557,40 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
           .watch()
           .map((rows) => preferCheckout(rows, checkoutId));
 
-  /// Symbols still missing an embedding — fed to a background backfill so the
-  /// embedding model never blocks ingest.
+  /// Symbols that have no vector yet (indexed while the model was missing),
+  /// the backfill's work list.
   ///
-  /// CROSS-PARTITION BY DESIGN: workspace- and repo-scoped but deliberately not
-  /// checkout-scoped, because every partition's symbols need embeddings and the
-  /// backfill sweeps them all. The workspace-scoped alternative for read paths
-  /// is [getSymbolsByRepo], which does take `checkoutId`.
-  Future<List<CodeSymbolsTableData>> getSymbolsWithoutEmbedding(
-    String workspaceId,
-    String repoId, {
+  /// "No vector" is "no side row": an anti-join probing the side table's
+  /// primary key once per symbol.
+  ///
+  /// CROSS-PARTITION BY DESIGN: neither repo- nor checkout-scoped, because
+  /// every partition's symbols need vectors and the backfill sweeps the whole
+  /// file, which holds one workspace. The partition-scoped alternative for
+  /// read paths is [getSymbolsByRepo].
+  Future<List<CodeSymbolsTableData>> getSymbolsWithoutEmbedding({
     int limit = 200,
-  }) =>
-      (select(codeSymbolsTable)
-            ..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) &
-                  t.repoId.equals(repoId) &
-                  t.embedding.isNull(),
-            )
-            ..limit(limit))
-          .get();
+  }) => customSelect(
+    withoutEmbeddingSql,
+    variables: [Variable<int>(limit)],
+    readsFrom: {codeSymbolsTable, codeSymbolEmbeddingsTable},
+  ).map((row) => codeSymbolsTable.map(row.data)).get();
+
+  /// The statement [getSymbolsWithoutEmbedding] runs (public so a test can
+  /// assert its plan).
+  static const withoutEmbeddingSql =
+      'SELECT cs.* FROM code_symbols cs '
+      'WHERE NOT EXISTS (SELECT 1 FROM code_symbol_embeddings e '
+      'WHERE e.symbol_id = cs.id) '
+      'LIMIT ?';
 
   /// Reads all symbols in a repo, scoped to the [checkoutId] partition
   /// (null = linked checkout).
   Future<List<CodeSymbolsTableData>> getSymbolsByRepo(
-    String workspaceId,
     String repoId, {
     String? checkoutId,
   }) async => preferCheckout(
     await (select(codeSymbolsTable)..where(
           (t) =>
-              t.workspaceId.equals(workspaceId) &
               t.repoId.equals(repoId) &
               _mergedCheckoutFilter(t.checkoutId, checkoutId),
         ))
@@ -525,10 +599,9 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   );
 
   /// Reads symbols in the given [filePaths] of a repo (used to build review
-  /// cohorts from a PR's changed files — PRD 18 §1). Scoped to [workspaceId]
-  /// and the [checkoutId] partition (null = linked checkout).
+  /// cohorts from a PR's changed files — PRD 18 §1). Scoped to the
+  /// [checkoutId] partition (null = linked checkout).
   Future<List<CodeSymbolsTableData>> getSymbolsByFiles(
-    String workspaceId,
     String repoId,
     List<String> filePaths, {
     String? checkoutId,
@@ -538,7 +611,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     }
     return (select(codeSymbolsTable)..where(
           (t) =>
-              t.workspaceId.equals(workspaceId) &
               t.repoId.equals(repoId) &
               _mergedCheckoutFilter(t.checkoutId, checkoutId) &
               t.filePath.isIn(filePaths),
@@ -549,10 +621,9 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// Reads RESOLVED edges whose source is in the given [filePaths] (used to
   /// link a PR's changed files into semantic cohorts — PRD 18 §1). Only edges
-  /// with a bound `targetSymbolId` are returned. Scoped to [workspaceId] and
-  /// the [checkoutId] partition (null = linked checkout).
+  /// with a bound `targetSymbolId` are returned. Scoped to the
+  /// [checkoutId] partition (null = linked checkout).
   Future<List<CodeEdgesTableData>> getResolvedEdgesBySourceFiles(
-    String workspaceId,
     String repoId,
     List<String> filePaths, {
     String? checkoutId,
@@ -562,7 +633,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     }
     return (select(codeEdgesTable)..where(
           (e) =>
-              e.workspaceId.equals(workspaceId) &
               e.repoId.equals(repoId) &
               _checkoutFilter(e.checkoutId, checkoutId) &
               e.sourceFilePath.isIn(filePaths) &
@@ -577,9 +647,8 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// [getResolvedEdgesBySourceFiles] is the outbound equivalent and cannot answer this: it
   /// starts from the changed files, whereas coverage starts from everything ELSE that reaches
   /// them.
-  /// Scoped to [workspaceId] and the [checkoutId] partition (null = linked checkout).
+  /// Scoped to the [checkoutId] partition (null = linked checkout).
   Future<List<CodeEdgesTableData>> getEdgesIntoSymbols(
-    String workspaceId,
     String repoId,
     List<String> targetSymbolIds, {
     String? checkoutId,
@@ -595,7 +664,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
       final rows =
           await (select(codeEdgesTable)..where(
                 (e) =>
-                    e.workspaceId.equals(workspaceId) &
                     e.repoId.equals(repoId) &
                     _checkoutFilter(e.checkoutId, checkoutId) &
                     e.targetSymbolId.isIn(chunk),
@@ -610,13 +678,11 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// references awaiting the name-resolution pass), scoped to the
   /// [checkoutId] partition (null = linked checkout).
   Future<List<CodeEdgesTableData>> getUnresolvedEdges(
-    String workspaceId,
     String repoId, {
     String? checkoutId,
   }) =>
       (select(codeEdgesTable)..where(
             (e) =>
-                e.workspaceId.equals(workspaceId) &
                 e.repoId.equals(repoId) &
                 _checkoutFilter(e.checkoutId, checkoutId) &
                 e.targetSymbolId.isNull() &
@@ -626,26 +692,15 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// Binds a previously-unresolved edge to a resolved target symbol id. Keeps
   /// the edge's id stable (id is derived at creation time, not from the
-  /// resolved target) so re-index doesn't churn rows. Scoped to [workspaceId]
-  /// so the update can never touch another workspace's edge.
-  Future<void> setEdgeTarget(
-    String workspaceId,
-    String edgeId,
-    String targetSymbolId,
-  ) =>
-      (update(codeEdgesTable)..where(
-            (e) => e.id.equals(edgeId) & e.workspaceId.equals(workspaceId),
-          ))
-          .write(
-            CodeEdgesTableCompanion(targetSymbolId: Value(targetSymbolId)),
-          );
+  /// resolved target) so re-index doesn't churn rows.
+  Future<void> setEdgeTarget(String edgeId, String targetSymbolId) =>
+      (update(codeEdgesTable)..where((e) => e.id.equals(edgeId))).write(
+        CodeEdgesTableCompanion(targetSymbolId: Value(targetSymbolId)),
+      );
 
   /// [setEdgeTarget] for many edges in ONE transaction — the resolution pass
   /// used to issue one auto-committed UPDATE per resolved edge.
-  Future<void> setEdgeTargets(
-    String workspaceId,
-    Map<String, String> edgeIdToTargetId,
-  ) {
+  Future<void> setEdgeTargets(Map<String, String> edgeIdToTargetId) {
     if (edgeIdToTargetId.isEmpty) {
       return Future.value();
     }
@@ -657,8 +712,7 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         b.update(
           codeEdgesTable,
           CodeEdgesTableCompanion(targetSymbolId: Value(entry.value)),
-          where: (e) =>
-              e.id.equals(entry.key) & e.workspaceId.equals(workspaceId),
+          where: (e) => e.id.equals(entry.key),
         );
       }
     });
@@ -668,18 +722,13 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// (null = linked checkout). O(unresolved) via the
   /// `idx_code_edges_unresolved` partial index — the cheap probe that lets a
   /// run skip [getUnresolvedEdges] and the symbol-name read entirely.
-  Future<int> countUnresolvedEdges(
-    String workspaceId,
-    String repoId, {
-    String? checkoutId,
-  }) async {
+  Future<int> countUnresolvedEdges(String repoId, {String? checkoutId}) async {
     final count = countAll();
     final row =
         await (selectOnly(codeEdgesTable)
               ..addColumns([count])
               ..where(
-                codeEdgesTable.workspaceId.equals(workspaceId) &
-                    codeEdgesTable.repoId.equals(repoId) &
+                codeEdgesTable.repoId.equals(repoId) &
                     _checkoutFilter(codeEdgesTable.checkoutId, checkoutId) &
                     codeEdgesTable.targetSymbolId.isNull() &
                     codeEdgesTable.targetName.isNotNull(),
@@ -692,22 +741,15 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// are still unresolved after the name-resolution pass — references to
   /// things outside the indexed tree (packages, SDKs, vendor namespaces) or
   /// ambiguous names. Same WHERE as [countUnresolvedEdges] (it walks the same
-  /// partial index), scoped to one workspace so it can never touch another
-  /// workspace's rows. Returns the number of rows deleted.
-  Future<int> deleteUnresolvedEdges(
-    String workspaceId,
-    String repoId, {
-    String? checkoutId,
-  }) =>
-      (delete(codeEdgesTable)
-            ..where(
-              (e) =>
-                  e.workspaceId.equals(workspaceId) &
-                  e.repoId.equals(repoId) &
-                  _checkoutFilter(e.checkoutId, checkoutId) &
-                  e.targetSymbolId.isNull() &
-                  e.targetName.isNotNull(),
-            ))
+  /// partial index). Returns the number of rows deleted.
+  Future<int> deleteUnresolvedEdges(String repoId, {String? checkoutId}) =>
+      (delete(codeEdgesTable)..where(
+            (e) =>
+                e.repoId.equals(repoId) &
+                _checkoutFilter(e.checkoutId, checkoutId) &
+                e.targetSymbolId.isNull() &
+                e.targetName.isNotNull(),
+          ))
           .go();
 
   /// PROJECTION-ONLY symbol lookup for the reference-resolution pass:
@@ -716,11 +758,9 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// partition (merged base + delta; callers de-duplicate per file path with
   /// worktree-wins semantics, mirroring [preferCheckout]).
   ///
-  /// The projection is the point: a full-row read materializes every symbol's
-  /// ~1.5KB embedding blob, which made resolution O(all symbols × row size)
-  /// even when a handful of names needed resolving.
+  /// The projection keeps resolution's reads to the five columns it uses: a
+  /// full row also carries the signature and doc comment of every candidate.
   Future<List<CodeSymbolNameRow>> getSymbolNameIndex(
-    String workspaceId,
     String repoId,
     Set<String> names, {
     String? checkoutId,
@@ -735,12 +775,9 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         i,
         (i + _maxInListVariables).clamp(0, list.length),
       );
-      // Scope FIRST, then project: the workspace filter belongs next to the
-      // read it guards (and the isolation ratchet reads it there).
       final query = selectOnly(codeSymbolsTable)
         ..where(
-          codeSymbolsTable.workspaceId.equals(workspaceId) &
-              codeSymbolsTable.repoId.equals(repoId) &
+          codeSymbolsTable.repoId.equals(repoId) &
               _mergedCheckoutFilter(codeSymbolsTable.checkoutId, checkoutId) &
               (codeSymbolsTable.name.isIn(chunk) |
                   codeSymbolsTable.qualifiedName.isIn(chunk)),
@@ -774,13 +811,11 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// query: the partition's own row plus (for a worktree) the base
   /// partition's, so the caller gets both without a second round trip.
   Future<List<CodeIndexCheckpointsTableData>> getCheckpointRows(
-    String workspaceId,
     String repoId, {
     String? checkoutId,
   }) =>
       (select(codeIndexCheckpointsTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
                 t.repoId.equals(repoId) &
                 _mergedCheckoutFilter(t.checkoutId, checkoutId),
           ))
@@ -795,23 +830,17 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Full-text search over code symbols via FTS5, scoped to the [checkoutId]
   /// partition (null = linked checkout).
   Future<List<CodeSymbolsTableData>> searchFts(
-    String workspaceId,
     String repoId,
     String query, {
     int limit = 20,
     String? checkoutId,
   }) {
-    // The MATCH is scoped to [workspaceId] at the index level; the explicit
-    // `cs.workspace_id = ?` below remains the authoritative isolation filter,
-    // `cs.repo_id = ?` narrows to the repo within that workspace and the
-    // checkout predicate selects the partition (IS NULL for the linked
-    // checkout — FTS has no checkout column, so the filter rides on the
-    // content table like repo_id).
-    final match = toWorkspaceScopedFtsMatch(
-      query,
-      workspaceId,
-      textColumns: const ['name', 'qualified_name', 'signature', 'docstring'],
-    );
+    // `cs.repo_id = ?` narrows to the repo and the checkout predicate
+    // selects the partition (IS NULL for the linked checkout — FTS has no
+    // checkout column, so the filter rides on the content table like
+    // repo_id). Every FTS column is a text column, so the match needs no
+    // column filter.
+    final match = toFtsOrQuery(query);
     if (match.isEmpty) {
       return Future.value(const []);
     }
@@ -823,14 +852,12 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
           'SELECT cs.* FROM code_symbols cs '
           'JOIN code_symbols_fts fts ON fts.rowid = cs.rowid '
           'WHERE fts.code_symbols_fts MATCH ? '
-          'AND cs.workspace_id = ? '
           'AND cs.repo_id = ? '
           'AND ${checkoutId == null ? 'cs.checkout_id IS NULL' : '(cs.checkout_id IS NULL OR cs.checkout_id = ?)'} '
           'ORDER BY rank '
           'LIMIT ?',
           variables: [
             Variable<String>(match),
-            Variable<String>(workspaceId),
             Variable<String>(repoId),
             if (checkoutId != null) Variable<String>(checkoutId),
             // Over-fetch so the post-merge trim still yields `limit` rows.
@@ -845,17 +872,20 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
 
   /// Vector KNN search using sqlite_vector.
   ///
-  /// The scan has no per-workspace partition, so it spans every embedding in
-  /// the file and the `cs.workspace_id = ?` / `cs.repo_id = ?` filters below
-  /// are the isolation boundary (unlike FTS, which is also scoped at the index
-  /// level). `vector_full_scan_stream` yields every row with its distance and
+  /// The scan runs over `code_symbol_embeddings` and yields ITS rowids: each
+  /// is matched to its side row in this statement and the symbol is reached
+  /// through the `symbol_id` that row stores, never through a rowid of
+  /// `code_symbols`.
+  ///
+  /// The scan has no per-repo partition, so it spans every embedding in the
+  /// file and the `cs.repo_id = ?` / checkout filters below select the
+  /// partition. `vector_full_scan_stream` yields every row with its distance and
   /// no top-k cut, so those filters run BEFORE the ranking: `vector_full_scan`
   /// takes k up front, ranks across every repo and checkout in the file, and a
   /// repo whose symbols sit outside that global top-k came back empty. CROSS
   /// JOIN pins the scan as the outer loop; as the inner one it would re-run
   /// per candidate row.
   Future<List<CodeSymbolsTableData>> searchVector(
-    String workspaceId,
     String repoId,
     Float32List queryEmbedding, {
     int limit = 30,
@@ -865,21 +895,21 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         '[${queryEmbedding.map((v) => v.toStringAsFixed(6)).join(', ')}]';
     return customSelect(
           'SELECT cs.* FROM '
-          "vector_full_scan_stream('code_symbols', 'embedding', vector_as_f32(?)) AS v "
-          'CROSS JOIN code_symbols cs ON cs.rowid = v.rowid '
-          'WHERE cs.workspace_id = ? '
-          'AND cs.repo_id = ? '
+          "vector_full_scan_stream('code_symbol_embeddings', 'embedding', "
+          'vector_as_f32(?)) AS v '
+          'CROSS JOIN code_symbol_embeddings e ON e.rowid = v.rowid '
+          'CROSS JOIN code_symbols cs ON cs.id = e.symbol_id '
+          'WHERE cs.repo_id = ? '
           'AND ${checkoutId == null ? 'cs.checkout_id IS NULL' : '(cs.checkout_id IS NULL OR cs.checkout_id = ?)'} '
           'ORDER BY v.distance '
           'LIMIT ?',
           variables: [
             Variable<String>(vectorJson),
-            Variable<String>(workspaceId),
             Variable<String>(repoId),
             if (checkoutId != null) Variable<String>(checkoutId),
             Variable<int>(checkoutId == null ? limit : limit * 2),
           ],
-          readsFrom: {codeSymbolsTable},
+          readsFrom: {codeSymbolsTable, codeSymbolEmbeddingsTable},
         )
         .map((row) => codeSymbolsTable.map(row.data))
         .get()
@@ -890,7 +920,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// memory fact path. Scoped to the [checkoutId] partition (null = linked
   /// checkout).
   Future<List<CodeSymbolsTableData>> searchHybrid(
-    String workspaceId,
     String repoId,
     String query,
     Float32List queryEmbedding, {
@@ -900,14 +929,8 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     // Concurrent: two independent queries whose results are fused, so running
     // them in sequence just adds one's latency to the other's.
     final results = await Future.wait([
-      searchFts(workspaceId, repoId, query, checkoutId: checkoutId),
-      searchVector(
-        workspaceId,
-        repoId,
-        queryEmbedding,
-        limit: 30,
-        checkoutId: checkoutId,
-      ),
+      searchFts(repoId, query, checkoutId: checkoutId),
+      searchVector(repoId, queryEmbedding, limit: 30, checkoutId: checkoutId),
     ]);
     final ftsResults = results[0];
     final vectorResults = results[1];
@@ -923,10 +946,8 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   String _kindPlaceholders(Set<CodeEdgeKind> kinds) =>
       List.filled(kinds.length, '?').join(', ');
 
-  /// Symbols that [symbolId] points to via [kinds] edges (outgoing), scoped to
-  /// [workspaceId].
+  /// Symbols that [symbolId] points to via [kinds] edges (outgoing).
   Future<List<CodeSymbolsTableData>> getCallees(
-    String workspaceId,
     String symbolId, {
     Set<CodeEdgeKind> kinds = const {CodeEdgeKind.calls},
     int? limit,
@@ -936,13 +957,12 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     return customSelect(
           'SELECT cs.* FROM code_edges e '
           'JOIN code_symbols cs ON cs.id = e.target_symbol_id '
-          'WHERE e.source_symbol_id = ? AND e.workspace_id = ? '
+          'WHERE e.source_symbol_id = ? '
           'AND ${_edgePartitionSql(checkoutId)} '
           'AND e.kind IN (${_kindPlaceholders(kinds)})'
           '${limit != null ? ' LIMIT ?' : ''}',
           variables: [
             Variable<String>(symbolId),
-            Variable<String>(workspaceId),
             if (checkoutId != null) Variable<String>(checkoutId),
             ...names.map(Variable<String>.new),
             if (limit != null) Variable<int>(limit),
@@ -954,10 +974,8 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
         .then((rows) => preferCheckout(rows, checkoutId));
   }
 
-  /// Symbols that point to [symbolId] via [kinds] edges (incoming), scoped to
-  /// [workspaceId].
+  /// Symbols that point to [symbolId] via [kinds] edges (incoming).
   Future<List<CodeSymbolsTableData>> getCallers(
-    String workspaceId,
     String symbolId, {
     Set<CodeEdgeKind> kinds = const {CodeEdgeKind.calls},
     int? limit,
@@ -967,13 +985,12 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     return customSelect(
           'SELECT cs.* FROM code_edges e '
           'JOIN code_symbols cs ON cs.id = e.source_symbol_id '
-          'WHERE e.target_symbol_id = ? AND e.workspace_id = ? '
+          'WHERE e.target_symbol_id = ? '
           'AND ${_edgePartitionSql(checkoutId)} '
           'AND e.kind IN (${_kindPlaceholders(kinds)})'
           '${limit != null ? ' LIMIT ?' : ''}',
           variables: [
             Variable<String>(symbolId),
-            Variable<String>(workspaceId),
             if (checkoutId != null) Variable<String>(checkoutId),
             ...names.map(Variable<String>.new),
             if (limit != null) Variable<int>(limit),
@@ -992,7 +1009,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Uses a recursive CTE (`UNION` for cycle safety); [depth] is clamped to
   /// 1..6 to bound runaway recursion on dense graphs.
   Future<CodeImpactResult> getImpactRadius(
-    String workspaceId,
     String symbolId, {
     int depth = 2,
     Set<CodeEdgeKind> edgeKinds = const {
@@ -1012,21 +1028,17 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
       '  FROM code_edges e'
       '  JOIN impact ON e.target_symbol_id = impact.id'
       '  WHERE impact.d < ? AND e.target_symbol_id IS NOT NULL'
-      '    AND e.workspace_id = ?'
       '    AND ${_edgePartitionSql(checkoutId)}'
       '    AND e.kind IN (${_kindPlaceholders(edgeKinds)})'
       ') '
       'SELECT cs.*, MIN(impact.d) AS impact_depth '
       'FROM impact JOIN code_symbols cs ON cs.id = impact.id '
-      'WHERE cs.workspace_id = ? '
       'GROUP BY cs.id',
       variables: [
         Variable<String>(symbolId),
         Variable<int>(clamped),
-        Variable<String>(workspaceId),
         if (checkoutId != null) Variable<String>(checkoutId),
         ...names.map(Variable<String>.new),
-        Variable<String>(workspaceId),
       ],
       readsFrom: {codeEdgesTable, codeSymbolsTable},
     ).get();
@@ -1047,7 +1059,6 @@ class CodeGraphDao extends DatabaseAccessor<WorkspaceDatabase>
     final edges =
         await (select(codeEdgesTable)..where(
               (e) =>
-                  e.workspaceId.equals(workspaceId) &
                   e.sourceSymbolId.isIn(ids) &
                   e.targetSymbolId.isIn(ids) &
                   e.kind.isIn(names),
@@ -1087,15 +1098,14 @@ class CodeSymbolEmbedRow {
   /// Doc comment, when the symbol has one.
   final String? docstring;
 
-  /// Whether the stored row already carries an embedding. A row without one has
-  /// nothing to reuse (the model was not ready when it was indexed) and must be
-  /// embedded on this pass or left for the backfill.
+  /// Whether the symbol already has a vector. One without has nothing to reuse
+  /// (the model was not ready when it was indexed) and must be embedded on
+  /// this pass or left for the backfill.
   final bool hasEmbedding;
 }
 
 /// One row of [CodeGraphDao.getSymbolNameIndex] — the projection the
-/// reference-resolution pass needs, WITHOUT the embedding blob a full
-/// `code_symbols` row drags along.
+/// reference-resolution pass needs.
 class CodeSymbolNameRow {
   /// Creates a [CodeSymbolNameRow].
   const CodeSymbolNameRow({

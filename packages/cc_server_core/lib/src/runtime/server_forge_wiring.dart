@@ -575,6 +575,7 @@ _notificationViewCheck(
     method: method,
     params: params,
     createdAt: DateTime.now(),
+    seq: 0,
   ),
   userId,
 );

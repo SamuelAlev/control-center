@@ -370,18 +370,18 @@ class DemoReviewService {
             ),
         ],
       );
-      await _workProducts.upsert(
-        WorkProduct(
-          id: productId,
-          workspaceId: session.workspaceId,
-          title: 'Review: PR #${session.prNumber}',
-          artifactType: WorkProductType.report,
-          agentId: _agentId,
-          currentRevisionId: revisionId,
-          createdAt: now,
-          updatedAt: now,
-        ),
+      // The product first, then its revision, then the pointer to it: the
+      // product keys its revisions and the pointer keys back.
+      final product = WorkProduct(
+        id: productId,
+        workspaceId: session.workspaceId,
+        title: 'Review: PR #${session.prNumber}',
+        artifactType: WorkProductType.report,
+        agentId: _agentId,
+        createdAt: now,
+        updatedAt: now,
       );
+      await _workProducts.upsert(product);
       await _workProducts.addRevision(
         WorkProductRevision(
           id: revisionId,
@@ -394,6 +394,9 @@ class DemoReviewService {
           summary: script.headline,
           createdAt: now,
         ),
+      );
+      await _workProducts.upsert(
+        product.copyWith(currentRevisionId: revisionId),
       );
       await _messaging.sendMessage(
         workspaceId: session.workspaceId,

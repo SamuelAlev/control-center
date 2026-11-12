@@ -16,7 +16,13 @@ void main() {
 
   Future<void> seedSpace(String id) => db
       .into(db.spacesTable)
-      .insert(SpacesTableCompanion.insert(id: id, name: 'Ch $id'));
+      .insert(
+        SpacesTableCompanion.insert(
+          workspaceId: 'test-workspace',
+          id: id,
+          name: 'Ch $id',
+        ),
+      );
 
   Future<void> insertAssoc(
     String id,

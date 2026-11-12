@@ -6,6 +6,7 @@ import 'package:control_center/features/chat_bridges/presentation/widgets/chat_b
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,7 +97,7 @@ class _ChatCustomizeBotDialogState
               onChanged: (edited) => _edited = edited,
             ),
             AsyncError(:final error) => Text(
-              l10n.failedWithError('$error'),
+              failureMessage(l10n, error),
               style: CcTypography.caption.copyWith(color: t.bgErrorSolid),
             ),
             _ => Center(child: CcSpinner(size: 16, color: t.textTertiary)),
@@ -123,7 +124,7 @@ class _ChatCustomizeBotDialogState
           if (action.hasError) ...[
             const SizedBox(height: 12),
             Text(
-              l10n.failedWithError('${action.error}'),
+              failureMessage(l10n, action.error!),
               style: CcTypography.caption.copyWith(color: t.bgErrorSolid),
             ),
           ],

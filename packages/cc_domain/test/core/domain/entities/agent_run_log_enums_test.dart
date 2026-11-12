@@ -71,15 +71,10 @@ void main() {
       modelId: 'm',
       pid: 7,
       logPath: '/p',
-      cost: const RunCost(
-        inputTokens: 1,
-        outputTokens: 2,
-        estimatedCostCents: 3,
-      ),
+      cost: const RunCost(inputTokens: 1, outputTokens: 2, costMicros: 3),
       liveness: RunLiveness.productive,
       errorFamily: RunErrorFamily.budgetExceeded,
       lastOutputAt: DateTime(2025, 6, 1, 12),
-      continuationSummary: 'cs',
       contextSnapshotJson: '{}',
       pipelineRunId: 'pr',
       pipelineStepId: 'psr',
@@ -115,7 +110,7 @@ void main() {
       expect(full().isError, isFalse);
       expect(full().copyWith(status: RunStatus.running).isRunning, isTrue);
       expect(full().copyWith(status: RunStatus.pending).isActive, isTrue);
-      expect(full().totalCostCentsWithChildren, 12); // 3 + 9
+      expect(full().totalCostMicrosWithChildren, 90003); // 3 + 90000
     });
 
     test('copyWith remove flags clear nullable fields', () {
@@ -129,10 +124,6 @@ void main() {
       expect(base.copyWith(removeLiveness: true).liveness, isNull);
       expect(base.copyWith(removeErrorFamily: true).errorFamily, isNull);
       expect(base.copyWith(removeLastOutputAt: true).lastOutputAt, isNull);
-      expect(
-        base.copyWith(removeContinuationSummary: true).continuationSummary,
-        isNull,
-      );
       expect(
         base.copyWith(removeContextSnapshotJson: true).contextSnapshotJson,
         isNull,

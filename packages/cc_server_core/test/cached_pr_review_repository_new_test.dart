@@ -20,6 +20,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_state_repositories.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
@@ -886,9 +887,11 @@ CachedPrReviewRepository _makeRepo({
   DomainEventBus? eventBus,
   PrChangeSignals? changeSignals,
   String? cacheMemberId,
+  PrCodeOwnerRepository? codeOwners,
 }) => CachedPrReviewRepository(
   db: db,
   cacheMemberId: cacheMemberId,
+  codeOwners: codeOwners ?? _MemoryCodeOwners(),
   // The repository is forge-agnostic now, so the fake HTTP surface is driven
   // through the real GitHub adapter — which means these tests also cover the
   // adapter's mapping rather than bypassing it.
@@ -905,6 +908,21 @@ CachedPrReviewRepository _makeRepo({
   eventBus: eventBus,
   changeSignals: changeSignals,
 );
+
+/// Code owners learned per pull request, in memory.
+class _MemoryCodeOwners implements PrCodeOwnerRepository {
+  final Map<String, Set<String>> byPr = {};
+
+  @override
+  Future<Set<String>> addAndList(
+    String workspaceId, {
+    required String repoKey,
+    required int prNumber,
+    required Set<String> identities,
+  }) async => {
+    ...(byPr['$workspaceId|$repoKey#$prNumber'] ??= {})..addAll(identities),
+  };
+}
 
 // Tests
 void main() {
@@ -3022,22 +3040,42 @@ void main() {
   // -- Invalidation edge cases ----------------------------------------------
 
   group('CachedPrReviewRepository - invalidation edge cases', () {
-    test('invalidatePullRequest does not remove prCodeOwnerIds', () async {
-      await db.cacheDao.put(
+    test('invalidatePullRequest keeps the code owners it learned', () async {
+      // Code owners live in their own table, not in the refetchable cache
+      // the invalidation clears.
+      final global = createTestGlobalDatabase();
+      final dbs = createTestWorkspaceDatabases(global: global);
+      addTearDown(() async {
+        await dbs.closeAll();
+        await global.close();
+      });
+      await seedTestWorkspace(global, dbs, 'ws1');
+      final wsDb = dbs.of('ws1');
+      final owners = DaoPrCodeOwnerRepository(dbs);
+      await owners.addAndList(
         'ws1',
-        'prCodeOwnerIds',
-        'o/r#42',
-        '{"ids":["alice","bob"]}',
+        repoKey: 'o/r',
+        prNumber: 42,
+        identities: {'alice', 'bob'},
       );
-      await db.cacheDao.put('ws1', 'prDetail', 'o/r#42', 'data');
+      await wsDb.cacheDao.put('ws1', 'prDetail', 'o/r#42', 'data');
 
-      final repo = _makeRepo(db: db, apiClient: apiClient);
+      final repo = _makeRepo(
+        db: wsDb,
+        apiClient: apiClient,
+        codeOwners: owners,
+      );
       await repo.invalidatePullRequest(42);
 
-      expect(await db.cacheDao.read('ws1', 'prDetail', 'o/r#42'), isNull);
+      expect(await wsDb.cacheDao.read('ws1', 'prDetail', 'o/r#42'), isNull);
       expect(
-        await db.cacheDao.read('ws1', 'prCodeOwnerIds', 'o/r#42'),
-        '{"ids":["alice","bob"]}',
+        await owners.addAndList(
+          'ws1',
+          repoKey: 'o/r',
+          prNumber: 42,
+          identities: const {},
+        ),
+        {'alice', 'bob'},
       );
     });
   });

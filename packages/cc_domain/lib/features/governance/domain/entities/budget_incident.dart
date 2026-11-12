@@ -11,8 +11,8 @@ class BudgetIncident {
     this.policyId,
     required this.scopeType,
     required this.scopeId,
-    required this.spentCents,
-    required this.budgetCents,
+    required this.spentMicros,
+    required this.budgetMicros,
     this.isHardStop = false,
     required this.reason,
     required this.triggeredAt,
@@ -33,11 +33,11 @@ class BudgetIncident {
   /// Identifier within the scope.
   final String scopeId;
 
-  /// Cents spent when the incident fired.
-  final int spentCents;
+  /// Micro-dollars spent when the incident fired.
+  final int spentMicros;
 
-  /// Budget ceiling when the incident fired.
-  final int budgetCents;
+  /// Budget ceiling in micro-dollars when the incident fired.
+  final int budgetMicros;
 
   /// Whether this incident hard-stopped the scope.
   final bool isHardStop;
@@ -58,8 +58,8 @@ class BudgetIncident {
           policyId == other.policyId &&
           scopeType == other.scopeType &&
           scopeId == other.scopeId &&
-          spentCents == other.spentCents &&
-          budgetCents == other.budgetCents &&
+          spentMicros == other.spentMicros &&
+          budgetMicros == other.budgetMicros &&
           isHardStop == other.isHardStop &&
           reason == other.reason &&
           triggeredAt == other.triggeredAt;
@@ -71,8 +71,8 @@ class BudgetIncident {
     policyId,
     scopeType,
     scopeId,
-    spentCents,
-    budgetCents,
+    spentMicros,
+    budgetMicros,
     isHardStop,
     reason,
     triggeredAt,

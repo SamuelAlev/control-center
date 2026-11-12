@@ -1,8 +1,8 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
 import 'package:cc_persistence/database/tables/meetings.dart';
 import 'package:drift/drift.dart';
 
 @TableIndex(name: 'idx_meeting_segments_meetingId', columns: {#meetingId})
-@TableIndex(name: 'idx_meeting_segments_workspaceId', columns: {#workspaceId})
 /// Drift table for live transcript segments within a meeting.
 ///
 /// Each row is one transcribed window tagged with a [speaker] (`me` from the
@@ -19,8 +19,12 @@ class MeetingTranscriptSegmentsTable extends Table {
   /// Owning workspace (denormalized for workspace-scoped reads).
   TextColumn get workspaceId => text()();
 
-  /// Speaker space: `me` (microphone) or `them` (system audio).
-  TextColumn get speaker => text()();
+  /// Speaker space: `me` (microphone) or `them` (system audio)
+  /// (`MeetingSpeaker.toStorage()`).
+  TextColumn get speaker => text().check(
+    // ignore: recursive_getters
+    speaker.isIn(SpacesStoredValues.meetingSpeaker),
+  )();
 
   /// Diarized speaker label (e.g. `Person 1`), assigned by the post-recording
   /// diarization pipeline step. Null until/unless diarization runs. The coarse

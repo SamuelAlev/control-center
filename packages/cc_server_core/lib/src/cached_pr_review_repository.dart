@@ -25,11 +25,13 @@ import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_state_repositories.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/image_diff_resolution.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pr_review_cache_kinds.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/daos/review_dao.dart';
@@ -48,6 +50,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
   CachedPrReviewRepository({
     required this._db,
     required this._cacheMemberId,
+    required this._codeOwners,
     required ForgePrClient forgeClient,
     required this._owner,
     required this._repo,
@@ -65,6 +68,10 @@ class CachedPrReviewRepository implements PrReviewRepository {
   final WorkspaceDatabase _db;
 
   CacheDao get _cache => _db.cacheDao;
+
+  /// Reviewers a forge once flagged as code owners: state the forge forgets,
+  /// so it is kept in a table of its own rather than in the cache.
+  final PrCodeOwnerRepository _codeOwners;
 
   ReviewDao get _draft => _db.reviewDao;
 
@@ -2650,35 +2657,14 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Unions `newIds` into the persisted per-PR code-owner identity set and
   /// returns the updated set. Lets a code-owner shield persist after the
   /// reviewer's request is consumed by a review (a forge drops the flag
-  /// once the request is satisfied). Writes back only when the set grows.
-  Future<Set<String>> _mergeCodeOwnerIds(
-    int prNumber,
-    Set<String> newIds,
-  ) async {
-    final raw = await _cache.read(
-      _workspaceId,
-      _Kind.prCodeOwnerIds,
-      _prKey(prNumber),
-    );
-    final existing = <String>{};
-    if (raw != null) {
-      final map = await _decodeJsonMap(raw);
-      final ids = map?['ids'];
-      if (ids is List) {
-        existing.addAll(ids.whereType<String>());
-      }
-    }
-    final merged = <String>{...existing, ...newIds};
-    if (merged.length != existing.length) {
-      await _cache.put(
+  /// once the request is satisfied).
+  Future<Set<String>> _mergeCodeOwnerIds(int prNumber, Set<String> newIds) =>
+      _codeOwners.addAndList(
         _workspaceId,
-        _Kind.prCodeOwnerIds,
-        _prKey(prNumber),
-        await _encodeJson(<String, dynamic>{'ids': merged.toList()}),
+        repoKey: _cacheRepo,
+        prNumber: prNumber,
+        identities: newIds,
       );
-    }
-    return merged;
-  }
 
   /// Lists users who can be assigned to PRs in this repository.
   @override

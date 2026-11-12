@@ -4,6 +4,7 @@ import 'package:control_center/features/ticketing/presentation/widgets/project_v
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,7 +94,7 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
       final l10n = AppLocalizations.of(context);
       CcToastScope.of(
         context,
-      ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     }
   }
 

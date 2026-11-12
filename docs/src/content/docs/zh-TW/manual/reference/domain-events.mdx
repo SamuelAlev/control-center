@@ -2,7 +2,7 @@
 title: 領域事件
 description: 完整列出全部 54 個領域事件、它們的承載內容，以及消費它們的伺服器端訂閱者。
 slug: zh-TW/手冊/參考/領域事件
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## 事件匯流排
@@ -112,7 +112,7 @@ sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 | 事件                     | 承載內容                                                                                                 | 觸發時機                  |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | 建立稽核軌跡項目          |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | 支出超過閾值              |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | 支出超過閾值              |
 
 ## 身分與成員資格事件
 

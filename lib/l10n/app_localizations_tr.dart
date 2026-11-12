@@ -14364,13 +14364,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get backupSnapshotComplete => 'Tamamlandı';
 
   @override
-  String get backupSnapshotIncomplete => 'Eksik';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Manifest eksik veya olmayan dosyaları adlandırıyor, bu yüzden bu anlık görüntü tüm kurulumu geri yükleyemez. Var olan çalışma alanı dosyaları yine de tek tek alınabilir.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Anlık görüntüyü sil';
 
   @override
@@ -18512,4 +18505,234 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Bu makineyi izleyebilirsiniz. Makine, açıldığı kişinin oturum açmalarını kullanır; bu yüzden makineyi yalnızca o kişi sürebilir, portlarını yönlendirebilir, içine yapıştırabilir veya üzerine dosya bırakabilir.';
+
+  @override
+  String get refusalStorageBusy =>
+      'Sunucunun veritabanı şu an meşgul. Birazdan tekrar deneyin.';
+
+  @override
+  String get refusalStorageFull =>
+      'Sunucunun diski dolu, bu yüzden hiçbir şey kaydedilemiyor. Sunucu sahibinin yer açması gerekiyor.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Bu çalışma alanının verisi bozuk. Sunucu sahibinin bir yedekten geri yüklemesi gerekiyor.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Sunucu sahibi bir yedekten geri yükleyene kadar bu çalışma alanı salt okunur durumda, bu yüzden değişiklikler kaydedilemez.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Bu veri sunucunun daha yeni bir sürümü tarafından yazıldı. Sunucuyu güncelleyin, sonra tekrar deneyin.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Sunucu, yazmadığı bir veritabanı dosyası buldu. Sunucu sahibinin sunucunun veri klasörünü kontrol etmesi gerekiyor.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Bu çalışma alanı silindi.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Bu istek hâlâ işleniyor. Bitmesini bekleyin, ardından sonucu kontrol edin.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'Sunucuda bu yolda bir dosya yok. Hiçbir şey değiştirilmedi.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Bu dosya bozuk, bu yüzden geri yüklenemez. Hiçbir şey değiştirilmedi.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Bu dosya, yedeğin kaydettiği sağlama toplamıyla eşleşmiyor; değiştirilmiş ya da bozulmuş olabilir. Hiçbir şey değiştirilmedi.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Bu dosya sunucunun daha yeni bir sürümü tarafından yazıldı. Geri yüklemek için sunucuyu güncelleyin. Hiçbir şey değiştirilmedi.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Bu dosya bir çalışma alanı veritabanı değil. Hiçbir şey değiştirilmedi.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Bu dosya bu sunucunun biçimine getirilemedi. Hiçbir şey değiştirilmedi.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Bu dosya, bu sunucudaki başka bir çalışma alanına ait bağlantılar içeriyor ve geri yüklenmesi bu bağlantıları ele geçirir. Hiçbir şey değiştirilmedi.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'Bu çalışma alanı salt okunur';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Verisi bütünlük denetiminden geçemedi, bu yüzden değişiklikler kaydedilemez. Her şey hâlâ okunabilir. Sunucu sahibi bir yedekten geri yükleyebilir.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Verisi bütünlük denetiminden geçemedi, bu yüzden değişiklikler kaydedilemez. Her şey hâlâ okunabilir. Yazılabilir hale getirmek için bir yedekten geri yükleyin.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Yedeklemeleri aç';
+
+  @override
+  String get serverNoticesLabel => 'Dikkatinizi gerektiriyor';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Salt okunur';
+
+  @override
+  String serverNoticeSince(String time) {
+    return '$time itibarıyla';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Veritabanı bütünlük denetiminden geçemedi; bu yüzden yalnızca okunabiliyor ve her değişikliği reddediyor. Aşağıdaki listelerden bir yedekten geri yükleyin; siz geri yükleyene kadar son sağlam kopyası saklanır.';
+
+  @override
+  String get serverNoticeDetails => 'Ayrıntılar';
+
+  @override
+  String get backupSnapshotUnverified => 'Doğrulanmadı';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Bu anlık görüntü doğrulanamıyor. Ya hiç tamamlanmadı ya da anlık görüntüler sağlama toplamı kaydetmeden önce alındı; bu yüzden tüm kurulumu geri yüklemek için kullanılamaz. İçerdiği çalışma alanı dosyaları yine de tek tek geri yüklenebilir.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Son sağlam kopya';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Hasarlı bir çalışma alanının son sağlam kopyasını içerdiği için saklanıyor. Bu çalışma alanı geri yüklenene kadar temizlik bu yedeğe dokunmaz.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Bu, hasarlı bir çalışma alanının son sağlam kopyası. Silerseniz o çalışma alanını geri yüklemek için elinizde başka bir şey kalmaz.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'İncelemeniz için $count izin tutuldu. Bunlar sayfanın en üstünde listelenir.',
+      one:
+          'İncelemeniz için 1 izin tutuldu. Bu sayfanın en üstünde listelenir.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Geri yüklenen kopyalardan tutulanlar';
+
+  @override
+  String get importHoldsExplainer =>
+      'Geri yüklenen bir kopya, bu sunucuda kendi başına hiçbir izin veremez. Bu izinler kopyada vardı: birini kabul ederek yeniden verin ya da reddederek kaldırın.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Ajanlar, bir kişinin onayı olmadan şunu yapabilir: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Ajanlar, bir kişi onayladıktan sonra şunu yapabilir: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return '$command ile başlayan komutları çalıştır';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Bu çalışma alanındaki her yerde';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return '$space space\'inde';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return '$agent ajanı için';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandbox\'lar $path programını çalıştırabilir';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person, $repo deposunu değiştirebilir';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person, $repo deposundaki pull request\'leri inceleyebilir';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person, $repo deposuna $level erişimi alır';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person, $role rolünü alır';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return '$role rolüyle katılmak için açık bir davet';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$role rolüyle, $count depoya inceleme ya da yazma erişimiyle katılmak için açık bir davet',
+      one:
+          '$role rolüyle, 1 depoya inceleme ya da yazma erişimiyle katılmak için açık bir davet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Bu uygulama sürümünün tanımlayamadığı bir izin';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return '$time geri yüklendi';
+  }
+
+  @override
+  String get importHoldAccept => 'Kabul et';
+
+  @override
+  String get importHoldDismiss => 'Reddet';
+
+  @override
+  String get importHoldAcceptTitle => 'Bu izin verilsin mi?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nKabul etmek bunu sunucuda hemen verir.';
+  }
+
+  @override
+  String get importHoldAccepted => 'İzin verildi.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Hiçbir izin verilmedi: bunun kime ya da neye ait olduğu artık bu çalışma alanında değil.';
 }

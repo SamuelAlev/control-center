@@ -99,7 +99,7 @@ void main() {
         PairedDevicesTableCompanion(
           id: const Value(deviceId),
           userId: Value(ownerId),
-          workspaceId: const Value(workspaceId),
+          landingWorkspaceId: const Value(workspaceId),
           label: const Value('fork-a'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),

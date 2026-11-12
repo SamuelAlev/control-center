@@ -2,7 +2,7 @@
 title: Verklarende woordenlijst
 description: Definities van de kernbegrippen die in Control Center worden gebruikt.
 slug: nl-NL/handleiding/referentie/woordenlijst
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (een afgesloten VM — de enige backend met een kernelgrens, toegepast op interactieve terminals), native (OS-eigen Seatbelt op macOS, bubblewrap op Linux en WSL2) of none. Wordt één keer bij het opstarten geprobeerd; native omhult agentdispatch wanneer die beschikbaar is. Windows heeft geen native backend en Linux vereist bwrap plus socat; op een host zonder backend starten alleen de runs van de servereigenaar, zonder omhulling, en worden die van anderen geweigerd. --sandbox off laat de agents van elk lid zonder omhulling draaien.'],
 ['Rig', 'Een wegwerpmachine die een agent in realtime aanstuurt: een afgesloten browser of Linux-desktop, een door de host beheerde Android-emulator of iOS Simulator, of een afgesloten terminal. Live bekeken via zijn eigen baan op volledige resolutie, met overname die server-side wordt afgedwongen. Gebonden aan een gesprek, zodat het menselijke tabblad en de agenttool één machine aanspreken.'],
 ['Omhulling', 'De sterkere isolatie-eigenschap die beschikbaar is voor VM-ondersteunde rigs: een kernelgrens, een wegwerp-overlayschijf, een netwerkpoort die standaard weigert en een credential broker. Android- en iOS-rigs zijn wegwerpbaar maar gebruiken door de host beheerde netwerken, dus claimen deze grens niet. Elke rig aansturen gebruikt de beveiligingsklasse enclosureControl.'],
-['RunCost', 'Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in centen) voor één agentrun.'],
+['RunCost', 'Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in microdollar) voor één agentrun.'],
 ['WakeReason', 'Waarom een agent is gedispatcht. Zes waarden: gebruikersbericht, tickettoewijzing, hersteldispatch na een fout, kindticket afgerond, geplande vervolghartslag en pipelinestap.'],
 ['SandboxPort', 'Beheert de levenscyclus van de sandbox (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Geeft begrensde inloggegevens uit voor het starten van een sandbox (een token voor één repository voor de omgeving van een agent, schrijfrechten alleen voor het pushpad op de server) en geeft ze bij het opruimen weer vrij.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Omhulling**: De sterkere grens van een VM-ondersteunde rig — een kernelgrens, een wegwerp-overlayschijf, een netwerkpoort die standaard weigert en een credential broker. Android- en iOS-rigs zijn wegwerpbaar maar gebruiken door de host beheerd netwerk en claimen deze grens niet. Elke rig aansturen gebruikt de beveiligingsklasse `enclosureControl`.
 
-**RunCost**: Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in centen) voor één agentrun.
+**RunCost**: Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in microdollar) voor één agentrun.
 
 **WakeReason**: Waarom een agent is gedispatcht. Zes waarden: gebruikersbericht, tickettoewijzing, hersteldispatch na een fout, kindticket afgerond, geplande vervolghartslag en pipelinestap.
 

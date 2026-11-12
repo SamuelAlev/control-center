@@ -7,7 +7,7 @@ EvalRepetitionResult _rep({required bool g1, required bool g2}) =>
     EvalRepetitionResult(
       outcome: const EvalOutcome(
         completed: true,
-        costCents: 10,
+        costMicros: 10,
         turnCount: 5,
         durationMs: 100,
       ),

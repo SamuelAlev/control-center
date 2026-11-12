@@ -593,11 +593,6 @@ class RpcMessagingRepository
     String spaceId,
   ) => throw UnsupportedError('getMessagesWithEmbedding is host-side only');
 
-  @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String workspaceId, {
-    int limit = 200,
-  }) => throw UnsupportedError('getMessagesWithoutEmbedding is host-side only');
 }
 
 // Enum name→value lookups, built ONCE.

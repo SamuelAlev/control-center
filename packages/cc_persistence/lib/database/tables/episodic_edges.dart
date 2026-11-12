@@ -1,11 +1,11 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_spaces.dart';
+import 'package:cc_persistence/database/tables/memory_facts.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'idx_episodic_edges_workspaceId', columns: {#workspaceId})
-@TableIndex(name: 'idx_episodic_edges_source', columns: {#sourceFactId})
 @TableIndex(name: 'idx_episodic_edges_target', columns: {#targetFactId})
 @TableIndex(
   name: 'uq_episodic_edges_triple',
-  columns: {#workspaceId, #sourceFactId, #targetFactId, #edgeType},
+  columns: {#sourceFactId, #targetFactId, #edgeType},
   unique: true,
 )
 /// Workspace-scoped typed semantic edges between memory facts (the episodic
@@ -17,14 +17,22 @@ class EpisodicEdgesTable extends Table {
   /// Owning workspace.
   TextColumn get workspaceId => text()();
 
-  /// Source fact id.
-  TextColumn get sourceFactId => text()();
+  /// Source fact id. `ON DELETE CASCADE`: an edge is part of both facts.
+  @ReferenceName('edgesOut')
+  TextColumn get sourceFactId =>
+      text().references(MemoryFactsTable, #id, onDelete: KeyAction.cascade)();
 
-  /// Target fact id.
-  TextColumn get targetFactId => text()();
+  /// Target fact id. `ON DELETE CASCADE`, as [sourceFactId].
+  @ReferenceName('edgesIn')
+  TextColumn get targetFactId =>
+      text().references(MemoryFactsTable, #id, onDelete: KeyAction.cascade)();
 
-  /// Edge type slug (`related_to`, `references`, `contextual`).
-  TextColumn get edgeType => text()();
+  /// Edge type slug (`related_to`, `references`, `contextual`;
+  /// `EpisodicEdgeTypes.all`).
+  TextColumn get edgeType => text().check(
+    // ignore: recursive_getters
+    edgeType.isIn(SpacesStoredValues.edgeType),
+  )();
 
   /// Relatedness weight in `[0,1]`.
   RealColumn get weight => real().withDefault(const Constant(1.0))();

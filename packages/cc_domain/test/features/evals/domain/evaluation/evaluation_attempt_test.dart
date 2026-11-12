@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_task.dart';
@@ -52,13 +53,9 @@ EvaluationVerificationResult passing({String id = 'v'}) =>
 
 void main() {
   group('units', () {
-    test('a cent is 10,000 micro-USD in both directions', () {
+    test('a cent is 10,000 micro-dollars and sub-cent spend is kept', () {
       expect(microsPerCent, 10000);
-      const micros = EvaluationCostRoles(estimatedApiMicros: 10000);
-      expect(micros.budgetCents, 1);
       const subCent = EvaluationCostRoles(estimatedApiMicros: 4200);
-      // 4200 µ$ rounds to 0 cents for display, but the arithmetic keeps 4200.
-      expect(subCent.budgetCents, 0);
       expect(subCent.budgetMicros, 4200);
       expect(subCent.isComplete, isTrue);
     });
@@ -69,7 +66,6 @@ void main() {
       expect(none.isComplete, isFalse);
       expect(none.budgetMicros, isNull);
       expect(none.allAttemptMicros, isNull);
-      expect(none.budgetCents, 0);
     });
 
     test('a missing primary leg makes the attempt total unknown', () {
@@ -86,7 +82,6 @@ void main() {
       );
       expect(roles.isComplete, isTrue);
       expect(roles.allAttemptMicros, 15000);
-      expect(roles.allAttemptCents, 2);
     });
 
     test('prefers billed over estimated over subscription', () {

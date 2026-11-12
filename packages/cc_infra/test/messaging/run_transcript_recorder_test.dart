@@ -5,15 +5,23 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
+import 'package:cc_infra/src/messaging/transcript_folder.dart';
 import 'package:test/test.dart';
 
 /// Records every write so a test can assert the persisted shape and the flush
 /// count without a database.
 class _SpyRepo implements RunTranscriptRepository {
+  /// When set, the next write throws instead of storing.
+  bool failNext = false;
+
+  /// The stored rows, by position, as the database would hold them.
+  final _rows = <int, Map<String, dynamic>>{};
+
   final writes =
       <
         ({
           List<Map<String, dynamic>> segments,
+          Map<int, Map<String, dynamic>> changed,
           int chars,
           TurnOutcome? outcome,
           bool complete,
@@ -28,18 +36,25 @@ class _SpyRepo implements RunTranscriptRepository {
   Future<int> deleteForRun(String workspaceId, String runId) async => 0;
 
   @override
-  Future<void> upsert({
+  Future<void> write({
     required String runId,
     required String workspaceId,
-    required List<Map<String, dynamic>> segmentsJson,
+    required Map<int, Map<String, dynamic>> changedSegments,
+    required int segmentCount,
     required int transcriptChars,
     required DateTime startedAt,
     required DateTime updatedAt,
     TurnOutcome? outcome,
     bool complete = false,
   }) async {
+    if (failNext) {
+      failNext = false;
+      throw StateError('locked');
+    }
+    _rows.addAll(changedSegments);
     writes.add((
-      segments: segmentsJson,
+      segments: [for (var i = 0; i < segmentCount; i++) _rows[i]!],
+      changed: changedSegments,
       chars: transcriptChars,
       outcome: outcome,
       complete: complete,
@@ -58,10 +73,11 @@ class _ThrowingRepo implements RunTranscriptRepository {
   Future<int> deleteForRun(String workspaceId, String runId) async => 0;
 
   @override
-  Future<void> upsert({
+  Future<void> write({
     required String runId,
     required String workspaceId,
-    required List<Map<String, dynamic>> segmentsJson,
+    required Map<int, Map<String, dynamic>> changedSegments,
+    required int segmentCount,
     required int transcriptChars,
     required DateTime startedAt,
     required DateTime updatedAt,
@@ -263,5 +279,48 @@ void main() {
         expect(repo.writes, isEmpty);
       },
     );
+  });
+
+  group('flush', () {
+    test(
+      'a flush writes only the segments that changed since the last one',
+      () async {
+        final rec = open();
+        rec.add(ToolCallEvent(toolName: 'Read', toolCallId: 'call-1'));
+        rec.add(ToolResultEvent(toolCallId: 'call-1', outputs: 'body'));
+        await Future<void>.delayed(
+          kStructuralFlushDelay + const Duration(milliseconds: 150),
+        );
+        rec.add(ToolCallEvent(toolName: 'Bash', toolCallId: 'call-2'));
+        await Future<void>.delayed(
+          kStructuralFlushDelay + const Duration(milliseconds: 150),
+        );
+        await rec.finish(TurnOutcome.completed);
+
+        expect(repo.writes.first.changed.keys, [0]);
+        // The finished Read tool is never sent again.
+        for (final write in repo.writes.skip(1)) {
+          expect(write.changed.keys, isNot(contains(0)));
+        }
+        expect(repo.writes.last.segments, hasLength(2));
+      },
+    );
+
+    test('after a failed write the next one sends everything again', () async {
+      final flaky = _SpyRepo()..failNext = true;
+      final rec = RunTranscriptRecorder(
+        registry: registry,
+        repo: flaky,
+      ).begin(runId: 'run-4', workspaceId: 'ws-1', startedAt: _t0)!;
+      rec.add(ToolCallEvent(toolName: 'Read', toolCallId: 'call-1'));
+      await Future<void>.delayed(
+        kStructuralFlushDelay + const Duration(milliseconds: 150),
+      );
+      expect(flaky.writes, isEmpty);
+
+      await rec.finish(TurnOutcome.completed);
+
+      expect(flaky.writes.single.changed.keys, [0]);
+    });
   });
 }

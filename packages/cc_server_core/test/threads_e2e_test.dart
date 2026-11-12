@@ -55,7 +55,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(deviceId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('threads e2e'),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),

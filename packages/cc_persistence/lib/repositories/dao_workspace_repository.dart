@@ -70,7 +70,10 @@ class DaoWorkspaceRepository implements WorkspaceRepository {
     // reader touches it. Without this, the first read of a brand-new workspace
     // would create the file as a side effect — harmless, but it would put schema
     // creation on an arbitrary caller's latency path.
-    await _dbs.create(workspace.id);
+    if (workspace.deletedAt == null) {
+      _dbs.markLive(workspace.id);
+      await _dbs.create(workspace.id);
+    }
     return workspace.id;
   }
 
@@ -82,6 +85,9 @@ class DaoWorkspaceRepository implements WorkspaceRepository {
   @override
   Future<void> delete(String id) async {
     await _registry.deleteWorkspace(id);
+    // Marked before the files go, so nothing that still holds the id can
+    // open it again and leave an empty database behind.
+    _dbs.markDeleted(id);
     await _dbs.dropAndClose(id);
   }
 
@@ -101,7 +107,14 @@ class DaoWorkspaceRepository implements WorkspaceRepository {
   Future<bool> isRepoLinkedToWorkspace(String workspaceId, String repoId) =>
       _dbs.of(workspaceId).repoDao.exists(repoId);
 
+  /// Removes the repo and its code index, the index first (see
+  /// `DaoRepoRepository.delete`).
   @override
-  Future<void> unlinkRepoFromWorkspace(String workspaceId, String repoId) =>
-      _dbs.of(workspaceId).repoDao.deleteRepo(repoId).then((_) {});
+  Future<void> unlinkRepoFromWorkspace(
+    String workspaceId,
+    String repoId,
+  ) async {
+    await _dbs.codeIndexOf(workspaceId).codeGraphDao.deleteByRepo(repoId);
+    await _dbs.of(workspaceId).repoDao.deleteRepo(repoId);
+  }
 }

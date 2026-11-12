@@ -30,37 +30,37 @@ class _FakeTriggerRepo implements PipelineTriggerRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Mirrors the partial unique index: a key is held only by a delivery that is
+/// in flight (`queued`) or was dispatched.
 class _FakeDeliveryRepo implements WebhookDeliveryRepository {
-  _FakeDeliveryRepo({Set<String> existingDedupe = const {}})
-    : _existing = existingDedupe;
-  final Set<String> _existing;
   final List<WebhookDelivery> recorded = [];
 
   @override
   Future<void> record(WebhookDelivery delivery) async => recorded.add(delivery);
 
   @override
-  Future<void> update(WebhookDelivery delivery) async {
-    recorded
-      ..removeWhere((d) => d.id == delivery.id)
-      ..add(delivery);
+  Future<bool> claim(WebhookDelivery delivery) async {
+    final key = delivery.dedupeKey;
+    final held =
+        key != null &&
+        recorded.any(
+          (d) =>
+              d.triggerId == delivery.triggerId &&
+              d.dedupeKey == key &&
+              (d.status == WebhookDeliveryStatus.queued ||
+                  d.status == WebhookDeliveryStatus.dispatched),
+        );
+    if (held) {
+      return false;
+    }
+    recorded.add(delivery);
+    return true;
   }
 
   @override
-  Future<bool> existsByDedupeKey(
-    String workspaceId,
-    String triggerId,
-    String dedupeKey,
-  ) async => _existing.contains(dedupeKey);
-
-  @override
-  Future<WebhookDelivery?> getById(String workspaceId, String id) async {
-    for (final d in recorded) {
-      if (d.id == id && d.workspaceId == workspaceId) {
-        return d;
-      }
-    }
-    return null;
+  Future<void> update(WebhookDelivery delivery) async {
+    final index = recorded.indexWhere((d) => d.id == delivery.id);
+    recorded[index] = delivery;
   }
 
   @override
@@ -96,10 +96,12 @@ void main() {
   })
   build({
     Map<String, PipelineTrigger>? byToken,
-    Set<String> existingDedupe = const {},
+    List<bool> failRuns = const [],
   }) {
-    final deliveries = _FakeDeliveryRepo(existingDedupe: existingDedupe);
+    final deliveries = _FakeDeliveryRepo();
     final started = <String>[];
+    var ids = 0;
+    var runs = 0;
     final service = WebhookDeliveryService(
       triggerRepository: _FakeTriggerRepo(
         byToken ?? {token: _webhookTrigger()},
@@ -114,6 +116,11 @@ void main() {
             dedupKey,
             required armedByUserIds,
           }) async {
+            final fail = runs < failRuns.length && failRuns[runs];
+            runs++;
+            if (fail) {
+              throw StateError('engine down');
+            }
             started.add(
               armedByUserIds.isEmpty
                   ? templateId
@@ -122,7 +129,7 @@ void main() {
             );
             return null;
           },
-      idGenerator: () => 'delivery-id',
+      idGenerator: () => 'delivery-${ids++}',
     );
     return (service: service, deliveries: deliveries, started: started);
   }
@@ -146,23 +153,19 @@ void main() {
     );
   });
 
-  test(
-    'invalid signature → rejected (401), logged, NOT replayable, no run',
-    () async {
-      final h = build();
-      final result = await h.service.handle(
-        token: token,
-        headers: {'X-Hub-Signature-256': 'sha256=deadbeef'},
-        body: body,
-      );
-      expect(result.statusCode, 401);
-      expect(h.started, isEmpty);
-      final delivery = h.deliveries.recorded.single;
-      expect(delivery.status, WebhookDeliveryStatus.rejected);
-      expect(delivery.signatureStatus, WebhookSignatureStatus.invalid);
-      expect(delivery.replayable, isFalse);
-    },
-  );
+  test('invalid signature → rejected (401), logged, no run', () async {
+    final h = build();
+    final result = await h.service.handle(
+      token: token,
+      headers: {'X-Hub-Signature-256': 'sha256=deadbeef'},
+      body: body,
+    );
+    expect(result.statusCode, 401);
+    expect(h.started, isEmpty);
+    final delivery = h.deliveries.recorded.single;
+    expect(delivery.status, WebhookDeliveryStatus.rejected);
+    expect(delivery.signatureStatus, WebhookSignatureStatus.invalid);
+  });
 
   test('a run carries every admin who armed the webhook trigger', () async {
     final h = build(
@@ -206,25 +209,79 @@ void main() {
   });
 
   test(
-    'duplicate delivery (valid signature) → ignored (200), no run',
+    'a re-delivery of a dispatched delivery → ignored (200), no run',
     () async {
-      final h = build(existingDedupe: {'dup-123'});
+      final h = build();
+      final headers = {
+        'X-Hub-Signature-256': _sign(body, token),
+        'X-GitHub-Delivery': 'dup-123',
+      };
+      await h.service.handle(token: token, headers: headers, body: body);
       final result = await h.service.handle(
         token: token,
-        headers: {
-          'X-Hub-Signature-256': _sign(body, token),
-          'X-GitHub-Delivery': 'dup-123',
-        },
+        headers: headers,
         body: body,
       );
       expect(result.statusCode, 200);
-      expect(h.started, isEmpty);
-      expect(
-        h.deliveries.recorded.single.status,
+      expect(result.body, 'duplicate delivery');
+      expect(h.started, ['on_webhook']);
+      expect(h.deliveries.recorded.map((d) => d.status), [
+        WebhookDeliveryStatus.dispatched,
         WebhookDeliveryStatus.ignored,
-      );
+      ]);
     },
   );
+
+  test('a failed dispatch is dispatched again when retried', () async {
+    final h = build(failRuns: [true]);
+    final headers = {
+      'X-Hub-Signature-256': _sign(body, token),
+      'X-GitHub-Delivery': 'retry-1',
+    };
+    final first = await h.service.handle(
+      token: token,
+      headers: headers,
+      body: body,
+    );
+    expect(first.statusCode, 500);
+    expect(h.started, isEmpty);
+
+    final retry = await h.service.handle(
+      token: token,
+      headers: headers,
+      body: body,
+    );
+    expect(retry.statusCode, 202);
+    expect(h.started, ['on_webhook']);
+    expect(h.deliveries.recorded.map((d) => d.status), [
+      WebhookDeliveryStatus.failed,
+      WebhookDeliveryStatus.dispatched,
+    ]);
+  });
+
+  test('the log keeps allow-listed headers only, and no body', () async {
+    final h = build();
+    await h.service.handle(
+      token: token,
+      headers: {
+        'X-Hub-Signature-256': _sign(body, token),
+        'Authorization': 'Bearer secret',
+        'Cookie': 'session=secret',
+        'Content-Type': 'application/json',
+        'User-Agent': 'GitHub-Hookshot/1',
+        'X-GitHub-Event': 'pull_request',
+        'X-GitHub-Delivery': 'd-1',
+        'X-Forwarded-For': '10.0.0.1',
+      },
+      body: body,
+    );
+    expect(h.deliveries.recorded.single.headers, {
+      'content-type': 'application/json',
+      'user-agent': 'GitHub-Hookshot/1',
+      'x-github-event': 'pull_request',
+      'x-github-delivery': 'd-1',
+    });
+  });
 
   test('event filter excludes the action → ignored (200), no run', () async {
     final h = build(
@@ -248,20 +305,4 @@ void main() {
     expect(h.started, isEmpty);
     expect(h.deliveries.recorded.single.status, WebhookDeliveryStatus.ignored);
   });
-
-  test(
-    'replay refuses a delivery that failed signature verification',
-    () async {
-      final h = build();
-      // Log an invalid-signature delivery first.
-      await h.service.handle(
-        token: token,
-        headers: {'X-Hub-Signature-256': 'sha256=bad'},
-        body: body,
-      );
-      final result = await h.service.replay('ws1', 'delivery-id');
-      expect(result.statusCode, 409);
-      expect(h.started, isEmpty);
-    },
-  );
 }

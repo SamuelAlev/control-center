@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for the append-only per-user audit trail.
@@ -5,10 +6,9 @@ import 'package:drift/drift.dart';
 /// One row per human-attributed action, written at the op chokepoint.
 /// Workspace-scoped; rows are never updated and are pruned by the retention
 /// service.
-@TableIndex(
-  name: 'idx_user_activity_ws_created',
-  columns: {#workspaceId, #createdAt},
-)
+// The audit pages walk it newest first with the id as tiebreak, and the
+// retention sweep deletes by its time.
+@TableIndex(name: 'idx_user_activity_created', columns: {#createdAt, #id})
 class UserActivityTable extends Table {
   /// Unique entry identifier.
   TextColumn get id => text()();
@@ -16,16 +16,18 @@ class UserActivityTable extends Table {
   /// The workspace the action happened in (isolation boundary).
   TextColumn get workspaceId => text()();
 
-  /// The human who performed the action.
+  /// The human who performed the action. No foreign key: `users` lives in
+  /// `global.db`.
   TextColumn get userId => text()();
 
-  /// What happened (op name or semantic action).
+  /// What happened (op name or semantic action). Open set: every op name.
   TextColumn get action => text()();
 
-  /// Kind of entity acted on, when known.
+  /// Kind of entity acted on, when known. Open set: named by each op.
   TextColumn get targetType => text().nullable()();
 
-  /// Id of the entity acted on, when known.
+  /// Id of the entity acted on, when known. No foreign key: it names a row
+  /// of whichever table [targetType] means, or none.
   TextColumn get targetId => text().nullable()();
 
   /// The device the action came from, when known.
@@ -41,7 +43,10 @@ class UserActivityTable extends Table {
   /// Sanitized JSON object of the mutation's arguments (and a few
   /// contextual result fields). Null when nothing useful survived
   /// redaction.
-  TextColumn get details => text().nullable()();
+  TextColumn get details => text().nullable().check(
+    // ignore: recursive_getters
+    isJsonObject(details),
+  )();
 
   /// When the action happened.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();

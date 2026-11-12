@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_persistence/database/daos/messaging_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
@@ -31,14 +32,14 @@ class DaoSpaceReadRepository implements SpaceReadRepository {
   }) => _dao(workspaceId).markSpaceRead(spaceId, userId);
 
   @override
-  Stream<DateTime?> watchUserLastReadAt(
+  Stream<FeedPosition?> watchUserLastReadAt(
     String workspaceId,
     String spaceId,
     String userId,
   ) => _dao(workspaceId).watchUserLastReadAt(spaceId, userId);
 
   @override
-  Stream<Map<String, DateTime>> watchUserSpaceReads(
+  Stream<Map<String, FeedPosition>> watchUserSpaceReads(
     String workspaceId,
     String userId,
   ) => _dao(workspaceId).watchUserSpaceReads(workspaceId, userId);

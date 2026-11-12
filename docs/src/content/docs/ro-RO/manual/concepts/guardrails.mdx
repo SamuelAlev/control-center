@@ -2,7 +2,7 @@
 title: Guardrail-uri — o politică pentru fiecare acțiune care modifică starea
 description: De ce Control Center trece fiecare efect secundar al agenților printr-un singur motor de tip permite/întreabă/refuză, de ce taxonomia ActionClass rămâne mică în mod deliberat și ce schimbă cu adevărat cadranul de autonomie.
 slug: ro-RO/manual/concepte/guardrail-uri
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Agenții din Control Center pot șterge fișiere, pot face push pe ramuri, pot
@@ -114,7 +114,7 @@ O constrângere poate numi:
 - **gazde** — destinații de rețea, cu wildcard-uri de subdomeniu (`*.internal`)
 - **comenzi** — prefixe de comandă, potrivite pe o limită de cuvânt
 - **instrumente** — instrumentul exact pe care îl numește un apel, astfel încât o aprobare să poată acoperi un singur instrument, nu toate instrumentele cu același efect
-- **plafoane** — `maxCount` / `maxCents`, așa încât „șterge până la 50 de
+- **plafoane** — `maxCount` / `maxMicros`, așa încât „șterge până la 50 de
   fișiere" devine exprimabil
 
 Trei proprietăți decurg din păstrarea gramaticii închise și fără bucle, și

@@ -15,6 +15,7 @@ import 'package:control_center/features/settings/providers/skill_source_provider
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -381,7 +382,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
         setState(() => _saving = false);
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }
@@ -426,7 +427,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
       if (mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }
@@ -453,7 +454,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
       if (mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     } finally {
       if (mounted) {
@@ -491,7 +492,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
     } on Object catch (e) {
       if (mounted) {
         CcToastScope.of(context).show(
-          AppLocalizations.of(context).failedWithError('$e'),
+          failureMessage(AppLocalizations.of(context), e),
           variant: CcToastVariant.danger,
         );
       }
@@ -557,7 +558,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
 
     return skillsAsync.when(
       loading: () => const Center(child: CcSpinner()),
-      error: (e, _) => Center(child: Text(l10n.failedWithError('$e'))),
+      error: (e, _) => Center(child: Text(failureMessage(l10n, e))),
       data: (skills) {
         final editing = _selectedSkill != null || _isNew;
         final filter = _filterCtl.text.toLowerCase();

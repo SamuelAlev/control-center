@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_harness/provider.dart';
+import 'package:cc_harness_runtime/src/private_file.dart';
 import 'package:path/path.dart' as p;
 
 /// A file-backed [ProviderCredentialStore] for the headless server.
@@ -10,8 +11,9 @@ import 'package:path/path.dart' as p;
 /// under the server's data dir — the pure-Dart counterpart to the desktop's OS
 /// keychain and the shape/behavior mirrors the reference agent-CLI auth store:
 /// **multiple credentials per provider** with soft-disable and identity-based
-/// dedup. The file is written `0600` where the platform supports it and updated
-/// atomically (temp file + rename). This is the server-owned "brain" for
+/// dedup. The file is created `0600` (never chmod-ed afterwards) and replaced
+/// atomically (owner-only temp file, flush, rename); on Windows it takes the
+/// data dir's ACL. This is the server-owned "brain" for
 /// credentials — every client reaches it over the `providers.*` RPC ops.
 class FileProviderCredentialStore
     implements ProviderCredentialStore, CustomProviderLister {
@@ -92,36 +94,14 @@ class FileProviderCredentialStore
 
   Future<void> _flushNow() async {
     await _file.parent.create(recursive: true);
-    final tmp = File('${_file.path}.tmp');
-    await tmp.writeAsString(
-      jsonEncode({'version': 1, 'providers': _cache ?? const {}}),
+    // Created owner-only (`creat(2)` 0600) under a fresh random name, flushed
+    // and renamed into place: no instant at which a token sits in a file the
+    // umask made readable, no fixed temp name another account could plant a
+    // link at, and no chmod after the fact that might silently fail.
+    await writePrivateFile(
+      _file.path,
+      utf8.encode(jsonEncode({'version': 1, 'providers': _cache ?? const {}})),
     );
-    // Tighten the TEMP file BEFORE the rename: chmod'ing after it means the
-    // secret exists at the real path, world-readable per the umask, for the
-    // window in between.
-    await _restrictPerms(tmp);
-    await tmp.rename(_file.path);
-    // Belt and braces — some filesystems reset mode on rename.
-    await _restrictPerms(_file);
-  }
-
-  /// Tightens the credentials file to owner-only (0600) where `chmod` exists.
-  /// Best-effort — a chmod failure never blocks the write (the umask applies).
-  Future<void> _restrictPerms(File f) async {
-    if (Platform.isWindows) {
-      return;
-    }
-    try {
-      // System utility, absolute path, empty environment.
-      await Process.run(
-        '/bin/chmod',
-        ['600', f.path],
-        environment: const {},
-        includeParentEnvironment: false,
-      );
-    } catch (_) {
-      // Best-effort — the secret is still written; the host umask applies.
-    }
   }
 
   @override

@@ -14587,13 +14587,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get backupSnapshotComplete => 'مكتملة';
 
   @override
-  String get backupSnapshotIncomplete => 'غير مكتملة';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'ملف البيان مفقود أو يسمّي ملفات غير موجودة، لذا لا يمكن لهذه اللقطة استعادة التثبيت بأكمله. ملفات مساحات العمل الموجودة فيها لا يزال بالإمكان اعتمادها واحدًا تلو الآخر.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'حذف اللقطة';
 
   @override
@@ -18756,4 +18749,241 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'يمكنك مشاهدة هذا الجهاز. وهو يستخدم تسجيلات الدخول الخاصة بالشخص الذي فُتح من أجله، لذلك لا يمكن إلا له التحكم به أو توجيه منافذه أو لصق المحتوى فيه أو إسقاط الملفات عليه.';
+
+  @override
+  String get refusalStorageBusy =>
+      'قاعدة بيانات الخادم مشغولة الآن. حاول مرة أخرى بعد لحظة.';
+
+  @override
+  String get refusalStorageFull =>
+      'مساحة القرص على الخادم نفدت، لذلك لا يمكن حفظ شيء. يجب على مالك الخادم تحرير بعض المساحة.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'بيانات مساحة العمل هذه تالفة. يجب على مالك الخادم استعادتها من نسخة احتياطية.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'مساحة العمل هذه للقراءة فقط حتى يستعيدها مالك الخادم من نسخة احتياطية، لذلك لا يمكن حفظ التغييرات.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'كُتبت هذه البيانات بإصدار أحدث من الخادم. حدّث الخادم، ثم حاول مرة أخرى.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'عثر الخادم على ملف قاعدة بيانات لم يكتبه. يجب على مالك الخادم فحص مجلد البيانات الخاص بالخادم.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'حُذفت مساحة العمل هذه.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'ما زال هذا الطلب قيد المعالجة. انتظر حتى ينتهي، ثم تحقق من النتيجة.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'لا يوجد ملف على هذا المسار في الخادم. لم يُستبدل شيء.';
+
+  @override
+  String get refusalImportDamaged =>
+      'هذا الملف تالف، لذلك لا يمكن استعادته. لم يُستبدل شيء.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'هذا الملف لا يطابق المجموع الاختباري الذي سجلته نسخته الاحتياطية، لذلك ربما تغيّر أو تلف. لم يُستبدل شيء.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'كُتب هذا الملف بإصدار أحدث من الخادم. حدّث الخادم لاستعادته. لم يُستبدل شيء.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'هذا الملف ليس قاعدة بيانات لمساحة عمل. لم يُستبدل شيء.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'تعذّر تحويل هذا الملف إلى تنسيق هذا الخادم. لم يُستبدل شيء.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'يحتوي هذا الملف على روابط تخص مساحة عمل أخرى على هذا الخادم، واستعادته ستنقل هذه الروابط إليه. لم يُستبدل شيء.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'مساحة العمل هذه للقراءة فقط';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'فشلت بياناتها في فحص السلامة، لذلك لا يمكن حفظ التغييرات. ما زال كل شيء قابلًا للقراءة. يمكن لمالك الخادم استعادتها من نسخة احتياطية.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'فشلت بياناتها في فحص السلامة، لذلك لا يمكن حفظ التغييرات. ما زال كل شيء قابلًا للقراءة. استعدها من نسخة احتياطية لتصبح قابلة للكتابة مرة أخرى.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'فتح النسخ الاحتياطية';
+
+  @override
+  String get serverNoticesLabel => 'يحتاج إلى انتباهك';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'للقراءة فقط';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'منذ $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'فشلت قاعدة بياناتها في فحص السلامة، لذلك تبقى للقراءة فقط وترفض كل تغيير. استعدها من نسخة احتياطية من القوائم أدناه؛ وتُحفظ آخر نسخة سليمة إلى أن تفعل ذلك.';
+
+  @override
+  String get serverNoticeDetails => 'التفاصيل';
+
+  @override
+  String get backupSnapshotUnverified => 'غير متحقق منها';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'لا يمكن التحقق من هذه اللقطة. إما أنها لم تكتمل، أو أُخذت قبل أن تسجل اللقطات المجاميع الاختبارية، لذلك لا يمكنها استعادة التثبيت كاملًا. ما تحويه من ملفات مساحات العمل ما زال بالإمكان استعادته ملفًا ملفًا.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'آخر نسخة سليمة';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'محفوظة لأنها تحتوي على آخر نسخة سليمة لمساحة عمل تالفة. لا يمسّها التنظيف حتى تُستعاد تلك المساحة.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'هذه آخر نسخة سليمة لمساحة عمل تالفة. إن حذفتها فلن يبقى شيء تُستعاد منه تلك المساحة.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'حُجبت $count صلاحية لمراجعتك. وهي مدرجة في أعلى هذه الصفحة.',
+      many: 'حُجبت $count صلاحية لمراجعتك. وهي مدرجة في أعلى هذه الصفحة.',
+      few: 'حُجبت $count صلاحيات لمراجعتك. وهي مدرجة في أعلى هذه الصفحة.',
+      two: 'حُجبت صلاحيتان لمراجعتك. وهما مدرجتان في أعلى هذه الصفحة.',
+      one: 'حُجبت صلاحية واحدة لمراجعتك. وهي مدرجة في أعلى هذه الصفحة.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'محجوبة من النسخ المستعادة';
+
+  @override
+  String get importHoldsExplainer =>
+      'لا تستطيع النسخة المستعادة أن تمنح أي شيء على هذا الخادم بذاتها. كانت هذه الصلاحيات موجودة فيها: اقبل إحداها لمنحها من جديد، أو ارفضها لحذفها.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'يجوز للوكلاء تنفيذ هذا دون موافقة: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'يجوز للوكلاء تنفيذ هذا بعد موافقة شخص: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'تشغيل الأوامر التي تبدأ بـ $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'في كل مكان في مساحة العمل هذه';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'في المساحة $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'للوكيل $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'يجوز للبيئات المعزولة تشغيل $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return 'يجوز لـ $person تغيير $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return 'يجوز لـ $person مراجعة طلبات السحب في $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return 'يحصل $person على وصول $level إلى $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return 'يحصل $person على دور $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'دعوة مفتوحة للانضمام بدور $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'دعوة مفتوحة للانضمام بدور $role مع صلاحية المراجعة أو الكتابة على $count مستودع',
+      many:
+          'دعوة مفتوحة للانضمام بدور $role مع صلاحية المراجعة أو الكتابة على $count مستودعًا',
+      few:
+          'دعوة مفتوحة للانضمام بدور $role مع صلاحية المراجعة أو الكتابة على $count مستودعات',
+      two:
+          'دعوة مفتوحة للانضمام بدور $role مع صلاحية المراجعة أو الكتابة على مستودعين',
+      one:
+          'دعوة مفتوحة للانضمام بدور $role مع صلاحية المراجعة أو الكتابة على مستودع واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'صلاحية لا تستطيع هذه النسخة من التطبيق وصفها';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'استُعيدت $time';
+  }
+
+  @override
+  String get importHoldAccept => 'قبول';
+
+  @override
+  String get importHoldDismiss => 'رفض';
+
+  @override
+  String get importHoldAcceptTitle => 'منح هذه الصلاحية؟';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nالقبول يمنح هذه الصلاحية على الخادم فورًا.';
+  }
+
+  @override
+  String get importHoldAccepted => 'تم منح الصلاحية.';
+
+  @override
+  String get importHoldNotApplied =>
+      'لم تُمنح أي صلاحية: الشخص أو الشيء الذي كانت من أجله لم يعد موجودًا في مساحة العمل.';
 }

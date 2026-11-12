@@ -22,9 +22,7 @@ class SkillSourceDao extends DatabaseAccessor<WorkspaceDatabase>
   /// The source with [id] in [workspaceId], or null.
   Future<SkillSourcesTableData?> byId(String workspaceId, String id) =>
       (select(skillSourcesTable)
-            ..where(
-              (t) => t.workspaceId.equals(workspaceId) & t.id.equals(id),
-            ))
+            ..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id)))
           .getSingleOrNull();
 
   /// The source for [owner]/[repo] in [workspaceId], or null (dedupe probe).
@@ -33,24 +31,29 @@ class SkillSourceDao extends DatabaseAccessor<WorkspaceDatabase>
     String owner,
     String repo,
   ) =>
-      (select(skillSourcesTable)
-            ..where(
-              (t) =>
-                  t.workspaceId.equals(workspaceId) &
-                  t.owner.equals(owner) &
-                  t.repo.equals(repo),
-            ))
+      (select(skillSourcesTable)..where(
+            (t) =>
+                t.workspaceId.equals(workspaceId) &
+                t.owner.equals(owner) &
+                t.repo.equals(repo),
+          ))
           .getSingleOrNull();
 
   /// Inserts or replaces a source row (PK upsert).
   Future<void> upsert(SkillSourcesTableCompanion entry) =>
-      into(skillSourcesTable).insertOnConflictUpdate(entry);
+      into(skillSourcesTable).insert(
+        entry,
+        onConflict: UpsertMultiple([
+          DoUpdate((_) => entry, target: [skillSourcesTable.id]),
+          DoUpdate(
+            (_) => entry.copyWith(id: const Value.absent()),
+            target: [skillSourcesTable.owner, skillSourcesTable.repo],
+          ),
+        ]),
+      );
 
   /// Deletes the source row.
-  Future<void> deleteSource(String workspaceId, String id) =>
-      (delete(skillSourcesTable)
-            ..where(
-              (t) => t.workspaceId.equals(workspaceId) & t.id.equals(id),
-            ))
-          .go();
+  Future<void> deleteSource(String workspaceId, String id) => (delete(
+    skillSourcesTable,
+  )..where((t) => t.workspaceId.equals(workspaceId) & t.id.equals(id))).go();
 }

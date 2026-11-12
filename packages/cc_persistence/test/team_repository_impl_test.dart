@@ -3,6 +3,7 @@ import 'package:cc_domain/features/teams/domain/entities/team_member.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// [TeamRepositoryImpl] over the per-workspace databases.
@@ -23,6 +24,22 @@ void main() {
     await seedTestWorkspace(global, dbs, 'ws-1');
     await seedTestWorkspace(global, dbs, 'ws-2');
     repo = TeamRepositoryImpl(dbs);
+    // The agents the memberships below name, in each workspace's file.
+    for (final ws in ['ws-1', 'ws-2']) {
+      await seedParents(
+        dbs.of(ws),
+        agents: [
+          'a1',
+          'a2',
+          'a3',
+          'agent-1',
+          'agent-42',
+          'agent-a',
+          'agent-b',
+          'shared',
+        ],
+      );
+    }
   });
 
   tearDown(() async {

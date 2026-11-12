@@ -5,6 +5,7 @@ import 'package:control_center/features/settings/presentation/widgets/providers/
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -275,7 +276,7 @@ class _AddProviderPaneState extends ConsumerState<AddProviderPane> {
         widget.onAdded(id);
       }
     } on Object catch (e) {
-      setState(() => _error = l10n.failedWithError('$e'));
+      setState(() => _error = failureMessage(l10n, e));
     } finally {
       if (mounted) {
         setState(() => _busy = false);

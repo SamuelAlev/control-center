@@ -1255,7 +1255,6 @@ extension _ClaudeCliMethods on DispatchSession {
           cachedReadTokens: turn.cacheReadTokens,
           cachedWriteTokens: turn.cacheWriteTokens,
           // The DELTA only; the run total rides the cumulative event below.
-          estimatedCostCents: (turn.costDeltaMicros / 10000).round(),
           costMicros: turn.costDeltaMicros,
           costBasis: basis,
         ),
@@ -1281,7 +1280,6 @@ extension _ClaudeCliMethods on DispatchSession {
             outputTokens: totals.outputTokens,
             cachedReadTokens: totals.cacheReadTokens,
             cachedWriteTokens: totals.cacheWriteTokens,
-            estimatedCostCents: 0,
             costMicros: totals.costMicros,
             costBasis: basis,
           ),

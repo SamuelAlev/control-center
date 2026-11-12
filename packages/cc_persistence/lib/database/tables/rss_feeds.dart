@@ -7,6 +7,13 @@ import 'package:drift/drift.dart';
 /// feed list; read/saved state rides the user-owned feed's articles), and
 /// users are server-wide identities, so the rows live in `global.db` rather
 /// than a workspace file.
+///
+/// One row per user and URL: following a feed twice is the same feed.
+@TableIndex(
+  name: 'uq_rss_feeds_user_url',
+  columns: {#userId, #url},
+  unique: true,
+)
 class RssFeedsTable extends Table {
   /// Unique feed identifier (uuid v4).
   TextColumn get id => text()();

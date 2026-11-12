@@ -7,6 +7,7 @@ import 'package:control_center/features/newsfeed/providers/newsfeed_providers.da
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
@@ -184,8 +185,7 @@ class _NewsfeedScreenState extends ConsumerState<NewsfeedScreen> {
                   );
                 },
                 loading: () => NewsfeedSkeleton(layout: layout),
-                error: (e, _) =>
-                    Center(child: Text(l10n.failedWithError('$e'))),
+                error: (e, _) => Center(child: Text(failureMessage(l10n, e))),
               ),
             ),
           ],

@@ -106,11 +106,11 @@ void main() {
         workspaceId: 'ws1',
         scopeType: 'agent',
         scopeId: 'a1',
-        monthlyBudgetCents: 1000,
+        monthlyBudgetMicros: 1000,
       ),
     );
     expect(await repo.getPolicyById('ws2', 'p1'), isNull);
-    expect((await repo.getPolicyById('ws1', 'p1'))?.monthlyBudgetCents, 1000);
+    expect((await repo.getPolicyById('ws1', 'p1'))?.monthlyBudgetMicros, 1000);
     final ws2 = await repo.listPolicies('ws2');
     expect(ws2, isEmpty);
   });

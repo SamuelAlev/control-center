@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
@@ -15,7 +16,7 @@ class _English extends LocaleNotifier {
   Locale? build() => const Locale('en');
 }
 
-NotificationFeedItem _wait(String id, {String? resolvedAt}) =>
+NotificationFeedItem _wait(String id, {String? resolvedAt, int seq = 0}) =>
     NotificationFeedItem(
       id: id,
       workspaceId: 'ws-1',
@@ -28,12 +29,14 @@ NotificationFeedItem _wait(String id, {String? resolvedAt}) =>
         NotificationFeedItem.resolvedAtKey: ?resolvedAt,
       },
       createdAt: DateTime.utc(2026, 10, 9, 10),
+      seq: seq,
     );
 
 void main() {
   Future<Map<String, bool>> readById(
     List<NotificationFeedItem> items, {
     List<NotificationItemState> states = const [],
+    NotificationReadMark? mark,
   }) async {
     final container = ProviderContainer(
       overrides: [
@@ -45,7 +48,7 @@ void main() {
         // Never acknowledged anything: only the item itself can say read.
         notificationReadMarkProvider.overrideWith(
           (ref) => Stream.value(
-            NotificationReadMark(workspaceId: 'ws-1', userId: 'user-1'),
+            mark ?? NotificationReadMark(workspaceId: 'ws-1', userId: 'user-1'),
           ),
         ),
         notificationItemStatesProvider.overrideWith(
@@ -92,4 +95,28 @@ void main() {
       {'answered': false},
     );
   });
+
+  test(
+    'marks compare positions: a same-second item after them shows',
+    () async {
+      // Every item here shares one second; only the sequence orders them.
+      final position = FeedPosition(at: DateTime.utc(2026, 10, 9, 10), seq: 2);
+      expect(
+        await readById(
+          [
+            _wait('cleared', seq: 1),
+            _wait('seen', seq: 3),
+            _wait('new', seq: 5),
+          ],
+          mark: NotificationReadMark(
+            workspaceId: 'ws-1',
+            userId: 'user-1',
+            lastSeen: FeedPosition(at: position.at, seq: 4),
+            cleared: position,
+          ),
+        ),
+        {'seen': true, 'new': false},
+      );
+    },
+  );
 }

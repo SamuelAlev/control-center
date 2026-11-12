@@ -8,7 +8,9 @@ import 'package:drift/drift.dart';
 /// visibility — deliberately NOT a CRDT (the burden of proof is on the CRDT;
 /// see the PRD's adversarial notes). `version` increments per write so
 /// clients can detect their own echoes.
-@TableIndex(name: 'idx_space_notes_workspaceId', columns: {#workspaceId})
+///
+/// One doc per space: `space_id` is unique and the write is one
+/// `INSERT … ON CONFLICT` on it.
 class SpaceNotesTable extends Table {
   /// Id.
   TextColumn get id => text()();
@@ -23,7 +25,8 @@ class SpaceNotesTable extends Table {
   /// The document body (markdown).
   TextColumn get contentMarkdown => text().withDefault(const Constant(''))();
 
-  /// The last writer (`user:<id>` / `agent:<id>` principal wire form).
+  /// The last writer (`user:<id>` / `agent:<id>` principal wire form). No
+  /// foreign key: a principal is a user (in `global.db`) or an agent.
   TextColumn get updatedByPrincipal => text()();
 
   /// Last write time (display only — ordering is the sync seq).
@@ -40,6 +43,6 @@ class SpaceNotesTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {workspaceId, spaceId},
+    {spaceId},
   ];
 }

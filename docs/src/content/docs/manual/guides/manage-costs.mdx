@@ -7,7 +7,7 @@ This guide shows you how to see what agent runs cost and how to cap an autonomou
 
 ## How costs are recorded
 
-Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in micro-dollars (millionths of a US dollar) and the cost of any subagents it spawned.
 
 Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
 
@@ -76,7 +76,7 @@ Open the Insights run log (the newest 50 filtered runs) and the transcript drawe
 
 ## What happens if a budget is set out of band
 
-For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+For completeness, if `monthlyBudgetMicros` or a budget policy is written directly to an agent row:
 
 - Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
 - Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.

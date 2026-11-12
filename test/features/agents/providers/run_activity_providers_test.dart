@@ -20,7 +20,7 @@ AgentRunLog _run({
   RunStatus status = RunStatus.completed,
   String? parentRunId,
   String? spawnToolCallId,
-  int costCents = 0,
+  int costMicros = 0,
 }) => AgentRunLog(
   id: id,
   agentId: agentId,
@@ -30,7 +30,7 @@ AgentRunLog _run({
   status: status,
   parentRunId: parentRunId,
   spawnToolCallId: spawnToolCallId,
-  cost: RunCost(estimatedCostCents: costCents),
+  cost: RunCost(costMicros: costMicros),
 );
 
 /// Feeds a scripted run-log stream, so a test can push a second emission and
@@ -122,14 +122,11 @@ void main() {
       final sub = c.listen(runInSpaceProvider(key), (_, _) {});
       addTearDown(sub.close);
 
-      ctl.add([_run(id: 'run-0'), _run(id: 'run-1', costCents: 5)]);
+      ctl.add([_run(id: 'run-0'), _run(id: 'run-1', costMicros: 50000)]);
       await Future<void>.delayed(Duration.zero);
 
       expect(c.read(runInSpaceProvider(key)).value?.id, 'run-1');
-      expect(
-        c.read(runInSpaceProvider(key)).value?.cost.estimatedCostCents,
-        5,
-      );
+      expect(c.read(runInSpaceProvider(key)).value?.cost.costMicros, 50000);
     });
 
     test('re-emits when the run row changes', () async {
@@ -142,21 +139,15 @@ void main() {
 
       ctl.add([_run(id: 'run-1', status: RunStatus.running)]);
       await Future<void>.delayed(Duration.zero);
-      expect(
-        c.read(runInSpaceProvider(key)).value?.status,
-        RunStatus.running,
-      );
+      expect(c.read(runInSpaceProvider(key)).value?.status, RunStatus.running);
 
-      ctl.add([_run(id: 'run-1', costCents: 12)]);
+      ctl.add([_run(id: 'run-1', costMicros: 120000)]);
       await Future<void>.delayed(Duration.zero);
       expect(
         c.read(runInSpaceProvider(key)).value?.status,
         RunStatus.completed,
       );
-      expect(
-        c.read(runInSpaceProvider(key)).value?.cost.estimatedCostCents,
-        12,
-      );
+      expect(c.read(runInSpaceProvider(key)).value?.cost.costMicros, 120000);
     });
 
     test(

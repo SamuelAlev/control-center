@@ -74,31 +74,19 @@ void main() {
     );
 
     test(
-      'fromRowOrNull returns null for unknown type',
+      'the schema refuses a link type no enum names',
       timeout: const Timeout.factor(2),
       () async {
-        // Insert a link row with a type that is not recognized.
-        // We need to bypass the DAO since it uses valid types.
         await insertLink(type: 'blocks');
-        // Construct a fake Data object by using the row but changing type.
-        // Since TicketsTableData is immutable and generated, we test through the
-        // companion: create a companion with the bad type, re-insert via custom
-        // select. Actually easier: test directly with a manually-constructed
-        // companion and a raw insert.
-        // However, we can't construct TicketLinksTableData directly.
-        // Instead, insert via companion with bad type using the DAO and then
-        // verify fromRowOrNull returns null. But the DAO won't validate types.
-        // Let's insert directly via custom statement.
-        await db.customStatement(
-          'INSERT INTO ticket_links (id, workspace_id, source_ticket_id, target_ticket_id, type) '
-          "VALUES ('link-bad', 'ws-1', 'ticket-src', 'ticket-tgt', 'unknown_type')",
+        await expectLater(
+          db.customStatement(
+            'INSERT INTO ticket_links '
+            '(id, workspace_id, source_ticket_id, target_ticket_id, type) '
+            "VALUES ('link-bad', 'ws-1', 'ticket-src', 'ticket-tgt', "
+            "'unknown_type')",
+          ),
+          throwsA(anything),
         );
-        final rows = await db.ticketLinkDao.getForTicket('ws-1', 'ticket-src');
-        final badRow = rows.firstWhere((r) => r.id == 'link-bad');
-
-        final result = mapper.fromRowOrNull(badRow);
-
-        expect(result, isNull);
       },
     );
 

@@ -278,7 +278,7 @@ class UsageCostHistoryEntry {
     required this.recordedAt,
     required this.provider,
     required this.accountKey,
-    required this.costUsd,
+    required this.costMicros,
     this.modelId,
   });
 
@@ -291,8 +291,8 @@ class UsageCostHistoryEntry {
   /// Stable credential identity.
   final String accountKey;
 
-  /// Estimated USD cost of the request.
-  final double costUsd;
+  /// Estimated cost of the request in micro-dollars.
+  final int costMicros;
 
   /// Model id, if known.
   final String? modelId;

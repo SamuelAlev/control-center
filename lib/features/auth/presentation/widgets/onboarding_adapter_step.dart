@@ -9,6 +9,7 @@ import 'package:control_center/features/settings/providers/harness_providers_pro
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -213,7 +214,7 @@ class _OnboardingAdapterStepState extends ConsumerState<OnboardingAdapterStep> {
         kind: FieldPlaceholderKind.loading,
       ),
       error: (e, _) => FieldPlaceholder(
-        text: l10n.failedWithError('$e'),
+        text: failureMessage(l10n, e),
         kind: FieldPlaceholderKind.error,
       ),
       data: (providers) => CcSelect<String>(

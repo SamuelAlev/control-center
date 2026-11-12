@@ -472,10 +472,6 @@ const Map<String, _Spawn> _rawSpawnAllowlist = {
     exactEnvironment: true,
     why: 'pkill for the MCP child tree; ChildEnvironment base only.',
   ),
-  'packages/cc_harness_runtime/lib/src/file_provider_credential_store.dart': (
-    exactEnvironment: true,
-    why: '/bin/chmod with an empty environment.',
-  ),
   'packages/cc_infra/lib/src/process/cc_server_process.dart': (
     exactEnvironment: false,
     why:

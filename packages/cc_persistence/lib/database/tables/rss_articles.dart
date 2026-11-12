@@ -10,6 +10,13 @@ import 'package:drift/drift.dart';
   columns: {#feedId, #guid},
   unique: true,
 )
+// The retention sweep ranks each feed's articles newest first by
+// `COALESCE(published_at, created_at)` to keep the newest per feed; this is
+// that order, so the ranking walks the index instead of sorting the table.
+@TableIndex.sql(
+  'CREATE INDEX idx_rss_articles_feed_published ON rss_articles '
+  '(feed_id, COALESCE(published_at, created_at) DESC, id DESC)',
+)
 class RssArticlesTable extends Table {
   /// Article id.
   TextColumn get id => text()();

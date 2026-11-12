@@ -8,7 +8,8 @@ import 'package:cc_domain/features/ticketing/domain/sync/ticket_field_conflict_p
 /// The credential itself is NOT stored here — only a reference
 /// ([credentialRef]) the infra layer resolves against the secure store. The
 /// [webhookSecret] is the shared secret used to verify inbound webhook
-/// signatures for this vendor/workspace.
+/// signatures for this vendor/workspace; the server keeps it in its secrets
+/// store and the row only names where.
 class TicketSyncConfig {
   /// Creates a [TicketSyncConfig].
   TicketSyncConfig({

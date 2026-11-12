@@ -14331,13 +14331,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupSnapshotComplete => 'Complete';
 
   @override
-  String get backupSnapshotIncomplete => 'Incomplete';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'The manifest is missing or names files that are not there, so this snapshot cannot restore the whole install. The workspace files it does have can still be adopted one by one.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Delete snapshot';
 
   @override
@@ -18467,6 +18460,236 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'You can watch this machine. It uses the sign-ins of the person it was opened for, so only they can drive it, forward its ports, paste into it or drop files on it.';
+
+  @override
+  String get refusalStorageBusy =>
+      'The server\'s database is busy right now. Try again in a moment.';
+
+  @override
+  String get refusalStorageFull =>
+      'The server is out of disk space, so nothing can be saved. The server owner has to free some up.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'This workspace\'s data is damaged. The server owner has to restore it from a backup.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'This workspace is read-only until the server owner restores it from a backup, so changes can\'t be saved.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'This data was written by a newer version of the server. Update the server, then try again.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'The server found a database file it didn\'t write. The server owner has to check the server\'s data folder.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'This workspace was deleted.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'This request is still being processed. Wait for it to finish, then check the result.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'There\'s no file at that path on the server. Nothing was replaced.';
+
+  @override
+  String get refusalImportDamaged =>
+      'That file is damaged, so it can\'t be restored. Nothing was replaced.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'That file doesn\'t match the checksum its backup recorded, so it may have been changed or damaged. Nothing was replaced.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'That file was written by a newer version of the server. Update the server to restore it. Nothing was replaced.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'That file isn\'t a workspace database. Nothing was replaced.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'That file couldn\'t be brought up to this server\'s format. Nothing was replaced.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'That file holds links that belong to another workspace on this server, and restoring it would take them over. Nothing was replaced.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'This workspace is read-only';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Its data failed an integrity check, so changes can\'t be saved. Everything is still readable. The server owner can restore it from a backup.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Its data failed an integrity check, so changes can\'t be saved. Everything is still readable. Restore it from a backup to make it writable again.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Open backups';
+
+  @override
+  String get serverNoticesLabel => 'Needs your attention';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Read-only';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'Since $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Its database failed an integrity check, so it serves reads and refuses every change. Restore it from a backup in the lists below; its last good copy is kept until you do.';
+
+  @override
+  String get serverNoticeDetails => 'Details';
+
+  @override
+  String get backupSnapshotUnverified => 'Unverified';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'This snapshot can\'t be verified. It never finished, or it was taken before snapshots recorded checksums, so it can\'t restore the whole install. The workspace files it holds can still be restored one by one.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Last good copy';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Kept because it holds the last good copy of a damaged workspace. Cleanup leaves it alone until that workspace is restored.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'This is the last good copy of a damaged workspace. Delete it and there is nothing left to restore that workspace from.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count permissions were held back for your review. They\'re listed at the top of this page.',
+      one:
+          '1 permission was held back for your review. It\'s listed at the top of this page.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Held back from restored copies';
+
+  @override
+  String get importHoldsExplainer =>
+      'A restored copy can\'t grant anything on this server by itself. These permissions were in it: accept one to grant it again, or dismiss it to drop it.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Agents may do this without approval: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Agents may do this once a person approves: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Run commands starting with $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Everywhere in this workspace';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'In space $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'For agent $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Sandboxes may run $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person may change $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person may review pull requests in $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person gets $level access to $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person gets the $role role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'An open invite to join with the $role role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'An open invite to join with the $role role and review or write access to $count repositories',
+      one:
+          'An open invite to join with the $role role and review or write access to 1 repository',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'A permission this version of the app can\'t describe';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Restored $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Accept';
+
+  @override
+  String get importHoldDismiss => 'Dismiss';
+
+  @override
+  String get importHoldAcceptTitle => 'Grant this permission?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nAccepting grants this on the server right away.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Permission granted.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Nothing was granted: who or what it was for is no longer in this workspace.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

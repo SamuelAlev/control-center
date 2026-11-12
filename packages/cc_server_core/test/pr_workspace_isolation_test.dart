@@ -737,7 +737,10 @@ void main() {
       'agent runs in hidden review spaces are filtered or refused',
       () async {
         expect(
-          ids(await watchWith('agent_run_log.watchAll', 'gina', {}), 'logs'),
+          ids(
+            await watchWith('agent_run_log.watchRecent', 'gina', {'limit': 50}),
+            'logs',
+          ),
           ['log-space-widgets', 'log-space-general'],
         );
         expect(
@@ -1391,7 +1394,7 @@ class _RunLogs implements AgentRunLogRepository {
   ];
 
   @override
-  Stream<List<AgentRunLog>> watchAll() => Stream.value(logs);
+  Stream<List<AgentRunLog>> watchRecent(int limit) => Stream.value(logs);
 
   @override
   Stream<List<AgentRunLog>> watchBySpace(String workspaceId, String spaceId) =>
@@ -1532,6 +1535,7 @@ class _NotificationFeed implements NotificationFeedRepository {
           'pr_title': 'Change on ${r.remoteName}',
           'workspace_id': 'ws1',
         },
+        seq: 0,
         createdAt: DateTime(2026),
       ),
     NotificationFeedItem(
@@ -1539,6 +1543,7 @@ class _NotificationFeed implements NotificationFeedRepository {
       workspaceId: 'ws1',
       method: 'notifications/meeting_starting_soon',
       params: const {'workspace_id': 'ws1'},
+      seq: 0,
       createdAt: DateTime(2026),
     ),
   ]);

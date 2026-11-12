@@ -2,7 +2,7 @@
 title: Statistiche di utilizzo
 description: Cosa registra Control Center quando le statistiche di utilizzo sono attive, chi decide e cosa non viene mai inviato.
 slug: it-IT/manuale/riferimento/statistiche-di-utilizzo
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center può inviare **eventi di utilizzo pseudonimi** a un'istanza di [Umami](https://umami.is). Le statistiche di utilizzo sono **disattivate finché l'operatore del server non le attiva**. L'impostazione appartiene al server e si applica a ogni client connesso: l'app desktop, l'app web, il telefono e il server stesso.
@@ -109,7 +109,7 @@ Registrati dall'app desktop, dall'app web e dal telefono per le azioni compiute 
 | `skill_action` | `action` (`install`, `update`, `uninstall`, `source_added`, `source_removed`), `skill_id`, `blocked` | Sono state modificate le skill dello spazio di lavoro |
 | `orchestration_decided` | `decision` (`approved`, `cancelled`), `workspace_id`, `orchestration_id` | È stata data una risposta a una proposta di orchestrazione |
 | `plan_decided` | `decision` (`approved`, `rejected`), `plan_id`, `workspace_id`, `partial`, `node_count` | Un piano è stato approvato o rifiutato (telefono) |
-| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_cents`, `accepted` | È stato avviato un obiettivo o un ciclo supervisionato (telefono) |
+| `goal_started` | `kind` (`goal`, `loop`), `workspace_id`, `space_id`, `conversation_id`, `agent_id`, `budget_micros`, `accepted` | È stato avviato un obiettivo o un ciclo supervisionato (telefono) |
 | `conversation_created` | `workspace_id`, `space_id`, `conversation_id`, `source` (`new`, `fork`) | È stata creata o biforcata una conversazione |
 | `conversation_rewound` | `conversation_id` | Una conversazione è ripresa da un messaggio precedente |
 | `space_archived` | `workspace_id`, `space_id` | È stato archiviato uno spazio |
@@ -128,7 +128,7 @@ Registrati da `cc_server` per i fatti che nessun singolo client vede esattamente
 | `agent_run_completed` | `agent_id`, `workspace_id`, `conversation_id`, `run_id`, `status`, `error_family`, `role`, `adapter`, `model`, `effort`, `task_family`, `subagent`, `pipeline`, `resumed_native_session`, `duration_ms`, `time_to_first_token_ms`, `input_tokens`, `output_tokens`, `thought_tokens`, `cache_read_tokens`, `cache_write_tokens`, `output_rejections`, `cost_usd` | L'esecuzione di un agente è terminata |
 | `agent_awaiting_input` | `kind` (`approval`, `question`, `credential`), `workspace_id`, `agent_id`, `conversation_id` | Un agente si è fermato in attesa di una persona |
 | `agent_action_blocked` | `workspace_id`, `agent_id`, `space_id`, `source` | La policy delle azioni ha rifiutato un'azione di un agente |
-| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_cents`, `tokens`, `dry_run`, `sub_pipeline` | L'esecuzione di una pipeline è terminata. `trigger` vale `manual`, il tipo di evento che l'ha avviata oppure solo il tipo di un trigger con nome (`webhook`) |
+| `pipeline_run_finished` | `outcome` (`completed`, `failed`, `cancelled`), `workspace_id`, `pipeline_run_id`, `template_id`, `trigger`, `duration_ms`, `active_ms`, `attempt_count`, `template_version`, `cost_micros`, `tokens`, `dry_run`, `sub_pipeline` | L'esecuzione di una pipeline è terminata. `trigger` vale `manual`, il tipo di evento che l'ha avviata oppure solo il tipo di un trigger con nome (`webhook`) |
 | `pull_request_published` | `workspace_id`, `pr_id` | È stata pubblicata una pull request da uno spazio |
 | `pull_request_merged` | `workspace_id`, `pr_id`, `agent_id` | È stata unita una pull request aperta da un agente |
 | `meeting_recorded` | `workspace_id`, `meeting_id`, `transcript_chars` | È stata salvata la registrazione di una riunione |
@@ -142,7 +142,7 @@ Registrati da `cc_server` per i fatti che nessun singolo client vede esattamente
 | `skill_updated` | `workspace_id`, `skill_id`, `origin`, `scan_verdict` | Una skill dello spazio di lavoro è stata installata, aggiornata o modificata su disco |
 | `calendar_auth_expired` | `workspace_id` | Una connessione al calendario richiede un nuovo accesso |
 | `calendar_meeting_starting_soon` | `workspace_id`, `calendar_event_id`, `has_meeting_link`, `lead_s` | Un evento del calendario sta per iniziare |
-| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_cents`, `budget_cents`, `hard_stop` | La spesa ha superato una soglia di budget |
+| `budget_threshold_crossed` | `scope_type`, `scope_id`, `spent_micros`, `budget_micros`, `hard_stop` | La spesa ha superato una soglia di budget |
 | `pull_request_review_requested` | `workspace_id`, `repo_id` | È stata richiesta una revisione su una PR monitorata |
 | `pull_request_review_decision_changed` | `workspace_id`, `repo_id`, `decision`, `reviewers_remaining` | È cambiata la decisione di revisione di una PR monitorata |
 | `external_pull_request_merged` | `workspace_id`, `repo_id` | Una PR non aperta da un agente è stata unita in un repository collegato |

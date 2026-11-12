@@ -2,7 +2,7 @@
 title: Barreiras — uma única política para todas as ações mutáveis
 description: Por que motivo o Control Center encaminha todos os efeitos secundários dos agentes através de um único motor allow/prompt/deny, como a taxonomia de ActionClass se mantém pequena de propósito e o que o dial de autonomia realmente altera.
 slug: pt-PT/manual/conceitos/barreiras
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Os agentes do Control Center podem eliminar ficheiros, fazer push de branches,
@@ -115,7 +115,7 @@ Uma restrição pode indicar:
   (`*.internal`)
 - **comandos** — prefixos de comando, comparados num limite de palavra
 - **ferramentas** — a ferramenta exata que uma chamada indica, para que uma aprovação possa abranger uma ferramenta e não todas as que têm o mesmo efeito
-- **limites** — `maxCount` / `maxCents`, para que "eliminar até 50 ficheiros"
+- **limites** — `maxCount` / `maxMicros`, para que "eliminar até 50 ficheiros"
   seja exprimível
 
 Três propriedades decorrem de manter a gramática fechada e sem ciclos, e as três

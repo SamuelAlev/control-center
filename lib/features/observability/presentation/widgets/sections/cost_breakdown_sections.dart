@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:cc_domain/features/observability/domain/token_axis_aggregator.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/insights_providers.dart';
@@ -26,8 +27,8 @@ class CostByRoleSection extends ConsumerWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final role = ref.watch(insightsTokenAggregationProvider).byRole;
-    final totalCents = role.totalCostCents;
-    final denom = math.max(1, totalCents);
+    final totalMicros = role.totalCostMicros;
+    final denom = math.max(1, totalMicros);
 
     return ObsSection(
       title: l10n.obsCostByRoleTitle,
@@ -38,20 +39,20 @@ class CostByRoleSection extends ConsumerWidget {
         children: [
           ObsBar(
             label: l10n.obsRoleMain,
-            fraction: role.main.costCents / denom,
-            valueLabel: fmtCents(role.main.costCents),
+            fraction: role.main.costMicros / denom,
+            valueLabel: fmtMicros(role.main.costMicros),
             tone: ObsTone.brand,
           ),
           ObsBar(
             label: l10n.obsRoleSubagents,
-            fraction: role.sub.costCents / denom,
-            valueLabel: fmtCents(role.sub.costCents),
+            fraction: role.sub.costMicros / denom,
+            valueLabel: fmtMicros(role.sub.costMicros),
             tone: ObsTone.neutral,
           ),
           ObsBar(
             label: l10n.obsRoleAdvisor,
-            fraction: role.advisor.costCents / denom,
-            valueLabel: fmtCents(role.advisor.costCents),
+            fraction: role.advisor.costMicros / denom,
+            valueLabel: fmtMicros(role.advisor.costMicros),
             tone: ObsTone.neutral,
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -59,15 +60,15 @@ class CostByRoleSection extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xs),
           ObsKeyValue(
             label: l10n.obsTotal,
-            value: fmtCents(totalCents),
+            value: fmtMicros(totalMicros),
             valueTone: ObsTone.brand,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             l10n.obsRoleCaption(
-              fmtCents(role.main.costCents),
-              fmtCents(role.sub.costCents),
-              fmtCents(role.advisor.costCents),
+              fmtMicros(role.main.costMicros),
+              fmtMicros(role.sub.costMicros),
+              fmtMicros(role.advisor.costMicros),
             ),
             style: CcTypography.caption.copyWith(color: t.textTertiary),
           ),
@@ -171,7 +172,7 @@ class ByModelSection extends ConsumerWidget {
                   if (i > 0) const SizedBox(height: AppSpacing.md),
                   _ByModelRow(
                     usage: models[i],
-                    totalCostCents: agg.totals.costCents,
+                    totalCostMicros: agg.totals.costMicros,
                   ),
                 ],
               ],
@@ -183,18 +184,18 @@ class ByModelSection extends ConsumerWidget {
 /// A single model's usage: name + run count header, token-axis rows and a
 /// cost-share meter against the overall total.
 class _ByModelRow extends StatelessWidget {
-  const _ByModelRow({required this.usage, required this.totalCostCents});
+  const _ByModelRow({required this.usage, required this.totalCostMicros});
 
   final ModelUsage usage;
-  final int totalCostCents;
+  final int totalCostMicros;
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final tokens = usage.tokens;
-    final costShare = totalCostCents > 0
-        ? tokens.costCents / totalCostCents
+    final costShare = totalCostMicros > 0
+        ? tokens.costMicros / totalCostMicros
         : 0.0;
 
     return Container(
@@ -246,7 +247,7 @@ class _ByModelRow extends StatelessWidget {
           ),
           ObsKeyValue(
             label: l10n.obsColCost,
-            value: fmtCents(tokens.costCents),
+            value: fmtMicros(tokens.costMicros),
             valueTone: ObsTone.brand,
           ),
           const SizedBox(height: AppSpacing.sm),

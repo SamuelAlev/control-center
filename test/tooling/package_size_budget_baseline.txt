@@ -101,9 +101,21 @@
 # Lowered 2026-11-11 (standing approvals): what an "Approve for 8 hours" answer
 # writes, and the pruning of expired ones, moved out of remote_rpc_catalog.dart
 # to catalog/standing_approval_write.dart.
+# Raised 2026-11-12 by six lines: WorkspaceDto reads a workspace's storage
+# state from workspace.watchAll.
+# Raised 2026-11-12 (database rework): cc_server_runtime.dart wires the boot
+# refusals, storage alerts and server notices, the webhook secret vault, the
+# route repair, the repositories that replaced the old `caches` kinds and the
+# stop of live runs before a workspace is deleted (+103); local_rpc_server.dart
+# (+30), demo_seeder.dart (+12) and open_pr_polling_service.dart (+1) follow
+# the same changes. messaging_dao.dart was split into part files instead of
+# entering the list.
+# Lowered 2026-11-12: dtos.dart, cached_pr_review_repository.dart,
+# catalog_wire.dart and remote_rpc_catalog.dart to the counts the same work
+# left them at.
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
-packages/cc_domain/lib/src/dtos/dtos.dart  3675
+packages/cc_domain/lib/src/dtos/dtos.dart  3680
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2355
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1763
@@ -116,11 +128,11 @@ packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1795
 packages/cc_infra/lib/src/rigs/rig_service.dart  2298
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1660
-packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2817
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3121
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8239
-packages/cc_server_core/lib/src/demo/demo_seeder.dart  2853
-packages/cc_server_core/lib/src/local_rpc_server.dart  2473
-packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1833
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14780
+packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2803
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3116
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8342
+packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
+packages/cc_server_core/lib/src/local_rpc_server.dart  2503
+packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1834
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14779
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2365

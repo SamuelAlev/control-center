@@ -124,7 +124,7 @@ class AgentTranscriptDrawer extends ConsumerWidget {
             child: RunActivityStatBar(
               cost: cost,
               toolCount: segments.length,
-              childCostCents: latestRun?.childCostCents ?? 0,
+              childCostMicros: latestRun?.childCostMicros ?? 0,
             ),
           ),
           const CcDivider(),

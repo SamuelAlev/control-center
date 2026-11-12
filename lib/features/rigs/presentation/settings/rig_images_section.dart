@@ -5,6 +5,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/rigs/presentation/settings/rig_image_row.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -175,7 +176,7 @@ class _RigImagesSectionState extends ConsumerState<RigImagesSection> {
       child: imagesAsync.when(
         loading: () => const Center(child: CcSpinner()),
         error: (e, _) => Text(
-          l10n.failedWithError('$e'),
+          failureMessage(l10n, e),
           style: CcTypography.caption.copyWith(color: t.danger),
         ),
         data: (images) {

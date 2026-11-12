@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_snapshot_row.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -37,6 +38,7 @@ class WorkspaceBackupEntry extends StatefulWidget {
     required this.onRestore,
     required this.onDownload,
     required this.onDelete,
+    this.refusal,
   });
 
   /// The backup this row offers.
@@ -68,6 +70,9 @@ class WorkspaceBackupEntry extends StatefulWidget {
 
   /// Fired by Delete.
   final Future<void> Function(BackupSnapshotView) onDelete;
+
+  /// Why the last restore of this backup was refused, shown under it.
+  final String? refusal;
 
   @override
   State<WorkspaceBackupEntry> createState() => _WorkspaceBackupEntryState();
@@ -106,13 +111,21 @@ class _WorkspaceBackupEntryState extends State<WorkspaceBackupEntry> {
         Text(
           backup.complete
               ? humanBytes(backup.bytes)
-              : l10n.backupSnapshotIncomplete,
+              : backupVerificationLabel(l10n, backup),
           style: CcTypography.caption.copyWith(
             color: backup.complete
                 ? tokens.textTertiary
                 : tokens.textWarningPrimary,
           ),
         ),
+        if (backup.isLastGoodCopy)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: AppSpacing.xxs),
+            child: CcStatusTag(
+              label: l10n.backupSnapshotLastGoodCopy,
+              tone: CcStatusTone.info,
+            ),
+          ),
       ],
     );
   }
@@ -204,6 +217,8 @@ class _WorkspaceBackupEntryState extends State<WorkspaceBackupEntry> {
                 );
               },
             ),
+            if (widget.refusal case final message?)
+              BackupRestoreRefusal(message: message),
             if (progress != null) ...[
               const SizedBox(height: AppSpacing.sm),
               BackupTransferProgressBar(

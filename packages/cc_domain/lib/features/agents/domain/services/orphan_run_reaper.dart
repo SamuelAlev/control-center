@@ -30,7 +30,7 @@ class OrphanRunReaper {
 
   /// Scans all active runs, identifies orphans and reaps them.
   Future<void> reap() async {
-    final runs = await _runLogRepo.watchAll().first;
+    final runs = await _runLogRepo.nonTerminal();
     final activeRuns = runs
         .where((r) => r.status == RunStatus.running)
         .toList();
@@ -59,8 +59,9 @@ class OrphanRunReaper {
       CcDomainLog.warning(
         '$_tag: Run ${run.id} has null pid — marking as dead',
       );
-      await _markRunFailed(run, 'process_lost_missing_pid');
-      await _failBackingTicket(run);
+      if (await _markRunFailed(run, 'process_lost_missing_pid')) {
+        await _failBackingTicket(run);
+      }
       return;
     }
 
@@ -70,9 +71,10 @@ class OrphanRunReaper {
       CcDomainLog.info(
         '$_tag: Run ${run.id} pid $pid is dead (process not found)',
       );
-      await _markRunFailed(run, 'process_lost');
-      await _failBackingTicket(run);
-      await _maybeScheduleRecovery(run);
+      if (await _markRunFailed(run, 'process_lost')) {
+        await _failBackingTicket(run);
+        await _maybeScheduleRecovery(run);
+      }
       return;
     }
 
@@ -80,17 +82,42 @@ class OrphanRunReaper {
     // was simplified. If re-introduced, query the active dispatcher directly.
   }
 
-  Future<void> _markRunFailed(AgentRunLog run, String failureReason) async {
-    final now = DateTime.now();
-    final updated = run.copyWith(
+  /// Fails [run] only if it is still active, and reports whether it did.
+  ///
+  /// [run] is a snapshot taken at the start of the scan; the run may have
+  /// finished since. The terminal write is conditional on the row still being
+  /// active and carries no usage, so a run that completed in the meantime keeps
+  /// its own outcome and cost, and its ticket is left alone.
+  Future<bool> _markRunFailed(AgentRunLog run, String failureReason) async {
+    final workspaceId = run.workspaceId;
+    if (workspaceId == null || workspaceId.isEmpty) {
+      CcDomainLog.warning(
+        '$_tag: Run ${run.id} carries no workspace — cannot mark it failed',
+      );
+      return false;
+    }
+    final failed = run.copyWith(
       status: RunStatus.error,
       errorFamily: RunErrorFamily.processLost,
       summary: failureReason,
-      completedAt: now,
+      completedAt: DateTime.now(),
       liveness: RunLiveness.dead,
     );
-    await _runLogRepo.upsert(updated);
+    if (!await _runLogRepo.completeIfActive(failed, writeCost: false)) {
+      CcDomainLog.info(
+        '$_tag: Run ${run.id} finished before it could be reaped — left as is',
+      );
+      return false;
+    }
+    // The terminal write does not carry the error family; the run is now
+    // terminal and owned by this pass, so classify it.
+    await _runLogRepo.updateRuntime(
+      workspaceId,
+      run.id,
+      errorFamily: RunErrorFamily.processLost,
+    );
     CcDomainLog.info('$_tag: Run ${run.id} marked as failed ($failureReason)');
+    return true;
   }
 
   Future<void> _failBackingTicket(AgentRunLog run) async {

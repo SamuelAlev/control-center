@@ -26,20 +26,23 @@ class _RunLogs implements AgentRunLogRepository {
 class _Transcripts implements RunTranscriptRepository {
   final finalSegments = <String, List<Map<String, dynamic>>>{};
   final outcomes = <String, TurnOutcome?>{};
+  final _rows = <String, Map<int, Map<String, dynamic>>>{};
 
   @override
-  Future<void> upsert({
+  Future<void> write({
     required String runId,
     required String workspaceId,
-    required List<Map<String, dynamic>> segmentsJson,
+    required Map<int, Map<String, dynamic>> changedSegments,
+    required int segmentCount,
     required int transcriptChars,
     required DateTime startedAt,
     required DateTime updatedAt,
     TurnOutcome? outcome,
     bool complete = false,
   }) async {
+    final rows = _rows.putIfAbsent(runId, () => {})..addAll(changedSegments);
     if (complete) {
-      finalSegments[runId] = segmentsJson;
+      finalSegments[runId] = [for (var i = 0; i < segmentCount; i++) rows[i]!];
       outcomes[runId] = outcome;
     }
   }

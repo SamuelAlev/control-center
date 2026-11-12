@@ -119,8 +119,8 @@ void main() {
       expectedOutputSchema: {'type': 'object'},
       priority: 'high',
       estimate: PlanNodeEstimate(
-        costCentsLow: 10,
-        costCentsHigh: 20,
+        costMicrosLow: 10,
+        costMicrosHigh: 20,
         sampleSize: 5,
         blastRadiusFiles: 3,
       ),
@@ -134,7 +134,7 @@ void main() {
       expect(rebuilt.dependsOn, ['k0']);
       expect(rebuilt.expectedOutputSchema, {'type': 'object'});
       expect(rebuilt.priority, 'high');
-      expect(rebuilt.estimate?.costCentsHigh, 20);
+      expect(rebuilt.estimate?.costMicrosHigh, 20);
       expect(rebuilt.estimate?.blastRadiusFiles, 3);
       expect(rebuilt.provenance.single.kind, 'file');
       expect(rebuilt.provenance.single.ref, 'a.dart');
@@ -240,14 +240,17 @@ void main() {
     });
 
     test('BudgetSpec round-trips and omits null amounts', () {
-      const budget = BudgetSpec(estimatedCostCents: 100, maxCostCents: 500);
-      expect(budget.toJson(), {'estimatedCostCents': 100, 'maxCostCents': 500});
+      const budget = BudgetSpec(estimatedCostMicros: 100, maxCostMicros: 500);
+      expect(budget.toJson(), {
+        'estimatedCostMicros': 100,
+        'maxCostMicros': 500,
+      });
       final rebuilt = BudgetSpec.fromJson(budget.toJson());
-      expect(rebuilt.estimatedCostCents, 100);
-      expect(rebuilt.maxCostCents, 500);
+      expect(rebuilt.estimatedCostMicros, 100);
+      expect(rebuilt.maxCostMicros, 500);
       // Null amounts produce an empty object.
       expect(const BudgetSpec().toJson(), isEmpty);
-      expect(BudgetSpec.fromJson({}).estimatedCostCents, isNull);
+      expect(BudgetSpec.fromJson({}).estimatedCostMicros, isNull);
     });
   });
 
@@ -290,7 +293,7 @@ void main() {
         prompt: 'synth',
         outputSchema: {'gaps': <String>[]},
       ),
-      budget: const BudgetSpec(estimatedCostCents: 50, maxCostCents: 500),
+      budget: const BudgetSpec(estimatedCostMicros: 50, maxCostMicros: 500),
       driftPolicy: PlanDriftPolicy.stopAndAsk,
     );
 
@@ -318,7 +321,7 @@ void main() {
       expect(rebuilt.research.enabled, isFalse);
       expect(rebuilt.discussion.enabled, isFalse);
       expect(rebuilt.synthesis.outputSchema, isEmpty);
-      expect(rebuilt.budget.estimatedCostCents, isNull);
+      expect(rebuilt.budget.estimatedCostMicros, isNull);
       expect(rebuilt.driftPolicy, PlanDriftPolicy.annotate);
     });
 
@@ -344,7 +347,7 @@ void main() {
           prompt: 'new',
           outputSchema: {},
         ),
-        budget: const BudgetSpec(maxCostCents: 1),
+        budget: const BudgetSpec(maxCostMicros: 1),
         research: const ResearchSpec(enabled: false),
         discussion: const DiscussionSpec(enabled: true, prompt: 'now'),
         driftPolicy: PlanDriftPolicy.annotate,
@@ -353,7 +356,7 @@ void main() {
       expect(next.roles.single.roleKey, 'solo');
       expect(next.subTickets.single.key, 'only');
       expect(next.synthesis.prompt, 'new');
-      expect(next.budget.maxCostCents, 1);
+      expect(next.budget.maxCostMicros, 1);
       expect(next.research.enabled, isFalse);
       expect(next.discussion.enabled, isTrue);
       expect(next.driftPolicy, PlanDriftPolicy.annotate);
@@ -374,12 +377,12 @@ void main() {
 
     test('PlanNodeEstimate omits null numeric fields', () {
       final json = const PlanNodeEstimate(
-        costCentsLow: 1,
+        costMicrosLow: 1,
         sampleSize: 2,
       ).toJson();
-      expect(json['costCentsLow'], 1);
+      expect(json['costMicrosLow'], 1);
       expect(json['sampleSize'], 2);
-      expect(json.containsKey('costCentsHigh'), isFalse);
+      expect(json.containsKey('costMicrosHigh'), isFalse);
       expect(json.containsKey('blastRadiusFiles'), isFalse);
     });
 

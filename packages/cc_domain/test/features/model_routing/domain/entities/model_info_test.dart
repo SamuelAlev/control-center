@@ -94,23 +94,28 @@ void main() {
       expect(const ModelCost().isKnown, isFalse);
     });
 
-    test('estimate sums all token rates', () {
+    test('estimateMicros sums all token rates in micro-dollars', () {
       const c = ModelCost(
         input: 1,
         output: 2,
         cacheRead: 0.5,
         cacheWrite: 0.25,
       );
-      // (100*1 + 50*2 + 10*0.5 + 4*0.25)/1e6
+      // One token at 1 USD per million tokens is one micro-dollar:
+      // 100*1 + 50*2 + 10*0.5 + 4*0.25.
       expect(
-        c.estimate(
+        c.estimateMicros(
           inputTokens: 100,
           outputTokens: 50,
           cacheReadTokens: 10,
           cacheWriteTokens: 4,
         ),
-        closeTo((100 + 100 + 5 + 1) / 1000000, 1e-12),
+        206,
       );
+      // A call too small to cost a cent still costs micro-dollars.
+      expect(c.estimateMicros(inputTokens: 3), 3);
+      // The sum rounds once, to the nearest micro-dollar.
+      expect(c.estimateMicros(cacheWriteTokens: 1, cacheReadTokens: 1), 1);
     });
 
     test('equality + hashCode by all fields', () {

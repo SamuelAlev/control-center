@@ -55,7 +55,7 @@ class _StartDialogState extends ConsumerState<_StartDialog> {
             modelId: _modelId!,
             comparison: _comparison,
             repetitions: int.parse(_repeats.text.trim()),
-            budgetMicros: int.parse(_budget.text.trim()) * 10000,
+            budgetMicros: centsToMicros(int.parse(_budget.text.trim())),
             baselineHash: _comparison == SkillCampaignComparison.previous
                 ? _baselineHash
                 : null,

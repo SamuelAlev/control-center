@@ -111,8 +111,8 @@ class EventPayloadMapper {
       return {
         'scope_type': event.scopeType,
         'scope_id': event.scopeId,
-        'spent_cents': event.spentCents,
-        'budget_cents': event.budgetCents,
+        'spent_micros': event.spentMicros,
+        'budget_micros': event.budgetMicros,
         'is_hard_stop': event.isHardStop,
         'workspace_id': event.workspaceId,
       };

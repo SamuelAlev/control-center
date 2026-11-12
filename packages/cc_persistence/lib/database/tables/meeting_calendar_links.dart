@@ -8,10 +8,6 @@ import 'package:drift/drift.dart';
   unique: true,
 )
 @TableIndex(
-  name: 'idx_meeting_calendar_links_workspaceId',
-  columns: {#workspaceId},
-)
-@TableIndex(
   name: 'idx_meeting_calendar_links_eventId',
   columns: {#calendarEventId},
 )
@@ -21,6 +17,9 @@ import 'package:drift/drift.dart';
 /// Kept separate from the meeting and event so neither has to know about the
 /// other — a `Meeting` stays a pure recording artifact and a `CalendarEvent`
 /// stays a pure synced commitment. Workspace-scoped via [workspaceId].
+///
+/// One link per meeting: `meeting_id` is unique and a relink is one
+/// `INSERT … ON CONFLICT` on it.
 class MeetingCalendarLinksTable extends Table {
   /// Unique link identifier.
   TextColumn get id => text()();

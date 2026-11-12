@@ -2,7 +2,7 @@
 title: Domain events
 description: Complete catalogue of the 54 domain events, their payloads and the server-side subscribers that consume them.
 slug: en-GB/manual/reference/domain-events
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Event bus
@@ -112,7 +112,7 @@ Only terminal transitions are published. There is no `PipelineRunStarted` and no
 | Event                    | Payload                                                                                                  | Fired when                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Spend exceeds threshold   |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Spend exceeds threshold   |
 
 ## Identity and membership events
 

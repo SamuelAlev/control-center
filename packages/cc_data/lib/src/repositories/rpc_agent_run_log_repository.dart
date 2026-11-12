@@ -18,7 +18,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 ///
 /// Implements the domain interface over the host's `agent_run_log.*` ops + the
 /// `agent_run_log.watchByAgent` / `agent_run_log.watchActiveByConversation` /
-/// `agent_run_log.watchAll` subscriptions, mapping the [AgentRunLogDto] wire
+/// `agent_run_log.watchRecent` subscriptions, mapping the [AgentRunLogDto] wire
 /// shape back to [AgentRunLog]. The host owns persistence; this client never
 /// touches a database. Reads, watches and the direct upsert row write are
 /// served.
@@ -53,7 +53,6 @@ class RpcAgentRunLogRepository
       thoughtTokens: d.thoughtTokens,
       cachedReadTokens: d.cachedReadTokens,
       cachedWriteTokens: d.cachedWriteTokens,
-      estimatedCostCents: d.estimatedCostCents,
       costMicros: d.costMicros,
       costBasis: CostBasis.fromWire(d.costBasis),
       durationMs: d.durationMs,
@@ -66,7 +65,6 @@ class RpcAgentRunLogRepository
     lastOutputAt: d.lastOutputAt == null
         ? null
         : DateTime.parse(d.lastOutputAt!),
-    continuationSummary: d.continuationSummary,
     contextSnapshotJson: d.contextSnapshotJson,
     pipelineRunId: d.pipelineRunId,
     pipelineStepId: d.pipelineStepId,
@@ -108,7 +106,6 @@ class RpcAgentRunLogRepository
     thoughtTokens: l.cost.thoughtTokens,
     cachedReadTokens: l.cost.cachedReadTokens,
     cachedWriteTokens: l.cost.cachedWriteTokens,
-    estimatedCostCents: l.cost.estimatedCostCents,
     costMicros: l.cost.costMicros,
     costBasis: l.cost.costBasis.name,
     durationMs: l.cost.durationMs,
@@ -116,7 +113,6 @@ class RpcAgentRunLogRepository
     liveness: l.liveness?.name,
     errorFamily: l.errorFamily?.name,
     lastOutputAt: l.lastOutputAt?.toIso8601String(),
-    continuationSummary: l.continuationSummary,
     contextSnapshotJson: l.contextSnapshotJson,
     pipelineRunId: l.pipelineRunId,
     pipelineStepId: l.pipelineStepId,
@@ -187,8 +183,21 @@ class RpcAgentRunLogRepository
           .map((dtos) => dtos.map(_fromDto).toList());
 
   @override
-  Stream<List<AgentRunLog>> watchAll() =>
-      _remote.watchAll().map((dtos) => dtos.map(_fromDto).toList());
+  Stream<List<AgentRunLog>> watchNonTerminalForWorkspace(String workspaceId) =>
+      _remote
+          .watchActiveByWorkspace(workspaceId)
+          .map((dtos) => dtos.map(_fromDto).toList());
+
+  /// Host-side only: the liveness jobs that read every workspace's unfinished
+  /// runs run on the server, against its own store.
+  @override
+  Future<List<AgentRunLog>> nonTerminal() =>
+      throw UnsupportedError('nonTerminal is host-side only');
+
+  /// Host-side only: ticket reconciliation runs on the server.
+  @override
+  Future<AgentRunLog?> latestForTicket(String workspaceId, String ticketId) =>
+      throw UnsupportedError('latestForTicket is host-side only');
 
   @override
   Stream<List<AgentRunLog>> watchRecent(int limit) =>

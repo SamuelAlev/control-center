@@ -2,14 +2,14 @@
 title: Zarządzaj kosztami
 description: Zobacz, ile wydają Twoi agenci, ogranicz autonomiczne uruchomienie i zmniejsz zużycie tokenów.
 slug: pl-PL/podrecznik/poradniki/zarzadzanie-kosztami
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Ten poradnik pokazuje, jak sprawdzić, ile kosztują uruchomienia agentów, i jak ograniczyć autonomiczne uruchomienie.
 
 ## Jak rejestrowane są koszty
 
-Każde uruchomienie agenta zapisuje dziennik uruchomienia zawierający tokeny wejściowe, tokeny wyjściowe, tokeny rozumowania, tokeny odczytu z cache i zapisu do cache, szacowany koszt w centach oraz koszt wszystkich podagentów, które uruchomiło.
+Każde uruchomienie agenta zapisuje dziennik uruchomienia zawierający tokeny wejściowe, tokeny wyjściowe, tokeny rozumowania, tokeny odczytu z cache i zapisu do cache, szacowany koszt w mikrodolarach (milionowych częściach dolara amerykańskiego) oraz koszt wszystkich podagentów, które uruchomiło.
 
 Ceny pochodzą z katalogu models.dev, który służy wyłącznie do wzbogacenia listy modeli o cenę i okno kontekstu — nigdy jako źródło identyfikatorów modeli. Model, którego katalog nie potrafi wycenić, zapisuje **$0**, a uruchomienia o koszcie zerowym są wyłączone z podsumowania **Użycie i koszt**. Lokalny model Ollama nie pokazuje więc żadnych wydatków, choć jego liczba tokenów wciąż jest zapisywana. Plan ryczałtowy (kimi-code, subskrypcja Claude) działa tak samo tylko wtedy, gdy katalog nie ma ceny dla obsługującego modelu; jeśli ma, uruchomienie i tak jest szacowane według tych stawek. W łańcuchu zapasowym uruchomienie jest wyceniane według modelu, który faktycznie je obsłużył, a nie tego, o który poproszono.
 
@@ -78,7 +78,7 @@ Otwórz dziennik uruchomień w Analizach (50 najnowszych przefiltrowanych urucho
 
 ## Co się dzieje, gdy budżet zostanie ustawiony poza zwykłą ścieżką
 
-Dla pełności obrazu: jeśli `monthlyBudgetCents` lub polityka budżetowa zostanie zapisana bezpośrednio w wierszu agenta:
+Dla pełności obrazu: jeśli `monthlyBudgetMicros` lub polityka budżetowa zostanie zapisana bezpośrednio w wierszu agenta:
 
 - Budżety są oceniane **po** zakończeniu uruchomienia, a nie przed wysłaniem. Nasłuchujący na zakończenie uruchomienia porównuje wydatki agenta od początku miesiąca z jego pułapem.
 - Przekroczenie miękkiego progu (domyślnie 80%) zapisuje incydent ostrzegawczy i emituje zdarzenie `BudgetThresholdCrossed`, pod które możesz podpiąć wyzwalacz potoku.

@@ -1,3 +1,4 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table definition for repositories.
@@ -15,6 +16,11 @@ import 'package:drift/drift.dart';
 /// Consequence of the split: the same checkout registered in two workspaces is
 /// two independent rows with two ids. Repo identity *across* workspaces is by
 /// [path] (or owner/name), never by id.
+///
+/// [path] is unique: a checkout is linked to a workspace at most once, so
+/// "is this checkout already here?" is a key lookup and a second link of the
+/// same path is refused by the schema, not only by the caller's read.
+@TableIndex(name: 'uq_repos_path', columns: {#path}, unique: true)
 class ReposTable extends Table {
   /// Unique repository identifier (unique within this workspace).
   TextColumn get id => text()();
@@ -30,7 +36,11 @@ class ReposTable extends Table {
   ///
   /// A workspace may hold repos on several forges at once, so this — not a
   /// workspace-level setting — is what selects an API adapter and a credential.
-  TextColumn get forge => text().withDefault(const Constant('github'))();
+  /// A `ForgeHost` wire name.
+  TextColumn get forge => text()
+      // ignore: recursive_getters
+      .check(forge.isIn(PlatformStoredValues.forgeHost))
+      .withDefault(const Constant('github'))();
 
   /// Owner path parsed from the repo's `origin` remote: a GitHub owner, a
   /// Bitbucket workspace, or a (possibly nested) GitLab namespace.
@@ -40,6 +50,7 @@ class ReposTable extends Table {
   TextColumn get remoteName => text().withDefault(const Constant(''))();
 
   /// The user who linked [path] (`Repo.linkedBy`); empty when not recorded.
+  /// No foreign key: users live in the global database.
   TextColumn get linkedByUserId => text().withDefault(const Constant(''))();
 
   /// The forge's durable id for the linked repository (`Repo.forgeRepoId`);

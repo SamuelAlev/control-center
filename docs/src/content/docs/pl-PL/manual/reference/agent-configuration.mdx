@@ -2,7 +2,7 @@
 title: Konfiguracja agentów
 description: Każde pole encji agenta oraz używane przez nią typy wyliczeniowe.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/konfiguracja-agentow
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Niniejsza dokumentacja referencyjna wymienia każde pole encji agenta oraz używane przez nią typy wyliczeniowe i flagi. Instrukcję krok po kroku tworzenia i edytowania agenta w aplikacji znajdziesz w sekcji [Utwórz i skonfiguruj agenta](/pl-PL/podrecznik/poradniki/tworzenie-agenta/).
@@ -26,17 +26,17 @@ Niniejsza dokumentacja referencyjna wymienia każde pole encji agenta oraz używ
 | `effort`                | `String?`              | Nie      | Identyfikator poziomu rozumowania (np. `'low'`, `'xhigh'`), czerpany z `thinkingLevels` wybranego modelu                                                                                                                                                             |
 | `contextSize`           | `int?`                 | Nie      | Maksymalny rozmiar okna kontekstu                                                                                                                                                                                                                                   |
 | `role`                  | `AgentRole?`           | Nie      | Rola agenta                                                                                                                                                                                                                                                         |
-| `monthlyBudgetCents`    | `int`                  | Nie      | Miesięczny limit wydatków w centach (domyślnie `0`, bez limitu)                                                                                                                                                                                                     |
+| `monthlyBudgetMicros`    | `int`                  | Nie      | Miesięczny limit wydatków w mikrodolarach (domyślnie `0`, bez limitu)                                                                                                                                                                                                     |
 | `silenceTimeoutMinutes` | `int?`                 | Nie      | Nadpisanie limitu ciszy w minutach; musi być null albo mieścić się w zakresie 1–240 (weryfikowane w konstruktorze)                                                                                                                                                  |
 | `maxConcurrentTasks`    | `int`                  | Nie      | Domyślnie `1`. Liczba określająca pojemność, którą raportuje model obecności (porównuje się z nią liczbę uruchomień w toku i w kolejce)                                                                                                                              |
 | `visibility`            | `AgentVisibility`      | Nie      | Domyślnie `workspace`                                                                                                                                                                                                                                               |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Nie      | Status zarządzania (domyślnie `active`). Zapisywany przez twarde zatrzymanie budżetu i wyświetlany na schemacie organizacyjnym oraz liście obecności. Wysyłanie nadal przyjmuje pracę od agenta w stanie `paused`                                                    |
-| `budgetPolicyId`        | `String?`              | Nie      | Identyfikator współdzielonej polityki budżetowej; gdy null, bezpośrednio obowiązuje `monthlyBudgetCents`                                                                                                                                                            |
+| `budgetPolicyId`        | `String?`              | Nie      | Identyfikator współdzielonej polityki budżetowej; gdy null, bezpośrednio obowiązuje `monthlyBudgetMicros`                                                                                                                                                            |
 | `runtimeProfileId`      | `String?`              | Nie      | Identyfikator niestandardowego profilu środowiska uruchomieniowego                                                                                                                                                                                                  |
 | `createdAt`             | `DateTime`             | Tak      | Znacznik czasu utworzenia                                                                                                                                                                                                                                           |
 
 `name` i `title` muszą być niepuste (weryfikowane w konstruktorze). Domyślna
-wartość `monthlyBudgetCents` wynosząca `0` oznacza brak limitu. Pułap ustawisz za pomocą `agents.upsert`.
+wartość `monthlyBudgetMicros` wynosząca `0` oznacza brak limitu. Pułap ustawisz za pomocą `agents.upsert`.
 
 ## Wyliczenie AgentRole
 

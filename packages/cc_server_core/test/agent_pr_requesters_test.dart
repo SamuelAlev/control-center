@@ -1,14 +1,22 @@
+import 'dart:io';
+
 import 'package:cc_domain/cc_domain.dart'
     show NetworkException, ValidationException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
+import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/agent_pull_request_requester_repository.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/pr_review/agent_pr_requesters.dart';
+import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 Repo _repo(String id, {String owner = 'acme', String name = 'widgets'}) => Repo(
@@ -62,17 +70,24 @@ class _Forge implements ForgePrClient {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// A cross-workspace read where one workspace could not be read.
-class _FailingCross implements CrossWorkspaceQueries {
+/// Records that cannot be read.
+class _UnreadableRecords implements AgentPullRequestRequesterRepository {
   @override
-  Future<List<T>> fanOut<T>(
-    Future<T> Function(WorkspaceDatabase db) read, {
-    void Function(String workspaceId, Object error)? onError,
-    bool includeDeleted = false,
-  }) async {
-    onError?.call('ws2', StateError('database is locked'));
-    return const [];
-  }
+  Future<Set<String>> requesters({String? openedKey, String? pendingKey}) =>
+      throw StateError('database is locked');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Records whose every write fails.
+class _UnwritableRecords implements AgentPullRequestRequesterRepository {
+  @override
+  Future<void> add(
+    AgentPullRequestRecordState state,
+    String key,
+    Set<String> userIds,
+  ) => throw StateError('disk full');
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -101,18 +116,19 @@ void main() {
     dbs = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, dbs, 'ws1');
     await seedTestWorkspace(global, dbs, 'ws2');
+    await seedUsers(global, ['alice', 'bob', 'carol', 'dave']);
     logins = {'alice': 'alice-gh', 'bob': 'bob-gh'};
     accountIds = {};
     forge = _Forge();
   });
 
-  AgentPrRequesters store({CrossWorkspaceQueries? cross}) => AgentPrRequesters(
-    cacheFor: (ws) => dbs.of(ws).cacheDao,
-    crossWorkspace: cross ?? CrossWorkspaceQueries(dbs),
-    viewer: (forge, userId, ws) async => logins[userId] == null
-        ? null
-        : (login: logins[userId]!, id: accountIds[userId] ?? ''),
-  );
+  AgentPrRequesters store({AgentPullRequestRequesterRepository? records}) =>
+      AgentPrRequesters(
+        records: records ?? DaoAgentPullRequestRequesterRepository(global),
+        viewer: (forge, userId, ws) async => logins[userId] == null
+            ? null
+            : (login: logins[userId]!, id: accountIds[userId] ?? ''),
+      );
 
   Future<void> approve(
     Repo repo,
@@ -151,21 +167,16 @@ void main() {
   Future<Set<String>> requesters(Repo repo, int number, {String? head}) =>
       store().requestersOf(repo, number, repoId: '4242', headBranch: head);
 
-  Future<void> opened(
-    String ws,
-    Repo repo,
-    int number,
-    Set<String> requesters,
-  ) => store().recordOpened(
-    ws,
-    repo,
-    head: forge.head,
-    pr: pr(number, forge.head),
-    requesterUserIds: requesters,
-  );
+  Future<void> opened(Repo repo, int number, Set<String> requesters) =>
+      store().recordOpened(
+        repo,
+        head: forge.head,
+        pr: pr(number, forge.head),
+        requesterUserIds: requesters,
+      );
 
   test('the requester cannot approve the agent PR they asked for', () async {
-    await opened('ws1', inWs1, 7, {'alice'});
+    await opened(inWs1, 7, {'alice'});
     await expectLater(
       approve(inWs1, 7, as: 'alice'),
       _refusal('another reviewer has to approve it'),
@@ -173,12 +184,12 @@ void main() {
   });
 
   test('survives a restart (a fresh store over the same database)', () async {
-    await opened('ws1', inWs1, 7, {'alice'});
+    await opened(inWs1, 7, {'alice'});
     expect(await requesters(inWs1, 7), {'alice'});
   });
 
   test('other reviewers and other pull requests pass', () async {
-    await opened('ws1', inWs1, 7, {'alice'});
+    await opened(inWs1, 7, {'alice'});
     await approve(inWs1, 7, as: 'bob');
     forge.head = 'someone/else';
     await approve(inWs1, 8, as: 'alice');
@@ -188,7 +199,7 @@ void main() {
     'the same forge pull request through another workspace is refused '
     '(keyed by the forge repository id, not the workspace repo id)',
     () async {
-      await opened('ws1', inWs1, 7, {'alice'});
+      await opened(inWs1, 7, {'alice'});
       expect(await requesters(inWs2, 7), {'alice'});
       await expectLater(
         approve(inWs2, 7, workspaceId: 'ws2', as: 'alice'),
@@ -198,8 +209,21 @@ void main() {
   );
 
   test('a deleted workspace\'s record still refuses', () async {
-    await opened('ws2', inWs2, 7, {'alice'});
+    await opened(inWs2, 7, {'alice'});
     await global.workspaceRegistryDao.deleteWorkspace('ws2');
+    await expectLater(
+      approve(inWs1, 7, as: 'alice'),
+      _refusal('another reviewer has to approve it'),
+    );
+  });
+
+  test('a record outlives the workspace it was written through, file and '
+      'all', () async {
+    // Asked for through ws2: the agent opened it in that workspace.
+    await opened(inWs2, 7, {'alice'});
+    await global.workspaceRegistryDao.deleteWorkspace('ws2');
+    await dbs.dropAndClose('ws2');
+    expect(await requesters(inWs1, 7), {'alice'});
     await expectLater(
       approve(inWs1, 7, as: 'alice'),
       _refusal('another reviewer has to approve it'),
@@ -208,7 +232,6 @@ void main() {
 
   test('a pull request still pending is matched by its head branch', () async {
     await store().recordPending(
-      'ws1',
       inWs1,
       head: 'agent/feature',
       requesterUserIds: {'alice'},
@@ -218,22 +241,17 @@ void main() {
       _refusal('another reviewer has to approve it'),
     );
     // Once opened, the pending row is gone and the number guards it.
-    await opened('ws1', inWs1, 9, {'alice'});
+    await opened(inWs1, 9, {'alice'});
     forge.head = 'renamed';
     await expectLater(
       approve(inWs1, 9, as: 'alice'),
       _refusal('another reviewer has to approve it'),
     );
     expect(
-      await dbs
-          .of('ws1')
-          .cacheDao
-          .read(
-            'ws1',
-            'agent_pr_requester_pending_v1',
-            'github|github.com|acme/widgets@agent/feature',
-          ),
-      isNull,
+      await DaoAgentPullRequestRequesterRepository(
+        global,
+      ).requesters(pendingKey: 'github|github.com|acme/widgets@agent/feature'),
+      isEmpty,
     );
   });
 
@@ -286,7 +304,7 @@ void main() {
 
   test('a renamed or transferred repository keeps its records (keyed by '
       'the forge repository id)', () async {
-    await opened('ws1', inWs1, 7, {'alice'});
+    await opened(inWs1, 7, {'alice'});
     final moved = _repo('r1', owner: 'new-org', name: 'gizmos');
     await expectLater(
       approve(moved, 7, as: 'alice'),
@@ -298,8 +316,8 @@ void main() {
   });
 
   test('every recorded owner is refused, and records merge', () async {
-    await opened('ws1', inWs1, 7, {'alice', 'bob'});
-    await opened('ws1', inWs1, 7, {'carol'});
+    await opened(inWs1, 7, {'alice', 'bob'});
+    await opened(inWs1, 7, {'carol'});
     logins['carol'] = 'carol-gh';
     logins['dave'] = 'dave-gh';
     expect(await requesters(inWs1, 7), {'alice', 'bob', 'carol'});
@@ -372,40 +390,38 @@ void main() {
     );
   });
 
-  test('a workspace that cannot be read refuses rather than passing', () async {
+  test('records that cannot be read refuse rather than passing', () async {
     await expectLater(
       approve(
         inWs1,
         7,
         as: 'bob',
-        using: store(cross: _FailingCross()),
+        using: store(records: _UnreadableRecords()),
       ),
       _refusal('could not check who asked for this pull request'),
     );
   });
 
   group('reconcile', () {
-    Future<String?> pendingRow(String ws, String head) => dbs
-        .of(ws)
-        .cacheDao
-        .read(
-          ws,
-          'agent_pr_requester_pending_v1',
-          'github|github.com|acme/widgets@$head',
-        );
+    Future<Set<String>?> pendingRow(String head) async {
+      final ids = await DaoAgentPullRequestRequesterRepository(
+        global,
+      ).requesters(pendingKey: 'github|github.com|acme/widgets@$head');
+      return ids.isEmpty ? null : ids;
+    }
 
-    Future<void> pending(String head, {String ws = 'ws1'}) => store()
-        .recordPending(ws, inWs1, head: head, requesterUserIds: {'alice'});
+    Future<void> pending(String head) =>
+        store().recordPending(inWs1, head: head, requesterUserIds: {'alice'});
 
     test(
       'an open PR on the pending head branch promotes it to its number',
       () async {
         await pending('agent/feature');
-        await store().reconcile('ws1', inWs1, [
+        await store().reconcile(inWs1, [
           pr(12, 'agent/feature'),
           pr(13, 'someone/else'),
         ], complete: true);
-        expect(await pendingRow('ws1', 'agent/feature'), isNull);
+        expect(await pendingRow('agent/feature'), isNull);
         expect(await requesters(inWs1, 12), {'alice'});
         expect(await requesters(inWs1, 13), isEmpty);
       },
@@ -413,18 +429,18 @@ void main() {
 
     test('an open PR listed without a repository id keeps the row', () async {
       await pending('agent/feature');
-      await store().reconcile('ws1', inWs1, [
+      await store().reconcile(inWs1, [
         pr(12, 'agent/feature', repoId: ''),
       ], complete: true);
-      expect(await pendingRow('ws1', 'agent/feature'), 'alice');
+      expect(await pendingRow('agent/feature'), {'alice'});
     });
 
     test('a closed PR on the branch does not promote it', () async {
       await pending('agent/feature');
-      await store().reconcile('ws1', inWs1, [
+      await store().reconcile(inWs1, [
         pr(12, 'agent/feature', state: PrState.closed),
       ], complete: true);
-      expect(await pendingRow('ws1', 'agent/feature'), 'alice');
+      expect(await pendingRow('agent/feature'), {'alice'});
       expect(await requesters(inWs1, 12), isEmpty);
     });
 
@@ -434,40 +450,37 @@ void main() {
       await pending('agent/young');
       final later = DateTime.now().add(const Duration(days: 8));
       // A partial list (more pages) cannot tell it was never opened.
-      await store().reconcile('ws1', inWs1, [], complete: false, now: later);
-      expect(await pendingRow('ws1', 'agent/stale'), 'alice');
+      await store().reconcile(inWs1, [], complete: false, now: later);
+      expect(await pendingRow('agent/stale'), {'alice'});
       // A young row stays even on a complete list.
-      await store().reconcile('ws1', inWs1, [], complete: true);
-      expect(await pendingRow('ws1', 'agent/young'), 'alice');
-      await store().reconcile('ws1', inWs1, [], complete: true, now: later);
-      expect(await pendingRow('ws1', 'agent/stale'), isNull);
-      expect(await pendingRow('ws1', 'agent/young'), isNull);
+      await store().reconcile(inWs1, [], complete: true);
+      expect(await pendingRow('agent/young'), {'alice'});
+      await store().reconcile(inWs1, [], complete: true, now: later);
+      expect(await pendingRow('agent/stale'), isNull);
+      expect(await pendingRow('agent/young'), isNull);
     });
 
-    test('only touches the reconciled repository and workspace', () async {
+    test('only touches the reconciled repository', () async {
       final other = _repo('r3', name: 'gadgets');
       await store().recordPending(
-        'ws1',
         other,
         head: 'agent/feature',
         requesterUserIds: {'alice'},
       );
-      await pending('agent/feature', ws: 'ws2');
       final later = DateTime.now().add(const Duration(days: 8));
-      await store().reconcile('ws1', inWs1, [], complete: true, now: later);
+      await store().reconcile(inWs1, [], complete: true, now: later);
       expect(await requesters(other, 0, head: 'agent/feature'), {'alice'});
-      expect(await pendingRow('ws2', 'agent/feature'), 'alice');
     });
 
     test(
       'the approval check promotes a pending row an open PR carries',
       () async {
-        await pending('agent/feature', ws: 'ws2');
+        await pending('agent/feature');
         await expectLater(
           approve(inWs1, 21, as: 'alice'),
           _refusal('another reviewer has to approve it'),
         );
-        expect(await pendingRow('ws2', 'agent/feature'), isNull);
+        expect(await pendingRow('agent/feature'), isNull);
         // Now guarded by number even once the branch is renamed.
         forge.head = 'renamed';
         await expectLater(
@@ -486,7 +499,7 @@ void main() {
           approve(inWs1, 21, as: 'alice'),
           _refusal('another reviewer has to approve it'),
         );
-        expect(await pendingRow('ws1', 'agent/feature'), 'alice');
+        expect(await pendingRow('agent/feature'), {'alice'});
       },
     );
   });
@@ -495,10 +508,8 @@ void main() {
     Future<int> open({
       Set<String> owners = const {'alice'},
       Object? failure,
-      String workspaceId = 'ws1',
       String repoId = '4242',
     }) async => (await store().open(
-      workspaceId: workspaceId,
       repo: inWs1,
       head: 'agent/feature',
       approvalOwnerUserIds: owners,
@@ -537,11 +548,9 @@ void main() {
       var asked = false;
       await expectLater(
         AgentPrRequesters(
-          cacheFor: (_) => throw StateError('disk full'),
-          crossWorkspace: CrossWorkspaceQueries(dbs),
+          records: _UnwritableRecords(),
           viewer: (_, _, _) async => null,
         ).open(
-          workspaceId: 'ws1',
           repo: inWs1,
           head: 'agent/feature',
           approvalOwnerUserIds: {'alice'},
@@ -568,5 +577,54 @@ void main() {
       );
       expect(await requesters(inWs1, 0, head: 'agent/feature'), {'alice'});
     });
+  });
+
+  test('a record outlives a restore of the workspace it was written through '
+      'from an older file', () async {
+    final tmp = Directory.systemTemp.createTempSync('agent_pr_restore');
+    addTearDown(() => tmp.deleteSync(recursive: true));
+    final onDisk = GlobalDatabase(
+      NativeDatabase(File('${tmp.path}/global.db')),
+    );
+    final files = WorkspaceDatabaseManager(
+      dataDir: tmp.path,
+      global: onDisk,
+      executorFactory: (id) =>
+          NativeDatabase(File(workspaceDatabasePath(tmp.path, id))),
+    );
+    addTearDown(() async {
+      await files.closeAll();
+      await onDisk.close();
+    });
+    await files.loadInstallId();
+    await seedTestWorkspace(onDisk, files, 'ws2');
+    await seedUsers(onDisk, ['alice']);
+    final backups = AppDatabaseBackupService(
+      global: onDisk,
+      workspaces: files,
+      backupsDir: '${tmp.path}/backups',
+      webhookSecrets: WebhookSecretVault(InMemorySecretStore()),
+      eventBus: DomainEventBus(),
+    );
+    final older = await backups.exportWorkspace('ws2');
+    final records = AgentPrRequesters(
+      records: DaoAgentPullRequestRequesterRepository(onDisk),
+      viewer: (_, _, _) async => null,
+    );
+
+    // Asked for through ws2, after the copy that is restored below was made.
+    await records.recordOpened(
+      inWs2,
+      head: forge.head,
+      pr: pr(7, forge.head),
+      requesterUserIds: {'alice'},
+    );
+    await backups.importWorkspace(
+      workspaceId: 'ws2',
+      sourcePath: older,
+      importedBy: 'alice',
+    );
+
+    expect(await records.requestersOf(inWs2, 7, repoId: '4242'), {'alice'});
   });
 }

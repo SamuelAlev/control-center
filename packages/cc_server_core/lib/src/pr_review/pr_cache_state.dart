@@ -1,33 +1,30 @@
 part of '../cached_pr_review_repository.dart';
 
+/// The `caches` kinds this repository writes, all declared in
+/// [PrReviewCacheKinds].
 class _Kind {
-  static const prDetail = 'prDetail';
-  static const prDiff = 'prDiff';
-  static const prFiles = 'prFiles';
-  static const prFileContent = 'prFileContent';
-  static const prImageDiff = 'prImageDiff';
-  static const prCommits = 'prCommits';
-  static const prCommitFiles = 'prCommitFiles';
-  static const prReviews = 'prReviews';
-  static const prReviewComments = 'prReviewComments';
-  static const prIssueComments = 'prIssueComments';
-  static const prTimelineEvents = 'prTimelineEvents';
-  static const prCheckRuns = 'prCheckRuns';
-  static const prCommitStatuses = 'prCommitStatuses';
+  static const prDetail = PrReviewCacheKinds.prDetail;
+  static const prDiff = PrReviewCacheKinds.prDiff;
+  static const prFiles = PrReviewCacheKinds.prFiles;
+  static const prFileContent = PrReviewCacheKinds.prFileContent;
+  static const prImageDiff = PrReviewCacheKinds.prImageDiff;
+  static const prCommits = PrReviewCacheKinds.prCommits;
+  static const prCommitFiles = PrReviewCacheKinds.prCommitFiles;
+  static const prReviews = PrReviewCacheKinds.prReviews;
+  static const prReviewComments = PrReviewCacheKinds.prReviewComments;
+  static const prIssueComments = PrReviewCacheKinds.prIssueComments;
+  static const prTimelineEvents = PrReviewCacheKinds.prTimelineEvents;
+  static const prCheckRuns = PrReviewCacheKinds.prCheckRuns;
+  static const prCommitStatuses = PrReviewCacheKinds.prCommitStatuses;
 
   /// Enriched reviewer rows (users + teams + code-owner flags + on-behalf
   /// merge) resolved from the GraphQL review-state query, keyed by PR number.
-  static const prReviewerState = 'prReviewerState';
-
-  /// Monotonic per-PR set of reviewer identities ever seen flagged
-  /// `asCodeOwner`. Deliberately NOT in `prScoped`: it accumulates so the
-  /// shield survives the pending→reviewed transition (GitHub drops the flag).
-  static const prCodeOwnerIds = 'prCodeOwnerIds';
+  static const prReviewerState = PrReviewCacheKinds.prReviewerState;
 
   /// Repo-scoped picker candidate caches (TTL-enveloped), keyed by repo.
-  static const assignableUsers = 'assignableUsers';
-  static const requestableTeams = 'requestableTeams';
-  static const repoLabels = 'repoLabels';
+  static const assignableUsers = PrReviewCacheKinds.assignableUsers;
+  static const requestableTeams = PrReviewCacheKinds.requestableTeams;
+  static const repoLabels = PrReviewCacheKinds.repoLabels;
 
   /// Kinds keyed by PR number ([CachedPrReviewRepository._prKey]).
   static const prScoped = <String>[

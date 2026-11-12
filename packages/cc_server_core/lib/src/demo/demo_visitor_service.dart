@@ -365,7 +365,7 @@ class DemoVisitorService {
       PairedDevicesTableCompanion(
         id: drift.Value(deviceId),
         userId: drift.Value(user.id),
-        workspaceId: drift.Value(workspaceId),
+        landingWorkspaceId: drift.Value(workspaceId),
         label: const drift.Value('Demo visitor (web)'),
         platform: const drift.Value('web'),
         pskRef: const drift.Value('file'),
@@ -575,13 +575,15 @@ class DemoVisitorService {
   }
 
   /// Deletes the visitor's global-database rows: their newsfeed, preferences,
-  /// user row and the workspace registry tombstone.
+  /// user row and the workspace registry tombstone. The tombstone first: it
+  /// may name the visitor as its owner, and a user who owns a workspace
+  /// cannot be deleted.
   Future<void> _deleteGlobalRowsFor(DemoVisitor visitor) async {
-    await _deleteUserRows(visitor.userId);
     final db = _globalDb;
     await (db.delete(
       db.workspacesTable,
     )..where((t) => t.id.equals(visitor.workspaceId))).go();
+    await _deleteUserRows(visitor.userId);
   }
 
   // ── Boot reconcile + persistence ─────────────────────────────────────────
@@ -636,24 +638,25 @@ class DemoVisitorService {
       final db = _globalDb;
       final devices = await (db.select(
         db.pairedDevicesTable,
-      )..where((t) => t.workspaceId.equals(workspaceId))).get();
+      )..where((t) => t.landingWorkspaceId.equals(workspaceId))).get();
       for (final device in devices) {
         await _globalDb.pairedDeviceDao.remove(device.id);
         await _secrets.deletePsk(device.id);
-        // A demo guest's user row is unreachable the moment their device and
-        // workspace go; the cast is shared across every workspace and spared.
-        // `userId` is nullable on the row (a device can be paired before an
-        // identity is bound), and a null one owns no user to delete.
-        final userId = device.userId;
-        if (userId != null && !isDemoCastMember(userId)) {
-          await _deleteUserRows(userId);
-        }
       }
       await _workspaces.delete(workspaceId);
       await _workspaceDbs.dropAndClose(workspaceId);
+      // The registry row before the users: it may name one as its owner, and
+      // a user who owns a workspace cannot be deleted.
       await (db.delete(
         db.workspacesTable,
       )..where((t) => t.id.equals(workspaceId))).go();
+      // A demo guest's user row is unreachable the moment their device and
+      // workspace go; the cast is shared across every workspace and spared.
+      for (final device in devices) {
+        if (!isDemoCastMember(device.userId)) {
+          await _deleteUserRows(device.userId);
+        }
+      }
     } on Object catch (e) {
       _log('demo: reaping unowned $workspaceId failed: $e');
     }

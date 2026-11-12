@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
@@ -33,6 +34,7 @@ class McpToolDispatcher implements RpcDispatcher {
     this.commandPolicy,
     this.actionGuard,
     this.approvalMode = ApprovalMode.alwaysAsk,
+    this.isWorkspaceReadOnly,
   });
 
   /// Registry of available MCP tools used to handle incoming requests.
@@ -70,6 +72,12 @@ class McpToolDispatcher implements RpcDispatcher {
   /// confirmation via the [ConfirmationPort] (fail-closed when no approver).
   /// Null on clients/tests that do not inject it; the server wires it in.
   final ActionGuardService? actionGuard;
+
+  /// Whether a workspace's database is read-only (its integrity check
+  /// failed). A mutating tool ([McpTool.isMutating]) aimed at such a
+  /// workspace is refused before it runs, the same refusal the `repo/call`
+  /// dispatcher gives; read tools still run. Null skips the gate.
+  final bool Function(String workspaceId)? isWorkspaceReadOnly;
 
   static const _protocolVersion = mcpProtocolVersion;
 
@@ -334,6 +342,20 @@ class McpToolDispatcher implements RpcDispatcher {
           ).toJson(),
         };
       }
+    }
+
+    if (tool.isMutating &&
+        guardWorkspaceId.isNotEmpty &&
+        (isWorkspaceReadOnly?.call(guardWorkspaceId) ?? false)) {
+      CcMcpLog.w('MCP', '✗ $toolName refused: workspace is read-only');
+      return {
+        'jsonrpc': '2.0',
+        'id': request.id,
+        'result': CallResult.error(
+          '$workspaceReadOnlyKind: this workspace is read-only, its database '
+          'failed an integrity check; reads still work',
+        ).toJson(),
+      };
     }
 
     // Command policy gate (Phase 2.4): for tools whose arguments contain a

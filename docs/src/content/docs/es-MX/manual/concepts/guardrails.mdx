@@ -2,7 +2,7 @@
 title: Barandillas — una sola política para cada acción que muta el estado
 description: Por qué Control Center canaliza todos los efectos secundarios de un agente por un único motor de permitir/preguntar/denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia realmente el dial de autonomía.
 slug: es-MX/manual/conceptos/barandillas
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Los agentes de Control Center pueden eliminar archivos, hacer push de ramas, publicar pull requests y llamar a API externas. Cada una de esas acciones es un _tipo_ de riesgo distinto y, durante mucho tiempo, solo una de ellas —los comandos de shell— tenía una política. Las barandillas existen para responder de forma uniforme una sola pregunta, para toda acción que muta el estado que un agente pueda realizar, sin importar qué runtime o herramienta la proponga: **¿se permite, requiere una aprobación o se deniega?**
@@ -64,7 +64,7 @@ Una restricción puede nombrar:
 - **hosts** — destinos de red, con comodines de subdominio (`*.internal`)
 - **comandos** — prefijos de comando, que coinciden en un límite de palabra
 - **herramientas** — la herramienta exacta que nombra una llamada, para que una aprobación pueda cubrir una sola herramienta en lugar de todas las que tienen el mismo efecto
-- **techos** — `maxCount` / `maxCents`, de modo que «eliminar hasta 50 archivos» sea expresable
+- **techos** — `maxCount` / `maxMicros`, de modo que «eliminar hasta 50 archivos» sea expresable
 
 Tres propiedades se derivan de mantener la gramática cerrada y sin bucles, y las tres son justamente lo importante: toda regla se expresa como una frase que puedes releer, toda denegación puede nombrar la restricción que coincidió y la política completa se puede enumerar: puedes ver lo que un agente puede hacer *antes* de que se ejecute.
 

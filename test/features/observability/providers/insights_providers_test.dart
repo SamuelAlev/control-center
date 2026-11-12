@@ -171,21 +171,21 @@ void main() {
           runs: 2,
           errors: 1,
           tokens: 100,
-          costCents: 50,
+          costMicros: 500000,
         ),
         TimeBucket(
           bucketStart: wednesday,
           runs: 3,
           errors: 0,
           tokens: 200,
-          costCents: 70,
+          costMicros: 700000,
         ),
         TimeBucket(
           bucketStart: nextWeek,
           runs: 1,
           errors: 1,
           tokens: 50,
-          costCents: 10,
+          costMicros: 100000,
         ),
       ]);
       expect(folded, hasLength(2));
@@ -193,7 +193,7 @@ void main() {
       expect(folded[0].runs, 5);
       expect(folded[0].errors, 1);
       expect(folded[0].tokens, 300);
-      expect(folded[0].costCents, 120);
+      expect(folded[0].costMicros, 1200000);
       expect(folded[1].bucketStart, DateTime(2026, 8, 3));
       expect(folded[1].runs, 1);
     });
@@ -271,7 +271,7 @@ void main() {
             id: 'r1',
             agentId: 'a',
             startedAt: now.subtract(const Duration(days: 3)),
-            cost: const RunCost(estimatedCostCents: 100),
+            cost: const RunCost(costMicros: 1000000),
           ),
           _run(id: 'r2', agentId: 'a', startedAt: now),
         ],
@@ -281,7 +281,15 @@ void main() {
       );
       expect(result.buckets, hasLength(7));
       expect(result.buckets.map((b) => b.runs), [0, 0, 0, 1, 0, 0, 1]);
-      expect(result.buckets.map((b) => b.costCents), [0, 0, 0, 100, 0, 0, 0]);
+      expect(result.buckets.map((b) => b.costMicros), [
+        0,
+        0,
+        0,
+        1000000,
+        0,
+        0,
+        0,
+      ]);
     });
 
     test('all time folds to weekly beyond 62 days, preserving totals', () {
@@ -293,13 +301,16 @@ void main() {
             id: 'r$i',
             agentId: 'a',
             startedAt: start.add(Duration(days: i, hours: 12)),
-            cost: const RunCost(estimatedCostCents: 10, outputTokens: 100),
+            cost: const RunCost(costMicros: 100000, outputTokens: 100),
           ),
       ];
       final result = bucketizeSeries(runs, ObsTimeRange.all, calc, now: now);
       expect(result.kind, ObsBucketKind.week);
       expect(result.buckets.length, closeTo(13, 1));
-      expect(result.buckets.fold<int>(0, (sum, b) => sum + b.costCents), 900);
+      expect(
+        result.buckets.fold<int>(0, (sum, b) => sum + b.costMicros),
+        9000000,
+      );
       expect(result.buckets.fold<int>(0, (sum, b) => sum + b.runs), 90);
     });
 

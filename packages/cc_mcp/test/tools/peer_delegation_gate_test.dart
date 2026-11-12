@@ -24,7 +24,7 @@ void main() {
           ? ({required workspaceId, required agentId, spaceId}) async =>
                 agentId == 'agent-a' ? delegatorAutonomy : recipientAutonomy
           : null,
-      resolveRemainingBudgetCents: configured
+      resolveRemainingBudgetMicros: configured
           ? ({required workspaceId, required agentId}) async => remainingBudget
           : null,
     ),
@@ -109,7 +109,7 @@ void main() {
       resolveEffectiveAutonomy:
           ({required workspaceId, required agentId, spaceId}) async =>
               AutonomyLevel.actWithApproval,
-      resolveRemainingBudgetCents:
+      resolveRemainingBudgetMicros:
           ({required workspaceId, required agentId}) async => null,
     );
     // One in-flight ask above agent-a: an ask counts it, a ticket does not.

@@ -1,47 +1,33 @@
-import 'package:cc_persistence/database/tables/isolated_repos.dart'
-    show IsolatedReposTable;
-import 'package:cc_persistence/database/tables/repos.dart' show ReposTable;
 import 'package:drift/drift.dart';
 
 /// Drift table recording, per checkout partition, the repo-state fingerprint
 /// observed at the last successful index run — the code indexer's boot-time
 /// short-circuit.
 ///
-/// One row per `(workspaceId, repoId, checkoutId)` partition. When a run
-/// starts, the indexer probes the checkout (`git rev-parse HEAD` +
+/// One row per `(repoId, checkoutId)` partition. When a run starts, the
+/// indexer probes the checkout (`git rev-parse HEAD` +
 /// `git status --porcelain -z -uall` + a stat fold of the dirty paths) and
 /// compares against this row; a full match means nothing observable changed
 /// since the last successful run, so the whole run — file-state read, walk,
 /// hashing, prune, reference resolution — is skipped. This is what makes an
 /// unchanged repo near-free at boot.
+///
+/// A partition with no row is indexed in full on its next run, which is what
+/// repopulates a `code_index.db` that was created empty.
 @TableIndex(
-  name: 'idx_code_index_checkpoints_workspaceId',
-  columns: {#workspaceId},
-)
-@TableIndex(name: 'idx_code_index_checkpoints_repoId', columns: {#repoId})
-@TableIndex(
-  name: 'idx_code_index_checkpoints_checkoutId',
-  columns: {#checkoutId},
+  name: 'idx_code_index_checkpoints_partition',
+  columns: {#repoId, #checkoutId},
 )
 class CodeIndexCheckpointsTable extends Table {
-  /// Deterministic id: hash(workspaceId | repoId) for the linked checkout;
-  /// hash(workspaceId | repoId | checkoutId) for a worktree partition.
+  /// Deterministic id of the partition (see `code_graph_ids`).
   TextColumn get id => text()();
 
-  /// Owning workspace.
-  TextColumn get workspaceId => text()();
-
-  /// Owning repository.
-  TextColumn get repoId =>
-      text().references(ReposTable, #id, onDelete: KeyAction.cascade)();
+  /// The repository (`repos.id` in `workspace.db`).
+  TextColumn get repoId => text()();
 
   /// The checkout partition: NULL = the linked checkout, otherwise an
-  /// `isolated_repos` row id. Cascades away with the worktree row.
-  TextColumn get checkoutId => text().nullable().references(
-    IsolatedReposTable,
-    #id,
-    onDelete: KeyAction.cascade,
-  )();
+  /// `isolated_repos` row id.
+  TextColumn get checkoutId => text().nullable()();
 
   /// `git rev-parse HEAD` at the last successful run ('' = unborn branch).
   TextColumn get headSha => text()();

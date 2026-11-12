@@ -169,7 +169,6 @@ class LlmCallRecord {
     thoughtTokens: thoughtTokens,
     cachedReadTokens: cachedReadTokens,
     cachedWriteTokens: cachedWriteTokens,
-    estimatedCostCents: costMicros == null ? 0 : (costMicros! / 10000).round(),
     costMicros: costMicros ?? 0,
     costBasis: costBasis,
   );

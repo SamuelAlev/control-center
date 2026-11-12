@@ -14559,13 +14559,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get backupSnapshotComplete => 'Полный';
 
   @override
-  String get backupSnapshotIncomplete => 'Неполный';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'Нет манифеста или в нём указаны отсутствующие файлы, поэтому этот снимок не восстановит всю установку. Файлы рабочих пространств, которые в нём есть, можно принять по одному.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'Удалить снимок';
 
   @override
@@ -18752,4 +18745,243 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'Вы можете смотреть на эту машину. Она использует входы в сервисы того, для кого её открыли, поэтому только он может управлять ею, пробрасывать её порты, вставлять в неё данные или перетаскивать на неё файлы.';
+
+  @override
+  String get refusalStorageBusy =>
+      'База данных сервера сейчас занята. Повторите попытку через минуту.';
+
+  @override
+  String get refusalStorageFull =>
+      'На сервере закончилось место на диске, поэтому ничего нельзя сохранить. Владельцу сервера нужно освободить место.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'Данные этого рабочего пространства повреждены. Владелец сервера должен восстановить их из резервной копии.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'Это рабочее пространство доступно только для чтения, пока владелец сервера не восстановит его из резервной копии, поэтому изменения сохранить нельзя.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'Эти данные записаны более новой версией сервера. Обновите сервер и повторите попытку.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'Сервер нашёл файл базы данных, который он не записывал. Владельцу сервера нужно проверить папку данных сервера.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'Это рабочее пространство удалено.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'Этот запрос ещё обрабатывается. Дождитесь завершения, затем проверьте результат.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'На сервере нет файла по этому пути. Ничего не заменено.';
+
+  @override
+  String get refusalImportDamaged =>
+      'Этот файл повреждён, поэтому его нельзя восстановить. Ничего не заменено.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'Контрольная сумма этого файла не совпадает с записанной в резервной копии, поэтому файл мог быть изменён или повреждён. Ничего не заменено.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'Этот файл записан более новой версией сервера. Обновите сервер, чтобы восстановить его. Ничего не заменено.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'Этот файл не является базой данных рабочего пространства. Ничего не заменено.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'Этот файл не удалось привести к формату этого сервера. Ничего не заменено.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'Этот файл содержит ссылки, которые принадлежат другому рабочему пространству на этом сервере, и восстановление перехватило бы их. Ничего не заменено.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle =>
+      'Это рабочее пространство доступно только для чтения';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'Его данные не прошли проверку целостности, поэтому изменения сохранить нельзя. Всё по-прежнему можно читать. Владелец сервера может восстановить его из резервной копии.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'Его данные не прошли проверку целостности, поэтому изменения сохранить нельзя. Всё по-прежнему можно читать. Восстановите его из резервной копии, чтобы снова разрешить запись.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'Открыть резервные копии';
+
+  @override
+  String get serverNoticesLabel => 'Требует вашего внимания';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'Только чтение';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'С $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'Его база данных не прошла проверку целостности, поэтому она доступна только для чтения и отклоняет любые изменения. Восстановите её из резервной копии в списках ниже: её последняя исправная копия сохраняется, пока вы этого не сделаете.';
+
+  @override
+  String get serverNoticeDetails => 'Подробности';
+
+  @override
+  String get backupSnapshotUnverified => 'Не проверен';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'Этот снимок нельзя проверить. Он не был завершён или был создан до того, как снимки начали записывать контрольные суммы, поэтому им нельзя восстановить всю установку. Файлы рабочего пространства, которые он содержит, всё же можно восстановить по одному.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'Последняя исправная копия';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'Сохранена, потому что содержит последнюю исправную копию повреждённого рабочего пространства. Очистка не трогает её, пока это рабочее пространство не восстановлено.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'Это последняя исправная копия повреждённого рабочего пространства. Если её удалить, восстановить это рабочее пространство будет не из чего.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count разрешений отложено для проверки. Они указаны в начале этой страницы.',
+      many:
+          '$count разрешений отложено для проверки. Они указаны в начале этой страницы.',
+      few:
+          '$count разрешения отложены для проверки. Они указаны в начале этой страницы.',
+      one:
+          '$count разрешение отложено для проверки. Оно указано в начале этой страницы.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'Отложено из восстановленных копий';
+
+  @override
+  String get importHoldsExplainer =>
+      'Восстановленная копия сама по себе не может ничего предоставить на этом сервере. В ней были такие разрешения: примите одно, чтобы предоставить его снова, или отклоните, чтобы удалить.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'Агенты могут делать это без одобрения: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'Агенты могут делать это, когда человек одобрит: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'Запускать команды, которые начинаются с $command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'Во всём этом рабочем пространстве';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'В пространстве $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'Для агента $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'Песочницы могут запускать $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$person может изменять $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$person может проверять pull request в $repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$person получает доступ уровня $level к $repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person получает роль $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'Открытое приглашение войти с ролью $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Открытое приглашение войти с ролью $role и доступом на проверку или запись в $count репозиториев',
+      many:
+          'Открытое приглашение войти с ролью $role и доступом на проверку или запись в $count репозиториев',
+      few:
+          'Открытое приглашение войти с ролью $role и доступом на проверку или запись в $count репозитория',
+      one:
+          'Открытое приглашение войти с ролью $role и доступом на проверку или запись в $count репозиторий',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown =>
+      'Разрешение, которое эта версия приложения не может описать';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'Восстановлено $time';
+  }
+
+  @override
+  String get importHoldAccept => 'Принять';
+
+  @override
+  String get importHoldDismiss => 'Отклонить';
+
+  @override
+  String get importHoldAcceptTitle => 'Предоставить это разрешение?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nПринятие сразу предоставит его на сервере.';
+  }
+
+  @override
+  String get importHoldAccepted => 'Разрешение предоставлено.';
+
+  @override
+  String get importHoldNotApplied =>
+      'Ничего не предоставлено: тот, для кого оно было, или то, для чего оно было, больше не находится в этом рабочем пространстве.';
 }

@@ -59,12 +59,12 @@ class _RecordingGoalControl {
   Future<void> call(
     String workspaceId,
     String goalId, {
-    int? raiseCostCapCents,
+    int? raiseCostCapMicros,
   }) async {
     calls.add((
       workspaceId: workspaceId,
       goalId: goalId,
-      raise: raiseCostCapCents,
+      raise: raiseCostCapMicros,
     ));
   }
 }
@@ -110,8 +110,8 @@ AgentGoalRun _goal({
   kind: kind,
   status: status,
   deadlineAt: DateTime(2026, 8, 1, 12),
-  costCapCents: 5000,
-  costCents: 125,
+  costCapMicros: 50000000,
+  costMicros: 1250000,
   maxRuns: 100,
   runCount: 3,
   consecutiveFailures: 1,
@@ -303,11 +303,11 @@ void main() {
     test('resume forwards a cost-cap raise to the supervisor', () async {
       final result = await op(
         'agentGoalRuns.resume',
-      ).handler(_ctx({'goal_id': 'g-7', 'raise_cost_cap_cents': 10000}));
+      ).handler(_ctx({'goal_id': 'g-7', 'raise_cost_cap_micros': 100000000}));
 
       expect(result, {'ok': true});
       expect(resumeGoal.calls, [
-        (workspaceId: 'ws-1', goalId: 'g-7', raise: 10000),
+        (workspaceId: 'ws-1', goalId: 'g-7', raise: 100000000),
       ]);
     });
 

@@ -2,7 +2,7 @@
 title: Sichern und wiederherstellen
 description: Erstelle eine Momentaufnahme der Installation, verschiebe einen Arbeitsbereich zwischen Rechnern, stelle einen oder alle wieder her und bewahre Kopien an einem anderen Ort auf.
 slug: de-DE/handbuch/anleitungen/sichern-und-wiederherstellen
-sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
+sourceHash: 8e3e9088952fefe2f0fedd86d99fb3af2eb3b7f3
 ---
 
 Diese Anleitung deckt die fünf Dinge ab, die du mit Sicherungen tatsächlich tust:
@@ -45,10 +45,10 @@ Beide Artefakte sind **nur Datenbanken**:
 - Eine **Momentaufnahme der Installation** ist ein Verzeichnis mit Zeitstempel: `manifest.json`, `global.db` und pro Arbeitsbereich eine `<workspaceId>/workspace.db`.
 - Ein **Arbeitsbereichs-Export** ist genau diese eine Datei `workspace.db`.
 
-Die Datenbank eines Arbeitsbereichs ist der ganze Arbeitsbereich: seine Unterhaltungen, Lauf-Logs, der Code-Index, die Repo-Verknüpfungen, Environment-Definitionen und Mitglieder. Sie enthält außerdem die Webhook-Tokens der Pipelines und die Webhook-Geheimnisse der Ticket-Synchronisierung, und zwar in lesbarer Form. Bewahre eine heruntergeladene Arbeitsbereichssicherung oder einen Export so auf wie ein Geheimnis. Sie enthält keine Anbieter-Anmeldungen, Gerätschlüssel oder Benutzergeheimnisse; die liegen in der globalen Datenbank und im Geheimnisspeicher des Servers.
+Die Datenbank eines Arbeitsbereichs ist der ganze Arbeitsbereich: seine Unterhaltungen, Lauf-Logs, Repo-Verknüpfungen, Environment-Definitionen und Mitglieder. Sie enthält keine Geheimnisse: Webhook-Tokens der Pipelines, Webhook-Geheimnisse der Ticket-Synchronisierung, Anbieter-Anmeldungen, Gerätschlüssel und Benutzergeheimnisse liegen in der globalen Datenbank und im Geheimnisspeicher des Servers. Sie ist trotzdem alles, was der Arbeitsbereich gesagt und getan hat, also bewahre eine heruntergeladene Sicherung oder einen Export so privat auf wie den Arbeitsbereich selbst. Der Code-Index ist eine eigene Datei neben der Datenbank, `code_index.db`. Keine Sicherung enthält ihn; der Server baut ihn neu auf.
 
 Den Rest des Datenverzeichnisses tragen beide nicht: `secrets.json`
-(Kopplungsschlüssel, Anbieter-Zugangsdaten, SSO), die `blobs/` eines
+(Kopplungsschlüssel, Anbieter-Zugangsdaten, Webhook-Geheimnisse, SSO), die `blobs/` eines
 Arbeitsbereichs (Bilder, die in Nachrichten eingefügt wurden), `skills/`,
 `agents/`, `chat_credentials/`, aufgezeichnetes Audio von Besprechungen oder
 Rig-Images. Einiges davon ist entbehrlich, anderes nicht. Die
@@ -66,19 +66,11 @@ Der Server läuft dabei weiter. Jede Datei wird mit `VACUUM INTO` geschrieben,
 konsistent gegen eine laufende Datenbank. Es gibt kein Wartungsfenster, und du
 musst keine Agenten anhalten.
 
-Jede Zeile zeigt den Zeitstempel, die Größe auf der Platte, wie viele
-Arbeitsbereiche erfasst wurden und ob die Momentaufnahme **Vollständig** oder
-**Unvollständig** ist. Unvollständig heißt: das Manifest fehlt oder nennt
-Dateien, die nicht da sind, weil ein Absturz oder eine volle Platte die
-Sicherung unterbrochen hat. Diese Zeilen bleiben absichtlich sichtbar. Eine
-Momentaufnahme, die du nicht siehst, ist eine, von der du glaubst, sie zu
-haben. Eine unvollständige Momentaufnahme kann die ganze Installation nicht
-wiederherstellen. Die Arbeitsbereichsdateien, die sie enthält, lassen sich
-weiterhin einzeln übernehmen.
+Jede Zeile zeigt den Zeitstempel, die Größe auf der Platte, wie viele Arbeitsbereiche erfasst wurden und ob die Momentaufnahme **Vollständig** oder **Nicht überprüfbar** ist. Jede Kopie wird nach dem Schreiben geprüft, und das Manifest hält ihre Größe und Prüfsumme fest. Nicht überprüfbar heißt: der Server kann für die Momentaufnahme nicht bürgen. Das Manifest fehlt oder ist nicht lesbar, oder eine Datei, die es nennt, fehlt oder hat eine andere Größe. Das ist eine Sicherung, die ein Absturz oder eine volle Platte unterbrochen hat, oder eine, die vor der Zeit entstand, in der Momentaufnahmen Prüfsummen erfassten. Diese Zeilen bleiben absichtlich sichtbar. Eine Momentaufnahme, die du nicht siehst, ist eine, von der du glaubst, sie zu haben. Eine nicht überprüfbare Momentaufnahme kann die ganze Installation nicht wiederherstellen. Die Arbeitsbereichsdateien, die sie enthält, lassen sich aber weiterhin einzeln wiederherstellen.
 
-Eine Zeile kann auch **_n_ Arbeitsbereiche nicht erfasst** sagen. Das ist ein
-Arbeitsbereich, der registriert, aber noch nie beschrieben wurde (es gibt noch
-keine Datei), oder einer, dessen Kopie fehlgeschlagen ist. Sieh ins Server-Log.
+Eine Zeile kann auch **_n_ Arbeitsbereiche nicht erfasst** sagen. Das ist ein Arbeitsbereich, der registriert, aber noch nie beschrieben wurde (es gibt noch keine Datei), einer, dessen Datenbank beschädigt ist (eine beschädigte Kopie wird nie angelegt), oder einer, dessen Kopie fehlgeschlagen ist. Sieh ins Server-Log.
+
+Eine Momentaufnahme oder geplante Sicherung mit der Markierung **Letzte intakte Kopie** enthält die neueste intakte Kopie eines Arbeitsbereichs, dessen Datenbank inzwischen beschädigt wurde. Die geplante Bereinigung lässt sie unangetastet, und ihr Löschen verlangt eine Bestätigung, bis dieser Arbeitsbereich wiederhergestellt ist.
 
 ## Arbeitsbereichssicherungen und Aufbewahrung planen
 
@@ -109,7 +101,7 @@ Sicherungen werden nicht aufgelistet.
 
 Klappe eine Zeile auf, um jede Sicherung zu sehen, die neueste zuerst:
 
-- **Wiederherstellen** ersetzt die aktuelle Datenbank des Arbeitsbereichs durch diese Sicherung. Exportiere den Arbeitsbereich vorher, wenn du das rückgängig machen können willst. Erfordert den Serverinhaber, der außerdem Eigentümer des Arbeitsbereichs sein muss.
+- **Wiederherstellen** ersetzt die aktuelle Datenbank des Arbeitsbereichs durch diese Sicherung. Die Datenbank, die sie ersetzt, bleibt in dieser Liste erhalten, unter einem Namen, der auf `-pre-restore` endet, damit du zurückkannst. Erfordert den Serverinhaber, der außerdem Eigentümer des Arbeitsbereichs sein muss.
 - **Herunterladen** speichert die Datei auf dem Rechner, den du gerade benutzt. Die Sicherung bleibt auf dem Server.
 - **Pfad kopieren** kopiert ihren Speicherort auf dem Server.
 - **Löschen** entfernt diese Sicherung endgültig, sobald du den Namen des Arbeitsbereichs eingibst. Erfordert **Eigentümer**.
@@ -130,11 +122,7 @@ beschrieben.
 
 ## Eine Momentaufnahme der Installation löschen
 
-Klappe unter **Momentaufnahmen der Installation** die Momentaufnahme auf, auch
-eine unvollständige, und nimm **Momentaufnahme löschen** im Gefahrenbereich.
-Bestätige den Namen. Das ganze Verzeichnis der Momentaufnahme wird dauerhaft
-vom Server entfernt. Lade es vorher herunter, wenn du eine Kopie brauchst. Eine
-Pipeline **Workspace backup** löscht diese Momentaufnahmen nie.
+Klappe unter **Momentaufnahmen der Installation** die Momentaufnahme auf, auch eine nicht überprüfbare, und nimm **Momentaufnahme löschen** im Gefahrenbereich. Bestätige den Namen. Das ganze Verzeichnis der Momentaufnahme wird dauerhaft vom Server entfernt. Lade es vorher herunter, wenn du eine Kopie brauchst. Eine Pipeline **Workspace backup** löscht diese Momentaufnahmen nie.
 
 ## Eine Kopie auf den eigenen Rechner holen
 
@@ -175,21 +163,14 @@ Server speichern** auf der Quelle und danach der Pfad der Datei in
 ohne den Umweg. Dieser Pfad wird auf dem Server-Host aufgelöst.
 
 :::caution[Ein Import ersetzt alles]
-Ein Import überschreibt alles, was der Ziel-Arbeitsbereich gerade enthält, und
-lässt sich nicht rückgängig machen. Exportiere das Ziel vorher, wenn darin
-etwas liegt, das du vielleicht zurückhaben willst.
+Ein Import ersetzt alles, was der Ziel-Arbeitsbereich gerade enthält. Die Datenbank, die dabei ersetzt wird, bleibt unter **Geplante Sicherungen** erhalten, mit einem Namen, der auf `-pre-restore` endet. Stelle diese wieder her, um zurückzukehren.
 :::
 
-Zwei Dinge werden erlaubt und protokolliert, nicht abgelehnt: eine Datei
-importieren, deren aufgezeichnete Arbeitsbereichs-ID vom Ziel abweicht (so
-duplizierst du einen Arbeitsbereich oder stellst ihn unter einer neuen ID
-wieder her), und eine Datei aus einer **anderen Installation** importieren. Im
-zweiten Fall gehören die gekoppelten Geräte und die Benutzer-IDs in der Datei
-zur Installation, von der sie stammt, und lösen sich hier nicht auf. Die
-eigenen Daten des Arbeitsbereichs sind intakt. Die Mitgliedschaft prüfst du
-nach dem Übernehmen.
+Eine Datei aus einem anderen Arbeitsbereich oder aus einer **anderen Installation** wird angenommen: So duplizierst du einen Arbeitsbereich, stellst ihn unter einer neuen ID wieder her oder gibst ihn an jemand anderen weiter. Benutzer-IDs aus einer anderen Installation lösen sich hier nicht auf. Die eigenen Daten des Arbeitsbereichs sind intakt, die Mitgliedschaft prüfst du aber nach dem Übernehmen.
 
-Chatbot-Token und Anbieter-Anmeldungen liegen außerhalb der Datenbank, daher verbindet die empfangende Installation ihre eigenen neu. Die Datei enthält aber die Webhook-Tokens der Pipelines und die Webhook-Geheimnisse der Ticket-Synchronisierung des Arbeitsbereichs, daher gibst du sie mit einem Arbeitsbereich, den du jemand anderem übergibst, ebenfalls weiter. Rotiere sie danach, wenn der Empfänger sie nicht haben soll.
+Eine wiederhergestellte Datei kann auf diesem Server aus sich heraus nichts gewähren. Die Berechtigungen, die sie über die gewöhnliche Mitgliedschaft hinaus mitbringt, werden entfernt und oben auf der Seite unter **Aus wiederhergestellten Kopien zurückgehalten** aufgelistet: Aktionsregeln, die Agenten ohne oder nach einer Freigabe handeln lassen, Pfade, die eine Sandbox ausführen darf, Repo-Zugriff über Lesen hinaus, Rollen über Mitglied und offene Einladungen zu diesen Rollen. **Akzeptieren** gewährt eine davon wieder; **Ablehnen** verwirft sie. Freigaben, eine Umgebungsdefinition auf dem Host auszuführen, werden gelöscht, daher musst du diese Definitionen erneut freigeben. Wer wiederherstellt, behält oder erhält die Eigentümerrolle.
+
+Chatbot-Token, Anbieter-Anmeldungen und Webhook-Geheimnisse liegen außerhalb der Datenbank, daher verbindet die empfangende Installation ihre eigenen neu. Webhook-Trigger und Webhooks der Ticket-Synchronisierung kommen ohne ihre Geheimnisse an und empfangen auf einem anderen Server nichts, bis du sie dort erneut speicherst. Dadurch bekommt jeder Trigger eine neue URL.
 
 ## Einen Arbeitsbereich aus einer Momentaufnahme wiederherstellen
 
@@ -199,9 +180,7 @@ Du musst der Serverinhaber und der Eigentümer des Arbeitsbereichs sein.
 2. Suche die Zeile des Arbeitsbereichs und drücke **Wiederherstellen**.
 3. Bestätige. Alles, was dieser Arbeitsbereich seit der Momentaufnahme getan hat, ist weg.
 
-Das ist dieselbe Operation wie ein Import, gerichtet auf die Kopie dieser
-Arbeitsbereichsdatei in der Momentaufnahme. Absichtlich, damit es keinen
-zweiten Mechanismus gibt, der dieselbe Datei anders behandeln könnte.
+Das ist dieselbe Operation wie ein Import, gerichtet auf die Kopie dieser Arbeitsbereichsdatei in der Momentaufnahme. Absichtlich, damit es keinen zweiten Mechanismus gibt, der dieselbe Datei anders behandeln könnte. Die Kopie wird zuerst gegen die Prüfsumme geprüft, die die Momentaufnahme aufgezeichnet hat.
 
 Eine Zeile kann **Nicht mehr auf diesem Server** sagen, mit deaktiviertem
 **Wiederherstellen**: die Momentaufnahme enthält einen Arbeitsbereich, den
@@ -211,6 +190,10 @@ Arbeitsbereich an (nur der Serverinhaber kann das) und trage unter **Arbeitsbere
 Momentaufnahme zeigt ihren **Pfad auf dem Server** in einem Kopierfeld, und
 der Titel der Zeile ist die alte Arbeitsbereichs-ID. Beide Hälften des Pfads
 liegen damit vor dir.
+
+## Einen beschädigten Arbeitsbereich wiederherstellen
+
+Ein Arbeitsbereich, dessen Datenbank die Integritätsprüfung nicht besteht, wird nur lesbar: Alles bleibt lesbar, und jede Änderung wird abgelehnt. Mitglieder sehen oben im Arbeitsbereich **Dieser Arbeitsbereich ist nur lesbar**, der Serverinhaber sieht es auf dieser Seite unter **Braucht deine Aufmerksamkeit**, und die neueste Sicherung, die eine intakte Kopie enthält, wird als **Letzte intakte Kopie** aufbewahrt. Stelle den Arbeitsbereich aus dieser Kopie wieder her, wie oben beschrieben, damit er wieder beschreibbar wird. Die beschädigte Datenbank bleibt als `-pre-restore`-Sicherung erhalten.
 
 ## Eine ganze Installation wiederherstellen
 
@@ -343,10 +326,7 @@ Führe das als denselben Benutzer aus, dem das Datenverzeichnis gehört, aus
 cron oder einem systemd-Timer, und synchronisiere `DEST` danach vom Host weg.
 `VACUUM INTO` braucht SQLite 3.27 oder neuer.
 
-Schreibe das **außerhalb** von `<dataDir>/backups/`. Ein von Hand angelegtes
-Verzeichnis dort hat kein `manifest.json`. Die App würde es als unvollständige
-Momentaufnahme listen, und die Liste wäre kein ehrliches Protokoll mehr dessen,
-was der Server selbst erzeugt hat.
+Schreibe das **außerhalb** von `<dataDir>/backups/`. Ein von Hand angelegtes Verzeichnis dort hat kein `manifest.json`. Die App würde es als nicht überprüfbare Momentaufnahme listen, und die Liste wäre kein ehrliches Protokoll mehr dessen, was der Server selbst erzeugt hat.
 
 ### Alte Momentaufnahmen der ganzen Installation ausdünnen
 
@@ -395,9 +375,11 @@ Mach das einmal, wenn du Sicherungen einrichtest, und wieder, sobald du
 | „Nur der Serverinhaber kann Backups wiederherstellen. Herunterladen kannst du sie weiterhin.“ | Eine Wiederherstellung ersetzt die Datenbank eines Arbeitsbereichs auf dem Server-Host, daher stellt nur der Serverinhaber wieder her. Lade die Sicherung herunter und bitte ihn darum |
 | „Dieser Server bietet keine Sicherungsschnittstelle.“ | Auf dem Host ist kein Backup-Port verdrahtet, ein Demo-Server. Die Operationen fehlen, sie werden nicht abgelehnt |
 | „Die Datei ist größer, als der Server annimmt.“ | Uploads sind auf 8 GiB begrenzt. Lege die Datei auf den Server-Host und trage ihren Pfad in **Arbeitsbereichs-Datenbankdatei** ein |
-| Import abgelehnt: keine Arbeitsbereichsdatenbank von Control Center | Die Datei hat keine Zeile `workspace_meta`. Sie ist kein Arbeitsbereichs-Export, oder sie ist abgeschnitten. Nichts wurde ersetzt |
-| Eine Momentaufnahme steht als **Unvollständig** in der Liste | Das Manifest fehlt oder nennt Dateien, die nicht da sind. Erstelle eine neue und übernimm in der Zwischenzeit einzelne Arbeitsbereichsdateien daraus |
-| Eine Momentaufnahme meldet, Arbeitsbereiche seien nicht erfasst worden | Diese Arbeitsbereiche wurden noch nie beschrieben, oder ihre Kopie ist fehlgeschlagen. Sieh ins Server-Log |
+| Eine Wiederherstellung wird abgelehnt, und nichts wird ersetzt | Die Datei hat eine Prüfung nicht bestanden, und die Meldung nennt welche: Sie ist keine Arbeitsbereichsdatenbank, sie ist beschädigt, sie weicht von der Prüfsumme ab, die ihre Momentaufnahme aufgezeichnet hat, eine neuere Version des Servers hat sie geschrieben, oder ihre Webhooks oder Einladungen gehören bereits einem anderen Arbeitsbereich auf diesem Server. Nimm eine andere Kopie, oder aktualisiere zuerst den Server |
+| Eine Momentaufnahme steht als **Nicht überprüfbar** in der Liste | Sie wurde nie fertiggestellt oder vor der Zeit erstellt, in der Momentaufnahmen Prüfsummen erfassten. Erstelle eine neue; stelle in der Zwischenzeit einzelne Arbeitsbereichsdateien daraus wieder her |
+| Eine Momentaufnahme meldet, Arbeitsbereiche seien nicht erfasst worden | Diese Arbeitsbereiche wurden noch nie beschrieben, sind beschädigt, oder ihre Kopie ist fehlgeschlagen. Sieh ins Server-Log |
+| Ein Arbeitsbereich zeigt **Dieser Arbeitsbereich ist nur lesbar** | Seine Datenbank hat eine Integritätsprüfung nicht bestanden. Darin lässt sich nichts ändern, bis der Serverinhaber sie aus einer Sicherung wiederherstellt |
+| Webhooks kommen nicht mehr an, nachdem ein Arbeitsbereich auf einen anderen Server gezogen ist | Webhook-Geheimnisse wandern nicht mit der Datenbank. Speichere jeden Webhook-Trigger und jede Ticket-Synchronisierungs-Verbindung auf dem neuen Server erneut und gib dem Absender dann die neue URL |
 | Eine wiederhergestellte Installation hat keine Forge- oder SSO-Zugangsdaten | `secrets.json` liegt nicht in einer Momentaufnahme. Stelle sie von dort wieder her, wo du sie aufbewahrt hast, oder verbinde die Anbieter neu |
 | Einem wiederhergestellten Arbeitsbereich fehlen eingefügte Bilder | Blobs liegen neben der Datenbank, nicht darin. Kopiere `<workspaceId>/blobs/` mit |
 

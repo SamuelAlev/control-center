@@ -7,6 +7,7 @@ import 'package:control_center/features/settings/presentation/widgets/kit/settin
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -103,7 +104,7 @@ class _SandboxExecGrantsSectionState
           ],
           if (grants.hasError && list == null)
             CcAlert(
-              title: l10n.failedWithError('${grants.error}'),
+              title: failureMessage(l10n, grants.error!),
               variant: CcAlertVariant.danger,
             )
           else if (list == null)
@@ -125,7 +126,7 @@ class _SandboxExecGrantsSectionState
               Padding(
                 padding: const EdgeInsetsDirectional.only(top: AppSpacing.sm),
                 child: CcAlert(
-                  title: l10n.failedWithError('${list.loadMoreError}'),
+                  title: failureMessage(l10n, list.loadMoreError!),
                   variant: CcAlertVariant.danger,
                 ),
               ),

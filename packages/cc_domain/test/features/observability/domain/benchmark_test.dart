@@ -51,14 +51,14 @@ void main() {
         name: 't',
         status: TrialStatus.pass,
         reward: 1.0,
-        costCents: 12,
+        costMicros: 12,
         tokIn: 100,
       );
       const b = BenchmarkTrial(
         name: 't',
         status: TrialStatus.pass,
         reward: 1.0,
-        costCents: 12,
+        costMicros: 12,
         tokIn: 100,
       );
       expect(a, b);
@@ -73,13 +73,13 @@ void main() {
       const trial = BenchmarkTrial(
         name: 't',
         status: TrialStatus.running,
-        costCents: 5,
+        costMicros: 5,
       );
       final updated = trial.copyWith(status: TrialStatus.pass, reward: 1.0);
       expect(updated.status, TrialStatus.pass);
       expect(updated.reward, 1.0);
       expect(updated.name, 't');
-      expect(updated.costCents, 5);
+      expect(updated.costMicros, 5);
     });
   });
 
@@ -150,8 +150,8 @@ void main() {
           name: 'a',
           status: TrialStatus.pass,
           reward: 1.0,
-          costCents: 100,
-          advisorCostCents: 10,
+          costMicros: 100,
+          advisorCostMicros: 10,
           tokIn: 1000,
           tokOut: 200,
           tokCache: 50,
@@ -160,15 +160,15 @@ void main() {
           name: 'b',
           status: TrialStatus.fail,
           reward: 0.0,
-          costCents: 50,
-          advisorCostCents: 5,
+          costMicros: 50,
+          advisorCostMicros: 5,
           tokIn: 500,
           tokOut: 100,
           tokCache: 25,
         ),
       ]);
-      expect(run.totalCostCents, 150);
-      expect(run.totalAdvisorCostCents, 15);
+      expect(run.totalCostMicros, 150);
+      expect(run.totalAdvisorCostMicros, 15);
       expect(run.totalTokIn, 1500);
       expect(run.totalTokOut, 300);
       expect(run.totalTokCache, 75);
@@ -176,24 +176,42 @@ void main() {
 
     test('unpriced trial keeps aggregate cost unknown', () {
       final run = runWith(const [
-        BenchmarkTrial(name: 'known', status: TrialStatus.pass, reward: 1, costMicros: 4200),
-        BenchmarkTrial(name: 'unknown', status: TrialStatus.fail, costCents: null),
+        BenchmarkTrial(
+          name: 'known',
+          status: TrialStatus.pass,
+          reward: 1,
+          costMicros: 4200,
+        ),
+        BenchmarkTrial(
+          name: 'unknown',
+          status: TrialStatus.fail,
+          costMicros: null,
+        ),
       ]);
       expect(run.totalCostMicros, isNull);
-      expect(run.totalCostCents, isNull);
-      expect(const BenchmarkScorer().successAdjustedCostCents(run), isNull);
-      expect(const BenchmarkScorer().markdownReport(run), contains('spend — (unpriced attempts)'));
+      expect(const BenchmarkScorer().successAdjustedCostMicros(run), isNull);
+      expect(
+        const BenchmarkScorer().markdownReport(run),
+        contains('spend — (unpriced attempts)'),
+      );
     });
 
     test('micro-dollar costs aggregate before cent rounding', () {
       final run = runWith(const [
-        BenchmarkTrial(name: 'a', status: TrialStatus.pass, reward: 1, costMicros: 4200),
+        BenchmarkTrial(
+          name: 'a',
+          status: TrialStatus.pass,
+          reward: 1,
+          costMicros: 4200,
+        ),
         BenchmarkTrial(name: 'b', status: TrialStatus.fail, costMicros: 4200),
       ]);
       expect(run.totalCostMicros, 8400);
-      expect(run.totalCostCents, 1);
-      expect(const BenchmarkScorer().successAdjustedCostCents(run), 0.84);
-      expect(const BenchmarkScorer().markdownReport(run), contains('spend \$0.008400'));
+      expect(const BenchmarkScorer().successAdjustedCostMicros(run), 8400);
+      expect(
+        const BenchmarkScorer().markdownReport(run),
+        contains('spend \$0.008400'),
+      );
     });
 
     test('structural equality and hashCode over trial list', () {
@@ -305,14 +323,14 @@ void main() {
             name: 'fix-build',
             status: TrialStatus.pass,
             reward: 1.0,
-            costCents: 123,
+            costMicros: 1230000,
             durationMs: 4500,
           ),
           BenchmarkTrial(
             name: 'flaky-test',
             status: TrialStatus.fail,
             reward: 0.0,
-            costCents: 50,
+            costMicros: 500000,
             durationMs: 90000,
           ),
           BenchmarkTrial(
@@ -334,7 +352,7 @@ void main() {
         contains('| task | result | reward | cost | duration | detail |'),
       );
       // The passing trial renders with the check icon, its reward and cost.
-      expect(report, contains('| fix-build | ✅ | 1.00 | \$1.23 | 4.5s |'));
+      expect(report, contains('| fix-build | ✅ | 1.00 | \$1.230000 | 4.5s |'));
       // Other status icons are present.
       expect(report, contains('❌'));
       expect(report, contains('⚠️'));
@@ -343,10 +361,14 @@ void main() {
       expect(report, contains('| in-progress | ⏳ | — |'));
       // Duration over a minute uses m:ss.
       expect(report, contains('1:30'));
-      // Summary line.
+      // Summary line. Two attempts have no price (one crashed in setup, one
+      // is still running), so the total is unknown rather than a partial sum.
       expect(
         report,
-        contains('**1/3 passed (33%)** · fail 1 · error 1 · spend \$1.73'),
+        contains(
+          '**1/3 passed (33%)** · fail 1 · error 1 · '
+          'spend — (unpriced attempts)',
+        ),
       );
       // Tokens line.
       expect(report, contains('tokens:'));

@@ -1,4 +1,4 @@
-import 'package:cc_domain/cc_domain.dart' show RepoOpKind;
+import 'package:cc_domain/cc_domain.dart' show RepoOpKind, ValidationException;
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_host/cc_host.dart';
@@ -8,7 +8,8 @@ import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 /// (`server.backupNow`, `server.listBackups`, `server.deleteBackup`,
 /// `server.listOrphanedBackups`, `server.deleteOrphanedBackup`,
 /// `workspace.listBackups`, `workspace.deleteBackup`, `workspace.export`,
-/// `workspace.import`).
+/// `workspace.import`, `workspace.importHolds.list`,
+/// `workspace.importHolds.resolve`).
 ///
 /// Extracted from `remote_rpc_catalog.dart` into an `extraOps` pack so the
 /// catalog does not grow (QUALITY.md R10). Empty when the host wires no
@@ -54,7 +55,7 @@ List<RepoOp> buildBackupOps({required DatabaseBackupPort? databaseBackup}) {
       handler: (ctx) async {
         final snapshots = await databaseBackup.listBackups();
         return {
-          'backups': [for (final s in snapshots) backupSnapshotToWire(s)],
+          'backups': [for (final s in snapshots) backupToWire(s)],
         };
       },
     ),
@@ -87,7 +88,7 @@ List<RepoOp> buildBackupOps({required DatabaseBackupPort? databaseBackup}) {
           ctx.workspaceId!,
         );
         return {
-          'backups': [for (final b in backups) backupSnapshotToWire(b)],
+          'backups': [for (final b in backups) backupToWire(b)],
         };
       },
     ),
@@ -126,7 +127,7 @@ List<RepoOp> buildBackupOps({required DatabaseBackupPort? databaseBackup}) {
               {
                 'workspace_id': o.workspaceId,
                 if (o.workspaceName != null) 'workspace_name': o.workspaceName,
-                'backups': [for (final b in o.backups) backupSnapshotToWire(b)],
+                'backups': [for (final b in o.backups) backupToWire(b)],
               },
           ],
         };
@@ -164,11 +165,12 @@ List<RepoOp> buildBackupOps({required DatabaseBackupPort? databaseBackup}) {
       },
     ),
     // Adopts a previously exported file as this workspace's database, REPLACING
-    // whatever is there. Destructive and irreversible for the target workspace,
-    // so it is owner-only on top of fullClient. The file is validated as a
-    // workspace database before anything is replaced. `source_path` is any
-    // file on the server's disk (another workspace's backup included), so the
-    // caller must be the server owner as well as this workspace's owner.
+    // the current one (which is first kept as a `…-pre-restore` backup), so it
+    // is owner-only on top of fullClient. The file is validated, converged and
+    // stripped of the grants it carried before anything is replaced; those
+    // wait in `workspace.importHolds.*`. `source_path` is any file on the
+    // server's disk (another workspace's backup included), so the caller must
+    // be the server owner as well as this workspace's owner.
     RepoOp(
       name: 'workspace.import',
       kind: RepoOpKind.mutate,
@@ -180,9 +182,67 @@ List<RepoOp> buildBackupOps({required DatabaseBackupPort? databaseBackup}) {
         final id = await databaseBackup.importWorkspace(
           workspaceId: ctx.workspaceId!,
           sourcePath: ctx.args['source_path'] as String,
+          importedBy: ctx.userId,
         );
         return {'ok': true, 'workspace_id': id};
       },
     ),
+    // The grants an import held back (allowing policies, sandbox exec grants,
+    // elevated roles and repository grants, invites to them): what the file
+    // claimed, waiting for the person who alone may let a file grant
+    // anything on this host. Same gate as the import that held them.
+    RepoOp(
+      name: 'workspace.importHolds.list',
+      kind: RepoOpKind.read,
+      minRole: WorkspaceRole.owner,
+      serverAuthority: ServerAuthority.serverOwner,
+      requiredCapability: SessionCapability.fullClient,
+      handler: (ctx) async {
+        final holds = await databaseBackup.listImportHolds(ctx.workspaceId!);
+        return {
+          'holds': [for (final hold in holds) importHoldToWire(hold)],
+        };
+      },
+    ),
+    // Accepts (the row goes back into its live table) or discards one hold.
+    // `applied` is false when the subject is gone and nothing was granted.
+    RepoOp(
+      name: 'workspace.importHolds.resolve',
+      kind: RepoOpKind.mutate,
+      minRole: WorkspaceRole.owner,
+      serverAuthority: ServerAuthority.serverOwner,
+      requiredCapability: SessionCapability.fullClient,
+      requiredArgs: ['hold_id', 'accept'],
+      handler: (ctx) async {
+        final accept = ctx.args['accept'];
+        if (accept is! bool) {
+          throw const ValidationException('accept must be true or false');
+        }
+        final applied = await databaseBackup.resolveImportHold(
+          workspaceId: ctx.workspaceId!,
+          holdId: ctx.args['hold_id'] as String,
+          accept: accept,
+        );
+        return {'ok': true, 'applied': applied};
+      },
+    ),
   ];
 }
+
+/// Wire shape of one listed snapshot: [backupSnapshotToWire], plus
+/// `pinned_reason` when pruning keeps it regardless of age
+/// ([BackupSnapshot.lastGoodCopyPin]: the newest verified copy of a workspace
+/// whose live file is damaged).
+Map<String, dynamic> backupToWire(BackupSnapshot snapshot) => {
+  ...backupSnapshotToWire(snapshot),
+  'pinned_reason': ?snapshot.pinnedReason,
+};
+
+/// Wire shape of one [ImportedAuthorityHold].
+Map<String, dynamic> importHoldToWire(ImportedAuthorityHold hold) => {
+  'id': hold.id,
+  'kind': hold.kind.wire,
+  'payload': hold.payload,
+  'imported_at': hold.importedAt.toUtc().toIso8601String(),
+  'source_install_id': hold.sourceInstallId,
+};

@@ -54,10 +54,8 @@ class _FakeGoalRepo implements AgentGoalRunRepository {
 
 /// Map-backed AgentRunLogRepository; only getById/upsert are exercised.
 class _FakeRunLogRepo implements AgentRunLogRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   final logs = <String, AgentRunLog>{};
 
   @override
@@ -87,9 +85,6 @@ class _FakeRunLogRepo implements AgentRunLogRepository {
     String pipelineRunId,
     String pipelineStepId,
   ) async => const [];
-
-  @override
-  Stream<List<AgentRunLog>> watchAll() => const Stream.empty();
 
   @override
   Stream<List<AgentRunLog>> watchRecent(int limit) => const Stream.empty();
@@ -133,7 +128,7 @@ class _DispatchCall {
     required this.workspaceId,
     this.conversationId,
     this.requestedByUserId,
-    this.costCapCents,
+    this.costCapMicros,
   });
 
   final String spaceId;
@@ -142,7 +137,7 @@ class _DispatchCall {
   final String workspaceId;
   final String? conversationId;
   final String? requestedByUserId;
-  final int? costCapCents;
+  final int? costCapMicros;
 }
 
 class _SystemMessage {
@@ -181,7 +176,7 @@ void main() {
     required String workspaceId,
     String? conversationId,
     String? requestedByUserId,
-    int? costCapCents,
+    int? costCapMicros,
   }) async {
     dispatches.add(
       _DispatchCall(
@@ -191,7 +186,7 @@ void main() {
         workspaceId: workspaceId,
         conversationId: conversationId,
         requestedByUserId: requestedByUserId,
-        costCapCents: costCapCents,
+        costCapMicros: costCapMicros,
       ),
     );
     return 'run-${++runSeq}';
@@ -216,14 +211,14 @@ void main() {
     }
   }
 
-  AgentRunLog runLog(String id, RunStatus status, {int costCents = 0}) =>
+  AgentRunLog runLog(String id, RunStatus status, {int costMicros = 0}) =>
       AgentRunLog(
         id: id,
         agentId: agentId,
         workspaceId: ws,
         startedAt: current,
         status: status,
-        cost: RunCost(estimatedCostCents: costCents),
+        cost: RunCost(costMicros: costMicros),
       );
 
   void publishCompletion(String runId) {
@@ -244,7 +239,7 @@ void main() {
     AgentGoalKind kind = AgentGoalKind.goal,
     String userText = 'Seeded objective',
     int runCount = 0,
-    int costCents = 0,
+    int costMicros = 0,
     int consecutiveFailures = 0,
     String? activeRunId,
     DateTime? deadlineAt,
@@ -262,10 +257,10 @@ void main() {
       deadlineAt: uncapped
           ? null
           : (deadlineAt ?? current.add(const Duration(days: 5))),
-      costCapCents: 5000,
+      costCapMicros: 50000000,
       maxRuns: uncapped ? null : 100,
       runCount: runCount,
-      costCents: costCents,
+      costMicros: costMicros,
       consecutiveFailures: consecutiveFailures,
       activeRunId: activeRunId,
       createdAt: current,
@@ -326,7 +321,7 @@ void main() {
       final persisted = await goalRepo.getActiveForAgent(ws, agentId);
       expect(persisted, goal);
       expect(persisted!.deadlineAt, isNull);
-      expect(persisted.costCapCents, 5000);
+      expect(persisted.costCapMicros, 50000000);
       expect(persisted.maxRuns, isNull);
       expect(persisted.status, AgentGoalStatus.active);
 
@@ -349,7 +344,7 @@ void main() {
       runLogRepo.logs['run-1'] = runLog(
         'run-1',
         RunStatus.completed,
-        costCents: 120,
+        costMicros: 120,
       );
 
       publishCompletion('run-1');
@@ -368,7 +363,7 @@ void main() {
 
       final updated = await goalRepo.getById(ws, goal.id);
       expect(updated!.runCount, 1);
-      expect(updated.costCents, 120);
+      expect(updated.costMicros, 120);
       expect(updated.consecutiveFailures, 0);
       expect(updated.activeRunId, 'run-2');
       expect(updated.status, AgentGoalStatus.active);
@@ -446,7 +441,7 @@ void main() {
     runLogRepo.logs['run-1'] = runLog(
       'run-1',
       RunStatus.completed,
-      costCents: 5000,
+      costMicros: 50000000,
     );
 
     publishCompletion('run-1');
@@ -454,17 +449,38 @@ void main() {
 
     final updated = await goalRepo.getById(ws, goal.id);
     expect(updated!.status, AgentGoalStatus.budgetExhausted);
-    expect(updated.costCents, 5000);
+    expect(updated.costMicros, 50000000);
     expect(dispatches, hasLength(1));
     expect(
       systemMessages.any(
         (m) =>
             m.content ==
-            'Durable /goal goal stopped: the cost cap of 5000 cents was '
+            'Durable /goal goal stopped: the cost cap of \$50.00 was '
                 'reached.',
       ),
       isTrue,
     );
+  });
+
+  test('many sub-cent runs reach the goal cost cap', () async {
+    // A one-cent budget and runs of a quarter cent each: rounding each run
+    // to whole cents would add nothing and the goal would never stop.
+    final goal = (await startGoal(text: 'Ship it --budget 0.01'))!;
+    expect(goal.costCapMicros, 10000);
+    for (var i = 1; i <= 4; i++) {
+      runLogRepo.logs['run-$i'] = runLog(
+        'run-$i',
+        RunStatus.completed,
+        costMicros: 2500,
+      );
+      publishCompletion('run-$i');
+      await settle();
+    }
+
+    final updated = await goalRepo.getById(ws, goal.id);
+    expect(updated!.costMicros, 10000);
+    expect(updated.status, AgentGoalStatus.budgetExhausted);
+    expect(dispatches, hasLength(4));
   });
 
   test('run budget wall stops the goal as budgetExhausted', () async {
@@ -632,7 +648,7 @@ void main() {
 
     final persisted = await goalRepo.getById(ws, goal.id);
     expect(persisted!.maxRuns, 10);
-    expect(persisted.costCapCents, 1250);
+    expect(persisted.costCapMicros, 12500000);
     expect(persisted.deadlineAt, current.add(const Duration(days: 3)));
     // The flags are stripped from the objective; the dispatch prompt carries
     // the stripped objective too — the flags configure the walls, they must
@@ -688,7 +704,7 @@ void main() {
     () async {
       final goal = seededGoal(
         status: AgentGoalStatus.budgetExhausted,
-        costCents: 5000,
+        costMicros: 50000000,
       );
 
       await supervisor.resumeGoal(ws, goal.id);
@@ -705,10 +721,10 @@ void main() {
     },
   );
 
-  test('a segment never gets a cap above the default 500', () async {
+  test('a segment never gets a cap above the default 5 USD', () async {
     await startGoal();
 
-    expect(dispatches.single.costCapCents, 500);
+    expect(dispatches.single.costCapMicros, 5000000);
   });
 
   test(
@@ -728,10 +744,10 @@ void main() {
         kind: AgentGoalKind.goal,
         status: AgentGoalStatus.active,
         deadlineAt: null,
-        costCapCents: 200,
+        costCapMicros: 2000000,
         maxRuns: null,
         runCount: 3,
-        costCents: 180,
+        costMicros: 1800000,
         consecutiveFailures: 0,
         activeRunId: 'run-tight',
         createdAt: current,
@@ -741,7 +757,7 @@ void main() {
       runLogRepo.logs['run-tight'] = runLog(
         'run-tight',
         RunStatus.completed,
-        costCents: 60,
+        costMicros: 600000,
       );
 
       publishCompletion('run-tight');
@@ -754,21 +770,21 @@ void main() {
       expect(dispatches, isEmpty);
 
       final continuing = goal.copyWith(
-        costCents: 140,
+        costMicros: 1400000,
         activeRunId: 'run-tight-2',
       );
       goalRepo.goals[goal.id] = continuing;
       runLogRepo.logs['run-tight-2'] = runLog(
         'run-tight-2',
         RunStatus.completed,
-        costCents: 0,
+        costMicros: 0,
       );
 
       publishCompletion('run-tight-2');
       await settle();
 
       expect(dispatches, hasLength(1));
-      expect(dispatches.single.costCapCents, 60);
+      expect(dispatches.single.costCapMicros, 600000);
     },
   );
 
@@ -777,14 +793,14 @@ void main() {
     () async {
       final goal = seededGoal(
         status: AgentGoalStatus.budgetExhausted,
-        costCents: 5000,
+        costMicros: 50000000,
       );
 
-      await supervisor.resumeGoal(ws, goal.id, raiseCostCapCents: 10000);
+      await supervisor.resumeGoal(ws, goal.id, raiseCostCapMicros: 100000000);
 
       final updated = await goalRepo.getById(ws, goal.id);
       expect(updated!.status, AgentGoalStatus.active);
-      expect(updated.costCapCents, 10000);
+      expect(updated.costCapMicros, 100000000);
       expect(updated.activeRunId, isNotNull);
       expect(dispatches, hasLength(1));
       expect(

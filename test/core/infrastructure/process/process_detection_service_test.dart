@@ -30,13 +30,12 @@ class _FakeAgentRunLogRepository implements AgentRunLogRepository {
   ) async => null;
   final List<AgentRunLog> _logs;
 
+  /// Serves only unfinished runs, as the store's status filter does.
   @override
-  Stream<List<AgentRunLog>> watchAll() => Stream.value(_logs);
-
-  @override
-  Stream<List<AgentRunLog>> watchRecent(int limit) => watchAll().map(
-    (logs) => logs.length <= limit ? logs : logs.sublist(0, limit),
-  );
+  Future<List<AgentRunLog>> nonTerminal() async => [
+    for (final log in _logs)
+      if (log.isActive) log,
+  ];
 
   @override
   Stream<List<AgentRunLog>> watchByConversation(

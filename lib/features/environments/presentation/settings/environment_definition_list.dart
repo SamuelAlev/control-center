@@ -6,13 +6,13 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/environment_setup_prompt.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_definition_delete.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_editor_state.dart';
-import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_host_approval.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +41,7 @@ class EnvironmentDefinitionList extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         child: CcAlert(
           variant: CcAlertVariant.danger,
-          title: environmentFailureMessage(error),
+          title: failureMessage(l10n, error),
         ),
       ),
       data: (records) => records.isEmpty

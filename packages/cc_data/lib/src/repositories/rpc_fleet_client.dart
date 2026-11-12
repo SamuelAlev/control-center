@@ -80,7 +80,7 @@ class FleetJobView {
     this.priority = 0,
     this.attempts = 0,
     this.maxAttempts = 1,
-    this.costCents = 0,
+    this.costMicros = 0,
     this.error,
     this.createdAt,
   });
@@ -96,7 +96,7 @@ class FleetJobView {
     priority: (w['priority'] as num?)?.toInt() ?? 0,
     attempts: (w['attempts'] as num?)?.toInt() ?? 0,
     maxAttempts: (w['maxAttempts'] as num?)?.toInt() ?? 1,
-    costCents: (w['costCents'] as num?)?.toInt() ?? 0,
+    costMicros: (w['costMicros'] as num?)?.toInt() ?? 0,
     error: w['error'] as String?,
     createdAt: _date(w['createdAt']),
   );
@@ -128,8 +128,8 @@ class FleetJobView {
   /// Max attempts.
   final int maxAttempts;
 
-  /// Metered cost in cents.
-  final int costCents;
+  /// Metered cost in micro-dollars.
+  final int costMicros;
 
   /// Failure reason, if any.
   final String? error;

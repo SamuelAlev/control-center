@@ -97,6 +97,35 @@ void main() {
     expect(ids.map((r) => r.read<String>('id')), ['new']);
   });
 
+  test('prunes once per batch of appends, not on every append', () async {
+    await db.customStatement(
+      'WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n '
+      'WHERE i < ${ServerAuditDao.kept}) '
+      'INSERT INTO server_audit '
+      '(id, user_id, op, arg_names, outcome, created_at) '
+      "SELECT 'old-' || i, 'u-1', 'connect.setChoice', '[]', 'ok', i FROM n",
+    );
+    Future<int> rows() async =>
+        (await db
+                .customSelect('SELECT COUNT(*) AS c FROM server_audit')
+                .getSingle())
+            .read<int>('c');
+
+    // The first append of a process prunes.
+    await audit.append(entry('first'));
+    expect(await rows(), ServerAuditDao.kept);
+    // The rest of the batch only inserts.
+    for (var i = 1; i < ServerAuditDao.pruneEvery; i++) {
+      await audit.append(entry('batch-$i'));
+    }
+    expect(await rows(), ServerAuditDao.kept + ServerAuditDao.pruneEvery - 1);
+    // The next batch starts with a prune back to the cap, newest kept.
+    await audit.append(entry('next'));
+    expect(await rows(), ServerAuditDao.kept);
+    final newest = await audit.pageRows(limit: 1);
+    expect(newest.single.id, 'next');
+  });
+
   test('refuses an entry that names nobody or no op', () {
     expect(
       () => ServerAuditEntry(

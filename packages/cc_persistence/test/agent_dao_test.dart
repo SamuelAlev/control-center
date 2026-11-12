@@ -1,6 +1,7 @@
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 /// Covers [AgentDao] — agent CRUD, plus the run-log read/watch paths the
@@ -34,6 +35,13 @@ void main() {
             skills: '',
           ),
         );
+    // Parents the run logs below name.
+    await seedParents(
+      db,
+      tickets: ['t-1', 't-2'],
+      conversations: ['conv-1'],
+      pipelineRuns: ['run-1'],
+    );
   });
 
   tearDown(() async {
@@ -54,7 +62,7 @@ void main() {
     AgentRunLogsTableCompanion.insert(
       id: id,
       agentId: agentId,
-      workspaceId: Value(ws),
+      workspaceId: ws,
       conversationId: conversationId == null
           ? const Value.absent()
           : Value(conversationId),
@@ -176,33 +184,84 @@ void main() {
         'step-1',
       );
       expect(rows, hasLength(1));
-      expect(rows.first.id, 'log-1');
+      expect(rows.first.log.id, 'log-1');
     });
 
-    test('logsByWorkspace is scoped + newest-first', () async {
+    test('logsPage is scoped, newest-first and pages by keyset', () async {
+      final at = DateTime.utc(2025, 1, 1, 0, 1);
+      // Three runs started in the same second: only the id orders them.
+      await log(id: 'log-a', agentId: 'a-1', ws: 'w-1', startedAt: at);
+      await log(id: 'log-c', agentId: 'a-1', ws: 'w-1', startedAt: at);
+      await log(id: 'log-b', agentId: 'a-1', ws: 'w-1', startedAt: at);
       await log(
-        id: 'log-1',
+        id: 'log-old',
         agentId: 'a-1',
         ws: 'w-1',
-        startedAt: DateTime.utc(2025, 1, 1, 0, 1),
+        startedAt: DateTime.utc(2025),
       );
-      await log(
-        id: 'log-2',
-        agentId: 'a-1',
-        ws: 'w-1',
-        startedAt: DateTime.utc(2025, 1, 1, 0, 2),
+      await log(id: 'log-other', agentId: 'a-2', ws: 'w-2', startedAt: at);
+
+      final first = await db.agentDao.logsPage('w-1', limit: 2);
+      expect(first.map((r) => r.id), ['log-c', 'log-b']);
+
+      final second = await db.agentDao.logsPage(
+        'w-1',
+        limit: 2,
+        beforeStartedAt: first.last.startedAt,
+        beforeId: first.last.id,
       );
-      await log(id: 'log-3', agentId: 'a-2', ws: 'w-2');
-      final rows = await db.agentDao.logsByWorkspace('w-1');
-      expect(rows, hasLength(2));
-      // newest started first
-      expect(rows.first.id, 'log-2');
+      expect(second.map((r) => r.id), ['log-a', 'log-old']);
+
+      final rest = await db.agentDao.logsPage(
+        'w-1',
+        limit: 2,
+        beforeStartedAt: second.last.startedAt,
+        beforeId: second.last.id,
+      );
+      expect(rest, isEmpty);
     });
 
-    test('watchAllLogs spans every workspace', () async {
-      await log(id: 'log-1', agentId: 'a-1', ws: 'w-1');
-      await log(id: 'log-2', agentId: 'a-2', ws: 'w-2');
-      expect(await db.agentDao.watchAllLogs().first, hasLength(2));
+    test('nonTerminalLogs reads only pending and running runs', () async {
+      await log(id: 'log-run', agentId: 'a-1', ws: 'w-1');
+      await log(id: 'log-pend', agentId: 'a-2', ws: 'w-2', status: 'pending');
+      await log(
+        id: 'log-done',
+        agentId: 'a-1',
+        ws: 'w-1',
+        status: 'completed',
+        completedAt: DateTime.utc(2025),
+      );
+      await log(id: 'log-fail', agentId: 'a-1', ws: 'w-1', status: 'error');
+
+      final rows = await db.agentDao.nonTerminalLogs();
+      expect(rows.map((r) => r.id).toSet(), {'log-run', 'log-pend'});
+      expect(await db.agentDao.nonTerminalLogs(limit: 1), hasLength(1));
+
+      final active = await db.agentDao.watchNonTerminalLogs('w-1').first;
+      expect(active.map((r) => r.id), ['log-run']);
+    });
+
+    test('latestLogForTicket returns the newest run of that ticket', () async {
+      Future<void> ticketLog(String id, String ws, String ticket, int minute) =>
+          db.agentDao.upsertLog(
+            AgentRunLogsTableCompanion.insert(
+              id: id,
+              agentId: 'a-1',
+              workspaceId: ws,
+              ticketId: Value(ticket),
+              startedAt: Value(DateTime.utc(2025, 1, 1, 0, minute)),
+            ),
+          );
+      await ticketLog('log-1', 'w-1', 't-1', 1);
+      await ticketLog('log-2', 'w-1', 't-1', 2);
+      await ticketLog('log-3', 'w-1', 't-2', 3);
+      await ticketLog('log-4', 'w-2', 't-1', 4);
+
+      expect(
+        (await db.agentDao.latestLogForTicket('w-1', 't-1'))?.log.id,
+        'log-2',
+      );
+      expect(await db.agentDao.latestLogForTicket('w-1', 't-9'), isNull);
     });
 
     test(
@@ -277,7 +336,7 @@ void main() {
         startedAt: DateTime.utc(2025, 1, 3),
       );
       final active = await db.agentDao.getActiveLogByAgent('a-1');
-      expect(active?.id, 'log-active');
+      expect(active?.log.id, 'log-active');
       expect(await db.agentDao.getActiveLogByAgent('a-2'), isNull);
     });
   });

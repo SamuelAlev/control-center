@@ -14380,13 +14380,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get backupSnapshotComplete => 'שלמה';
 
   @override
-  String get backupSnapshotIncomplete => 'חלקית';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'המניפסט חסר או מפנה לקבצים שאינם שם, ולכן תמונת המצב הזו לא יכולה לשחזר את ההתקנה כולה. את קובצי סביבות העבודה שכן יש בה עדיין אפשר לאמץ אחד-אחד.';
-
-  @override
   String get backupDeleteSnapshotLabel => 'מחיקת תמונת מצב';
 
   @override
@@ -18503,4 +18496,230 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'אתה יכול לצפות במכונה הזו. היא משתמשת בחשבונות ההתחברות של האדם שבשבילו נפתחה, ולכן רק הוא יכול לשלוט בה, להעביר את הפורטים שלה, להדביק בה או לגרור אליה קבצים.';
+
+  @override
+  String get refusalStorageBusy =>
+      'מסד הנתונים של השרת עסוק כרגע. נסו שוב בעוד רגע.';
+
+  @override
+  String get refusalStorageFull =>
+      'אין מקום פנוי בדיסק של השרת, ולכן לא ניתן לשמור דבר. בעל השרת צריך לפנות מקום.';
+
+  @override
+  String get refusalStorageDamaged =>
+      'הנתונים של סביבת העבודה הזו פגומים. בעל השרת צריך לשחזר אותם מגיבוי.';
+
+  @override
+  String get refusalStorageReadOnly =>
+      'סביבת העבודה הזו לקריאה בלבד עד שבעל השרת ישחזר אותה מגיבוי, ולכן לא ניתן לשמור שינויים.';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'הנתונים האלה נכתבו על ידי גרסה חדשה יותר של השרת. עדכנו את השרת ונסו שוב.';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'השרת מצא קובץ מסד נתונים שהוא לא כתב. בעל השרת צריך לבדוק את תיקיית הנתונים של השרת.';
+
+  @override
+  String get refusalWorkspaceDeleted => 'סביבת העבודה הזו נמחקה.';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'הבקשה הזו עדיין מעובדת. המתינו לסיומה ואז בדקו את התוצאה.';
+
+  @override
+  String get refusalImportMissingSource =>
+      'אין קובץ בנתיב הזה בשרת. שום דבר לא הוחלף.';
+
+  @override
+  String get refusalImportDamaged =>
+      'הקובץ הזה פגום, ולכן אי אפשר לשחזר אותו. שום דבר לא הוחלף.';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'הקובץ לא תואם לסכום הבדיקה שהגיבוי רשם, ולכן ייתכן שהוא שונה או נפגם. שום דבר לא הוחלף.';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'הקובץ הזה נכתב על ידי גרסה חדשה יותר של השרת. עדכנו את השרת כדי לשחזר אותו. שום דבר לא הוחלף.';
+
+  @override
+  String get refusalImportForeignFile =>
+      'הקובץ הזה אינו מסד נתונים של סביבת עבודה. שום דבר לא הוחלף.';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'לא ניתן היה להביא את הקובץ הזה לפורמט של השרת. שום דבר לא הוחלף.';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'הקובץ הזה מכיל קישורים ששייכים לסביבת עבודה אחרת בשרת הזה, ושחזור שלו ייקח אותם לעצמו. שום דבר לא הוחלף.';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'סביבת העבודה הזו לקריאה בלבד';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'הנתונים שלה לא עברו בדיקת תקינות, ולכן לא ניתן לשמור שינויים. הכול עדיין נגיש לקריאה. בעל השרת יכול לשחזר אותה מגיבוי.';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'הנתונים שלה לא עברו בדיקת תקינות, ולכן לא ניתן לשמור שינויים. הכול עדיין נגיש לקריאה. שחזרו אותה מגיבוי כדי להחזיר לה אפשרות כתיבה.';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'פתיחת גיבויים';
+
+  @override
+  String get serverNoticesLabel => 'דורש את תשומת לבכם';
+
+  @override
+  String get serverNoticeReadOnlyStatus => 'לקריאה בלבד';
+
+  @override
+  String serverNoticeSince(String time) {
+    return 'מאז $time';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'מסד הנתונים שלה לא עבר בדיקת תקינות, ולכן הוא מאפשר קריאה בלבד ודוחה כל שינוי. שחזרו אותו מגיבוי מהרשימות שלהלן; העותק התקין האחרון נשמר עד שתעשו זאת.';
+
+  @override
+  String get serverNoticeDetails => 'פרטים';
+
+  @override
+  String get backupSnapshotUnverified => 'לא אומת';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'אי אפשר לאמת את תמונת המצב הזו. היא מעולם לא הסתיימה, או שנלקחה לפני שתמונות מצב התחילו לרשום סכומי בדיקה, ולכן אי אפשר לשחזר באמצעותה את כל ההתקנה. קבצי סביבת העבודה שבה עדיין אפשר לשחזר אחד אחד.';
+
+  @override
+  String get backupSnapshotLastGoodCopy => 'העותק התקין האחרון';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      'נשמר כי הוא מכיל את העותק התקין האחרון של סביבת עבודה פגומה. הניקוי לא נוגע בו עד שסביבת העבודה תשוחזר.';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'זהו העותק התקין האחרון של סביבת עבודה פגומה. אם תמחקו אותו, לא יישאר דבר שממנו אפשר לשחזר את סביבת העבודה.';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count הרשאות נעצרו לבדיקתכם. הן מופיעות בראש הדף הזה.',
+      one: 'הרשאה אחת נעצרה לבדיקתכם. היא מופיעה בראש הדף הזה.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => 'נעצרו מהעותקים ששוחזרו';
+
+  @override
+  String get importHoldsExplainer =>
+      'עותק ששוחזר לא יכול לתת הרשאות בשרת הזה בעצמו. ההרשאות הבאות היו בו: אשרו אחת כדי להעניק אותה שוב, או דחו אותה כדי להסיר אותה.';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'סוכנים רשאים לעשות זאת ללא אישור: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'סוכנים רשאים לעשות זאת כשאדם מאשר: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return 'הפעלת פקודות שמתחילות ב-$command';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'בכל סביבת העבודה הזו';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'במרחב $space';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'עבור הסוכן $agent';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'ארגזי חול רשאים להריץ את $path';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return 'ל-$person מותר לשנות את $repo';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return 'ל-$person מותר לסקור בקשות משיכה ב-$repo';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return 'ל-$person יש גישה ברמת $level ל-$repo';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$person מקבל את התפקיד $role';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return 'הזמנה פתוחה להצטרף עם התפקיד $role';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'הזמנה פתוחה להצטרף עם התפקיד $role וגישת סקירה או כתיבה ל-$count מאגרים',
+      one: 'הזמנה פתוחה להצטרף עם התפקיד $role וגישת סקירה או כתיבה למאגר אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown => 'הרשאה שהגרסה הזו של האפליקציה לא יכולה לתאר';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return 'שוחזר $time';
+  }
+
+  @override
+  String get importHoldAccept => 'אישור';
+
+  @override
+  String get importHoldDismiss => 'דחייה';
+
+  @override
+  String get importHoldAcceptTitle => 'להעניק את ההרשאה הזו?';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\nאישור יעניק את זה בשרת מיד.';
+  }
+
+  @override
+  String get importHoldAccepted => 'ההרשאה הוענקה.';
+
+  @override
+  String get importHoldNotApplied =>
+      'לא הוענק דבר: מי שההרשאה נועדה לו, או מה שהיא נוגעת בו, כבר לא נמצא בסביבת העבודה הזו.';
 }

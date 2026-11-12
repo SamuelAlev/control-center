@@ -393,7 +393,7 @@ class RemoteRelayHost {
       return;
     }
     final userId = auth.row.userId;
-    if (userId == null || userId.isEmpty) {
+    if (userId.isEmpty) {
       _w('Rejecting relay session for ${auth.row.id} — no bound user');
       await auth.channel.close();
       if (identical(_peers[peerId], pending)) {

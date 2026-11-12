@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/governance/domain/services/budget_governance_service.dart';
 
@@ -43,6 +45,8 @@ class BudgetEvaluationListener {
         workspaceId: workspaceId,
         agentId: event.agentId,
       );
+    } on DeletedWorkspaceException {
+      // The run outlived its workspace: there is no budget left to evaluate.
     } on Object catch (e, st) {
       CcDomainLog.error(
         'BudgetEvaluationListener: budget evaluation failed',

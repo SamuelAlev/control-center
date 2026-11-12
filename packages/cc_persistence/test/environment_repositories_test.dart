@@ -4,8 +4,11 @@ import 'package:cc_domain/features/environments/domain/entities/environment_run.
 import 'package:cc_domain/features/environments/domain/entities/space_environment.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:sqlite3/sqlite3.dart' show SqliteException;
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 /// Round trips and isolation for the environment repositories, against real
@@ -16,15 +19,32 @@ void main() {
   late GlobalDatabase global;
   late WorkspaceDatabaseManager dbs;
 
-  setUp(() {
+  setUp(() async {
     global = createTestGlobalDatabase();
     dbs = createTestWorkspaceDatabases(global: global);
+    for (final workspaceId in ['ws-1', 'ws-2']) {
+      await seedWorkspaceRow(global, workspaceId);
+      final db = dbs.of(workspaceId);
+      await seedRepo(db, 'repo-1');
+      await seedSpace(db, 'space-1');
+      await seedSpace(db, 'space-2');
+      await seedRigSession(db, 'rig-1');
+    }
   });
 
   tearDown(() async {
     await dbs.closeAll();
     await global.close();
   });
+
+  /// The definitions an environment and its runs are made from, in both
+  /// workspaces.
+  Future<void> seedDefinitions() async {
+    for (final workspaceId in ['ws-1', 'ws-2']) {
+      await seedEnvironmentDefinition(dbs.of(workspaceId), 'def-1');
+      await seedEnvironmentDefinition(dbs.of(workspaceId), 'def-2');
+    }
+  }
 
   group('DaoEnvironmentDefinitionRepository', () {
     late DaoEnvironmentDefinitionRepository repository;
@@ -94,7 +114,10 @@ void main() {
   group('DaoSpaceEnvironmentRepository', () {
     late DaoSpaceEnvironmentRepository repository;
 
-    setUp(() => repository = DaoSpaceEnvironmentRepository(dbs));
+    setUp(() async {
+      repository = DaoSpaceEnvironmentRepository(dbs);
+      await seedDefinitions();
+    });
 
     SpaceEnvironment environment({
       String id = 'env-1',
@@ -216,20 +239,21 @@ void main() {
       expect(rows.map((row) => row.id), ['env-1', 'env-2']);
     });
 
-    test('unreadable JSON does not hide the row', () async {
+    test('the schema refuses unreadable JSON', () async {
       await repository.save(environment());
-      await dbs
-          .of('ws-1')
-          .customStatement(
-            "UPDATE space_environments SET ports_json = 'nope', "
-            "components_json = '[{\"id\": 1}]', last_error_json = '{'",
-          );
+      await expectLater(
+        dbs
+            .of('ws-1')
+            .customStatement(
+              "UPDATE space_environments SET ports_json = 'nope', "
+              "last_error_json = '{'",
+            ),
+        throwsA(isA<SqliteException>()),
+      );
 
       final read = (await repository.list('ws-1')).single;
-      expect(read.ports, isEmpty);
-      expect(read.components, isEmpty);
-      expect(read.lastError, isNull);
-      expect(read.endpoints, hasLength(1));
+      expect(read.ports, environment().ports);
+      expect(read.lastError, environment().lastError);
     });
 
     test('delete removes one row', () async {
@@ -261,7 +285,19 @@ void main() {
   group('DaoEnvironmentRunRepository', () {
     late DaoEnvironmentRunRepository repository;
 
-    setUp(() => repository = DaoEnvironmentRunRepository(dbs));
+    setUp(() async {
+      repository = DaoEnvironmentRunRepository(dbs);
+      await seedDefinitions();
+      for (final workspaceId in ['ws-1', 'ws-2']) {
+        await dbs
+            .of(workspaceId)
+            .customStatement(
+              'INSERT INTO space_environments (id, space_id, definition_id, '
+              'name, status, created_by, created_at, last_used_at) VALUES '
+              "('env-1', 'space-1', 'def-1', 'Shop', 'stopped', 'user-1', 0, 0)",
+            );
+      }
+    });
 
     EnvironmentRun run({
       String id = 'run-1',

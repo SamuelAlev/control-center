@@ -2,7 +2,7 @@
 title: Korumalar — her değiştirici eylem için tek ilke
 description: Control Center her ajan yan etkisini neden tek bir izin/soru/ret motorundan geçiriyor, ActionClass sınıflandırması bilinçli olarak nasıl küçük kalıyor ve özerklik kadranı gerçekte neyi değiştiriyor.
 slug: tr-TR/kilavuz/kavramlar/korumalar
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Control Center'daki ajanlar dosya silebilir, dal push edebilir, pull request
@@ -101,7 +101,7 @@ Bir kısıt şunları adlandırabilir:
 - **host'lar** — alt alan adı joker karakterleriyle ağ hedefleri (`*.internal`)
 - **komutlar** — sözcük sınırında eşleşen komut önekleri
 - **araçlar** — çağrının adını verdiği tam araç, böylece bir onay aynı etkiye sahip her aracı değil yalnızca bir aracı kapsayabilir
-- **üst sınırlar** — `maxCount` / `maxCents`, böylece "en fazla 50 dosya sil"
+- **üst sınırlar** — `maxCount` / `maxMicros`, böylece "en fazla 50 dosya sil"
   ifade edilebilir
 
 Dilbilgisini kapalı ve döngüsüz tutmanın üç sonucu vardır ve üçü de asıl amaçtır:

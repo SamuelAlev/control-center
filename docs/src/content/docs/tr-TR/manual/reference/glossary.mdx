@@ -2,7 +2,7 @@
 title: Sözlük
 description: Control Center genelinde kullanılan temel terimlerin tanımları.
 slug: tr-TR/kilavuz/referans/sozluk
-sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
+sourceHash: d264d9fd3bfd7082401fa309eca930dd599db74f
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -35,7 +35,7 @@ export const glossaryTerms = [
 ['SandboxBackend', 'microvm (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), native (macOS’ta işletim sistemine özgü Seatbelt, Linux ve WSL2’de bubblewrap) veya none. Önyüklemede bir kez yoklanır; native, kullanılabilir olduğunda ajan gönderimini sarar. Windows’ta yerel bir arka uç yoktur ve Linux bwrap artı socat gerektirir; böyle bir ana makinede yalnızca sunucu sahibinin çalıştırmaları başlar, sarılmadan, diğerlerinin çalıştırmaları reddedilir. --sandbox off her üyenin ajanlarını sarılmadan çalıştırır.'],
 ['Rig', 'Bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makine: kapalı bir tarayıcı ya da Linux masaüstü, ana makine tarafından yönetilen bir Android emülatörü ya da iOS Simülatörü veya kapalı bir terminal. Kendi tam çözünürlüklü kanalından canlı izlenir ve devralma sunucu tarafında uygulanır. Bir konuşmaya kapsamlıdır; böylece insan sekmesi ile ajan aracı tek bir makineyi adresler.'],
 ['Enclosure', 'VM destekli rig’lerin sahip olduğu daha güçlü yalıtım özelliği: bir çekirdek sınırı, tek kullanımlık overlay diski, varsayılan olarak reddeden ağ kapısı ve kimlik bilgisi broker’ı. Android ve iOS rig’leri atılabilirdir, ancak ana makine tarafından yönetilen ağ kullanır; bu yüzden bu sınırı talep etmezler. Herhangi bir rig’i yönetmek enclosureControl koruma sınıfını kullanır.'],
-['RunCost', 'Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, sent cinsinden tahmini maliyet).'],
+['RunCost', 'Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, mikrodolar cinsinden tahmini maliyet).'],
 ['WakeReason', 'Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.'],
 ['SandboxPort', 'Sandbox yaşam döngüsünü yönetir (probe, launch, events, exec, destroy).'],
 ['CredentialBrokerPort', 'Sandbox başlatması için kapsamlı kimlik bilgileri üretir (bir ajanın ortamı için tek depoluk bir token, yazma yalnızca sunucu tarafındaki push yolu için) ve sökme sırasında bunları serbest bırakır.'],
@@ -155,7 +155,7 @@ export const glossaryTerms = [
 
 **Enclosure**: VM destekli rig’lerin daha güçlü yalıtım sınırı — bir çekirdek sınırı, tek kullanımlık overlay diski, varsayılan olarak reddeden ağ kapısı ve kimlik bilgisi broker’ı. Android ve iOS rig’leri atılabilirdir, ancak ana makine tarafından yönetilen ağ kullanır ve bu sınırı talep etmezler. Herhangi bir rig’i yönetmek `enclosureControl` koruma sınıfını kullanır.
 
-**RunCost**: Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, sent cinsinden tahmini maliyet).
+**RunCost**: Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, mikrodolar cinsinden tahmini maliyet).
 
 **WakeReason**: Bir ajanın neden gönderildiği. Altı değer: kullanıcı iletisi, bilet ataması, bir arızanın ardından kurtarma amaçlı yeniden gönderim, alt biletin tamamlanması, zamanlanmış takip kalp atışı ve pipeline adımı.
 

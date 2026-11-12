@@ -2,7 +2,7 @@
 title: Doménové události
 description: Úplný katalog 54 doménových událostí, jejich payloadů a serverových odběratelů, kteří je konzumují.
 slug: cs-CZ/prirucka/referencni-prirucka/domenove-udalosti
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## Sběrnice událostí
@@ -112,7 +112,7 @@ Publikují se jen konečné přechody. `PipelineRunStarted` neexistuje a neexist
 | Událost                  | Payload                                                                                                  | Kdy se spustí                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Vytvoří se záznam auditní stopy |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | Útrata překročí práh         |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | Útrata překročí práh         |
 
 ## Události identity a členství
 

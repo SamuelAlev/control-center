@@ -1,20 +1,22 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
 /// Maps one Control Center ticket to its counterpart on one vendor. A CC ticket
 /// (the primary) can have several links — one per synced vendor — so this is a
 /// separate table rather than columns on the ticket row.
 ///
-/// `(workspace_id, ticket_id, vendor)` is unique (one link per ticket per
-/// vendor); `(workspace_id, vendor, external_id)` is the reverse lookup a pull /
-/// webhook uses to find the local ticket. Both endpoints cascade on delete.
+/// `(ticket_id, vendor)` is unique (one link per ticket per vendor, the key
+/// `TicketSyncDao.upsertLink` writes against); `(vendor, external_id)` is the
+/// reverse lookup a pull / webhook uses to find the local ticket. A link goes
+/// with its ticket.
 @TableIndex(
-  name: 'uq_ticket_sync_links_ws_ticket_vendor',
-  columns: {#workspaceId, #ticketId, #vendor},
+  name: 'uq_ticket_sync_links_ticket_vendor',
+  columns: {#ticketId, #vendor},
   unique: true,
 )
 @TableIndex(
-  name: 'idx_ticket_sync_links_ws_vendor_ext',
-  columns: {#workspaceId, #vendor, #externalId},
+  name: 'idx_ticket_sync_links_vendor_ext',
+  columns: {#vendor, #externalId},
 )
 class TicketSyncLinksTable extends Table {
   /// Unique row id (UUID v4).
@@ -43,8 +45,11 @@ class TicketSyncLinksTable extends Table {
   /// When the link last synced in either direction.
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
-  /// Direction of the last successful sync (`push` | `pull` | `bidirectional`).
-  TextColumn get lastDirection => text().nullable()();
+  /// Direction of the last successful sync: a `SyncDirection` name.
+  TextColumn get lastDirection =>
+      text().nullable()
+      // ignore: recursive_getters
+      .check(lastDirection.isIn(AgentsStoredValues.syncDirection))();
 
   @override
   String get tableName => 'ticket_sync_links';

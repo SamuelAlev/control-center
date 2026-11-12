@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/value_objects/actor_kind.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/orchestration_revision.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
@@ -33,7 +34,7 @@ class DaoOrchestrationRevisionRepository
           revision: Value(revision.revision),
           proposalJson: Value(revision.proposal.toJsonString()),
           authoredBy: Value(revision.authoredBy),
-          authorKind: Value(revision.authorKind),
+          authorKind: Value(ActorKind.parse(revision.authorKind).wire),
           createdAt: Value(revision.createdAt),
         ),
       );

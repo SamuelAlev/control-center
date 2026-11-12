@@ -5,6 +5,8 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/ticketing_events.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/teams/domain/ports/team_leader_dispatch_port.dart';
 import 'package:cc_domain/features/teams/domain/repositories/team_activity_repository.dart';
@@ -85,6 +87,14 @@ class TeamRoutingService {
   }
 
   Future<void> _onRunCompleted(AgentRunCompleted event) async {
+    try {
+      await _wakeLeaderAfterRun(event);
+    } on DeletedWorkspaceException {
+      // The run outlived its workspace: there is no team left to wake.
+    }
+  }
+
+  Future<void> _wakeLeaderAfterRun(AgentRunCompleted event) async {
     final workspaceId = event.workspaceId;
     if (workspaceId == null) {
       return;

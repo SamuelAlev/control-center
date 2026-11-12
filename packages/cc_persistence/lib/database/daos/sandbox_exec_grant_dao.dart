@@ -12,9 +12,20 @@ class SandboxExecGrantDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Creates a [SandboxExecGrantDao].
   SandboxExecGrantDao(super.db);
 
-  /// Inserts or replaces a grant by id.
+  /// Inserts a grant, or updates the existing one with the same id or the
+  /// same path (one decision per folder; a second answer for a folder
+  /// replaces the first and keeps its id).
   Future<void> upsert(SandboxExecGrantsTableCompanion entry) =>
-      into(sandboxExecGrantsTable).insertOnConflictUpdate(entry);
+      into(sandboxExecGrantsTable).insert(
+        entry,
+        onConflict: UpsertMultiple([
+          DoUpdate((_) => entry, target: [sandboxExecGrantsTable.id]),
+          DoUpdate(
+            (_) => entry.copyWith(id: const Value.absent()),
+            target: [sandboxExecGrantsTable.path],
+          ),
+        ]),
+      );
 
   /// All grants in [workspaceId], newest first.
   Future<List<SandboxExecGrantsTableData>> grants(String workspaceId) =>

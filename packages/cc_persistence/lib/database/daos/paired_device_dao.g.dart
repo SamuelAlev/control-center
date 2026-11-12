@@ -4,6 +4,8 @@ part of 'paired_device_dao.dart';
 
 // ignore_for_file: type=lint
 mixin _$PairedDeviceDaoMixin on DatabaseAccessor<GlobalDatabase> {
+  $UsersTableTable get usersTable => attachedDatabase.usersTable;
+  $WorkspacesTableTable get workspacesTable => attachedDatabase.workspacesTable;
   $PairedDevicesTableTable get pairedDevicesTable =>
       attachedDatabase.pairedDevicesTable;
   PairedDeviceDaoManager get managers => PairedDeviceDaoManager(this);
@@ -12,6 +14,13 @@ mixin _$PairedDeviceDaoMixin on DatabaseAccessor<GlobalDatabase> {
 class PairedDeviceDaoManager {
   final _$PairedDeviceDaoMixin _db;
   PairedDeviceDaoManager(this._db);
+  $$UsersTableTableTableManager get usersTable =>
+      $$UsersTableTableTableManager(_db.attachedDatabase, _db.usersTable);
+  $$WorkspacesTableTableTableManager get workspacesTable =>
+      $$WorkspacesTableTableTableManager(
+        _db.attachedDatabase,
+        _db.workspacesTable,
+      );
   $$PairedDevicesTableTableTableManager get pairedDevicesTable =>
       $$PairedDevicesTableTableTableManager(
         _db.attachedDatabase,

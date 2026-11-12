@@ -46,7 +46,7 @@ extension _BuildMethods on _SpaceMessageFeedState {
             spaceUserLastReadAtProvider(widget.spaceId),
           );
           if (liveCursorAsync.hasValue) {
-            _readFrontier = liveCursorAsync.value;
+            _readFrontier = liveCursorAsync.value?.at;
             _cursorSnapshotTaken = true;
           }
         }

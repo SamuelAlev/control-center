@@ -11,7 +11,7 @@ class MemoryConflict {
     required this.workspaceId,
     required this.factAId,
     required this.factBId,
-    this.conflictType = 'contradiction',
+    this.conflictType = contradiction,
     this.resolution,
     this.winningFactId,
     this.resolvedAt,
@@ -34,10 +34,25 @@ class MemoryConflict {
   /// The other side of the conflict (the winner, by convention, when resolved).
   final String factBId;
 
-  /// Kind of conflict. Currently always `contradiction`.
+  /// Two facts in one domain and topic assert different content.
+  static const String contradiction = 'contradiction';
+
+  /// Harmonization found two agents' facts disagreeing.
+  static const String crossAgent = 'cross_agent';
+
+  /// Every [conflictType] a conflict may carry; the store refuses any other.
+  static const List<String> types = [contradiction, crossAgent];
+
+  /// The loser was superseded by the winner.
+  static const String superseded = 'superseded';
+
+  /// Every [resolution] a conflict may carry; the store refuses any other.
+  static const List<String> resolutions = [superseded];
+
+  /// Kind of conflict: one of [types].
   final String conflictType;
 
-  /// How it was resolved (e.g. `superseded`), or null while open.
+  /// How it was resolved (one of [resolutions]), or null while open.
   final String? resolution;
 
   /// The fact that won, or null while open.

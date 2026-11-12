@@ -831,6 +831,8 @@ void main() {
         'workspace.deleteBackup',
         'workspace.export',
         'workspace.import',
+        'workspace.importHolds.list',
+        'workspace.importHolds.resolve',
         'mcp.callTool',
         // Pipeline host-exec. `pipeline.start` is absent because the engine
         // port is null. Template upsert and trigger rows are admitted;

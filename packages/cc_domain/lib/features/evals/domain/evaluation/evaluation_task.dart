@@ -193,7 +193,7 @@ class EvaluationTask {
     this.protectedFiles = const {},
     this.setupCommand,
     this.maxTurns,
-    this.costCapCents,
+    this.costCapMicros,
     this.defaultRepetitions = 3,
     this.tags = const [],
     this.notes = '',
@@ -237,7 +237,7 @@ class EvaluationTask {
         const {},
     setupCommand: json['setupCommand'] as String?,
     maxTurns: (json['maxTurns'] as num?)?.toInt(),
-    costCapCents: (json['costCapCents'] as num?)?.toInt(),
+    costCapMicros: (json['costCapMicros'] as num?)?.toInt(),
     defaultRepetitions: (json['defaultRepetitions'] as num?)?.toInt() ?? 3,
     tags: (json['tags'] as List?)?.map((e) => '$e').toList() ?? const [],
     notes: json['notes'] as String? ?? '',
@@ -301,8 +301,8 @@ class EvaluationTask {
   /// Turn ceiling for this task, or null to use the loop default.
   final int? maxTurns;
 
-  /// Cost ceiling in cents, or null for none.
-  final int? costCapCents;
+  /// Cost ceiling in micro-dollars, or null for none.
+  final int? costCapMicros;
 
   /// How many paired repetitions the corpus recommends for this task.
   final int defaultRepetitions;
@@ -338,7 +338,7 @@ class EvaluationTask {
     if (protectedFiles.isNotEmpty) 'protectedFiles': protectedFiles,
     if (setupCommand != null) 'setupCommand': setupCommand,
     if (maxTurns != null) 'maxTurns': maxTurns,
-    if (costCapCents != null) 'costCapCents': costCapCents,
+    if (costCapMicros != null) 'costCapMicros': costCapMicros,
     'defaultRepetitions': defaultRepetitions,
     if (tags.isNotEmpty) 'tags': tags,
     if (notes.isNotEmpty) 'notes': notes,
@@ -357,7 +357,7 @@ class EvaluationTask {
           baseCommit == other.baseCommit &&
           workspaceSubpath == other.workspaceSubpath &&
           maxTurns == other.maxTurns &&
-          costCapCents == other.costCapCents &&
+          costCapMicros == other.costCapMicros &&
           defaultRepetitions == other.defaultRepetitions &&
           setupCommand == other.setupCommand &&
           notes == other.notes &&
@@ -379,7 +379,7 @@ class EvaluationTask {
     baseCommit,
     workspaceSubpath,
     maxTurns,
-    costCapCents,
+    costCapMicros,
     defaultRepetitions,
     setupCommand,
     notes,

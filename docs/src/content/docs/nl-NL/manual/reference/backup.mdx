@@ -2,7 +2,7 @@
 title: Backup, export en import
 description: De indeling van de momentopname, het manifest, elke back-upbewerking en overdrachtsroute, en precies welke bestanden een back-up wel en niet bevat.
 slug: nl-NL/handleiding/referentie/backup
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Alles wat Control Center kan kopiëren, overdragen of overnemen, en de exacte vorm van elk
@@ -45,14 +45,7 @@ terugkopie maakt in plaats van een vertaling. De mapnaam is de UTC-tijdstempel w
 zijn vervangen door `-`, dus hij is veilig voor het bestandssysteem op Windows en sorteert
 chronologisch als een gewone tekenreeks.
 
-Geplande werkruimteback-ups staan apart in
-`<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-Ze bevatten geen manifest of `global.db` en zijn geen installatiemomentopnamen.
-De bewaarstap van de wekelijkse pipeline verwijdert alleen back-ups van zijn eigen werkruimte
-die ouder zijn dan de ingestelde leeftijd (standaard 30 dagen); handmatig gemaakte
-installatiemomentopnamen worden door die stap nooit verwijderd. `server.listBackups` vermeldt
-alleen installatiemomentopnamen, ook onvolledige; `workspace.listBackups` vermeldt de
-geplande back-ups van één werkruimte.
+Geplande werkruimteback-ups staan apart in `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`. Elke heeft een `manifest.json` voor dat ene bestand en geen `global.db`; het zijn geen installatiemomentopnamen. Een herstel bewaart de database die het vervangt op dezelfde plek, als `<timestamp>-pre-restore`. De bewaarstap van de wekelijkse pipeline verwijdert alleen back-ups van zijn eigen werkruimte die ouder zijn dan de ingestelde leeftijd (standaard 30 dagen); handmatig gemaakte installatiemomentopnamen worden door die stap nooit verwijderd. `server.listBackups` vermeldt alleen installatiemomentopnamen, ook de niet te verifiëren; `workspace.listBackups` vermeldt de geplande back-ups van één werkruimte.
 
 Een werkruimte verwijderen laat deze map staan. Het schema van de werkruimte stopt samen
 met de werkruimte, dus niets roteert die back-ups meer, en ze blijven staan tot de
@@ -63,33 +56,39 @@ eigenaar van de installatie ze verwijdert. `server.listOrphanedBackups` meldt ze
 
 | Veld                       | Type                     | Betekenis                                                             |
 | -------------------------- | ------------------------ | ------------------------------------------------------------------- |
-| `version`                  | geheel getal             | Versie van het manifestformaat. Momenteel `1`                       |
+| `format`                  | geheel getal             | Manifestformaat. Momenteel `2`                       |
 | `created_at`               | ISO-8601 UTC             | Wanneer de momentopname is gemaakt                                  |
-| `global.file`              | tekenreeks               | Altijd `global.db`                                                  |
-| `global.schema_version`    | geheel getal             | Schemaversie van `GlobalDatabase` op het moment van vastleggen      |
-| `global.bytes`             | geheel getal             | Grootte van het geschreven `global.db`                              |
-| `workspace_schema_version` | geheel getal             | Schemaversie van `WorkspaceDatabase`, gedeeld door elk werkruimtebestand |
-| `workspaces[]`             | array                    | Eén vermelding per vastgelegde werkruimte                           |
+| `global`                   | object          | De vermelding van `global.db`. Ontbreekt in een geplande werkruimteback-up |
+| `workspaces[]`             | array                    | Eén record per vastgelegde werkruimte                           |
 | `workspaces[].workspace_id`| tekenreeks               | De werkruimte die dit bestand bevat                                 |
-| `workspaces[].file`        | tekenreeks               | Pad ten opzichte van de hoofdmap van de momentopname, `<workspaceId>/workspace.db` |
-| `workspaces[].bytes`       | geheel getal             | Grootte van dat bestand                                             |
-| `skipped_workspaces[]`     | array van tekenreeksen   | Werkruimtes die de back-up **niet** kon vastleggen                  |
+| `skipped_workspaces[]`     | array           | Werkruimtes die de back-up **niet** kon vastleggen                         |
+| `skipped_workspaces[].workspace_id` | tekenreeks | De werkruimte die is overgeslagen                                     |
+| `skipped_workspaces[].reason` | tekenreeks       | `no_file`, `damaged` of `failed`                                    |
 
-Een werkruimte wordt overgeslagen wanneer hij is geregistreerd maar er nooit naar is geschreven
-(er bestaat dus nog geen bestand), of wanneer zijn `VACUUM INTO` is mislukt. Hoe dan ook wordt de
-momentopname alsnog voltooid en noemt het manifest wat er ontbreekt.
+`global` en elke vermelding van `workspaces[]` beschrijven elk één gekopieerd bestand, gemeten aan de kopie nadat die is geschreven:
+
+| Veld | Type | Betekenis |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`        | tekenreeks               | Pad ten opzichte van de hoofdmap van de momentopname: `global.db` of `<workspaceId>/workspace.db` |
+| `bytes`       | geheel getal             | Grootte van de kopie                                             |
+| `sha256`         | tekenreeks   | SHA-256 van de kopie, in hexadecimaal met kleine letters                          |
+| `quick_check`    | tekenreeks   | Wat SQLite's `quick_check` over de kopie zei: `ok`, of de bevinding                 |
+| `user_version`   | geheel getal | Schemaversie van de kopie                                                     |
+| `application_id` | geheel getal | SQLite-`application_id` van de kopie                                            |
+
+Een werkruimte wordt overgeslagen wanneer hij is geregistreerd maar er nooit naar is geschreven (`no_file`), wanneer zijn database de integriteitscontrole niet doorstaat (`damaged`; een beschadigde kopie wordt nooit gemaakt), of wanneer zijn kopie of de controle van die kopie is mislukt (`failed`). Hoe dan ook wordt de momentopname alsnog voltooid en noemt het manifest wat er ontbreekt. Het manifest wordt als laatste geschreven.
 
 ### Volledigheid
 
-`server.listBackups` rapporteert per momentopname een `complete`-markering. Die is onwaar wanneer
-het manifest ontbreekt of niet te parsen is, wanneer `global.db` ontbreekt, of wanneer het
-manifest een werkruimtebestand noemt dat niet op schijf staat.
+`server.listBackups` rapporteert per momentopname een `complete`-markering. Die is onwaar wanneer het manifest ontbreekt, niet te parsen is of een ander formaat heeft, wanneer een bestand dat het noemt ontbreekt of een andere grootte heeft, of wanneer een kopie haar controle niet heeft doorstaan. De app toont zo'n momentopname als **Niet te verifiëren**. Momentopnamen die vóór formaat `2` zijn gemaakt, zitten in die toestand.
 
-Een onvolledige momentopname wordt toch vermeld, want een momentopname die een operator niet
+Een niet te verifiëren momentopname wordt toch vermeld, want een momentopname die een operator niet
 ziet, is er een waarvan hij gelooft dat hij hem heeft. Wanneer het manifest onleesbaar is, valt
 de lijst terug op de indeling zelf en rapporteert hij de `<workspaceId>/workspace.db`-bestanden
 die hij vindt — die blijven afzonderlijk over te nemen via `workspace.import`, ook al kan de
 momentopname als geheel geen installatie herstellen.
+
+Een vermelde momentopname of geplande back-up draagt `pinned_reason: "last_good_copy"` zolang ze de nieuwste geverifieerde kopie bevat van een werkruimte waarvan de actieve database beschadigd is. De bewaarstap slaat haar over totdat die werkruimte is hersteld.
 
 ## Wat een back-up niet bevat
 
@@ -100,6 +99,7 @@ database, en niets daarvan reist mee:
 | ----------------------------------- | -------------------- | ------------------------- |
 | `global.db`                         | Ja                   | Nee                       |
 | `<workspaceId>/workspace.db`        | Ja                   | Ja (het *is* het bestand) |
+| `<workspaceId>/code_index.db`        | Nee                      | Nee                    |
 | `<workspaceId>/blobs/`              | Nee                  | Nee                       |
 | `<workspaceId>/skills/`             | Nee                  | Nee                       |
 | `<workspaceId>/agents/`             | Nee                  | Nee                       |
@@ -112,20 +112,9 @@ database, en niets daarvan reist mee:
 | `rigs/`                             | Nee                  | Nee                       |
 | `_agent_hooks/`                     | Nee                  | Nee                       |
 
-Sommige daarvan is wegwerpbaar — `spaces/` bevat copy-on-write-worktrees die opnieuw worden
-geprovisioneerd vanuit de repo's, `pr_clones/` is een cache, `models/` wordt opnieuw gedownload,
-`rigs/` is machinestatus. Sommige niet: `blobs/` bevat geplakte afbeeldingen waar rijen in de
-database naar verwijzen, `skills/` en `agents/` bevatten de bestanden waarmee een agent draait, en
-`secrets.json` bevat elke koppelingssleutel, providerreferentie en SSO-instelling van de
-installatie. Zie [Back-uppen en herstellen](/nl-NL/handleiding/gidsen/back-uppen-en-herstellen/#back-ups-buiten-de-machine-kopiëren)
-voor het dekken van de rest.
-:::caution[Een werkruimtedatabase bevat webhookgeheimen]
-`workspace.db` is de hele werkruimte: gesprekken, runlogs, de codeindex,
-repokoppelingen, omgevingsdefinities en leden. Hij bevat ook de
-pipeline-webhooktokens en de ticketsync-webhookgeheimen van de werkruimte in
-leesbare vorm, dus behandel een gedownloade export of back-up als geheim. Hij
-bevat geen providerinlogs, apparaatsleutel of gebruikersgeheim; die staan in
-`global.db` en `secrets.json`.
+Sommige daarvan is wegwerpbaar — `spaces/` bevat copy-on-write-worktrees die opnieuw worden geprovisioneerd vanuit de repo's, `pr_clones/` is een cache, `code_index.db` wordt opnieuw opgebouwd, `models/` wordt opnieuw gedownload, `rigs/` is machinestatus. Sommige niet: `blobs/` bevat geplakte afbeeldingen waar rijen in de database naar verwijzen, `skills/` en `agents/` bevatten de bestanden waarmee een agent draait, en `secrets.json` bevat elke koppelingssleutel, providerreferentie en SSO-instelling van de installatie. Zie [Back-uppen en herstellen](/nl-NL/handleiding/gidsen/back-uppen-en-herstellen/#back-ups-buiten-de-machine-kopiëren) voor het dekken van de rest.
+:::note[Geheimen blijven uit de databases]
+`workspace.db` is de hele werkruimte: gesprekken, runlogs, repokoppelingen, omgevingsdefinities en leden. Webhooktokens van de pipeline en webhookgeheimen van de ticketsynchronisatie staan in `secrets.json`: de database bevat een verwijzing naar elk ervan, en de routeringsindex bevat een met een sleutel gemaakte hash van elk token. Een werkruimte die op een andere installatie is hersteld, ontvangt daarom geen webhooks totdat de triggers daar opnieuw zijn opgeslagen. Aanmeldingen bij aanbieders, apparaatsleutels en gebruikersgeheimen staan in `global.db` en `secrets.json`.
 :::
 
 :::note[Chattokens blijven bewust achter]
@@ -152,6 +141,8 @@ aangesloten, zoals de demoserver.
 | `workspace.deleteBackup` | mutate | Werkruimte | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Werkruimte | `admin`      | geen          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Werkruimte | `owner`, en de serverbeheerder | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | read | Werkruimte | `owner`, en de serverbeheerder | geen | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutate | Werkruimte | `owner`, en de serverbeheerder | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`   | mutate | Installatie* | `owner`    | `id`          | registerrij gemarkeerd als verwijderd |
 
 * `workspace.delete` heeft geen bereik omdat de rij die hij markeert in het globale
@@ -168,13 +159,15 @@ back-ups ervan behoren toe aan de eigenaar van de installatie.
 `workspace.deleteBackup` en de eigen rollen van die werkruimte blijven. Beide
 verwijderoperaties accepteren alleen een vermelde mapnaam met tijdstempel, geen pad.
 
+`workspace.importHolds.list` geeft terug wat een import heeft tegengehouden. Elk tegengehouden recht heeft een `id`, een `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` of `invite`), de `payload` die het zou terugzetten, `imported_at` en `source_install_id`. `workspace.importHolds.resolve` met `accept: true` verleent het opnieuw en met `false` wijst het af. `applied` is false wanneer de persoon of het ding waarvoor het recht gold niet meer in de werkruimte zit.
+
 :::note[Een momentopname van de hele installatie is op beide banen alleen voor de eigenaar]
 `server.backupNow`, `server.listBackups` en `server.deleteBackup` vereisen de
 **eigenaar** van de installatie (`ServerAuthority.serverOwner`), dezelfde controle als
 `GET /backup/snapshot`. Een momentopname legt de database van elke werkruimte vast, dus
 beheerder zijn van één werkruimte is niet genoeg om de andere te beheren. Bij het verwijderen
 wordt alleen de naam van de getoonde tijdstempelmap geaccepteerd, geen willekeurig
-serverpad, en wordt de hele momentopname verwijderd (ook onvolledige momentopnamen).
+serverpad, en wordt de hele momentopname verwijderd (ook niet te verifiëren momentopnamen).
 Export per werkruimte en downloads van geplande back-ups blijven bij de werkruimtebeheerder.
 :::
 
@@ -185,7 +178,7 @@ die heeft gemaakt, omgevingsdefinities die op de host draaien, en worktree- en
 logpaden. Daarom zijn beide de serverbeheerder voorbehouden
 (`ServerAuthority.serverOwner`), die ook de eigenaar van de werkruimte moet zijn.
 Iedereen anders, en elke aanroeper op een host zonder vastgelegde eigenaar, wordt
-geweigerd met `server_owner_required`. Triggers en views die het bestand meebrengt,
+geweigerd met `server_owner_required`. Triggers, views, kolommen en beperkingen die het bestand meebrengt,
 worden niet overgenomen.
 :::
 
@@ -227,21 +220,21 @@ kunnen niet uit elkaar lopen in verschillende behandelingen van hetzelfde bestan
 
 ### Validatie van `workspace.import`
 
-Voordat er iets wordt vervangen, wordt het kandidaatbestand alleen-lezen geopend met een
-kortstondige ruwe SQLite-verbinding en wordt de `workspace_meta`-rij gelezen.
+Voordat er iets wordt vervangen, wordt het kandidaatbestand naast het doel gekopieerd naar een tijdelijk bestand en daar gecontroleerd. Een weigering raakt niets aan en draagt haar soort als `data.kind`.
 
 | Voorwaarde                                       | Resultaat                                                       |
 | ------------------------------------------------ | --------------------------------------------------------------- |
-| Geen leesbare SQLite-database, of geen `workspace_meta` | Geweigerd. Er wordt niets aangeraakt                     |
-| Vastgelegd werkruimte-id ≠ het doel              | **Toegestaan**, gelogd. Zo wordt een werkruimte gedupliceerd of onder een nieuw id hersteld |
-| Vastgelegd installatie-id ≠ deze installatie     | **Toegestaan**, gelogd. De gekoppelde apparaten en gebruikers-id's horen bij die installatie en worden hier niet herleid |
-| Ongeldig werkruimte-id, of bestand bestaat niet  | Geweigerd                                                       |
+| Het bestand bestaat niet | Geweigerd, `import.missing_source` |
+| Geen leesbare SQLite-database, of hij slaagt niet voor `quick_check` | Geweigerd, `import.damaged` |
+| Het bestand komt uit een momentopname, en de SHA-256 ervan wijkt af van die van het manifest | Geweigerd, `import.checksum_mismatch` |
+| Een nieuwere versie van de server heeft het geschreven | Geweigerd, `import.newer_schema` |
+| Het bestand heeft een andere `application_id`, of geen `workspace_meta` | Geweigerd, `import.foreign_file` |
+| Het bestand kan niet naar het schema van deze server worden gebracht | Geweigerd, `import.schema_mismatch` |
+| Zijn webhooks of uitnodigingen leiden al naar een andere werkruimte | Geweigerd, `import.route_conflict` |
+| Vastgelegd werkruimte-id ≠ het doel              | **Toegestaan**. Zijn rijen krijgen de id van het doel. Zo wordt een werkruimte gedupliceerd of onder een nieuw id hersteld |
+| Vastgelegd installatie-id ≠ deze installatie     | **Toegestaan**. De gebruikers-id's horen bij die installatie en worden hier niet herleid |
 
-Bij acceptatie wordt de database van de doelwerkruimte gesloten en uit de manager gehaald
-voordat het bestand eroverheen wordt gekopieerd (een open drift-verbinding houdt het bestand en
-zijn `-wal` vast), en daarna heropend zodat `beforeOpen` de FTS- en synctriggers opnieuw
-installeert, en de FTS-indexen worden opnieuw opgebouwd — de inhoudstabellen van een
-geïmporteerd bestand zijn gevuld, maar de index kan verouderd zijn.
+Na acceptatie wordt het tijdelijke bestand naar het schema van deze server gebracht en moet het daarna precies overeenkomen. Rechten die een bestand zichzelf niet mag geven, worden eruit gehaald: goedkeuringen om een omgevingsdefinitie op de host uit te voeren worden gewist, en actieregels die toestaan of vragen, sandbox-uitvoerrechten, repo-rechten boven lezen, rollen boven lid en uitnodigingen voor die rollen worden tegengehouden, zodat de serverbeheerder ze kan nakijken. Wie importeert, behoudt of krijgt de eigenaarrol. De database die wordt vervangen, wordt bewaard als geplande back-up met de naam `<timestamp>-pre-restore`; het tijdelijke bestand wordt bij gesloten verbindingen van de werkruimte op zijn plaats hernoemd, `code_index.db` wordt verwijderd om opnieuw te worden opgebouwd, en de FTS-indexen worden opnieuw opgebouwd.
 
 ## Overdrachtroutes
 
@@ -271,7 +264,7 @@ back-upmap van die werkruimte.
 
 | Status | Oorzaak                                                                              |
 | ------ | ------------------------------------------------------------------------------------ |
-| `400`  | Een vereiste queryparameter ontbreekt, een back-upnaam is ongeldig, of de body van een upload is leeg |
+| `400`  | Een vereiste queryparameter ontbreekt, een back-upnaam is ongeldig, de body van een upload is leeg, of het geüploade bestand is geweigerd (de body is `{error, kind}` met een `import.*`-soort) |
 | `403`  | Onbekend of ingetrokken apparaat, slechte handtekening, of de aanroeper mist de rol   |
 | `404`  | Geen back-uppoort op deze host, of het genoemde bestand van de momentopname, back-up of werkruimte bestaat niet |
 | `405`  | `/backup/restore` aangeroepen met iets anders dan `POST`                             |
@@ -311,6 +304,8 @@ transports versleutelt de resulterende back-upbestanden in rust.
 | Momentopnamen                  | `<dataDir>/backups/<timestamp>/`                             |
 | Geplande werkruimteback-ups    | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Werkruimte-exports             | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Database die een herstel heeft vervangen | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Databases zoals ze waren vóór een update die hun formaat wijzigde | `<dataDir>/pre_upgrade/` en `<dataDir>/<workspaceId>/pre_upgrade/`, telkens de nieuwste twee |
 | Staging voor overdrachten      | `<dataDir>/backups/transfer/` — een werkbank, opgeruimd door de route die hem schrijft |
 | Naam van het momentopnamearchief | `<snapshot directory name>.zip`                            |
 | Uploadplafond                  | 8 GiB per versleutelde `/backup/restore`-upload              |

@@ -177,8 +177,7 @@ class WebPushService {
       if (_closed) {
         return;
       }
-      if (device.userId == null ||
-          device.status != PairedDeviceStatus.active ||
+      if (device.status != PairedDeviceStatus.active ||
           (device.expiresAt != null &&
               !device.expiresAt!.isAfter(DateTime.now()))) {
         continue;
@@ -195,7 +194,7 @@ class WebPushService {
       if (record == null ||
           record.quiet ||
           !record.categories.contains(categoryForDevice) ||
-          !notificationTargetsUser(item.method, item.params, device.userId!)) {
+          !notificationTargetsUser(item.method, item.params, device.userId)) {
         continue;
       }
       if (_ownerOnlyPrMethod(item.method) &&
@@ -212,7 +211,7 @@ class WebPushService {
         String login;
         try {
           login = await viewerLogin(
-            device.userId!,
+            device.userId,
             item.workspaceId,
           ).timeout(const Duration(seconds: 2), onTimeout: () => '');
         } on Object {
@@ -226,10 +225,10 @@ class WebPushService {
       }
       // Recheck against the database before each POST, after asynchronous
       // encryption/DNS work in the transport another revocation may still race.
-      if (!await isMember(item.workspaceId, device.userId!)) {
+      if (!await isMember(item.workspaceId, device.userId)) {
         continue;
       }
-      if (!await canViewNotification(item, device.userId!)) {
+      if (!await canViewNotification(item, device.userId)) {
         continue;
       }
       final current = await devices.getById(device.id);
@@ -261,8 +260,8 @@ class WebPushService {
           maySend: () async {
             if (_closed ||
                 !await workspaceExists(item.workspaceId) ||
-                !await isMember(item.workspaceId, device.userId!) ||
-                !await canViewNotification(item, device.userId!)) {
+                !await isMember(item.workspaceId, device.userId) ||
+                !await canViewNotification(item, device.userId)) {
               return false;
             }
             final live = await devices.getById(device.id);

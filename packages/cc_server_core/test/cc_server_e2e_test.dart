@@ -76,7 +76,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(deviceId),
-          workspaceId: const Value(workspaceId),
+          landingWorkspaceId: const Value(workspaceId),
           label: const Value('e2e'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),
@@ -223,7 +223,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(deviceId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('e2e'),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),
@@ -309,7 +309,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(deviceId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('e2e'),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),
@@ -385,7 +385,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(deviceId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('e2e'),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),
@@ -474,7 +474,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(deviceId),
-          workspaceId: const Value(workspaceId),
+          landingWorkspaceId: const Value(workspaceId),
           label: const Value('unpaired'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),
@@ -536,7 +536,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(adminId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('admin'),
         platform: const Value('web'),
         pskRef: const Value('file'),
@@ -549,7 +549,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(phoneId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('phone'),
         platform: const Value('ios'),
         pskRef: const Value('file'),
@@ -654,7 +654,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(deviceId),
-          workspaceId: const Value(workspaceId),
+          landingWorkspaceId: const Value(workspaceId),
           label: const Value('proxy'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),
@@ -665,7 +665,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(secondDeviceId),
-          workspaceId: const Value(workspaceId),
+          landingWorkspaceId: const Value(workspaceId),
           label: const Value('second proxy device'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),
@@ -826,6 +826,20 @@ void main() {
                   skills: 'dart',
                 ),
               );
+          // The parent dispatch the subagent runs name: `parent_run_id` is a
+          // foreign key into this file's run logs.
+          await wsDb
+              .into(wsDb.agentRunLogsTable)
+              .insert(
+                AgentRunLogsTableCompanion.insert(
+                  id: 'run-parent',
+                  agentId: 'agent-1',
+                  workspaceId: ws,
+                  startedAt: Value(recordedAt),
+                  status: const Value('completed'),
+                  completedAt: Value(finishedAt),
+                ),
+              );
         }
         await wsDb
             .into(wsDb.agentRunLogsTable)
@@ -833,7 +847,7 @@ void main() {
               AgentRunLogsTableCompanion.insert(
                 id: runId,
                 agentId: 'agent-1',
-                workspaceId: Value(ws),
+                workspaceId: ws,
                 startedAt: Value(recordedAt),
                 status: Value(runId == 'run-active' ? 'running' : 'completed'),
                 // Keep the active fixture attached to a live process; startup
@@ -845,18 +859,19 @@ void main() {
                 spawnToolCallId: const Value('call-task-1'),
               ),
             );
-        await DaoRunTranscriptRepository(seed.workspaces).upsert(
+        await DaoRunTranscriptRepository(seed.workspaces).write(
           runId: runId,
           workspaceId: ws,
-          segmentsJson: encodeTranscript([
-            ToolSegment(
+          changedSegments: {
+            0: ToolSegment(
               toolName: 'Read',
               toolCallId: 'c1',
               outputs: '$ws body',
               status: ToolSegmentStatus.ok,
               startedAt: recordedAt,
-            ),
-          ]),
+            ).toJson(),
+          },
+          segmentCount: 1,
           transcriptChars: 20,
           startedAt: recordedAt,
           updatedAt: finishedAt,
@@ -867,7 +882,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(deviceId),
-          workspaceId: const Value(ownWorkspace),
+          landingWorkspaceId: const Value(ownWorkspace),
           label: const Value('e2e'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),
@@ -1093,10 +1108,10 @@ void main() {
 
   test(
     'agent_run_log.getTranscript replays a top-level run from its agent_turn '
-    'message when no run_transcripts row exists',
+    'message when the run owns no transcript',
     () async {
-      // A top-level run is never written to `run_transcripts` — only subagents
-      // are. Its timeline lives on the `agent_turn` message the run posts,
+      // A top-level run never owns a transcript row; only subagents do.
+      // Its timeline lives on the `agent_turn` message the run posts,
       // whose id IS the run log id. While the run streams, the in-memory
       // registry (keyed by that same id) serves it; after a restart the
       // registry is empty and replay must find the message, or the activity tab
@@ -1150,7 +1165,7 @@ void main() {
               SpacesTableCompanion.insert(
                 id: spaceId,
                 name: 'general',
-                workspaceId: Value(ws),
+                workspaceId: ws,
               ),
             );
         await wsDb
@@ -1159,7 +1174,7 @@ void main() {
               ConversationsTableCompanion.insert(
                 id: spaceId,
                 spaceId: spaceId,
-                workspaceId: Value(ws),
+                workspaceId: ws,
               ),
             );
         await wsDb
@@ -1168,7 +1183,7 @@ void main() {
               AgentRunLogsTableCompanion.insert(
                 id: runId,
                 agentId: 'agent-1',
-                workspaceId: Value(ws),
+                workspaceId: ws,
                 spaceId: Value(spaceId),
                 conversationId: Value(spaceId),
                 startedAt: Value(DateTime.utc(2026, 7, 26)),
@@ -1210,7 +1225,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(deviceId),
-          workspaceId: const Value(ownWorkspace),
+          landingWorkspaceId: const Value(ownWorkspace),
           label: const Value('e2e'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),
@@ -1280,7 +1295,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(deviceId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('e2e'),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),
@@ -1376,7 +1391,7 @@ void main() {
           ConversationsTableCompanion.insert(
             id: reviewerConversationId,
             spaceId: space.id,
-            workspaceId: const Value(workspaceId),
+            workspaceId: workspaceId,
             title: const Value('Architect review'),
           ),
         );
@@ -1400,7 +1415,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(deviceId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('e2e'),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),
@@ -1484,7 +1499,7 @@ void main() {
             ConversationsTableCompanion.insert(
               id: reviewerConversationId,
               spaceId: space.id,
-              workspaceId: const Value(workspaceId),
+              workspaceId: workspaceId,
               title: const Value('QA review'),
             ),
           );
@@ -1509,7 +1524,7 @@ void main() {
       await seed.global.pairedDeviceDao.upsert(
         PairedDevicesTableCompanion(
           id: const Value(deviceId),
-          workspaceId: const Value(workspaceId),
+          landingWorkspaceId: const Value(workspaceId),
           label: const Value('e2e'),
           pskRef: const Value('file'),
           status: const Value(PairedDeviceStatus.active),
@@ -1646,7 +1661,7 @@ void main() {
     await seed.global.pairedDeviceDao.upsert(
       PairedDevicesTableCompanion(
         id: const Value(deviceId),
-        workspaceId: const Value(workspaceId),
+        landingWorkspaceId: const Value(workspaceId),
         label: const Value('e2e'),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),

@@ -286,11 +286,6 @@ class _FakeMessaging implements MessagingRepository {
   Future<List<EmbeddedMessage>> getMessagesWithEmbedding(String _, String _) =>
       throw UnimplementedError();
   @override
-  Future<List<Message>> getMessagesWithoutEmbedding(
-    String _, {
-    int limit = 200,
-  }) => throw UnimplementedError();
-  @override
   Future<void> updateMessage(
     String _,
     String _, {

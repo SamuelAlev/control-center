@@ -2,7 +2,7 @@
 title: Configurazione degli agenti
 description: Tutti i campi dell'entità agente e le enumerazioni che usa.
 slug: it-IT/manuale/riferimento/configurazione-agenti
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Questa pagina di riferimento elenca tutti i campi dell'entità agente, oltre alle enumerazioni e ai flag che usa. Per una procedura dettagliata di creazione o modifica di un agente nell'app, vedi [Crea e configura un agente](/it-IT/manuale/guide/crea-agente/).
@@ -26,17 +26,17 @@ Questa pagina di riferimento elenca tutti i campi dell'entità agente, oltre all
 | `effort`                | `String?`              | No           | Id del livello di ragionamento (ad es. `'low'`, `'xhigh'`), tratto dai `thinkingLevels` del modello selezionato                                                                                                          |
 | `contextSize`           | `int?`                 | No           | Dimensione massima della finestra di contesto                                                                                                                                                                            |
 | `role`                  | `AgentRole?`           | No           | Ruolo dell'agente                                                                                                                                                                                                        |
-| `monthlyBudgetCents`    | `int`                  | No           | Limite di spesa mensile in centesimi (predefinito `0`, illimitato)                                                                                                                                                       |
+| `monthlyBudgetMicros`    | `int`                  | No           | Limite di spesa mensile in microdollari (predefinito `0`, illimitato)                                                                                                                                                       |
 | `silenceTimeoutMinutes` | `int?`                 | No           | Override del timeout di silenzio in minuti; deve essere null o compreso tra 1 e 240 (verificato dal costruttore)                                                                                                         |
 | `maxConcurrentTasks`    | `int`                  | No           | Predefinito `1`. Cifra di capacità che il modello delle presenze riporta (i conteggi delle esecuzioni attive e in coda vengono confrontati con essa)                                                                     |
 | `visibility`            | `AgentVisibility`      | No           | Predefinito `workspace`                                                                                                                                                                                                  |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | No           | Stato di governance (predefinito `active`). Scritto dall'arresto forzato del budget e mostrato nell'organigramma e nell'elenco delle presenze. L'invio accetta comunque lavoro da un agente `paused`                      |
-| `budgetPolicyId`        | `String?`              | No           | Id della policy di budget condivisa; quando è null si applica direttamente `monthlyBudgetCents`                                                                                                                          |
+| `budgetPolicyId`        | `String?`              | No           | Id della policy di budget condivisa; quando è null si applica direttamente `monthlyBudgetMicros`                                                                                                                          |
 | `runtimeProfileId`      | `String?`              | No           | Id del profilo di runtime personalizzato                                                                                                                                                                                 |
 | `createdAt`             | `DateTime`             | Sì           | Data e ora di creazione                                                                                                                                                                                                  |
 
 `name` e `title` devono essere entrambi non vuoti (verificato dal costruttore). Un
-`monthlyBudgetCents` predefinito di `0` significa illimitato. Imposta un tetto di spesa con
+`monthlyBudgetMicros` predefinito di `0` significa illimitato. Imposta un tetto di spesa con
 `agents.upsert`.
 
 ## Enumerazione AgentRole

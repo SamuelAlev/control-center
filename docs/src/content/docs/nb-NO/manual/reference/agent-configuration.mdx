@@ -2,7 +2,7 @@
 title: Agentkonfigurasjon
 description: Alle feltene på agententiteten og enumene den bruker.
 slug: nb-NO/handbok/referanse/agentkonfigurasjon
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 Denne referansen lister opp alle feltene på agententiteten, i tillegg til enumene og flaggene den bruker. En stegvis gjennomgang av å opprette eller redigere en agent i appen finner du i [Opprett og konfigurer en agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/).
@@ -26,17 +26,17 @@ Denne referansen lister opp alle feltene på agententiteten, i tillegg til enume
 | `effort`                | `String?`              | Nei     | Id for resonneringsnivået (f.eks. `'low'`, `'xhigh'`), hentet fra den valgte modellens `thinkingLevels`                                                                                              |
 | `contextSize`           | `int?`                 | Nei     | Maksimal størrelse på kontekstvinduet                                                                                                                                                               |
 | `role`                  | `AgentRole?`           | Nei     | Agentens rolle                                                                                                                                                                                      |
-| `monthlyBudgetCents`    | `int`                  | Nei     | Månedlig utgiftstak i cent (standard `0`, ubegrenset)                                                                                                                                               |
+| `monthlyBudgetMicros`    | `int`                  | Nei     | Månedlig utgiftstak i mikrodollar (standard `0`, ubegrenset)                                                                                                                                               |
 | `silenceTimeoutMinutes` | `int?`                 | Nei     | Overstyring av stillhetsvakten i minutter; må være null eller i området 1–240 (sjekket av konstruktøren)                                                                                            |
 | `maxConcurrentTasks`    | `int`                  | Nei     | Standard `1`. Kapasitetstallet som tilstedeværelsesmodellen rapporterer (antall kjørende og antall i kø sammenlignes med det)                                                                       |
 | `visibility`            | `AgentVisibility`      | Nei     | Standard `workspace`                                                                                                                                                                                |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | Nei     | Styringsstatus (standard `active`). Skrives av budsjettets harde stopp og vises på organisasjonskartet og tilstedeværelsesoversikten. Utsending godtar fortsatt arbeid fra en agent som er `paused` |
-| `budgetPolicyId`        | `String?`              | Nei     | Id for en delt budsjettpolicy; når den er null, gjelder `monthlyBudgetCents` direkte                                                                                                                |
+| `budgetPolicyId`        | `String?`              | Nei     | Id for en delt budsjettpolicy; når den er null, gjelder `monthlyBudgetMicros` direkte                                                                                                                |
 | `runtimeProfileId`      | `String?`              | Nei     | Id for en egendefinert kjøretidsprofil                                                                                                                                                              |
 | `createdAt`             | `DateTime`             | Ja      | Tidsstempel for oppretting                                                                                                                                                                          |
 
 `name` og `title` må begge være ikke-tomme (sjekket av konstruktøren). Standardverdien
-`0` for `monthlyBudgetCents` betyr ubegrenset. Skriv et tak med `agents.upsert`.
+`0` for `monthlyBudgetMicros` betyr ubegrenset. Skriv et tak med `agents.upsert`.
 
 ## AgentRole-enumet
 

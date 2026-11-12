@@ -2,7 +2,7 @@
 title: Maliyetleri yönetme
 description: Ajanlarınızın ne kadar harcadığını görün, özerk bir çalıştırmaya üst sınır koyun ve token kullanımını azaltın.
 slug: tr-TR/kilavuz/nasil-yapilir/maliyetleri-yonetme
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Bu kılavuz, ajan çalıştırmalarının ne kadara mal olduğunu nasıl göreceğinizi ve
@@ -10,10 +10,7 @@ Bu kılavuz, ajan çalıştırmalarının ne kadara mal olduğunu nasıl görece
 
 ## Maliyetler nasıl kaydedilir
 
-Her ajan çalıştırması; girdi token'larını, çıktı token'larını, akıl yürütme
-token'larını, önbellek okuma ve önbellek yazma token'larını, sent cinsinden
-tahmini maliyeti ve başlattığı alt ajanların maliyetini taşıyan bir çalıştırma
-günlüğü yazar.
+Her ajan çalıştırması; girdi token'larını, çıktı token'larını, akıl yürütme token'larını, önbellek okuma ve önbellek yazma token'larını, mikrodolar (bir ABD dolarının milyonda biri) cinsinden tahmini maliyeti ve başlattığı alt ajanların maliyetini taşıyan bir çalıştırma günlüğü yazar.
 
 Fiyatlandırma models.dev kataloğundan gelir; bu katalog yalnızca model listesini
 fiyat ve bağlam penceresiyle zenginleştirmek için kullanılır, asla model
@@ -137,7 +134,7 @@ küçük göreve bölünmesi gereken bir görevdir.
 
 ## Bütçe bant dışı ayarlanırsa ne olur
 
-Bütünlük adına, `monthlyBudgetCents` veya bir bütçe politikası doğrudan bir ajan
+Bütünlük adına, `monthlyBudgetMicros` veya bir bütçe politikası doğrudan bir ajan
 satırına yazılırsa:
 
 - Bütçeler gönderimden önce değil, bir çalıştırma tamamlandıktan **sonra**

@@ -2,7 +2,7 @@
 title: 도메인 이벤트
 description: 54개 도메인 이벤트의 전체 목록, 각 이벤트의 페이로드, 그리고 이를 소비하는 서버 측 구독자를 정리합니다.
 slug: ko-KR/매뉴얼/레퍼런스/도메인-이벤트
-sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
+sourceHash: eb95c6b000f61a4d7b6c358300d3365a4a3a4947
 ---
 
 ## 이벤트 버스
@@ -112,7 +112,7 @@ sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 | 이벤트                   | 페이로드                                                                                                 | 발생 시점                 |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------- |
 | `ActivityLogged`         | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | 감사 추적 항목이 생성될 때 |
-| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop`                                        | 지출이 임계값을 초과할 때 |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentMicros`, `budgetMicros`, `isHardStop`                                        | 지출이 임계값을 초과할 때 |
 
 ## 신원과 멤버십 이벤트
 

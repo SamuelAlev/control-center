@@ -12,6 +12,7 @@ import 'package:cc_server_core/src/relay/remote_relay_host.dart';
 import 'package:cc_signaling_server/cc_signaling_server.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_platform.dart';
 import 'helpers/test_database.dart';
 
 const _deviceId = 'policy-device';
@@ -62,6 +63,7 @@ void main() {
   setUp(() async {
     secrets.readCount = 0;
     db = createTestGlobalDatabase();
+    await seedUser(db, 'user-1');
     identity = await _identity();
   });
   tearDown(() async => db.close());

@@ -129,21 +129,21 @@ void main() {
         recordedAt: now.subtract(const Duration(days: 1)),
         provider: 'anthropic',
         accountKey: 'a@x.com',
-        costUsd: 4.0,
+        costMicros: 4000000,
         modelId: 'claude-opus-4-5',
       ),
       UsageCostHistoryEntry(
         recordedAt: now.subtract(const Duration(days: 2)),
         provider: 'anthropic',
         accountKey: 'a@x.com',
-        costUsd: 6.0,
+        costMicros: 6000000,
         modelId: 'claude-opus-4-5',
       ),
       UsageCostHistoryEntry(
         recordedAt: now.subtract(const Duration(days: 3)),
         provider: 'openai',
         accountKey: 'b@x.com',
-        costUsd: 2.4,
+        costMicros: 2400000,
         modelId: 'gpt-5',
       ),
       // Outside the window — excluded.
@@ -151,7 +151,7 @@ void main() {
         recordedAt: now.subtract(const Duration(days: 30)),
         provider: 'anthropic',
         accountKey: 'a@x.com',
-        costUsd: 100.0,
+        costMicros: 100000000,
       ),
     ];
 
@@ -159,14 +159,11 @@ void main() {
       'totals spend across the window and breaks down by provider/model',
       () {
         final summary = UsageTracker.summarize(entries, since: since, now: now);
-        expect(summary.totalUsd, closeTo(12.4, 0.0001));
+        expect(summary.totalMicros, 12400000);
         expect(summary.requestCount, 3);
-        expect(summary.byProvider['anthropic'], closeTo(10.0, 0.0001));
-        expect(summary.byProvider['openai'], closeTo(2.4, 0.0001));
-        expect(
-          summary.byModel['anthropic/claude-opus-4-5'],
-          closeTo(10.0, 0.0001),
-        );
+        expect(summary.byProvider['anthropic'], 10000000);
+        expect(summary.byProvider['openai'], 2400000);
+        expect(summary.byModel['anthropic/claude-opus-4-5'], 10000000);
       },
     );
 

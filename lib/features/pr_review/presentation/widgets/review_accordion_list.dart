@@ -15,6 +15,7 @@ import 'package:control_center/features/pr_review/providers/review_filter_provid
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -199,7 +200,7 @@ class _ReviewAccordionListState extends ConsumerState<ReviewAccordionList> {
     return asyncMessages.when(
       loading: () => const Center(child: CcSpinner()),
       error: (e, _) => Center(
-        child: Text(AppLocalizations.of(context).failedWithError('$e')),
+        child: Text(failureMessage(AppLocalizations.of(context), e)),
       ),
       data: (messages) {
         final scope = widget.findingsFilter;
@@ -467,7 +468,7 @@ class _ReviewAccordionListState extends ConsumerState<ReviewAccordionList> {
       if (!mounted) {
         return;
       }
-      toaster.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      toaster.show(failureMessage(l10n, e), variant: CcToastVariant.danger);
     }
   }
 

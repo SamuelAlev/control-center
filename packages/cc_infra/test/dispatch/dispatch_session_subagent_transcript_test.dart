@@ -185,19 +185,22 @@ class _MemTranscriptRepo implements RunTranscriptRepository {
   final Map<String, List<Map<String, dynamic>>> segments = {};
   final Map<String, bool> complete = {};
   final Map<String, TurnOutcome?> outcomes = {};
+  final Map<String, Map<int, Map<String, dynamic>>> _rows = {};
 
   @override
-  Future<void> upsert({
+  Future<void> write({
     required String runId,
     required String workspaceId,
-    required List<Map<String, dynamic>> segmentsJson,
+    required Map<int, Map<String, dynamic>> changedSegments,
+    required int segmentCount,
     required int transcriptChars,
     required DateTime startedAt,
     required DateTime updatedAt,
     TurnOutcome? outcome,
     bool complete = false,
   }) async {
-    segments[runId] = segmentsJson;
+    final rows = _rows.putIfAbsent(runId, () => {})..addAll(changedSegments);
+    segments[runId] = [for (var i = 0; i < segmentCount; i++) rows[i]!];
     this.complete[runId] = complete;
     outcomes[runId] = outcome;
     writeOrder.add('transcript:$runId:complete=$complete');

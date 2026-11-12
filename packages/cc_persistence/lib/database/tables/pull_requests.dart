@@ -1,7 +1,13 @@
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
-/// Drift table definition for pull requests.
-@TableIndex(name: 'idx_pull_requests_workspaceId', columns: {#workspaceId})
+/// Drift table definition for pull requests a workspace drafts before they are
+/// opened on the forge.
+///
+/// There is no natural key: a draft has no forge number until it is created,
+/// and it names no repository.
+// The list is newest first. The name predates the index's columns.
+@TableIndex(name: 'idx_pull_requests_ws_created', columns: {#createdAt})
 class PullRequestsTable extends Table {
   /// Unique PR identifier.
   TextColumn get id => text()();
@@ -21,8 +27,11 @@ class PullRequestsTable extends Table {
   /// PR body (markdown).
   TextColumn get body => text()();
 
-  /// Status, e.g. 'draft' or 'created'.
-  TextColumn get status => text().withDefault(const Constant('draft'))();
+  /// A `PrGenerationStatus` name: `draft`, `published` or `created`.
+  TextColumn get status => text()
+      // ignore: recursive_getters
+      .check(status.isIn(PlatformStoredValues.prGenerationStatus))
+      .withDefault(const Constant('draft'))();
 
   /// Optional diff summary text.
   TextColumn get diffSummary => text().nullable()();

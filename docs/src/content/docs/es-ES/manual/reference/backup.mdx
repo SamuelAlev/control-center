@@ -2,7 +2,7 @@
 title: Copia de seguridad, exportación e importación
 description: La estructura de la instantánea, el manifiesto, cada operación de copia de seguridad y ruta de transferencia, y exactamente qué archivos contiene y no contiene una copia de seguridad.
 slug: es-ES/manual/referencia/copia-de-seguridad
-sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
+sourceHash: d1feb53a97cf4654b956750e92bccb29d16af069
 ---
 
 Todo lo que Control Center puede copiar, entregar o adoptar, y la forma exacta de cada
@@ -49,12 +49,11 @@ cadena simple.
 
 Las copias de seguridad programadas de espacios de trabajo viven aparte, en
 `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db`.
-No incluyen un manifiesto ni `global.db` y no son instantáneas de la instalación.
+Cada una tiene un `manifest.json` para ese único archivo y no `global.db`; no son instantáneas de la instalación. Una restauración conserva la base de datos que sustituye en el mismo lugar, como `<timestamp>-pre-restore`.
 El paso de retención del pipeline semanal elimina únicamente las copias de seguridad de
 su propio espacio de trabajo más antiguas que la antigüedad configurada (30 días de forma
 predeterminada); las instantáneas de la instalación creadas a mano nunca se rotan con ese
-paso. `server.listBackups` solo lista instantáneas de la instalación, incluidas las
-incompletas; `workspace.listBackups` lista las copias de seguridad programadas de un
+paso. `server.listBackups` solo lista instantáneas de la instalación, incluidas las sin verificar; `workspace.listBackups` lista las copias de seguridad programadas de un
 espacio de trabajo.
 
 Eliminar un espacio de trabajo deja este directorio en su sitio. La programación del espacio
@@ -67,34 +66,40 @@ notifica.
 
 | Campo                       | Tipo            | Significado                                                         |
 | --------------------------- | --------------- | ------------------------------------------------------------------- |
-| `version`                   | int             | Versión del formato del manifiesto. Actualmente `1`                 |
+| `format`                   | int             | Formato del manifiesto. Actualmente `2`                 |
 | `created_at`                | ISO-8601 UTC    | Cuándo se tomó la instantánea                                       |
-| `global.file`               | string          | Siempre `global.db`                                                 |
-| `global.schema_version`     | int             | Versión del esquema de `GlobalDatabase` en el momento de la captura |
-| `global.bytes`              | int             | Tamaño del `global.db` escrito                                      |
-| `workspace_schema_version`  | int             | Versión del esquema de `WorkspaceDatabase` compartida por todos los archivos de espacio de trabajo |
-| `workspaces[]`              | array           | Una entrada por espacio de trabajo capturado                        |
+| `global`                   | object          | El registro de `global.db`. Ausente de una copia de seguridad programada de espacio de trabajo |
+| `workspaces[]`              | array           | Un registro por espacio de trabajo capturado                        |
 | `workspaces[].workspace_id` | string          | El espacio de trabajo al que pertenece este archivo                 |
-| `workspaces[].file`         | string          | Ruta relativa a la raíz de la instantánea, `<workspaceId>/workspace.db` |
-| `workspaces[].bytes`        | int             | Tamaño de ese archivo                                               |
-| `skipped_workspaces[]`      | array of string | Espacios de trabajo que la copia de seguridad **no** pudo capturar  |
+| `skipped_workspaces[]`     | array           | Espacios de trabajo que la copia de seguridad **no** pudo capturar                         |
+| `skipped_workspaces[].workspace_id` | string | El espacio de trabajo que se dejó fuera                                     |
+| `skipped_workspaces[].reason` | string       | `no_file`, `damaged` o `failed`                                    |
 
-Un espacio de trabajo se omite cuando está registrado pero nunca se ha escrito en él (así
-que todavía no existe ningún archivo), o cuando su `VACUUM INTO` falló. En cualquier caso,
-la instantánea se completa igualmente y el manifiesto indica qué falta.
+`global` y cada registro de `workspaces[]` describen un archivo copiado, medido en la copia después de escribirla:
+
+| Campo            | Tipo   | Significado                                                                    |
+| ---------------- | ------ | ------------------------------------------------------------------------------ |
+| `file`         | string          | Ruta relativa a la raíz de la instantánea: `global.db` o `<workspaceId>/workspace.db` |
+| `bytes`        | int             | Tamaño de la copia                                               |
+| `sha256`         | string | SHA-256 de la copia, en hexadecimal en minúsculas                              |
+| `quick_check`    | string | Lo que dijo el `quick_check` de SQLite sobre la copia: `ok`, o su hallazgo      |
+| `user_version`   | int    | Versión del esquema de la copia                                                |
+| `application_id` | int    | `application_id` de SQLite de la copia                                         |
+
+Un espacio de trabajo se omite cuando está registrado pero nunca se ha escrito en él (`no_file`), cuando su base de datos no supera la comprobación de integridad (`damaged`; nunca se toma una copia dañada), o cuando su copia o la comprobación de esa copia falló (`failed`). En cualquier caso, la instantánea se completa igualmente y el manifiesto indica qué falta. El manifiesto se escribe el último.
 
 ### Completitud
 
-`server.listBackups` informa de un indicador `complete` por instantánea. Es falso cuando
-el manifiesto falta o no se puede analizar, cuando falta `global.db` o cuando el
-manifiesto nombra un archivo de espacio de trabajo que no está en el disco.
+`server.listBackups` informa de un indicador `complete` por instantánea. Es falso cuando el manifiesto falta, no se puede analizar o tiene otro formato, cuando falta un archivo que nombra o tiene otro tamaño, o cuando una copia no superó su comprobación. La aplicación muestra una instantánea así como **Sin verificar**. Las instantáneas tomadas antes del formato `2` están en ese estado.
 
-Una instantánea incompleta se lista igualmente, porque una instantánea que un operador no
+Una instantánea sin verificar se lista igualmente, porque una instantánea que un operador no
 puede ver es una instantánea que cree tener. Cuando el manifiesto no se puede leer, el
 listado recurre a la propia estructura e informa de los archivos
 `<workspaceId>/workspace.db` que encuentre; esos siguen siendo adoptables individualmente
 mediante `workspace.import` aunque la instantánea en su conjunto no pueda restaurar una
 instalación.
+
+Una instantánea o copia de seguridad programada listada lleva `pinned_reason: "last_good_copy"` mientras conserva la copia verificada más reciente de un espacio de trabajo cuya base de datos activa está dañada. El paso de retención la omite hasta que ese espacio de trabajo se restaure.
 
 ## Qué no contiene una copia de seguridad
 
@@ -105,6 +110,7 @@ contiene más que su base de datos, y nada del resto viaja:
 | ----------------------------------- | -------------------- | ------------------------------------------ |
 | `global.db`                         | Sí                   | No                                         |
 | `<workspaceId>/workspace.db`        | Sí                   | Sí (el archivo *es* este)                  |
+| `<workspaceId>/code_index.db`       | No             | No                     |
 | `<workspaceId>/blobs/`              | No                   | No                                         |
 | `<workspaceId>/skills/`             | No                   | No                                         |
 | `<workspaceId>/agents/`             | No                   | No                                         |
@@ -117,16 +123,9 @@ contiene más que su base de datos, y nada del resto viaja:
 | `rigs/`                             | No                   | No                                         |
 | `_agent_hooks/`                     | No                   | No                                         |
 
-Parte de eso es prescindible: `spaces/` contiene worktrees con copy-on-write que se
-reaprovisionan desde los repos, `pr_clones/` es una caché, `models/` se vuelve a
-descargar y `rigs/` es estado de la máquina. Parte no lo es: `blobs/` contiene imágenes
-pegadas a las que apuntan filas de la base de datos, `skills/` y `agents/` contienen los
-archivos con los que se ejecuta un agente, y `secrets.json` contiene todas las claves de
-emparejamiento, credenciales de proveedores y ajustes de SSO de la instalación. Consulta
-[Hacer copia de seguridad y restaurar](/es-ES/manual/guias/copia-de-seguridad-y-restauracion/#copiar-las-copias-de-seguridad-fuera-de-la-máquina)
-para cubrir el resto.
-:::caution[La base de datos de un espacio de trabajo contiene secretos de webhooks]
-`workspace.db` es todo el espacio de trabajo: conversaciones, registros de ejecución, el índice de código, los vínculos con repositorios, las definiciones de entornos y los miembros. También contiene, en forma legible, los tokens de webhook de pipelines y los secretos de webhook de sincronización de tickets del espacio, así que trata una exportación o una copia de seguridad descargada como un secreto. No contiene ningún inicio de sesión de proveedor, clave de dispositivo ni secreto de usuario; esos están en `global.db` y `secrets.json`.
+Parte de eso es prescindible: `spaces/` contiene worktrees con copy-on-write que se reaprovisionan desde los repos, `pr_clones/` es una caché, `code_index.db` se reconstruye, `models/` se vuelve a descargar y `rigs/` es estado de la máquina. Parte no lo es: `blobs/` contiene imágenes pegadas a las que apuntan filas de la base de datos, `skills/` y `agents/` contienen los archivos con los que se ejecuta un agente, y `secrets.json` contiene todas las claves de emparejamiento, credenciales de proveedores y ajustes de SSO de la instalación. Consulta [Hacer copia de seguridad y restaurar](/es-ES/manual/guias/copia-de-seguridad-y-restauracion/#copiar-las-copias-de-seguridad-fuera-de-la-máquina) para cubrir el resto.
+:::note[Los secretos no se guardan en las bases de datos]
+`workspace.db` es todo el espacio de trabajo: conversaciones, registros de ejecución, vínculos con repositorios, definiciones de entornos y miembros. Los tokens de webhook de las canalizaciones y los secretos de webhook de sincronización de tickets están en `secrets.json`: la base de datos guarda una referencia a cada uno, y el índice de rutas guarda un hash con clave de cada token. Por eso, un espacio de trabajo restaurado en otra instalación no recibe ningún webhook hasta que sus disparadores se guarden de nuevo allí. Los inicios de sesión de proveedores, las claves de dispositivos y los secretos de usuario están en `global.db` y `secrets.json`.
 :::
 
 :::note[Los tokens de chat se quedan atrás a propósito]
@@ -153,6 +152,8 @@ el puerto de copia de seguridad conectado, como el servidor de demostración.
 | `workspace.deleteBackup` | mutación | Espacio de trabajo | `owner` | `name` | `{ok}` |
 | `workspace.export`    | lectura  | Espacio de trabajo | `admin`                    | ninguno       | `{ok, path}`                  |
 | `workspace.import`    | mutación | Espacio de trabajo | `owner`, y el propietario del servidor | `source_path` | `{ok, workspace_id}`          |
+| `workspace.importHolds.list` | lectura | Espacio de trabajo | `owner`, y el propietario del servidor | ninguno | `{holds: [...]}` |
+| `workspace.importHolds.resolve` | mutación | Espacio de trabajo | `owner`, y el propietario del servidor | `hold_id`, `accept` | `{ok, applied}` |
 | `workspace.delete`    | mutación | Instalación* | `owner`                         | `id`          | fila del registro marcada como eliminada |
 
 * `workspace.delete` no tiene ámbito porque la fila que marca vive en el registro global;
@@ -170,6 +171,8 @@ siguen protegidas por `workspace.deleteBackup` y por los roles de ese espacio de
 Ambas operaciones de eliminación solo aceptan un nombre de directorio de marca de tiempo
 listado, no una ruta.
 
+`workspace.importHolds.list` devuelve lo que retuvo una importación. Cada retención tiene un `id`, un `kind` (`action_policy`, `sandbox_exec_grant`, `repo_grant`, `membership_role` o `invite`), el `payload` que volvería a poner, `imported_at` y `source_install_id`. `workspace.importHolds.resolve` con `accept: true` la concede de nuevo y con `false` la descarta. `applied` es false cuando la persona o el elemento al que iba destinada la concesión ya no está en el espacio de trabajo.
+
 :::note[Una instantánea de toda la instalación está reservada al propietario en ambos canales]
 `server.backupNow`, `server.listBackups` y `server.deleteBackup` exigen el
 **propietario** de la instalación (`ServerAuthority.serverOwner`), la misma puerta que
@@ -177,11 +180,11 @@ listado, no una ruta.
 trabajo, así que ser administrador de un espacio de trabajo no basta para gestionar los
 demás. La eliminación solo acepta el nombre del directorio con marca de tiempo que aparece
 en el listado, no una ruta arbitraria del servidor, y elimina la instantánea completa
-(incluidas las instantáneas incompletas). Las exportaciones por espacio de trabajo y las descargas de copias programadas siguen correspondiendo al administrador del espacio de trabajo.
+(incluidas las instantáneas sin verificar). Las exportaciones por espacio de trabajo y las descargas de copias programadas siguen correspondiendo al administrador del espacio de trabajo.
 :::
 
 :::note[La restauración es del propietario del servidor]
-`workspace.import` y `POST /backup/restore` hacen que el servidor adopte un archivo de base de datos cuyas filas después trata como propias: los vínculos con repositorios y quién los creó, las definiciones de entornos que se ejecutan en el host, y las rutas de worktrees y registros. Por eso ambas requieren al propietario del servidor (`ServerAuthority.serverOwner`), que además debe ser el propietario del espacio de trabajo. Cualquier otro, y todo llamador en un host sin propietario registrado, recibe un rechazo con `server_owner_required`. No se adopta ningún disparador ni vista que traiga el archivo.
+`workspace.import` y `POST /backup/restore` hacen que el servidor adopte un archivo de base de datos cuyas filas después trata como propias: los vínculos con repositorios y quién los creó, las definiciones de entornos que se ejecutan en el host, y las rutas de worktrees y registros. Por eso ambas requieren al propietario del servidor (`ServerAuthority.serverOwner`), que además debe ser el propietario del espacio de trabajo. Cualquier otro, y todo llamador en un host sin propietario registrado, recibe un rechazo con `server_owner_required`. No se adopta ningún disparador, vista, columna ni restricción que traiga el archivo.
 :::
 
 ### Respuesta de `server.listBackups`
@@ -224,21 +227,21 @@ distintos del mismo archivo.
 
 ### Validación de `workspace.import`
 
-Antes de sustituir nada, el archivo candidato se abre en solo lectura con una conexión
-SQLite en bruto de corta vida y se lee su fila `workspace_meta`.
+Antes de sustituir nada, el archivo candidato se copia a un archivo de preparación junto al destino y se comprueba allí. Un rechazo no toca nada y lleva su tipo como `data.kind`.
 
 | Condición                                                | Resultado                                                       |
 | -------------------------------------------------------- | --------------------------------------------------------------- |
-| No es una base de datos SQLite legible, o no tiene `workspace_meta` | Se rechaza. No se toca nada                          |
-| El id de espacio de trabajo registrado ≠ el de destino    | **Se permite** y se registra. Así es como se duplica un espacio de trabajo o se restaura con un id nuevo |
-| El id de instalación registrado ≠ esta instalación        | **Se permite** y se registra. Sus dispositivos emparejados e ids de usuario pertenecen a esa instalación y no se resolverán aquí |
-| Id de espacio de trabajo no válido, o el archivo no existe | Se rechaza                                                     |
+| El archivo no existe | Se rechaza, `import.missing_source` |
+| No es una base de datos SQLite legible, o no supera `quick_check` | Se rechaza, `import.damaged` |
+| Viene de una instantánea y su SHA-256 difiere del que figura en el manifiesto | Se rechaza, `import.checksum_mismatch` |
+| Una versión más reciente del servidor lo escribió | Se rechaza, `import.newer_schema` |
+| Otro `application_id`, o no tiene `workspace_meta` | Se rechaza, `import.foreign_file` |
+| No se puede llevar al esquema de este servidor | Se rechaza, `import.schema_mismatch` |
+| Sus webhooks o invitaciones ya apuntan a otro espacio de trabajo | Se rechaza, `import.route_conflict` |
+| El id de espacio de trabajo registrado ≠ el de destino    | **Se permite**. Sus filas se reasignan al id de destino. Así es como se duplica un espacio de trabajo o se restaura con un id nuevo |
+| El id de instalación registrado ≠ esta instalación        | **Se permite**. Sus ids de usuario pertenecen a esa instalación y no se resolverán aquí |
 
-Cuando se acepta, la base de datos del espacio de trabajo de destino se cierra y se
-descarta del gestor antes de copiar el archivo encima (una conexión de drift abierta
-retiene el archivo y su `-wal`), y luego se vuelve a abrir para que `beforeOpen` reinstale
-los disparadores de FTS y de sincronización, y los índices FTS se reconstruyen: las tablas
-de contenido de un archivo importado están pobladas, pero su índice puede estar obsoleto.
+Al aceptarlo, el archivo preparado se lleva al esquema de este servidor y después debe coincidir exactamente con él. Las concesiones que un archivo no puede darse a sí mismo se le quitan: las aprobaciones para ejecutar una definición de entorno en el host se borran, y las reglas de acción que permiten o que piden confirmación, las concesiones de ejecución en sandbox, las concesiones de repositorio por encima de lectura, los roles por encima de miembro y las invitaciones a esos roles pasan a retenciones que el propietario del servidor debe revisar. Quien importa conserva o recibe el rol de propietario. La base de datos que se sustituye se conserva como copia de seguridad programada llamada `<timestamp>-pre-restore`; el archivo preparado se renombra y ocupa su lugar con las conexiones del espacio de trabajo cerradas, `code_index.db` se elimina para reconstruirlo, y los índices FTS se reconstruyen.
 
 ## Rutas de transferencia
 
@@ -271,7 +274,7 @@ directorio de copias de seguridad propio de ese espacio de trabajo.
 
 | Estado | Causa                                                                              |
 | ------ | ----------------------------------------------------------------------------------- |
-| `400`  | Falta un parámetro de consulta obligatorio, un nombre de copia de seguridad no es válido, o el cuerpo de una subida está vacío |
+| `400`  | Falta un parámetro de consulta obligatorio, un nombre de copia de seguridad no es válido, el cuerpo de una subida está vacío, o el archivo subido fue rechazado (el cuerpo es `{error, kind}` con un tipo `import.*`) |
 | `403`  | Dispositivo desconocido o revocado, firma incorrecta, o quien llama carece del rol   |
 | `404`  | No hay puerto de copia de seguridad en este host, o la instantánea, la copia de seguridad o el archivo de espacio de trabajo indicados no existen |
 | `405`  | Se llama a `/backup/restore` con algo distinto de `POST`                             |
@@ -313,6 +316,8 @@ resultantes en reposo.
 | Instantáneas                       | `<dataDir>/backups/<timestamp>/`                             |
 | Copias de seguridad programadas de espacios de trabajo | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>/workspace.db` |
 | Exportaciones de espacios de trabajo | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Base de datos sustituida por una restauración | `<dataDir>/backups/workspace-backups/<workspaceId>/<timestamp>-pre-restore/` |
+| Bases de datos tal como estaban antes de que una actualización cambiara su formato | `<dataDir>/pre_upgrade/` y `<dataDir>/<workspaceId>/pre_upgrade/`, las dos más recientes de cada una |
 | Preparación de transferencias      | `<dataDir>/backups/transfer/` — un banco de trabajo, barrido por la ruta que escribe en él |
 | Nombre del archivo de la instantánea | `<snapshot directory name>.zip`                              |
 | Techo de subida                    | 8 GiB por subida cifrada a `/backup/restore`                 |

@@ -1,12 +1,23 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
+import 'package:cc_domain/core/domain/repositories/workspace_repository.dart'
+    show DeletedWorkspaceException;
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_host_approval.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_infra/cc_infra.dart'
     show ForgeCredentialUnavailable, mapHttpException;
 import 'package:cc_infra/src/environments/environment_host_approval.dart';
+import 'package:cc_persistence/cc_persistence.dart'
+    show
+        DatabaseDamagedException,
+        DatabaseNewerThanBinaryException,
+        ForeignDatabaseFileException;
 import 'package:cc_server_core/src/rpc_exception_mapper.dart';
+import 'package:drift/drift.dart' show DriftWrappedException;
 import 'package:rhttp/rhttp.dart';
+import 'package:sqlite3/common.dart' show SqliteException;
 import 'package:test/test.dart';
 
 RhttpStatusCodeException _status(
@@ -20,7 +31,138 @@ RhttpStatusCodeException _status(
   body: body,
 );
 
+SqliteException _sqlite(int code) => SqliteException(
+  extendedResultCode: code,
+  message: 'database failure',
+  causingStatement: 'INSERT INTO messages (body, token) VALUES (?, ?)',
+  parametersToStatement: const ['secret body', 'ghp_secret_token'],
+  operation: 'executing',
+);
+
 void main() {
+  group('storage failures', () {
+    test('busy and locked answer storage.busy, even wrapped by drift', () {
+      for (final error in <Object>[
+        _sqlite(5),
+        _sqlite(6),
+        // SQLITE_BUSY_SNAPSHOT: an extended code of busy.
+        _sqlite(517),
+        DriftWrappedException(message: 'failed', cause: _sqlite(5)),
+      ]) {
+        final mapped = mapAppExceptionToRpc(error);
+        expect(mapped?.data, {'kind': storageBusyKind}, reason: '$error');
+        expect(mapped?.message, isNot(contains('secret')));
+      }
+    });
+
+    test('a full disk answers storage.full', () {
+      expect(mapAppExceptionToRpc(_sqlite(13))?.data, {
+        'kind': storageFullKind,
+      });
+    });
+
+    test('damage answers storage.damaged', () {
+      for (final code in [11, 26]) {
+        expect(mapAppExceptionToRpc(_sqlite(code))?.data, {
+          'kind': storageDamagedKind,
+        });
+      }
+      expect(
+        mapAppExceptionToRpc(
+          const DatabaseDamagedException(database: 'global', finding: 'bad'),
+        )?.data,
+        {'kind': storageDamagedKind},
+      );
+    });
+
+    test('a write to a workspace served read-only answers '
+        'storage.read_only', () {
+      expect(mapAppExceptionToRpc(_sqlite(8))?.data, {
+        'kind': workspaceReadOnlyKind,
+      });
+    });
+
+    test('a file from a newer server names both versions, and never the '
+        'file', () {
+      final mapped = mapAppExceptionToRpc(
+        const DatabaseNewerThanBinaryException(
+          database: 'workspace ws-secret-id',
+          fileVersion: 31,
+          binaryVersion: 30,
+        ),
+      );
+      expect(mapped?.data, {
+        'kind': storageNewerSchemaKind,
+        'file_version': 31,
+        'server_version': 30,
+      });
+      expect(mapped?.message, isNot(contains('ws-secret-id')));
+    });
+
+    test('a file this server did not write answers storage.foreign_file', () {
+      expect(
+        mapAppExceptionToRpc(
+          const ForeignDatabaseFileException(
+            database: 'global',
+            applicationId: 7,
+            expectedApplicationId: 9,
+          ),
+        )?.data,
+        {'kind': storageForeignFileKind},
+      );
+    });
+
+    test('a deleted workspace answers workspace.deleted as not found', () {
+      final mapped = mapAppExceptionToRpc(
+        const DeletedWorkspaceException('ws-1'),
+      );
+      expect(mapped?.code, RpcErrorCodes.notFound);
+      expect(mapped?.data, {'kind': workspaceDeletedKind});
+    });
+
+    test('any other storage failure stays an unmapped internal error', () {
+      expect(mapAppExceptionToRpc(_sqlite(19)), isNull);
+    });
+
+    test('the log rendering keeps the statement and drops bound values', () {
+      final line = describeErrorForLog(
+        DriftWrappedException(message: 'failed', cause: _sqlite(19)),
+      );
+      expect(line, contains('19'));
+      expect(line, contains('INSERT INTO messages'));
+      expect(line, isNot(contains('secret body')));
+      expect(line, isNot(contains('ghp_secret_token')));
+      // The raw exception text is exactly what would have leaked.
+      expect(_sqlite(19).toString(), contains('ghp_secret_token'));
+    });
+  });
+
+  test('a refused workspace import answers its import kind, and a newer '
+      'file names both versions', () {
+    final newer = mapAppExceptionToRpc(
+      const WorkspaceImportRefusedException(
+        WorkspaceImportRefusal.newerSchema,
+        'A newer server version wrote this file',
+        fileVersion: 31,
+        serverVersion: 30,
+      ),
+    );
+    expect(newer?.code, RpcErrorCodes.validation);
+    expect(newer?.data, {
+      'kind': 'import.newer_schema',
+      'file_version': 31,
+      'server_version': 30,
+    });
+    for (final refusal in WorkspaceImportRefusal.values) {
+      final mapped = mapAppExceptionToRpc(
+        WorkspaceImportRefusedException(refusal, 'refused'),
+      );
+      expect(mapped?.code, RpcErrorCodes.validation);
+      expect((mapped?.data as Map?)?['kind'], refusal.kind);
+      expect(refusal.kind, startsWith('import.'));
+    }
+  });
+
   test('a forge refusal names its kind and its forge', () {
     for (final (code, forge) in [
       ('forge_cannot_read', ForgeHost.github),

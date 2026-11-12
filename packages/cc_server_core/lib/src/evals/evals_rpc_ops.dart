@@ -33,7 +33,7 @@ Map<String, dynamic> evalRunToWire(EvalRun r) => {
   'scorecardJson': r.scorecardJson,
   'passRate': r.passRate,
   'status': r.status,
-  'costCents': r.costCents,
+  'costMicros': r.costMicros,
   'triggeredBy': r.triggeredBy,
   'jobId': r.jobId,
   'createdAt': r.createdAt.toIso8601String(),

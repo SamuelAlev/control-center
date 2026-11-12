@@ -2,7 +2,7 @@
 title: הגדרת סוכן
 description: כל שדה בישות הסוכן, וכן ה-enums והדגלים שהיא משתמשת בהם.
 slug: he-IL/מדריך-למשתמש/עזר/הגדרת-סוכן
-sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
+sourceHash: e77edc905bed16d2f7d5bcd19a62541d885f6aab
 ---
 
 עמוד עזר זה מפרט כל שדה בישות הסוכן, בתוספת ה-enums והדגלים שהיא משתמשת בהם. להליך צעד-אחר-צעד של יצירה או עריכה של סוכן ביישום, ראו [יצירה והגדרה של סוכן](/he-IL/מדריך-למשתמש/מדריכים-מעשיים/יצירת-סוכן/).
@@ -26,17 +26,17 @@ sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 | `effort`                | `String?`              | לא   | מזהה רמת החשיבה (למשל `'low'`, `'xhigh'`), שמקורו ב-`thinkingLevels` של המודל הנבחר                                                                                                                    |
 | `contextSize`           | `int?`                 | לא   | גודל חלון ההקשר המרבי                                                                                                                                                                                |
 | `role`                  | `AgentRole?`           | לא   | תפקיד הסוכן                                                                                                                                                                                          |
-| `monthlyBudgetCents`    | `int`                  | לא   | תקרת הוצאה חודשית בסנטים (ברירת מחדל `0`, ללא הגבלה)                                                                                                                                                 |
+| `monthlyBudgetMicros`    | `int`                  | לא   | תקרת הוצאה חודשית במיקרו-דולרים (ברירת מחדל `0`, ללא הגבלה)                                                                                                                                                 |
 | `silenceTimeoutMinutes` | `int?`                 | לא   | עקיפה של מנגנון ניטור השקט בדקות; חייבת להיות null או בטווח 1–240 (נאכף בבנאי)                                                                                                                        |
 | `maxConcurrentTasks`    | `int`                  | לא   | ברירת מחדל `1`. נתון הקיבולת שמודל הנוכחות מדווח (ספירות ההרצות והתורים מושוות אליו)                                                                                                                  |
 | `visibility`            | `AgentVisibility`      | לא   | ברירת מחדל `workspace`                                                                                                                                                                               |
 | `lifecycleStatus`       | `AgentLifecycleStatus` | לא   | סטטוס ממשל (ברירת מחדל `active`). נכתב בעצירה הקשה של התקציב ומוצג בתרשים הארגון ובסגל הנוכחות. השליחה עדיין מקבלת עבודה מסוכן `paused`                                                              |
-| `budgetPolicyId`        | `String?`              | לא   | המזהה של מדיניות תקציב משותפת; כשהוא null חל `monthlyBudgetCents` ישירות                                                                                                                             |
+| `budgetPolicyId`        | `String?`              | לא   | המזהה של מדיניות תקציב משותפת; כשהוא null חל `monthlyBudgetMicros` ישירות                                                                                                                             |
 | `runtimeProfileId`      | `String?`              | לא   | המזהה של פרופיל הרצה מותאם                                                                                                                                                                            |
 | `createdAt`             | `DateTime`             | כן   | חתימת זמן היצירה                                                                                                                                                                                      |
 
 `name` ו-`title` חייבים שניהם להיות לא ריקים (נאכף בבנאי). ברירת המחדל `0` של
-`monthlyBudgetCents` פירושה ללא הגבלה. כתבו תקרה באמצעות `agents.upsert`.
+`monthlyBudgetMicros` פירושה ללא הגבלה. כתבו תקרה באמצעות `agents.upsert`.
 
 ## ה-enum‏ AgentRole
 

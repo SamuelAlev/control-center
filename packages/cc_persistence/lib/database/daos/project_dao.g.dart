@@ -5,7 +5,6 @@ part of 'project_dao.dart';
 // ignore_for_file: type=lint
 mixin _$ProjectDaoMixin on DatabaseAccessor<WorkspaceDatabase> {
   $ProjectsTableTable get projectsTable => attachedDatabase.projectsTable;
-  $TicketsTableTable get ticketsTable => attachedDatabase.ticketsTable;
   ProjectDaoManager get managers => ProjectDaoManager(this);
 }
 
@@ -14,6 +13,4 @@ class ProjectDaoManager {
   ProjectDaoManager(this._db);
   $$ProjectsTableTableTableManager get projectsTable =>
       $$ProjectsTableTableTableManager(_db.attachedDatabase, _db.projectsTable);
-  $$TicketsTableTableTableManager get ticketsTable =>
-      $$TicketsTableTableTableManager(_db.attachedDatabase, _db.ticketsTable);
 }

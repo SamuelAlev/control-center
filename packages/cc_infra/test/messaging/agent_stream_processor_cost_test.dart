@@ -140,9 +140,6 @@ void main() {
         expect(cost.inputTokens, 260);
         expect(cost.costMicros, 52000);
         expect(cost.costBasis, CostBasis.subscription);
-        // The legacy cents projection is derived from the exact figure, so a
-        // cents-summing consumer sees the same, undoubled number.
-        expect(cost.estimatedCostCents, 5);
       },
     );
 

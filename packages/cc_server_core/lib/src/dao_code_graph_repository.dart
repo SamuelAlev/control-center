@@ -11,9 +11,9 @@ import 'package:cc_domain/features/code_graph/domain/entities/code_symbol.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
 import 'package:cc_infra/cc_infra.dart' show EmbeddingService;
 import 'package:cc_natives/cc_natives.dart';
-import 'package:cc_persistence/database/daos/code_graph_dao.dart';
-import 'package:cc_persistence/database/workspace/workspace_database.dart'
+import 'package:cc_persistence/database/code_index/code_index_database.dart'
     as db;
+import 'package:cc_persistence/database/daos/code_graph_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/code_edge_mapper.dart';
 import 'package:cc_persistence/mappers/code_symbol_mapper.dart';
@@ -25,8 +25,9 @@ import 'package:drift/drift.dart';
 /// supplied.
 ///
 /// Holds the [WorkspaceDatabaseManager] rather than a DAO: the code graph lives
-/// in each workspace's own database file, so the `workspaceId` every method
-/// already carries picks the file before any SQL runs.
+/// in each workspace's own code index file (`code_index.db`), so the
+/// `workspaceId` every method already carries picks the file before any SQL
+/// runs. The rows themselves carry no workspace.
 class DaoCodeGraphRepository implements CodeGraphRepository {
   /// Creates a [DaoCodeGraphRepository] over the per-workspace databases.
   DaoCodeGraphRepository(this._dbs, {this._embeddingService});
@@ -34,7 +35,8 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   final WorkspaceDatabaseManager _dbs;
   final EmbeddingPort? _embeddingService;
 
-  CodeGraphDao _dao(String workspaceId) => _dbs.of(workspaceId).codeGraphDao;
+  CodeGraphDao _dao(String workspaceId) =>
+      _dbs.codeIndexOf(workspaceId).codeGraphDao;
 
   final CodeSymbolMapper _symbolMapper = const CodeSymbolMapper();
   final CodeEdgeMapper _edgeMapper = const CodeEdgeMapper();
@@ -48,17 +50,15 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     String? checkoutId,
   }) async {
     final rows = queryEmbedding != null
-        ? await _dao(workspaceId).searchHybrid(
+        ? await _dao(
             workspaceId,
-            repoId,
-            query,
-            queryEmbedding,
-            checkoutId: checkoutId,
-          )
+          ).searchHybrid(repoId, query, queryEmbedding, checkoutId: checkoutId)
         : await _dao(
             workspaceId,
-          ).searchFts(workspaceId, repoId, query, checkoutId: checkoutId);
-    return rows.map(_symbolMapper.toDomain).toList();
+          ).searchFts(repoId, query, checkoutId: checkoutId);
+    return [
+      for (final r in rows) _symbolMapper.toDomain(r, workspaceId: workspaceId),
+    ];
   }
 
   @override
@@ -69,14 +69,13 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     String? checkoutId,
     Set<CodeEdgeKind> kinds = const {CodeEdgeKind.calls},
   }) => _dao(workspaceId)
-      .getCallers(
-        workspaceId,
-        symbolId,
-        kinds: kinds,
-        limit: limit,
-        checkoutId: checkoutId,
-      )
-      .then((rows) => rows.map(_symbolMapper.toDomain).toList());
+      .getCallers(symbolId, kinds: kinds, limit: limit, checkoutId: checkoutId)
+      .then(
+        (rows) => [
+          for (final r in rows)
+            _symbolMapper.toDomain(r, workspaceId: workspaceId),
+        ],
+      );
 
   @override
   Future<List<CodeSymbol>> callees(
@@ -85,8 +84,13 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     int? limit,
     String? checkoutId,
   }) => _dao(workspaceId)
-      .getCallees(workspaceId, symbolId, limit: limit, checkoutId: checkoutId)
-      .then((rows) => rows.map(_symbolMapper.toDomain).toList());
+      .getCallees(symbolId, limit: limit, checkoutId: checkoutId)
+      .then(
+        (rows) => [
+          for (final r in rows)
+            _symbolMapper.toDomain(r, workspaceId: workspaceId),
+        ],
+      );
 
   @override
   Future<CodeSubgraph> impactRadius(
@@ -95,17 +99,20 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     int depth = 2,
     String? checkoutId,
   }) async {
-    final result = await _dao(workspaceId).getImpactRadius(
+    final result = await _dao(
       workspaceId,
-      symbolId,
-      depth: depth,
-      checkoutId: checkoutId,
-    );
+    ).getImpactRadius(symbolId, depth: depth, checkoutId: checkoutId);
     if (result.nodes.isEmpty) {
       return const CodeSubgraph.empty();
     }
-    final nodes = result.nodes.map(_symbolMapper.toDomain).toList();
-    final edges = result.edges.map(_edgeMapper.toDomain).toList();
+    final nodes = [
+      for (final n in result.nodes)
+        _symbolMapper.toDomain(n, workspaceId: workspaceId),
+    ];
+    final edges = [
+      for (final e in result.edges)
+        _edgeMapper.toDomain(e, workspaceId: workspaceId),
+    ];
     final root = nodes.firstWhere(
       (n) => result.depthById[n.id] == 0,
       orElse: () => nodes.first,
@@ -121,8 +128,12 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   @override
   Future<CodeSymbol?> getById(String workspaceId, String id) =>
       _dao(workspaceId)
-          .getSymbolById(workspaceId, id)
-          .then((row) => row == null ? null : _symbolMapper.toDomain(row));
+          .getSymbolById(id)
+          .then(
+            (row) => row == null
+                ? null
+                : _symbolMapper.toDomain(row, workspaceId: workspaceId),
+          );
 
   @override
   Future<List<CodeSymbol>> getByName(
@@ -132,14 +143,13 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     int limit = 20,
     String? checkoutId,
   }) => _dao(workspaceId)
-      .getSymbolsByName(
-        workspaceId,
-        repoId,
-        name,
-        limit: limit,
-        checkoutId: checkoutId,
-      )
-      .then((rows) => rows.map(_symbolMapper.toDomain).toList());
+      .getSymbolsByName(repoId, name, limit: limit, checkoutId: checkoutId)
+      .then(
+        (rows) => [
+          for (final r in rows)
+            _symbolMapper.toDomain(r, workspaceId: workspaceId),
+        ],
+      );
 
   @override
   Future<List<CodeSymbol>> symbolsForRepo(
@@ -147,8 +157,13 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     String repoId, {
     String? checkoutId,
   }) => _dao(workspaceId)
-      .getSymbolsByRepo(workspaceId, repoId, checkoutId: checkoutId)
-      .then((rows) => rows.map(_symbolMapper.toDomain).toList());
+      .getSymbolsByRepo(repoId, checkoutId: checkoutId)
+      .then(
+        (rows) => [
+          for (final r in rows)
+            _symbolMapper.toDomain(r, workspaceId: workspaceId),
+        ],
+      );
 
   @override
   Stream<List<CodeSymbol>> watchByRepo(
@@ -156,8 +171,13 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     String repoId, {
     String? checkoutId,
   }) => _dao(workspaceId)
-      .watchSymbolsByRepo(workspaceId, repoId, checkoutId: checkoutId)
-      .map((rows) => rows.map(_symbolMapper.toDomain).toList());
+      .watchSymbolsByRepo(repoId, checkoutId: checkoutId)
+      .map(
+        (rows) => [
+          for (final r in rows)
+            _symbolMapper.toDomain(r, workspaceId: workspaceId),
+        ],
+      );
 
   @override
   Future<Map<String, String>> fileHashes(
@@ -167,7 +187,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   }) async {
     final files = await _dao(
       workspaceId,
-    ).getFiles(workspaceId, repoId, checkoutId: checkoutId);
+    ).getFiles(repoId, checkoutId: checkoutId);
     return {for (final f in files) f.path: f.contentHash};
   }
 
@@ -179,7 +199,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   }) async {
     final files = await _dao(
       workspaceId,
-    ).getFiles(workspaceId, repoId, checkoutId: checkoutId);
+    ).getFiles(repoId, checkoutId: checkoutId);
     return {
       for (final f in files)
         f.path: (contentHash: f.contentHash, indexedAt: f.indexedAt),
@@ -195,7 +215,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   }) async {
     final files = await _dao(
       workspaceId,
-    ).getFilesByPaths(workspaceId, repoId, filePaths, checkoutId: checkoutId);
+    ).getFilesByPaths(repoId, filePaths, checkoutId: checkoutId);
     return {for (final f in files) f.path: f.contentHash};
   }
 
@@ -208,7 +228,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   }) async {
     final files = await _dao(
       workspaceId,
-    ).getFilesByPaths(workspaceId, repoId, filePaths, checkoutId: checkoutId);
+    ).getFilesByPaths(repoId, filePaths, checkoutId: checkoutId);
     return {
       for (final f in files)
         f.path: (contentHash: f.contentHash, indexedAt: f.indexedAt),
@@ -220,7 +240,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     String workspaceId,
     String repoId, {
     String? checkoutId,
-  }) => _dao(workspaceId).hasFiles(workspaceId, repoId, checkoutId: checkoutId);
+  }) => _dao(workspaceId).hasFiles(repoId, checkoutId: checkoutId);
 
   @override
   Future<void> deleteFiles(
@@ -231,30 +251,23 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   }) =>
       // One transaction with `IN (...)` deletes, not one transaction per path
       // — pruning a big directory used to fsync once per removed file.
-      _dao(workspaceId).deleteFilesBatch(
+      _dao(
         workspaceId,
-        repoId,
-        filePaths,
-        checkoutId: checkoutId,
-      );
+      ).deleteFilesBatch(repoId, filePaths, checkoutId: checkoutId);
 
   @override
   Future<int> countUnresolvedEdges(
     String workspaceId,
     String repoId, {
     String? checkoutId,
-  }) => _dao(
-    workspaceId,
-  ).countUnresolvedEdges(workspaceId, repoId, checkoutId: checkoutId);
+  }) => _dao(workspaceId).countUnresolvedEdges(repoId, checkoutId: checkoutId);
 
   @override
   Future<int> pruneUnresolvedEdges(
     String workspaceId,
     String repoId, {
     String? checkoutId,
-  }) => _dao(
-    workspaceId,
-  ).deleteUnresolvedEdges(workspaceId, repoId, checkoutId: checkoutId);
+  }) => _dao(workspaceId).deleteUnresolvedEdges(repoId, checkoutId: checkoutId);
 
   @override
   Future<int> resolvePendingReferences(
@@ -264,16 +277,16 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   }) async {
     // Cheap probe first (O(unresolved) via the partial index): the common
     // steady-state run has nothing pending and used to pay a full read of
-    // every symbol row — embedding blobs included — to find that out.
+    // every symbol row to find that out.
     final pending = await _dao(
       workspaceId,
-    ).countUnresolvedEdges(workspaceId, repoId, checkoutId: checkoutId);
+    ).countUnresolvedEdges(repoId, checkoutId: checkoutId);
     if (pending == 0) {
       return 0;
     }
     final unresolved = await _dao(
       workspaceId,
-    ).getUnresolvedEdges(workspaceId, repoId, checkoutId: checkoutId);
+    ).getUnresolvedEdges(repoId, checkoutId: checkoutId);
     final names = <String>{
       for (final edge in unresolved)
         if (edge.targetName != null) edge.targetName!,
@@ -286,7 +299,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     final candidates = _preferCheckoutNameRows(
       await _dao(
         workspaceId,
-      ).getSymbolNameIndex(workspaceId, repoId, names, checkoutId: checkoutId),
+      ).getSymbolNameIndex(repoId, names, checkoutId: checkoutId),
       checkoutId,
     );
     final byQualifiedName = <String, String>{};
@@ -312,7 +325,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
         updates[edge.id] = id;
       }
     }
-    await _dao(workspaceId).setEdgeTargets(workspaceId, updates);
+    await _dao(workspaceId).setEdgeTargets(updates);
     return updates.length;
   }
 
@@ -367,7 +380,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     final now = DateTime.now();
 
     // What each partition already holds for the paths in this batch. Read first
-    // (a projection, no embedding blobs) because it answers both of the
+    // (a projection, no vectors) because it answers both of the
     // questions the rest of the method asks: which symbols still deserve the
     // vector they have and which stored symbols this extraction dropped.
     final stored = await _storedSymbols(files);
@@ -436,21 +449,31 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
       }
     }
 
+    // Vectors to write and vectors that no longer fit, per file. A symbol
+    // whose text matched its stored vector is in neither: its vector row is
+    // left as it is. A changed symbol with no fresh vector (model not ready)
+    // loses the stale one and waits for the backfill.
+    final perFileVectors = <Map<String, Uint8List>>[];
+    final perFileStaleVectors = <List<String>>[];
     final perFileSymbolRows = <List<db.CodeSymbolsTableCompanion>>[];
     final perFileEdgeRows = <List<db.CodeEdgesTableCompanion>>[];
     for (final file in files) {
+      final vectors = <String, Uint8List>{};
+      final staleVectors = <String>[];
       final symbolRows = <db.CodeSymbolsTableCompanion>[];
       for (final s in file.symbols) {
         final pendingIndex = pendingIndexById[s.id];
-        // Absent = "leave whatever is stored". Only reached when the text
-        // matched a stored vector, so absent means the right vector stays.
-        final embedding = pendingIndex == null
-            ? const Value<Uint8List?>.absent()
-            : Value(embeddings?[pendingIndex]);
+        if (pendingIndex != null) {
+          final vector = embeddings?[pendingIndex];
+          if (vector != null) {
+            vectors[s.id] = vector;
+          } else if (reusable.containsKey(s.id)) {
+            staleVectors.add(s.id);
+          }
+        }
         symbolRows.add(
           db.CodeSymbolsTableCompanion(
             id: Value(s.id),
-            workspaceId: Value(s.workspaceId),
             repoId: Value(s.repoId),
             checkoutId: Value(s.checkoutId),
             kind: Value(s.kind.name),
@@ -463,17 +486,17 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
             signature: Value(s.signature),
             docstring: Value.absentIfNull(s.docstring),
             parentName: Value.absentIfNull(s.parentName),
-            embedding: embedding,
             updatedAt: Value(now),
           ),
         );
       }
+      perFileVectors.add(vectors);
+      perFileStaleVectors.add(staleVectors);
       perFileSymbolRows.add(symbolRows);
       perFileEdgeRows.add([
         for (final e in file.edges)
           db.CodeEdgesTableCompanion(
             id: Value(e.id),
-            workspaceId: Value(e.workspaceId),
             repoId: Value(e.repoId),
             checkoutId: Value(e.checkoutId),
             sourceSymbolId: Value(e.sourceSymbolId),
@@ -510,18 +533,19 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
           // batch just decided to keep would be deleted out from under it. Only
           // the symbols this extraction dropped are removed, by id.
           await dao.deleteFileEdgeRows(
-            file.workspaceId,
             file.repoId,
             file.filePath,
             checkoutId: file.checkoutId,
           );
           await dao.deleteSymbolsByIds(
-            file.workspaceId,
             staleIds[_partitionFileKey(file)] ?? const [],
           );
           if (perFileSymbolRows[i].isNotEmpty) {
             await dao.upsertSymbols(perFileSymbolRows[i]);
           }
+          // After the symbols: a vector row needs its symbol to exist.
+          await dao.deleteEmbeddings(perFileStaleVectors[i]);
+          await dao.putEmbeddings(perFileVectors[i]);
           if (perFileEdgeRows[i].isNotEmpty) {
             await dao.upsertEdges(perFileEdgeRows[i]);
           }
@@ -535,7 +559,6 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
                   checkoutId: file.checkoutId,
                 ),
               ),
-              workspaceId: Value(file.workspaceId),
               repoId: Value(file.repoId),
               checkoutId: Value(file.checkoutId),
               path: Value(file.filePath),
@@ -558,13 +581,13 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   }) async {
     final rows = await _dao(
       workspaceId,
-    ).getCheckpointRows(workspaceId, repoId, checkoutId: checkoutId);
+    ).getCheckpointRows(repoId, checkoutId: checkoutId);
     CodeIndexCheckpoint? own;
     var baseGeneration = 0;
     for (final row in rows) {
       if (row.checkoutId == checkoutId) {
         own = CodeIndexCheckpoint(
-          workspaceId: row.workspaceId,
+          workspaceId: workspaceId,
           repoId: row.repoId,
           checkoutId: row.checkoutId,
           headSha: row.headSha,
@@ -593,7 +616,6 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
               checkoutId: checkpoint.checkoutId,
             ),
           ),
-          workspaceId: Value(checkpoint.workspaceId),
           repoId: Value(checkpoint.repoId),
           checkoutId: Value(checkpoint.checkoutId),
           headSha: Value(checkpoint.headSha),
@@ -604,6 +626,50 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
           indexedAt: Value(checkpoint.indexedAt),
         ),
       );
+
+  /// Embeds the symbols of [workspaceId]'s code index that have no vector yet
+  /// (indexed while the model was missing), [batchSize] per round, until
+  /// none is left. Returns how many vectors were stored.
+  ///
+  /// Zero when the model is not installed. Each round writes only side rows,
+  /// so the symbol rows and their full-text index are not touched; a symbol
+  /// that a re-index changed or removed while its batch was being embedded is
+  /// skipped (changed ones come back in a later round).
+  Future<int> backfillEmbeddings(
+    String workspaceId, {
+    int batchSize = 64,
+  }) async {
+    final dao = _dao(workspaceId);
+    var stored = 0;
+    while (true) {
+      final pending = await dao.getSymbolsWithoutEmbedding(limit: batchSize);
+      if (pending.isEmpty) {
+        return stored;
+      }
+      final vectors = await _computeEmbeddings([
+        for (final row in pending)
+          _embedTextOf(
+            qualifiedName: row.qualifiedName,
+            signature: row.signature,
+            docstring: row.docstring,
+          ),
+      ]);
+      if (vectors == null) {
+        return stored;
+      }
+      final written = await dao.putBackfilledEmbeddings([
+        for (final (i, row) in pending.indexed)
+          (symbol: row, embedding: vectors[i]),
+      ]);
+      stored += written;
+      if (written == 0) {
+        // Every symbol of the batch changed or went away under it (an ingest
+        // is rewriting these files). Stop rather than spin; the next run
+        // picks the rest up.
+        return stored;
+      }
+    }
+  }
 
   /// Computes 384-d embeddings for [texts] in one batch when the on-device
   /// model is ready; null otherwise (search then degrades to FTS-only, exactly
@@ -616,7 +682,7 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
   /// degrading: swallowing it would drop the index into a silent, permanent
   /// FTS-only mode — exactly the invisible degradation a broken native install
   /// produces.
-  Future<List<Uint8List?>?> _computeEmbeddings(List<String> texts) async {
+  Future<List<Uint8List>?> _computeEmbeddings(List<String> texts) async {
     final service = _embeddingService;
     if (service == null || !service.isReady || texts.isEmpty) {
       return null;
@@ -658,7 +724,6 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     for (final entry in pathsByPartition.entries) {
       final sample = partitions[entry.key]!;
       final rows = await _dao(sample.workspaceId).getSymbolEmbedInputs(
-        sample.workspaceId,
         sample.repoId,
         entry.value,
         checkoutId: sample.checkoutId,

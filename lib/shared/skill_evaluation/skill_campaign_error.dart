@@ -1,6 +1,7 @@
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 
 /// Whether an RPC failure denotes lost authority rather than missing evidence.
 bool isSkillCampaignDenied(Object? error) =>
@@ -13,7 +14,8 @@ String skillCampaignError(AppLocalizations l, Object error) {
   if (isSkillCampaignDenied(error)) {
     return l.denied;
   }
-  return l.skillEvalUnavailable(
-    error is RemoteRpcException ? error.message : '$error',
-  );
+  return storageRefusalMessage(l, error) ??
+      l.skillEvalUnavailable(
+        error is RemoteRpcException ? error.message : '$error',
+      );
 }

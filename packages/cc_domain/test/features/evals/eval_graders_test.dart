@@ -4,14 +4,14 @@ import 'package:test/test.dart';
 
 EvalOutcome _outcome({
   bool completed = true,
-  int costCents = 0,
+  int costMicros = 0,
   int turnCount = 0,
   int sandboxViolations = 0,
   Map<String, Object> signals = const {},
   String? error,
 }) => EvalOutcome(
   completed: completed,
-  costCents: costCents,
+  costMicros: costMicros,
   turnCount: turnCount,
   sandboxViolations: sandboxViolations,
   signals: signals,
@@ -23,11 +23,11 @@ void main() {
     const grader = CostBudgetGrader(100);
 
     test('passes at the ceiling', () {
-      expect(grader.grade(_outcome(costCents: 100)).passed, isTrue);
+      expect(grader.grade(_outcome(costMicros: 100)).passed, isTrue);
     });
 
     test('fails one cent over the ceiling', () {
-      expect(grader.grade(_outcome(costCents: 101)).passed, isFalse);
+      expect(grader.grade(_outcome(costMicros: 101)).passed, isFalse);
     });
   });
 
@@ -97,13 +97,13 @@ void main() {
       const spec = GraderSpec(
         type: 'cost_budget',
         id: 'c1',
-        params: {'maxCents': 80},
+        params: {'maxMicros': 80},
       );
       final back = GraderSpec.fromJson(spec.toJson());
       expect(back.type, spec.type);
       expect(back.id, spec.id);
       expect(back.kind, spec.kind);
-      expect(back.params['maxCents'], 80);
+      expect(back.params['maxMicros'], 80);
     });
 
     test('build() materializes the right deterministic grader', () {

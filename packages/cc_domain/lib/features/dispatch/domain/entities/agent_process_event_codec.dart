@@ -90,7 +90,6 @@ abstract final class AgentProcessEventCodec {
           'thoughtTokens': usage.thoughtTokens,
           'cachedReadTokens': usage.cachedReadTokens,
           'cachedWriteTokens': usage.cachedWriteTokens,
-          'estimatedCostCents': usage.estimatedCostCents,
           // Exact precision + provenance travel with the report: dropping them
           // on the wire is how a sub-cent auxiliary call reached the ledger as
           // a zero-cost call.
@@ -224,7 +223,6 @@ abstract final class AgentProcessEventCodec {
             thoughtTokens: _int(json['thoughtTokens']),
             cachedReadTokens: _int(json['cachedReadTokens']),
             cachedWriteTokens: _int(json['cachedWriteTokens']),
-            estimatedCostCents: _int(json['estimatedCostCents']),
             costMicros: _int(json['costMicros']),
             costBasis: CostBasis.fromWire(_stringOrNull(json['costBasis'])),
           ),

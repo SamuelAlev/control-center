@@ -2,7 +2,7 @@
 title: Barreiras — uma política única para toda ação que altera o estado
 description: Por que o Control Center encaminha todo efeito colateral de agente por um único motor de permitir, perguntar ou negar, por que a taxonomia de ActionClass é mantida pequena de propósito e o que o dial de autonomia realmente muda.
 slug: pt-BR/manual/conceitos/barreiras
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Os agentes no Control Center podem excluir arquivos, fazer push de branches,
@@ -115,7 +115,7 @@ Uma restrição pode nomear:
 - **hosts** — destinos de rede, com curingas de subdomínio (`*.internal`)
 - **comandos** — prefixos de comando, correspondidos em um limite de palavra
 - **ferramentas** — a ferramenta exata que uma chamada nomeia, para que uma aprovação possa cobrir uma ferramenta em vez de todas as que têm o mesmo efeito
-- **tetos** — `maxCount` / `maxCents`, de modo que "excluir até 50 arquivos" é
+- **tetos** — `maxCount` / `maxMicros`, de modo que "excluir até 50 arquivos" é
   expressável
 
 Três propriedades decorrem de manter a gramática fechada e sem laços, e todas as

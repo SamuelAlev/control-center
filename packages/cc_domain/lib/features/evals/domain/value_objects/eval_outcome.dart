@@ -10,7 +10,7 @@ class EvalOutcome {
   /// Creates an [EvalOutcome].
   const EvalOutcome({
     required this.completed,
-    this.costCents = 0,
+    this.costMicros = 0,
     this.turnCount = 0,
     this.toolCalls = const [],
     this.sandboxViolations = 0,
@@ -23,8 +23,8 @@ class EvalOutcome {
   /// Whether the run reached a clean terminal state (no error).
   final bool completed;
 
-  /// Metered cost in cents.
-  final int costCents;
+  /// Metered cost in micro-dollars.
+  final int costMicros;
 
   /// Number of agent turns.
   final int turnCount;
@@ -52,7 +52,7 @@ class EvalOutcome {
       identical(this, other) ||
       other is EvalOutcome &&
           completed == other.completed &&
-          costCents == other.costCents &&
+          costMicros == other.costMicros &&
           turnCount == other.turnCount &&
           sandboxViolations == other.sandboxViolations &&
           durationMs == other.durationMs &&
@@ -64,7 +64,7 @@ class EvalOutcome {
   @override
   int get hashCode => Object.hash(
     completed,
-    costCents,
+    costMicros,
     turnCount,
     sandboxViolations,
     durationMs,
@@ -80,7 +80,7 @@ class EvalOutcome {
   /// Serializes to JSON (for the scorecard's per-rep detail).
   Map<String, dynamic> toJson() => {
     'completed': completed,
-    'costCents': costCents,
+    'costMicros': costMicros,
     'turnCount': turnCount,
     'toolCalls': toolCalls,
     'sandboxViolations': sandboxViolations,

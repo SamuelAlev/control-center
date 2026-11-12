@@ -4,6 +4,7 @@ import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_persistence/mappers/team_mappers.dart';
 import 'package:test/test.dart';
 
+import 'helpers/seed_agents.dart';
 import 'helpers/test_database.dart';
 
 void main() {
@@ -228,6 +229,8 @@ void main() {
         final db = createTestDatabase();
         addTearDown(db.close);
 
+        await seedTeam(db, 'rt-team');
+        await seedAgent(db, 'rt-agent');
         final original = TeamMember(
           teamId: 'rt-team',
           agentId: 'rt-agent',
@@ -253,6 +256,8 @@ void main() {
         final db = createTestDatabase();
         addTearDown(db.close);
 
+        await seedTeam(db, 'rt-team');
+        await seedAgent(db, 'rt-agent-2');
         final original = TeamMember(teamId: 'rt-team', agentId: 'rt-agent-2');
 
         final companion = teamMemberToCompanion(original);

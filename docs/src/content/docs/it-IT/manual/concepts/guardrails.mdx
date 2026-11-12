@@ -2,7 +2,7 @@
 title: Guardrail — una sola policy per ogni azione che modifica lo stato
 description: Perché Control Center instrada ogni effetto collaterale di un agente attraverso un unico motore allow/prompt/deny, perché la tassonomia ActionClass resta piccola di proposito e cosa cambia davvero il selettore dell'autonomia.
 slug: it-IT/manuale/concetti/guardrail
-sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
+sourceHash: fa1a3963f14c99a5357ea40b87af08e0c9a148f3
 ---
 
 Gli agenti in Control Center possono eliminare file, fare push di branch,
@@ -120,7 +120,7 @@ Un vincolo può indicare:
 - **host** — destinazioni di rete, con wildcard sui sottodomini (`*.internal`)
 - **comandi** — prefissi di comando, confrontati su un confine di parola
 - **strumenti** — lo strumento esatto che una chiamata nomina, così un'approvazione può coprire un solo strumento anziché tutti quelli con lo stesso effetto
-- **tetti** — `maxCount` / `maxCents`, così «elimina fino a 50 file» è
+- **tetti** — `maxCount` / `maxMicros`, così «elimina fino a 50 file» è
   esprimibile
 
 Tre proprietà derivano dal mantenere la grammatica chiusa e senza cicli, e

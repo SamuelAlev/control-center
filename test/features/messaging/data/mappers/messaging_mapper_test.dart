@@ -41,7 +41,7 @@ void main() {
       final row = SpacesTableData(
         id: 'ch-2',
         name: 'Team Chat',
-
+        workspaceId: 'ws-1',
         createdAt: now,
         updatedAt: now,
         mode: 'chat',
@@ -55,26 +55,6 @@ void main() {
       expect(space.id, 'ch-2');
       expect(space.name, 'Team Chat');
     });
-
-    test('maps space with null workspaceId', () {
-      final now = DateTime(2026, 5, 18);
-      final row = SpacesTableData(
-        id: 'ch-3',
-        name: 'Channel',
-
-        workspaceId: null,
-        createdAt: now,
-        updatedAt: now,
-        mode: 'chat',
-        provisioningStatus: 'ready',
-        kind: 'user',
-        noRepos: false,
-      );
-
-      final space = mapper.spaceToDomain(row);
-
-      expect(space.workspaceId, isNull);
-    });
   });
 
   group('spacesToDomain', () {
@@ -84,7 +64,7 @@ void main() {
         SpacesTableData(
           id: 'ch-1',
           name: 'First',
-
+          workspaceId: 'ws-1',
           createdAt: now,
           updatedAt: now,
           mode: 'chat',
@@ -95,7 +75,7 @@ void main() {
         SpacesTableData(
           id: 'ch-2',
           name: 'Second',
-
+          workspaceId: 'ws-1',
           createdAt: now,
           updatedAt: now,
           mode: 'chat',
@@ -127,6 +107,7 @@ void main() {
         participantType: 'agent',
         role: 'member',
         joinedAt: now,
+        lastReadSeq: 0,
       );
 
       final participant = mapper.participantToDomain(row);
@@ -148,6 +129,7 @@ void main() {
         participantType: 'user',
         role: 'owner',
         joinedAt: now,
+        lastReadSeq: 0,
       );
 
       final participant = mapper.participantToDomain(row);
@@ -169,6 +151,7 @@ void main() {
           participantType: 'user',
           role: 'owner',
           joinedAt: now,
+          lastReadSeq: 0,
         ),
         SpaceParticipantsTableData(
           id: 'p-2',
@@ -177,6 +160,7 @@ void main() {
           participantType: 'agent',
           role: 'member',
           joinedAt: now,
+          lastReadSeq: 0,
         ),
       ];
 
@@ -204,6 +188,7 @@ void main() {
         senderType: 'user',
         content: 'Hello',
         messageType: 'text',
+        answered: false,
         compacted: false,
         reverted: false,
         contentChars: 0,
@@ -233,6 +218,7 @@ void main() {
         senderType: 'agent',
         content: 'Response',
         messageType: 'text',
+        answered: false,
         compacted: false,
         reverted: false,
         contentChars: 0,
@@ -255,6 +241,7 @@ void main() {
         senderType: 'system',
         content: 'System message',
         messageType: 'system',
+        answered: false,
         compacted: false,
         reverted: false,
         contentChars: 0,
@@ -279,6 +266,7 @@ void main() {
             senderType: senderType,
             content: 'x',
             messageType: 'text',
+            answered: false,
             compacted: false,
             reverted: false,
             contentChars: 0,
@@ -303,6 +291,7 @@ void main() {
         senderType: 'agent',
         content: 'Ticket',
         messageType: 'ticket_card',
+        answered: false,
         compacted: false,
         reverted: false,
         contentChars: 0,
@@ -325,6 +314,7 @@ void main() {
         senderType: 'agent',
         content: '',
         messageType: 'agent_turn',
+        answered: false,
         compacted: false,
         reverted: false,
         contentChars: 0,
@@ -347,6 +337,7 @@ void main() {
         senderType: 'user',
         content: 'Content',
         messageType: 'bogus',
+        answered: false,
         compacted: false,
         reverted: false,
         contentChars: 0,
@@ -368,6 +359,7 @@ void main() {
         senderType: 'agent',
         content: '',
         messageType: 'agent_turn',
+        answered: false,
         metadata: '{"agentName":"TestAgent","streamComplete":true}',
         compacted: false,
         reverted: false,
@@ -392,6 +384,7 @@ void main() {
         senderType: 'user',
         content: 'No metadata',
         messageType: 'text',
+        answered: false,
         metadata: null,
         compacted: false,
         reverted: false,
@@ -414,6 +407,7 @@ void main() {
         senderType: 'agent',
         content: '',
         messageType: 'agent_turn',
+        answered: false,
         metadata: '{invalid json}',
         compacted: false,
         reverted: false,
@@ -436,6 +430,7 @@ void main() {
         senderType: 'user',
         content: 'Compacted',
         messageType: 'text',
+        answered: false,
         compacted: true,
         reverted: false,
         contentChars: 0,
@@ -461,6 +456,7 @@ void main() {
           senderType: 'user',
           content: 'First',
           messageType: 'text',
+          answered: false,
           compacted: false,
           reverted: false,
           contentChars: 0,
@@ -475,6 +471,7 @@ void main() {
           senderType: 'agent',
           content: 'Second',
           messageType: 'text',
+          answered: false,
           compacted: false,
           reverted: false,
           contentChars: 0,

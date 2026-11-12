@@ -319,7 +319,7 @@ Map<String, dynamic> agentToWire(Agent a) => {
   'effort': ?a.effort,
   'context_size': ?a.contextSize,
   'role': ?a.role?.name,
-  'monthly_budget_cents': a.monthlyBudgetCents,
+  'monthly_budget_micros': a.monthlyBudgetMicros,
   'silence_timeout_minutes': ?a.silenceTimeoutMinutes,
   'max_concurrent_tasks': a.maxConcurrentTasks,
   'visibility': a.visibility.name,
@@ -350,7 +350,7 @@ Agent agentFromWire(Map<String, dynamic> w) {
     effort: w['effort'] as String?,
     contextSize: (w['context_size'] as num?)?.toInt(),
     role: w['role'] == null ? null : AgentRole.values.asNameMap()[w['role']],
-    monthlyBudgetCents: (w['monthly_budget_cents'] as num?)?.toInt() ?? 0,
+    monthlyBudgetMicros: (w['monthly_budget_micros'] as num?)?.toInt() ?? 0,
     silenceTimeoutMinutes: (w['silence_timeout_minutes'] as num?)?.toInt(),
     maxConcurrentTasks: (w['max_concurrent_tasks'] as num?)?.toInt() ?? 1,
     visibility: AgentVisibility.fromStorage(w['visibility'] as String?),
@@ -403,6 +403,7 @@ Map<String, dynamic> notificationFeedItemToWire(NotificationFeedItem n) => {
   'method': n.method,
   'params': n.params,
   'created_at': n.createdAt.toIso8601String(),
+  'seq': n.seq,
 };
 
 /// Maps a [NotificationReadMark] (one user's read/cleared watermarks) to its
@@ -410,8 +411,8 @@ Map<String, dynamic> notificationFeedItemToWire(NotificationFeedItem n) => {
 Map<String, dynamic> notificationReadMarkToWire(NotificationReadMark m) => {
   'workspace_id': m.workspaceId,
   'user_id': m.userId,
-  'last_seen_at': ?m.lastSeenAt?.toIso8601String(),
-  'cleared_before': ?m.clearedBefore?.toIso8601String(),
+  'last_seen': ?m.lastSeen?.toJson(),
+  'cleared': ?m.cleared?.toJson(),
 };
 
 /// Maps a [NotificationItemState] (one user's opinion about ONE feed item) to
@@ -450,8 +451,8 @@ Map<String, dynamic> agentGoalRunToWire(AgentGoalRun g) => {
   'kind': g.kind.wire,
   'status': g.status.wire,
   'deadline_at': ?g.deadlineAt?.toIso8601String(),
-  'cost_cap_cents': g.costCapCents,
-  'cost_cents': g.costCents,
+  'cost_cap_micros': g.costCapMicros,
+  'cost_micros': g.costMicros,
   'max_runs': ?g.maxRuns,
   'run_count': g.runCount,
   'consecutive_failures': g.consecutiveFailures,
@@ -574,7 +575,6 @@ Map<String, dynamic> agentRunLogToWire(AgentRunLog l) => {
   'thought_tokens': l.cost.thoughtTokens,
   'cached_read_tokens': l.cost.cachedReadTokens,
   'cached_write_tokens': l.cost.cachedWriteTokens,
-  'estimated_cost_cents': l.cost.estimatedCostCents,
   'cost_micros': l.cost.costMicros,
   'cost_basis': l.cost.costBasis.name,
   'child_cost_micros': l.childCostMicros,
@@ -587,7 +587,6 @@ Map<String, dynamic> agentRunLogToWire(AgentRunLog l) => {
   'liveness': ?l.liveness?.name,
   'error_family': ?l.errorFamily?.name,
   'last_output_at': ?l.lastOutputAt?.toIso8601String(),
-  'continuation_summary': ?l.continuationSummary,
   // An empty profile is every stage unknown, so it is omitted rather than sent
   // as `[]`.
   if (!l.latency.isEmpty) 'latency': l.latency.toJson(),
@@ -622,7 +621,6 @@ RunCost runCostFromWire(Map<String, dynamic> w) => RunCost(
   thoughtTokens: (w['thought_tokens'] as num?)?.toInt() ?? 0,
   cachedReadTokens: (w['cached_read_tokens'] as num?)?.toInt() ?? 0,
   cachedWriteTokens: (w['cached_write_tokens'] as num?)?.toInt() ?? 0,
-  estimatedCostCents: (w['estimated_cost_cents'] as num?)?.toInt() ?? 0,
   costMicros: (w['cost_micros'] as num?)?.toInt() ?? 0,
   costBasis: CostBasis.fromWire(w['cost_basis'] as String?),
   durationMs: (w['duration_ms'] as num?)?.toInt(),
@@ -664,7 +662,6 @@ AgentRunLog agentRunLogFromWire(Map<String, dynamic> w) {
     lastOutputAt: w['last_output_at'] is String
         ? DateTime.parse(w['last_output_at'] as String)
         : null,
-    continuationSummary: w['continuation_summary'] as String?,
     contextSnapshotJson: w['context_snapshot_json'] as String?,
     pipelineRunId: w['pipeline_run_id'] as String?,
     pipelineStepId: w['pipeline_step_id'] as String?,
@@ -782,12 +779,10 @@ MemoryAccessGrant memoryAccessGrantFromWire(Map<String, dynamic> w) =>
           MemoryPermission.none,
     );
 
-/// Maps a space read-cursor to the `SpaceReadDto` wire shape. The cursor is
-/// a nullable ISO-8601 timestamp keyed by `space_id`.
-Map<String, dynamic> spaceReadToWire(String spaceId, DateTime? lastReadAt) => {
-  'space_id': spaceId,
-  if (lastReadAt != null) 'last_read_at': lastReadAt.toIso8601String(),
-};
+/// Maps a space read-cursor to the `SpaceReadDto` wire shape: the cursor's
+/// [FeedPosition] (absent when never set) keyed by `space_id`.
+Map<String, dynamic> spaceReadToWire(String spaceId, FeedPosition? lastRead) =>
+    {'space_id': spaceId, 'last_read': ?lastRead?.toJson()};
 
 /// Maps a [Repo] to the `RepoDto` wire shape.
 ///
@@ -1584,7 +1579,7 @@ Map<String, dynamic> providerPolicyToWire(WorkspaceProviderPolicy p) => {
 
 /// Maps a cost summary to the `CostSummaryDto` wire shape (PRD 05 usage).
 Map<String, dynamic> costSummaryToWire(CostSummary s) => {
-  'total_usd': s.totalUsd,
+  'total_micros': s.totalMicros,
   'request_count': s.requestCount,
   'window_start': s.windowStart.toIso8601String(),
   'next_reset_at': ?s.nextResetAt?.toIso8601String(),
@@ -1873,7 +1868,7 @@ Map<String, dynamic> pipelineRunToWire(
   'parent_pipeline_run_id': ?r.parentPipelineRunId,
   'parent_step_id': ?r.parentStepId,
   'template_version': r.templateVersion,
-  'total_cost_cents': r.totalCostCents,
+  'total_cost_micros': r.totalCostMicros,
   'total_tokens': r.totalTokens,
   'dry_run': r.dryRun,
 };
@@ -2084,8 +2079,8 @@ Map<String, dynamic> orchestrationToWire(Orchestration o) => {
   'pipeline_run_id': ?o.pipelineRunId,
   'team_id': ?o.teamId,
   'project_id': ?o.projectId,
-  'estimated_cost_cents': ?o.estimatedCostCents,
-  'max_cost_cents': ?o.maxCostCents,
+  'estimated_cost_micros': ?o.estimatedCostMicros,
+  'max_cost_micros': ?o.maxCostMicros,
   'hired_agent_ids': o.hiredAgentIds,
   'approved_node_keys': ?o.approvedNodeKeys,
   'error_message': ?o.errorMessage,
@@ -2113,8 +2108,8 @@ Orchestration orchestrationFromWire(Map<String, dynamic> w) => Orchestration(
   pipelineRunId: w['pipeline_run_id'] as String?,
   teamId: w['team_id'] as String?,
   projectId: w['project_id'] as String?,
-  estimatedCostCents: (w['estimated_cost_cents'] as num?)?.toInt(),
-  maxCostCents: (w['max_cost_cents'] as num?)?.toInt(),
+  estimatedCostMicros: (w['estimated_cost_micros'] as num?)?.toInt(),
+  maxCostMicros: (w['max_cost_micros'] as num?)?.toInt(),
   hiredAgentIds:
       (w['hired_agent_ids'] as List?)?.whereType<String>().toList() ?? const [],
   approvedNodeKeys: (w['approved_node_keys'] as List?)
@@ -3112,7 +3107,7 @@ Map<String, dynamic> pairedDeviceToWire(
   'label': d.label,
   'platform': d.platform,
   'status': d.status,
-  'workspace_id': ?d.workspaceId,
+  'workspace_id': ?d.landingWorkspaceId,
   'workspace_name': ?workspaceName,
   'paired_at': d.pairedAt.toIso8601String(),
   'last_seen_at': ?d.lastSeenAt?.toIso8601String(),

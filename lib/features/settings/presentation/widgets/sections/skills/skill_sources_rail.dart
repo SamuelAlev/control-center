@@ -97,7 +97,7 @@ class _SourceRail extends ConsumerWidget {
       if (context.mounted) {
         CcToastScope.of(
           context,
-        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+        ).show(failureMessage(l10n, e), variant: CcToastVariant.danger);
       }
     }
   }

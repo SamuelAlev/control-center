@@ -1,3 +1,5 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_platform.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for the server-wide SSO connection rows.
@@ -10,10 +12,14 @@ import 'package:drift/drift.dart';
 /// without a migration.
 class SsoConnectionsTable extends Table {
   /// Row id: the kind slug (`saml` / `oidc`).
-  TextColumn get id => text()();
+  TextColumn get id =>
+      // ignore: recursive_getters
+      text().check(id.isIn(PlatformStoredValues.ssoProviderKind))();
 
-  /// Protocol kind (`saml` / `oidc`).
-  TextColumn get kind => text()();
+  /// Protocol kind: an `SsoProviderKind` wire name.
+  TextColumn get kind =>
+      // ignore: recursive_getters
+      text().check(kind.isIn(PlatformStoredValues.ssoProviderKind))();
 
   /// Whether logins may use this connection.
   BoolColumn get enabled => boolean().withDefault(const Constant(false))();
@@ -34,20 +40,29 @@ class SsoConnectionsTable extends Table {
   TextColumn get spEntityId => text().withDefault(const Constant(''))();
 
   /// SAML attribute carrying the email.
-  TextColumn get emailAttribute => text().withDefault(const Constant('email'))();
+  TextColumn get emailAttribute =>
+      text().withDefault(const Constant('email'))();
 
   /// SAML attribute carrying the display name.
-  TextColumn get displayNameAttribute
-  => text().withDefault(const Constant('displayName'))();
+  TextColumn get displayNameAttribute =>
+      text().withDefault(const Constant('displayName'))();
 
   /// SAML attribute carrying group names.
-  TextColumn get groupsAttribute => text().withDefault(const Constant('groups'))();
+  TextColumn get groupsAttribute =>
+      text().withDefault(const Constant('groups'))();
 
-  /// Role granted when no group maps (WorkspaceRole wire name).
-  TextColumn get defaultRole => text().withDefault(const Constant('member'))();
+  /// Role granted when no group maps: a preset `WorkspaceRole` wire name
+  /// (custom roles belong to one workspace; this row serves all of them).
+  TextColumn get defaultRole => text()
+      // ignore: recursive_getters
+      .check(defaultRole.isIn(PlatformStoredValues.workspaceRole))
+      .withDefault(const Constant('member'))();
 
   /// Group value → role, as a JSON object of wire names.
-  TextColumn get groupRoleMap => text().withDefault(const Constant('{}'))();
+  TextColumn get groupRoleMap => text()
+      // ignore: recursive_getters
+      .check(isJsonObject(groupRoleMap))
+      .withDefault(const Constant('{}'))();
 
   /// Whether SSO users are auto-added to workspace memberships (`all`/`none`).
   BoolColumn get autoMember => boolean().withDefault(const Constant(true))();
@@ -56,12 +71,12 @@ class SsoConnectionsTable extends Table {
   BoolColumn get allowJit => boolean().withDefault(const Constant(true))();
 
   /// SAML: accept unsolicited (IdP-initiated) Responses.
-  BoolColumn get allowIdpInitiated
-  => boolean().withDefault(const Constant(false))();
+  BoolColumn get allowIdpInitiated =>
+      boolean().withDefault(const Constant(false))();
 
   /// SAML: require a Response-root signature too.
-  BoolColumn get wantResponseSigned
-  => boolean().withDefault(const Constant(false))();
+  BoolColumn get wantResponseSigned =>
+      boolean().withDefault(const Constant(false))();
 
   /// SAML: validation clock skew, seconds.
   IntColumn get clockSkewSeconds => integer().withDefault(const Constant(90))();

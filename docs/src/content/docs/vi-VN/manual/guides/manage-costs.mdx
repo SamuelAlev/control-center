@@ -2,14 +2,14 @@
 title: Quản lý chi phí
 description: Xem các agent của bạn đang chi bao nhiêu, giới hạn một lượt chạy tự chủ và cắt giảm lượng token dùng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-chi-phi
-sourceHash: 533c2ea9f656aa21c5ee1dcfd7ce8b6c6ea10d39
+sourceHash: 3226a88e88438232db3f61c6ebd5f2907b99c3e4
 ---
 
 Hướng dẫn này chỉ cách xem các lượt chạy agent tốn bao nhiêu và cách giới hạn một lượt chạy tự chủ.
 
 ## Chi phí được ghi lại như thế nào
 
-Mỗi lượt chạy agent đều ghi một bản ghi lượt chạy mang theo token đầu vào, token đầu ra, token suy luận, token đọc từ bộ nhớ đệm và ghi vào bộ nhớ đệm, chi phí ước tính theo cent, cùng chi phí của mọi subagent mà nó sinh ra.
+Mỗi lượt chạy agent đều ghi một bản ghi lượt chạy mang theo token đầu vào, token đầu ra, token suy luận, token đọc từ bộ nhớ đệm và ghi vào bộ nhớ đệm, chi phí ước tính theo micro-đô la (một phần triệu đô la Mỹ), cùng chi phí của mọi subagent mà nó sinh ra.
 
 Giá đến từ danh mục models.dev, vốn chỉ được dùng để làm phong phú danh sách mô hình bằng giá và cửa sổ ngữ cảnh — không bao giờ là nguồn id mô hình. Một mô hình mà danh mục không thể định giá sẽ ghi **$0** và những lượt chạy không tốn chi phí bị loại khỏi phần tóm tắt **Sử dụng và chi phí**. Vì vậy một mô hình Ollama cục bộ hoàn toàn không hiển thị chi tiêu nào, dù số token của nó vẫn được ghi lại. Một gói cước trọn gói (kimi-code, một thuê bao Claude) cũng vậy, nhưng chỉ khi danh mục không có giá cho mô hình đã phục vụ; nếu có, lượt chạy vẫn được ước tính theo chính mức giá đó. Trong một chuỗi dự phòng, lượt chạy được định giá theo mô hình thực sự phục vụ nó, chứ không phải mô hình được yêu cầu.
 
@@ -78,7 +78,7 @@ Mở bản ghi lượt chạy trong Phân tích (50 lượt chạy đã lọc m�
 
 ## Điều gì xảy ra nếu một ngân sách được đặt ngoài luồng
 
-Để cho đầy đủ, nếu `monthlyBudgetCents` hoặc một chính sách ngân sách được ghi thẳng vào hàng của một agent:
+Để cho đầy đủ, nếu `monthlyBudgetMicros` hoặc một chính sách ngân sách được ghi thẳng vào hàng của một agent:
 
 - Ngân sách được đánh giá **sau** khi một lượt chạy hoàn tất, chứ không phải trước khi điều phối. Một bộ lắng nghe khi lượt chạy hoàn tất sẽ so sánh chi tiêu từ đầu tháng đến nay của agent với mức trần của nó.
 - Vượt ngưỡng mềm (mặc định 80%) ghi lại một sự cố cảnh báo và phát một sự kiện `BudgetThresholdCrossed` mà bạn có thể gắn một trình kích hoạt quy trình vào.

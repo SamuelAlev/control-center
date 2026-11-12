@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
 import 'package:cc_remote/conversation_progress_model.dart';
@@ -159,14 +160,14 @@ class _ContextReadingState extends ConsumerState<_ContextReading> {
             l.progressContextPercent(nf.format(percent)),
             style: CcTypography.bodySm.copyWith(color: t.textPrimary),
           ),
-        if (agent.monthlyBudgetCents > 0)
+        if (agent.monthlyBudgetMicros > 0)
           Text(
             l.progressMonthlyBudget(
               NumberFormat.currency(
                 locale: l.localeName,
                 symbol: '\$',
                 decimalDigits: 2,
-              ).format(agent.monthlyBudgetCents / 100),
+              ).format(agent.monthlyBudgetMicros / microsPerDollar),
             ),
             style: CcTypography.caption.copyWith(color: t.textSecondary),
           ),

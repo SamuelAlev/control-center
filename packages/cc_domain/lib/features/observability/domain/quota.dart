@@ -12,8 +12,8 @@ enum QuotaUnit {
   /// Number of agent runs (requests) issued.
   requests,
 
-  /// Estimated spend in US cents.
-  costCents,
+  /// Estimated spend in micro-dollars.
+  costMicros,
 }
 
 /// Health of a quota relative to its configured ceiling.
@@ -216,7 +216,7 @@ class QuotaCalculator {
   static int _metricFor(AgentRunLog run, QuotaUnit unit) => switch (unit) {
     QuotaUnit.tokens => run.cost.totalTokens,
     QuotaUnit.requests => 1,
-    QuotaUnit.costCents => run.cost.estimatedCostCents,
+    QuotaUnit.costMicros => run.cost.costMicros,
   };
 
   /// Builds a [QuotaUsageReport] for [limit] from [runs] evaluated at [now].

@@ -114,13 +114,13 @@ part 'dispatch_session_run_log.dart';
 part 'dispatch_session_run_context.dart';
 part 'dispatch_session_account_pool.dart';
 
-/// Default per-run priced cost cap, in cents: what one unattended segment of
-/// an autonomous command (/goal, /loop) may burn before the loop's external
-/// budget check stops it mid-run. The goal supervisor threads a goal's
-/// REMAINING budget (capped at this default) via
-/// [DispatchSession.costCapCents] so an explicit `/goal --budget` is never
+/// Default per-run priced cost cap, in micro-dollars (5 USD): what one
+/// unattended segment of an autonomous command (/goal, /loop) may burn before
+/// the loop's external budget check stops it mid-run. The goal supervisor
+/// threads a goal's REMAINING budget (capped at this default) via
+/// [DispatchSession.costCapMicros] so an explicit `/goal --budget` is never
 /// overshot by a whole segment.
-const defaultRunCostCapCents = 500;
+const defaultRunCostCapMicros = 5000000;
 
 /// The run summary for a run a person stopped, whichever stop path ran: the
 /// dispatch session's terminate and the dispatch service's run-row close.
@@ -171,7 +171,7 @@ class DispatchSession implements SteeringSessionView {
     this.claudeAccountsSpent,
     this.onResolveHarnessRotation,
     this.onHarnessCredentialExhausted,
-    this.costCapCents,
+    this.costCapMicros,
     this.resolveBinary = resolveBinaryPath,
   }) : runStartedAt = runStartedAt ?? DateTime.now();
 
@@ -185,11 +185,11 @@ class DispatchSession implements SteeringSessionView {
   /// variable's own declaration.
   void Function()? onHarnessStarted;
 
-  /// Per-run priced cost cap override, in cents. The goal supervisor threads
-  /// the goal's REMAINING budget (capped at the default) so an explicit
-  /// `/goal --budget` cannot be overshot by a full segment. Null keeps
-  /// [defaultRunCostCapCents].
-  final int? costCapCents;
+  /// Per-run priced cost cap override, in micro-dollars. The goal supervisor
+  /// threads the goal's REMAINING budget (capped at the default) so an
+  /// explicit `/goal --budget` cannot be overshot by a full segment. Null
+  /// keeps [defaultRunCostCapMicros].
+  final int? costCapMicros;
 
   /// Per-agent silence-timeout override in minutes. When null the per-mode
   /// default applies.

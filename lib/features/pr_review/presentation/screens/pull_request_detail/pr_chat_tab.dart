@@ -7,6 +7,7 @@ import 'package:control_center/features/pr_review/providers/pr_space_provider.da
 import 'package:control_center/features/pr_review/providers/send_comment_to_agent.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -76,7 +77,7 @@ class PrChatTab extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  l10n.failedWithError('$e'),
+                  failureMessage(l10n, e),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: t.fgSecondary,

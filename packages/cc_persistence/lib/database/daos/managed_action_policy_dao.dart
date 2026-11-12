@@ -20,10 +20,29 @@ class ManagedActionPolicyDao extends DatabaseAccessor<GlobalDatabase>
   Stream<List<ManagedActionPoliciesTableData>> watchAll() =>
       select(managedActionPoliciesTable).watch();
 
-  /// Inserts or replaces one managed rule.
-  Future<void> upsert(ManagedActionPoliciesTableCompanion row) =>
-      into(managedActionPoliciesTable)
-          .insert(row, mode: InsertMode.insertOrReplace);
+  /// Writes one managed rule, by id or by its subject (one rule per action
+  /// class or command prefix), in one statement. Moving a rule onto a subject
+  /// another rule holds is refused.
+  Future<void> upsert(ManagedActionPoliciesTableCompanion row) {
+    final t = managedActionPoliciesTable;
+    final update = row.copyWith(id: const Value.absent());
+    return into(t).insert(
+      row,
+      onConflict: UpsertMultiple([
+        DoUpdate((_) => update),
+        DoUpdate(
+          (_) => update,
+          target: [t.actionClass],
+          targetCondition: (t) => t.actionClass.isNotNull(),
+        ),
+        DoUpdate(
+          (_) => update,
+          target: [t.commandPrefix],
+          targetCondition: (t) => t.commandPrefix.isNotNull(),
+        ),
+      ]),
+    );
+  }
 
   /// Deletes a managed rule by id.
   Future<void> deleteById(String id) =>

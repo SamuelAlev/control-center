@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
-import 'package:cc_domain/features/memory/domain/services/binary_vectors.dart';
 import 'package:cc_domain/features/memory/domain/services/polyphonic_recall.dart';
 import 'package:cc_domain/features/memory/domain/services/query_intent.dart';
 import 'package:cc_domain/features/memory/domain/value_objects/memory_domain_scope.dart';
@@ -69,10 +68,29 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
 
   @override
   Future<void> upsert(MemoryFact fact) async {
-    final float32 = await _computeFloat32('${fact.topic} ${fact.content}');
-    final embedding = float32 != null ? Uint8List.view(float32.buffer) : null;
-    final binary = float32 != null ? binarizeEmbedding(float32.toList()) : null;
-    await _dao(fact.workspaceId).upsert(
+    // Embedded outside the transaction: inference must not hold the writer.
+    final float32 = await _computeFloat32(
+      _embedTextOf(fact.topic, fact.content),
+    );
+    final dao = _dao(fact.workspaceId);
+    await dao.transaction(() async {
+      if (float32 == null) {
+        // Before the fact row changes, while it still holds the text any
+        // stored vector was computed from.
+        await dao.dropEmbeddingUnlessText(
+          fact.id,
+          topic: fact.topic,
+          content: fact.content,
+        );
+      }
+      await dao.upsert(_companionOf(fact));
+      if (float32 != null) {
+        await dao.putEmbedding(fact.id, Uint8List.view(float32.buffer));
+      }
+    });
+  }
+
+  db.MemoryFactsTableCompanion _companionOf(MemoryFact fact) =>
       db.MemoryFactsTableCompanion(
         id: Value(fact.id),
         workspaceId: Value(fact.workspaceId),
@@ -93,13 +111,62 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
           fact.temporalTags.isEmpty ? null : jsonEncode(fact.temporalTags),
         ),
         mentionCount: Value(fact.mentionCount),
-        embedding: Value(embedding),
-        binaryEmbedding: Value(binary),
         createdAt: Value(fact.createdAt),
         updatedAt: Value(fact.updatedAt),
-      ),
-    );
+      );
+
+  /// Embeds the active facts of [workspaceId] that have no vector yet, up to
+  /// [batchSize] per round, until none is left. Returns how many vectors were
+  /// stored.
+  ///
+  /// Zero when the model is not installed: there is nothing to embed with,
+  /// and search stays keyword-only for those facts until it is. Each round
+  /// writes only side rows; a fact that changed or went away while its batch
+  /// was being embedded is skipped and comes back in a later round (changed)
+  /// or never (deleted).
+  Future<int> backfillEmbeddings(
+    String workspaceId, {
+    int batchSize = 64,
+  }) async {
+    final service = _embeddingService;
+    if (service == null || !service.isReady) {
+      return 0;
+    }
+    final dao = _dao(workspaceId);
+    var stored = 0;
+    while (true) {
+      final pending = await dao.getActiveWithoutEmbedding(
+        workspaceId,
+        limit: batchSize,
+      );
+      if (pending.isEmpty) {
+        return stored;
+      }
+      final vectors = await service.embedAll([
+        for (final row in pending) _embedTextOf(row.topic, row.content),
+      ]);
+      final written = await dao.putBackfilledEmbeddings([
+        for (final (i, row) in pending.indexed)
+          (
+            factId: row.id,
+            topic: row.topic,
+            content: row.content,
+            embedding: Uint8List.view(vectors[i].buffer),
+          ),
+      ]);
+      stored += written;
+      if (written == 0) {
+        // Every fact of the batch changed or went away under it. Stop rather
+        // than spin on a list another writer keeps rewriting; the next run
+        // picks the rest up.
+        return stored;
+      }
+    }
   }
+
+  /// The text a fact is embedded from: the one definition, used on write and
+  /// by the backfill so both produce the same vector for the same fact.
+  static String _embedTextOf(String topic, String content) => '$topic $content';
 
   @override
   Future<List<MemoryFact>> getActiveByTopic(String workspaceId, String topic) =>
@@ -115,11 +182,10 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
     String? boostRepoSlug,
   }) async {
     if (queryEmbedding != null) {
-      // Hybrid BM25 + vector via RRF. The vector voice degrades gracefully
-      // (Dart Hamming fallback) when the sqlite_vector extension is
-      // unavailable — the server DB is opened without it — so hybrid search
-      // never hard-fails; it just falls back to the binary-embedding scan and,
-      // absent embeddings, to the FTS voice alone.
+      // Hybrid BM25 + vector via RRF. Facts with no vector yet are simply
+      // absent from the vector voice and still reach the result through FTS.
+      // The extension is a required native: a vector query that fails is an
+      // error, not a reason to rank by something else.
       final ftsResults = await _dao(workspaceId).searchFts(workspaceId, query);
       final vectorResults = await _vectorVoice(workspaceId, queryEmbedding);
       final fused = reciprocalRankFusion(
@@ -170,7 +236,7 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
       await _dao(workspaceId).searchFts(workspaceId, query),
     );
 
-    // Vector (semantic) voice — sqlite_vector, with a Dart Hamming fallback.
+    // Vector (semantic) voice — sqlite_vector over the fact vectors.
     if (queryEmbedding != null) {
       register(
         RecallVoice.vector,
@@ -249,41 +315,11 @@ class DaoMemoryFactRepository implements MemoryFactRepository {
     return results;
   }
 
-  /// Vector voice: sqlite_vector KNN, falling back to in-Dart Hamming over the
-  /// packed binary embeddings when the extension is unavailable.
+  /// Vector voice: sqlite_vector KNN over the fact vectors.
   Future<List<db.MemoryFactsTableData>> _vectorVoice(
     String workspaceId,
     Float32List queryEmbedding,
-  ) async {
-    try {
-      return await _dao(
-        workspaceId,
-      ).searchVector(workspaceId, queryEmbedding, limit: 30);
-    } on Object {
-      return _hammingFallback(workspaceId, queryEmbedding, limit: 30);
-    }
-  }
-
-  Future<List<db.MemoryFactsTableData>> _hammingFallback(
-    String workspaceId,
-    Float32List queryEmbedding, {
-    int limit = 30,
-  }) async {
-    final queryBinary = binarizeEmbedding(queryEmbedding.toList());
-    final dim = queryEmbedding.length;
-    final rows = await _dao(workspaceId).getActiveByWorkspace(workspaceId);
-    final scored = <({db.MemoryFactsTableData row, double score})>[];
-    for (final row in rows) {
-      final bin = row.binaryEmbedding;
-      if (bin == null) {
-        continue;
-      }
-      final distance = hammingDistance(queryBinary, bin);
-      scored.add((row: row, score: hammingScore(distance, dim)));
-    }
-    scored.sort((a, b) => b.score.compareTo(a.score));
-    return scored.take(limit).map((e) => e.row).toList();
-  }
+  ) => _dao(workspaceId).searchVector(workspaceId, queryEmbedding, limit: 30);
 
   @override
   Future<void> markRecalled(String workspaceId, List<String> ids) =>

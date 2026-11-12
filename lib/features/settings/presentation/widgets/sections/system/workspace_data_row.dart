@@ -4,12 +4,12 @@ import 'package:control_center/features/settings/presentation/widgets/kit/settin
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_gate.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_import_source_field.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_upload_restore_field.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/type_to_confirm_labels.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,11 +45,9 @@ class WorkspaceDataRow extends ConsumerStatefulWidget {
 class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
   bool _exporting = false;
   bool _downloading = false;
-  bool _uploading = false;
   bool _deleting = false;
   String? _lastExportPath;
   ({int transferred, int? total})? _downloadProgress;
-  ({int transferred, int? total})? _uploadProgress;
 
   void _toast(String message, {required bool ok}) {
     if (!mounted) {
@@ -132,63 +130,6 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
       });
     },
   );
-
-  /// Picks a file on THIS device and uploads it for the server to adopt.
-  ///
-  /// The confirmation comes before the upload, not after: the body is a whole
-  /// workspace database, and asking "are you sure" once it has already crossed
-  /// the network is asking too late.
-  Future<void> _uploadAndRestore() async {
-    const typeGroup = XTypeGroup(label: 'databases', extensions: ['db']);
-    final file = await openFile(acceptedTypeGroups: [typeGroup]);
-    if (file == null || !mounted) {
-      return;
-    }
-    final l10n = AppLocalizations.of(context);
-    final name = widget.workspace.name;
-    final confirmed = await showCcConfirmDialog(
-      context: context,
-      title: l10n.backupImportTitle(name),
-      message: l10n.backupImportBody(name),
-      confirmLabel: l10n.backupImportAction,
-      cancelLabel: l10n.cancel,
-      danger: true,
-      typeToConfirm: name,
-      typeToConfirmLabels: appTypeToConfirmLabels(context),
-    );
-    if (!confirmed || !mounted) {
-      return;
-    }
-    await _run(
-      () async {
-        await ref
-            .read(backupTransferProvider)
-            .restoreFromFile(
-              workspaceId: widget.workspace.id,
-              file: file,
-              onProgress: (transferred, total) {
-                if (mounted) {
-                  setState(
-                    () => _uploadProgress = (
-                      transferred: transferred,
-                      total: total,
-                    ),
-                  );
-                }
-              },
-            );
-        _toast(l10n.backupImportDone(name), ok: true);
-      },
-      ({required busy}) {
-        setState(() {
-          _uploading = busy;
-          if (!busy) {
-            _uploadProgress = null;
-          }
-        });
-      },
-    );
-  }
 
   Future<void> _delete() async {
     final l10n = AppLocalizations.of(context);
@@ -292,31 +233,7 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
           if (!canRestoreBackups(ref))
             const BackupRestoreOwnerOnlyNote()
           else ...[
-            SettingsField(
-              label: l10n.backupRestoreFromDeviceLabel,
-              description: l10n.backupRestoreFromDeviceDescription,
-              centerControl: true,
-              child: Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: CcButton(
-                  size: CcButtonSize.sm,
-                  variant: CcButtonVariant.secondary,
-                  icon: AppIcons.upload,
-                  loading: _uploading,
-                  onPressed: !canTransfer || _uploading
-                      ? null
-                      : _uploadAndRestore,
-                  child: Text(l10n.backupUploadAction),
-                ),
-              ),
-            ),
-            if (_uploadProgress != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              BackupTransferProgressBar(
-                transferred: _uploadProgress!.transferred,
-                total: _uploadProgress!.total,
-              ),
-            ],
+            WorkspaceUploadRestoreField(workspace: widget.workspace),
             const SizedBox(height: AppSpacing.lg),
             WorkspaceImportSourceField(workspace: widget.workspace),
           ],

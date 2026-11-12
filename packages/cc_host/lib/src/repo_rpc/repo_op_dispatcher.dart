@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/services/permission_resolver.dart';
 import 'package:cc_domain/core/domain/value_objects/permission.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_storage_state.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_host/src/errors/rpc_error_mapping.dart';
 import 'package:cc_host/src/log/cc_host_log.dart';
@@ -105,20 +106,62 @@ typedef ServerAuditRecorder =
 /// The workspace-scoped idempotency ledger (PRD 19 §3), consulted by the
 /// dispatcher BEFORE a mutating handler runs so a retry never re-enters feature
 /// code. Generalizes the ticketing write ledger to every `repo/call` mutation.
+///
+/// A key is claimed before the handler runs and completed after it returns,
+/// so two concurrent calls with one key never both run the handler.
 abstract interface class WriteLedgerPort {
-  /// The stored result `data` for a prior `(workspaceId, key)` mutation, or
-  /// null when this is the first application of that logical action.
-  Future<Map<String, dynamic>?> find(String workspaceId, String key);
-
-  /// Records a completed mutation's result `data`. Idempotent on
-  /// `(workspaceId, key)` — a concurrent double-apply collapses to one row.
-  Future<void> record({
+  /// Claims `(workspaceId, key)` for a call about to run [opName]. Answers
+  /// [LedgerClaimed] when this call owns the key and must run the handler,
+  /// [LedgerReplay] with the stored result when the key already completed, and
+  /// [LedgerInProgress] when another call holds the claim.
+  Future<WriteLedgerClaim> claim({
     required String workspaceId,
     required String key,
     required String opName,
+  });
+
+  /// Stores the result `data` of the call that claimed `(workspaceId, key)`.
+  /// Returns false when the claim no longer exists to complete.
+  Future<bool> complete({
+    required String workspaceId,
+    required String key,
     required Map<String, dynamic> data,
   });
+
+  /// Releases an unfinished claim so a retry can run the handler: the handler
+  /// failed, or the call was refused before it ran.
+  Future<void> release({required String workspaceId, required String key});
 }
+
+/// The answer to [WriteLedgerPort.claim].
+sealed class WriteLedgerClaim {
+  const WriteLedgerClaim();
+}
+
+/// This call owns the key: run the handler, then complete or release it.
+final class LedgerClaimed extends WriteLedgerClaim {
+  /// Creates a [LedgerClaimed].
+  const LedgerClaimed();
+}
+
+/// The key already completed: replay [data] instead of applying again.
+final class LedgerReplay extends WriteLedgerClaim {
+  /// Creates a [LedgerReplay] of [data].
+  const LedgerReplay(this.data);
+
+  /// The result `data` the first application returned.
+  final Map<String, dynamic> data;
+}
+
+/// Another call holds the key and has not finished.
+final class LedgerInProgress extends WriteLedgerClaim {
+  /// Creates a [LedgerInProgress].
+  const LedgerInProgress();
+}
+
+/// The `data.kind` refusing a call whose idempotency key is held by another
+/// call still running.
+const idempotencyInProgressKind = 'idempotency.in_progress';
 
 /// Routes the `repo/call` envelope to a declared [RepoOp].
 ///
@@ -158,6 +201,8 @@ class RepoOpDispatcher {
     this.resolveServerOwner,
     this.resolveRoleDefinition,
     this.recordGuardDecision,
+    this.describeError,
+    this.isWorkspaceReadOnly,
   });
 
   /// The closed op allow-list.
@@ -173,6 +218,12 @@ class RepoOpDispatcher {
   /// Maps a handler exception to a client-safe [RpcErrorMapping] (null = treat
   /// as a generic internal error).
   final RpcExceptionMapper? mapException;
+
+  /// A log-safe one-line description of an error, for every log line this
+  /// dispatcher writes about a failure. The embedding app supplies one that
+  /// knows its storage errors (whose own text carries the statement's bound
+  /// values: message bodies, tokens). Null logs only the error's type.
+  final String Function(Object error)? describeError;
 
   /// Membership/role lookup for the role gate.
   final WorkspaceRoleResolver? resolveRole;
@@ -227,6 +278,14 @@ class RepoOpDispatcher {
   /// client-held id sprays empty ghost `workspace.db` files on every call.
   /// Null (bare test dispatchers) skips the gate.
   final WorkspaceExistsChecker? workspaceExists;
+
+  /// Whether a workspace's database is read-only (its integrity check
+  /// failed). A mutating workspace op on such a workspace is refused with
+  /// [workspaceReadOnlyKind] before its handler runs, so the handler never
+  /// half-applies a change whose first write SQLite then refuses, and the
+  /// client can say "this workspace needs restoring". Reads still run. Null
+  /// (bare test dispatchers) skips the gate.
+  final bool Function(String workspaceId)? isWorkspaceReadOnly;
 
   /// The [ServerAuthority.serverOwner] gate. Unlike [resolveRole], a missing
   /// resolver does NOT skip the check: an op that declared server authority is
@@ -466,6 +525,24 @@ class RepoOpDispatcher {
       }
     }
 
+    // Storage gate — after the role gate, whose membership lookup is the
+    // query that runs a freshly opened file's integrity check, so a damaged
+    // file is known here.
+    if (workspaceId != null &&
+        op.kind != RepoOpKind.read &&
+        (isWorkspaceReadOnly?.call(workspaceId) ?? false)) {
+      CcHostLog.warning(
+        'Refusing repo/call "$opName" for $userId@$deviceId — workspace '
+        '$workspaceId is read-only',
+      );
+      return _error(
+        id,
+        RpcErrorCodes.internalError,
+        'This workspace is read-only: its database failed an integrity check',
+        data: const {'kind': workspaceReadOnlyKind},
+      );
+    }
+
     // Per-repo grant gate — workspace membership must never silently grant
     // code visibility. Ops that expose repo content declare `repoAccess`; the
     // caller needs that grant level on the named repo (owners/admins pass
@@ -637,10 +714,11 @@ class RepoOpDispatcher {
     }
 
     // Idempotency dedupe (PRD 19 §3): a mutating call that carries a logical-
-    // action key is checked against the ledger BEFORE the handler runs, so a
+    // action key claims it in the ledger BEFORE anything else runs, so a
     // double-click / reconnect replay / offline flush collapses to one apply
-    // and never re-enters feature code. The stored result envelope replays
-    // byte-identically, flagged `deduplicated: true`.
+    // and never re-enters feature code. A completed key replays its stored
+    // result byte-identically, flagged `deduplicated: true`; a key another call
+    // still holds is refused rather than run a second time alongside it.
     final rawKey = params['idempotency_key'];
     final ledger = writeLedger;
     final dedupe =
@@ -649,23 +727,113 @@ class RepoOpDispatcher {
         workspaceId != null &&
         rawKey is String &&
         rawKey.isNotEmpty;
-    if (dedupe) {
-      final existing = await ledger.find(workspaceId, rawKey);
-      if (existing != null) {
+    if (!dedupe) {
+      return _guardAndRun(
+        id: id,
+        op: op,
+        ctx: ctx,
+        args: args,
+        workspaceId: workspaceId,
+        userId: userId,
+        deviceId: deviceId,
+        remoteAddress: remoteAddress,
+        isCancelled: isCancelled,
+      );
+    }
+    final WriteLedgerClaim claim;
+    try {
+      claim = await ledger.claim(
+        workspaceId: workspaceId,
+        key: rawKey,
+        opName: op.name,
+      );
+    } catch (e, st) {
+      return _mapHandlerError(id, opName, e, st);
+    }
+    switch (claim) {
+      case LedgerReplay(:final data):
         return {
           'jsonrpc': '2.0',
           'id': id,
-          'result': {'op': op.name, 'data': existing, 'deduplicated': true},
+          'result': {'op': op.name, 'data': data, 'deduplicated': true},
         };
+      case LedgerInProgress():
+        return _error(
+          id,
+          RpcErrorCodes.conflict,
+          'This action is already running',
+          data: const {'kind': idempotencyInProgressKind},
+        );
+      case LedgerClaimed():
+        break;
+    }
+    // This call owns the key. Every way out releases it except a completed
+    // apply, so a refusal or a failed handler leaves the key free to retry.
+    var completed = false;
+    try {
+      return await _guardAndRun(
+        id: id,
+        op: op,
+        ctx: ctx,
+        args: args,
+        workspaceId: workspaceId,
+        userId: userId,
+        deviceId: deviceId,
+        remoteAddress: remoteAddress,
+        isCancelled: isCancelled,
+        onApplied: (data) async {
+          try {
+            completed = await ledger.complete(
+              workspaceId: workspaceId,
+              key: rawKey,
+              data: data,
+            );
+          } catch (e) {
+            // The op is applied; a failed record only means a later retry
+            // re-applies (degradation, not corruption), so it never fails the
+            // call. The claim is released below for that retry.
+            CcHostLog.warning(
+              'write-ledger complete for ${op.name} failed: ${_describe(e)}',
+            );
+          }
+        },
+      );
+    } finally {
+      if (!completed) {
+        try {
+          await ledger.release(workspaceId: workspaceId, key: rawKey);
+        } catch (e) {
+          CcHostLog.warning(
+            'write-ledger release for ${op.name} failed: ${_describe(e)}',
+          );
+        }
       }
     }
+  }
+
+  /// Runs the action-policy and approval gates, then the handler, then the
+  /// audit trail. [onApplied] sees the handler's result before the answer is
+  /// built (the idempotency ledger completes its claim there).
+  Future<Map<String, dynamic>> _guardAndRun({
+    required dynamic id,
+    required RepoOp op,
+    required RepoOpContext ctx,
+    required Map<String, dynamic> args,
+    required String? workspaceId,
+    required String userId,
+    required String deviceId,
+    required String? remoteAddress,
+    required bool Function()? isCancelled,
+    Future<void> Function(Map<String, dynamic> data)? onApplied,
+  }) async {
+    final opName = op.name;
 
     // Unified action-guardrail effect net (PRD 24 §3) — the same resolver the
     // MCP dispatcher applies, now covering the operator's own repo-RPC clicks.
     // A mutating op that declares effect classes is resolved against the
     // workspace action policy: allow proceeds and deny refuses with a terminal
     // reason. Reads and effect-free ops (empty actionClasses) skip it. Dry-run
-    // and deduplicated replays returned above, so this never re-checks them.
+    // and deduplicated replays return before this, so it never re-checks them.
     //
     // Repo-RPC callers are always HUMAN (agents act via MCP), so agentId is null
     // and only space/workspace/preset scopes resolve — and `operatorInitiated`
@@ -727,21 +895,7 @@ class RepoOpDispatcher {
 
     try {
       final data = await op.handler(ctx);
-      if (dedupe) {
-        // Persist the applied result so the next replay of this logical action
-        // dedupes. A failed record leaves the op applied (a later retry would
-        // re-apply) — degradation, not corruption — so it never fails the call.
-        try {
-          await ledger.record(
-            workspaceId: workspaceId,
-            key: rawKey,
-            opName: op.name,
-            data: data,
-          );
-        } catch (e) {
-          CcHostLog.warning('write-ledger record for ${op.name} failed: $e');
-        }
-      }
+      await onApplied?.call(data);
       if (op.kind != RepoOpKind.read &&
           op.audited &&
           workspaceId != null &&
@@ -778,7 +932,9 @@ class RepoOpDispatcher {
             audit.then<void>(
               (_) {},
               onError: (Object e) {
-                CcHostLog.warning('audit append for ${op.name} failed: $e');
+                CcHostLog.warning(
+                  'audit append for ${op.name} failed: ${_describe(e)}',
+                );
               },
             ),
           );
@@ -826,7 +982,9 @@ class RepoOpDispatcher {
         write.then<void>(
           (_) {},
           onError: (Object e) {
-            CcHostLog.warning('server audit append for ${op.name} failed: $e');
+            CcHostLog.warning(
+              'server audit append for ${op.name} failed: ${_describe(e)}',
+            );
           },
         ),
       );
@@ -931,6 +1089,10 @@ class RepoOpDispatcher {
     );
   }
 
+  /// The log-safe rendering of [e] ([describeError], else its type).
+  String _describe(Object e) =>
+      describeError?.call(e) ?? e.runtimeType.toString();
+
   /// Maps a handler/preview exception to a client-safe error frame.
   Map<String, dynamic> _mapHandlerError(
     dynamic id,
@@ -948,8 +1110,14 @@ class RepoOpDispatcher {
     // paths / SQL / auth detail). Log locally with a short correlation id and
     // return the SAME id in the error data, so a user report ("diagnostic id
     // e…") can be grep'd straight to the server log line (FINDINGS §126).
+    // The error object itself is not handed to the log: its text may carry
+    // bound statement values; [_describe] is the only rendering logged.
     final diagnosticId = _nextDiagnosticId();
-    CcHostLog.error('repo/call $opName threw [$diagnosticId]: $e', e, st);
+    CcHostLog.error(
+      'repo/call $opName threw [$diagnosticId]: ${_describe(e)}',
+      null,
+      st,
+    );
     return _error(
       id,
       RpcErrorCodes.internalError,

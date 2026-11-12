@@ -8,18 +8,18 @@ class JobResult {
     required this.success,
     this.resultJson,
     this.error,
-    this.costCents = 0,
+    this.costMicros = 0,
     this.eventsLost = 0,
   });
 
   /// A successful result.
-  const JobResult.ok({this.resultJson, this.costCents = 0})
+  const JobResult.ok({this.resultJson, this.costMicros = 0})
     : success = true,
       error = null,
       eventsLost = 0;
 
   /// A failed result.
-  const JobResult.failure(this.error, {this.costCents = 0})
+  const JobResult.failure(this.error, {this.costMicros = 0})
     : success = false,
       resultJson = null,
       eventsLost = 0;
@@ -33,8 +33,8 @@ class JobResult {
   /// Failure reason when [success] is false.
   final String? error;
 
-  /// Metered worker cost in cents.
-  final int costCents;
+  /// Metered worker cost in micro-dollars.
+  final int costMicros;
 
   /// Count of events dropped during a disconnect blip (surfaced in the run log
   /// as "N events lost", never silently — spec Clarifications).

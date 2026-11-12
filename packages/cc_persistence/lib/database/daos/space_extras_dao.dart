@@ -30,8 +30,7 @@ class SpaceExtrasDao extends DatabaseAccessor<WorkspaceDatabase>
   ) =>
       (select(spaceNotesTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
-                t.spaceId.equals(spaceId),
+                t.workspaceId.equals(workspaceId) & t.spaceId.equals(spaceId),
           ))
           .getSingleOrNull();
 
@@ -42,46 +41,44 @@ class SpaceExtrasDao extends DatabaseAccessor<WorkspaceDatabase>
   ) =>
       (select(spaceNotesTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
-                t.spaceId.equals(spaceId),
+                t.workspaceId.equals(workspaceId) & t.spaceId.equals(spaceId),
           ))
           .watchSingleOrNull();
 
   /// Upserts the space's Notes doc, bumping [SpaceNotesTable.version].
   /// Last writer wins in server receipt order — the caller does NOT pass an
   /// expected version (PRD 16's per-field LWW; the whole doc is one column).
+  ///
+  /// One `INSERT … ON CONFLICT (space_id)`: two first writers cannot both
+  /// insert, and the bump reads the stored version, not one read earlier.
+  /// [id] is only used when the space has no doc yet.
   Future<SpaceNotesTableData> upsertNote({
     required String id,
     required String workspaceId,
     required String spaceId,
     required String contentMarkdown,
     required String updatedByPrincipal,
-  }) async {
-    final existing = await noteForSpace(workspaceId, spaceId);
-    if (existing == null) {
-      final row = SpaceNotesTableCompanion.insert(
+  }) => transaction(() async {
+    await into(spaceNotesTable).insert(
+      SpaceNotesTableCompanion.insert(
         id: id,
         workspaceId: workspaceId,
         spaceId: spaceId,
         contentMarkdown: Value(contentMarkdown),
         updatedByPrincipal: updatedByPrincipal,
-      );
-      await into(spaceNotesTable).insert(row);
-      return (await noteForSpace(workspaceId, spaceId))!;
-    }
-    await (update(spaceNotesTable)..where(
-          (t) => t.workspaceId.equals(workspaceId) & t.id.equals(existing.id),
-        ))
-        .write(
-          SpaceNotesTableCompanion(
-            contentMarkdown: Value(contentMarkdown),
-            updatedByPrincipal: Value(updatedByPrincipal),
-            updatedAt: Value(DateTime.now()),
-            version: Value(existing.version + 1),
-          ),
-        );
+      ),
+      onConflict: DoUpdate(
+        (old) => SpaceNotesTableCompanion.custom(
+          contentMarkdown: Variable(contentMarkdown),
+          updatedByPrincipal: Variable(updatedByPrincipal),
+          updatedAt: Variable(DateTime.now()),
+          version: old.version + const Constant(1),
+        ),
+        target: [spaceNotesTable.spaceId],
+      ),
+    );
     return (await noteForSpace(workspaceId, spaceId))!;
-  }
+  });
 
   // ── Per-space agent autonomy ──
 
@@ -92,8 +89,7 @@ class SpaceExtrasDao extends DatabaseAccessor<WorkspaceDatabase>
   ) =>
       (select(spaceAutonomyTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
-                t.spaceId.equals(spaceId),
+                t.workspaceId.equals(workspaceId) & t.spaceId.equals(spaceId),
           ))
           .get();
 
@@ -104,8 +100,7 @@ class SpaceExtrasDao extends DatabaseAccessor<WorkspaceDatabase>
   ) =>
       (select(spaceAutonomyTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
-                t.spaceId.equals(spaceId),
+                t.workspaceId.equals(workspaceId) & t.spaceId.equals(spaceId),
           ))
           .watch();
 
@@ -155,11 +150,7 @@ class SpaceExtrasDao extends DatabaseAccessor<WorkspaceDatabase>
           autonomyLevel: Value(autonomyLevel),
           updatedAt: Value(DateTime.now()),
         ),
-        target: [
-          spaceAutonomyTable.workspaceId,
-          spaceAutonomyTable.spaceId,
-          spaceAutonomyTable.agentId,
-        ],
+        target: [spaceAutonomyTable.spaceId, spaceAutonomyTable.agentId],
       ),
     );
   }
@@ -173,8 +164,7 @@ class SpaceExtrasDao extends DatabaseAccessor<WorkspaceDatabase>
   ) =>
       (select(messageReactionsTable)..where(
             (t) =>
-                t.workspaceId.equals(workspaceId) &
-                t.spaceId.equals(spaceId),
+                t.workspaceId.equals(workspaceId) & t.spaceId.equals(spaceId),
           ))
           .watch();
 

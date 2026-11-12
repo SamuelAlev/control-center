@@ -16,11 +16,7 @@ void main() {
       workspaceId: 'ws-1',
       startedAt: DateTime(2025, 6, 1),
       status: RunStatus.running,
-      cost: const RunCost(
-        inputTokens: 10,
-        outputTokens: 5,
-        estimatedCostCents: 3,
-      ),
+      cost: const RunCost(inputTokens: 10, outputTokens: 5, costMicros: 3),
       role: AgentRunRole.sub,
       childCostMicros: 420000,
       outputContractMode: OutputContractMode.permissive,
@@ -39,7 +35,7 @@ void main() {
       expect(next.role, AgentRunRole.sub);
       expect(next.expectedOutputSchema, {'type': 'object'});
       expect(next.cost.inputTokens, 10);
-      expect(next.cost.estimatedCostCents, 3);
+      expect(next.cost.costMicros, 3);
       expect(next.lastOutputAt, DateTime(2025, 6, 1, 12));
       expect(next.status, RunStatus.running);
       expect(next.workspaceId, 'ws-1');

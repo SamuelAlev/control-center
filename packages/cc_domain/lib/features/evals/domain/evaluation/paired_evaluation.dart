@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:cc_domain/core/domain/value_objects/money.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_attempt.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_manifest.dart';
 import 'package:cc_domain/features/evals/domain/evaluation/evaluation_plan.dart';

@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/utils/money_format.dart';
 import 'package:control_center/features/observability/presentation/obs_format.dart';
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -22,7 +23,7 @@ class RunActivityStatBar extends StatelessWidget {
     super.key,
     required this.cost,
     required this.toolCount,
-    this.childCostCents = 0,
+    this.childCostMicros = 0,
   });
 
   /// The run's accumulated cost/token/duration figures, or null when unknown.
@@ -33,16 +34,16 @@ class RunActivityStatBar extends StatelessWidget {
 
   /// Cost rolled up from runs this one delegated. Shown as a sub-line on the
   /// cost tile so a parent's delegated spend is visible rather than hidden.
-  final int childCostCents;
+  final int childCostMicros;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final totalTokens = cost?.totalTokens ?? 0;
-    final cents = cost?.estimatedCostCents ?? 0;
+    final micros = cost?.costMicros ?? 0;
     // A priced-at-zero run that clearly burned tokens means the model's pricing
     // was not resolvable — say "unknown" rather than assert it was free.
-    final costUnknown = cents == 0 && totalTokens > 0;
+    final costUnknown = micros == 0 && totalTokens > 0;
 
     return Wrap(
       spacing: AppSpacing.xl,
@@ -51,9 +52,9 @@ class RunActivityStatBar extends StatelessWidget {
         ObsStatTile(label: l10n.obsStatTokens, value: fmtTokens(totalTokens)),
         ObsStatTile(
           label: l10n.obsStatCost,
-          value: costUnknown ? '—' : fmtCents(cents),
-          sub: childCostCents > 0
-              ? l10n.obsStatDelegatedCost(fmtCents(childCostCents))
+          value: costUnknown ? '—' : fmtMicros(micros),
+          sub: childCostMicros > 0
+              ? l10n.obsStatDelegatedCost(fmtMicros(childCostMicros))
               : null,
         ),
         ObsStatTile(label: l10n.obsStatTools, value: '$toolCount'),

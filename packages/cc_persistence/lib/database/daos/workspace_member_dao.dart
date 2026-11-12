@@ -54,9 +54,19 @@ class WorkspaceMemberDao extends DatabaseAccessor<WorkspaceDatabase>
         workspaceMembersTable,
       )..where((t) => t.userId.equals(userId))).watch();
 
-  /// Inserts or updates a membership row.
+  /// Inserts or updates the membership of the entry's user: one statement on
+  /// the unique user id. An existing membership keeps its id and join date.
   Future<void> upsert(WorkspaceMembersTableCompanion entry) =>
-      into(workspaceMembersTable).insertOnConflictUpdate(entry);
+      into(workspaceMembersTable).insert(
+        entry,
+        onConflict: DoUpdate(
+          (_) => entry.copyWith(
+            id: const Value.absent(),
+            joinedAt: const Value.absent(),
+          ),
+          target: [workspaceMembersTable.userId],
+        ),
+      );
 
   /// Changes [userId]'s role in [workspaceId].
   Future<int> setRole(String workspaceId, String userId, String role) =>
@@ -119,9 +129,19 @@ class WorkspaceMemberDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .watch();
 
-  /// Inserts or updates a repo grant row.
+  /// Inserts or updates the grant of the entry's member on its repo: one
+  /// statement on the unique `(userId, repoId)`.
   Future<void> upsertRepoGrant(WorkspaceMemberRepoGrantsTableCompanion entry) =>
-      into(workspaceMemberRepoGrantsTable).insertOnConflictUpdate(entry);
+      into(workspaceMemberRepoGrantsTable).insert(
+        entry,
+        onConflict: DoUpdate(
+          (_) => entry.copyWith(id: const Value.absent()),
+          target: [
+            workspaceMemberRepoGrantsTable.userId,
+            workspaceMemberRepoGrantsTable.repoId,
+          ],
+        ),
+      );
 
   /// Removes [userId]'s grant on [repoId] in [workspaceId].
   Future<int> removeRepoGrant(

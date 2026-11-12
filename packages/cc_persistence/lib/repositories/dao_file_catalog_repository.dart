@@ -261,29 +261,28 @@ class DaoFileCatalogRepository implements FileCatalogRepository {
 
   @override
   Future<bool> canReclaim(String workspaceId, String path) async {
-    final db = _db(workspaceId);
-    final rows = await db
+    // Both probes use the `path` index on the catalog; no message is read. A
+    // message attachment of an uploaded blob is always a claimed (attached,
+    // never discardable) catalog row, so "some live row names the path" also
+    // covers every message holding it.
+    final rows = await _db(workspaceId)
         .customSelect(
           '''
       SELECT
         EXISTS(SELECT 1 FROM catalog_files WHERE workspace_id = ?
           AND path = ? AND source = 'upload' AND owned_bytes = 1) AS owned,
         EXISTS(SELECT 1 FROM catalog_files WHERE workspace_id = ?
-          AND path = ? AND state != 'discarded') AS live,
-        EXISTS(SELECT 1 FROM conversation_messages
-          WHERE metadata LIKE '%' || ? || '%') AS historic
+          AND path = ? AND (state != 'discarded'
+            OR attached_message_id IS NOT NULL)) AS live
     ''',
           variables: [
             Variable<String>(workspaceId),
             Variable<String>(path),
             Variable<String>(workspaceId),
             Variable<String>(path),
-            Variable<String>(path),
           ],
         )
         .getSingle();
-    return rows.read<int>('owned') != 0 &&
-        rows.read<int>('live') == 0 &&
-        rows.read<int>('historic') == 0;
+    return rows.read<int>('owned') != 0 && rows.read<int>('live') == 0;
   }
 }

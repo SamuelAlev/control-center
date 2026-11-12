@@ -33,6 +33,9 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
   /// field, it makes every client-side `workspace.upsert` (a rename, a new logo)
   /// send `[]` and wipe the operator's secret-path exclusions for viewers and
   /// guests.
+  ///
+  /// [Workspace.storageState] is `read_only` only when the row says so: a row
+  /// that carries none (`workspace.create`) is a workspace that takes writes.
   static Workspace _workspaceFromDto(WorkspaceDto d) => Workspace(
     id: d.id,
     name: d.name,
@@ -47,6 +50,9 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
     createdAt: d.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
     updatedAt:
         d.updatedAt ?? d.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+    storageState: d.storageState == WorkspaceStorageState.readOnly.wire
+        ? WorkspaceStorageState.readOnly
+        : WorkspaceStorageState.ok,
   );
 
   /// Maps an entity back to the wire shape.

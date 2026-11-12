@@ -14067,13 +14067,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get backupSnapshotComplete => '完了';
 
   @override
-  String get backupSnapshotIncomplete => '不完全';
-
-  @override
-  String get backupSnapshotIncompleteNote =>
-      'マニフェストがないか、存在しないファイルを参照しているため、このスナップショットでインストール全体を復元することはできません。含まれているワークスペースファイルは、1つずつなら取り込めます。';
-
-  @override
   String get backupDeleteSnapshotLabel => 'スナップショットを削除';
 
   @override
@@ -18085,4 +18078,227 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get rigHolderOnlyHint =>
       'このマシンは閲覧できます。特定の人のために開かれたマシンで、その本人のサインインを使用するため、操作、ポート転送、貼り付け、ファイルのドロップができるのは本人だけです。';
+
+  @override
+  String get refusalStorageBusy => 'サーバーのデータベースは現在混み合っています。しばらくしてから再試行してください。';
+
+  @override
+  String get refusalStorageFull =>
+      'サーバーのディスクに空きがないため、何も保存できません。サーバーオーナーが空き容量を確保する必要があります。';
+
+  @override
+  String get refusalStorageDamaged =>
+      'このワークスペースのデータが破損しています。サーバーオーナーがバックアップから復元する必要があります。';
+
+  @override
+  String get refusalStorageReadOnly =>
+      '整合性チェックに失敗したため、サーバーオーナーがバックアップから復元するまで、このワークスペースは読み取り専用です。変更は保存できません。';
+
+  @override
+  String get refusalStorageNewerSchema =>
+      'このデータは新しいバージョンのサーバーで書き込まれています。サーバーを更新してから、もう一度お試しください。';
+
+  @override
+  String get refusalStorageForeignFile =>
+      'サーバーが、自身で書き込んでいないデータベースファイルを見つけました。サーバーオーナーがサーバーのデータフォルダーを確認する必要があります。';
+
+  @override
+  String get refusalWorkspaceDeleted => 'このワークスペースは削除されました。';
+
+  @override
+  String get refusalIdempotencyInProgress =>
+      'このリクエストはまだ処理中です。完了を待ってから、結果を確認してください。';
+
+  @override
+  String get refusalImportMissingSource =>
+      'サーバー上のそのパスにファイルがありません。何も置き換えられていません。';
+
+  @override
+  String get refusalImportDamaged => 'そのファイルは破損しているため、復元できません。何も置き換えられていません。';
+
+  @override
+  String get refusalImportChecksumMismatch =>
+      'そのファイルは、バックアップに記録されたチェックサムと一致しません。変更されたか、破損している可能性があります。何も置き換えられていません。';
+
+  @override
+  String get refusalImportNewerSchema =>
+      'そのファイルは新しいバージョンのサーバーで書き込まれています。復元するにはサーバーを更新してください。何も置き換えられていません。';
+
+  @override
+  String get refusalImportForeignFile =>
+      'そのファイルはワークスペースのデータベースではありません。何も置き換えられていません。';
+
+  @override
+  String get refusalImportSchemaMismatch =>
+      'そのファイルを、このサーバーのフォーマットに変換できませんでした。何も置き換えられていません。';
+
+  @override
+  String get refusalImportRouteConflict =>
+      'そのファイルには、このサーバー上の別のワークスペースに属するリンクが含まれています。復元すると、それらを乗っ取ることになります。何も置き換えられていません。';
+
+  @override
+  String get workspaceReadOnlyBannerTitle => 'このワークスペースは読み取り専用です';
+
+  @override
+  String get workspaceReadOnlyBannerBody =>
+      'データの整合性チェックに失敗したため、変更は保存できません。すべて引き続き閲覧できます。サーバーオーナーがバックアップから復元できます。';
+
+  @override
+  String get workspaceReadOnlyBannerOwnerBody =>
+      'データの整合性チェックに失敗したため、変更は保存できません。すべて引き続き閲覧できます。バックアップから復元すると、再び編集できるようになります。';
+
+  @override
+  String get workspaceReadOnlyBannerAction => 'バックアップを開く';
+
+  @override
+  String get serverNoticesLabel => '対応が必要';
+
+  @override
+  String get serverNoticeReadOnlyStatus => '読み取り専用';
+
+  @override
+  String serverNoticeSince(String time) {
+    return '$timeから';
+  }
+
+  @override
+  String get serverNoticeReadOnlyBody =>
+      'データベースが整合性チェックに失敗したため、読み取りのみ可能で、すべての変更を拒否します。下の一覧からバックアップで復元してください。復元するまで、最後の正常なコピーは保持されます。';
+
+  @override
+  String get serverNoticeDetails => '詳細';
+
+  @override
+  String get backupSnapshotUnverified => '未検証';
+
+  @override
+  String get backupSnapshotUnverifiedNote =>
+      'このスナップショットは検証できません。完了しなかったか、チェックサムの記録に対応する前に作成されたため、インストール全体は復元できません。ただし、含まれるワークスペースのファイルは1つずつ復元できます。';
+
+  @override
+  String get backupSnapshotLastGoodCopy => '最後の正常なコピー';
+
+  @override
+  String get backupSnapshotLastGoodCopyNote =>
+      '破損したワークスペースの最後の正常なコピーを含むため保持されています。そのワークスペースが復元されるまで、クリーンアップの対象になりません。';
+
+  @override
+  String get backupDeleteLastGoodCopyDescription =>
+      'これは破損したワークスペースの最後の正常なコピーです。削除すると、そのワークスペースを復元する手段が残りません。';
+
+  @override
+  String backupRestoreHeldBack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '権限を$count件、確認のために保留しました。このページの上部に表示されています。',
+      one: '権限を1件、確認のために保留しました。このページの上部に表示されています。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldsLabel => '復元コピーから保留中';
+
+  @override
+  String get importHoldsExplainer =>
+      '復元されたコピーは、それだけではこのサーバーで何も許可できません。ファイルに含まれていた権限は次のとおりです。承認するとその権限が再び付与され、却下すると削除されます。';
+
+  @override
+  String importHoldPolicyAllow(String action) {
+    return 'エージェントは、人の承認なしにこの操作を行えます: $action';
+  }
+
+  @override
+  String importHoldPolicyPrompt(String action) {
+    return 'エージェントは、人が承認すればこの操作を行えます: $action';
+  }
+
+  @override
+  String importHoldCommand(String command) {
+    return '$commandで始まるコマンドを実行';
+  }
+
+  @override
+  String get importHoldScopeWorkspace => 'このワークスペース内のすべて';
+
+  @override
+  String importHoldScopeSpace(String space) {
+    return 'スペース $space 内';
+  }
+
+  @override
+  String importHoldScopeAgent(String agent) {
+    return 'エージェント $agent 向け';
+  }
+
+  @override
+  String importHoldSandboxExec(String path) {
+    return 'サンドボックスは $path を実行できます';
+  }
+
+  @override
+  String importHoldRepoWrite(String person, String repo) {
+    return '$personは$repoを変更できます';
+  }
+
+  @override
+  String importHoldRepoReview(String person, String repo) {
+    return '$personは$repoのプルリクエストをレビューできます';
+  }
+
+  @override
+  String importHoldRepoOther(String person, String repo, String level) {
+    return '$personは$repoに対する$levelアクセス権を持ちます';
+  }
+
+  @override
+  String importHoldMemberRole(String person, String role) {
+    return '$personに$roleロールが付与されます';
+  }
+
+  @override
+  String importHoldInvite(String role) {
+    return '$roleロールで参加するための未使用の招待';
+  }
+
+  @override
+  String importHoldInviteWithRepos(int count, String role) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$roleロールで参加し、リポジトリ$count件へのレビューまたは書き込みアクセス権を持つ未使用の招待',
+      one: '$roleロールで参加し、リポジトリ1件へのレビューまたは書き込みアクセス権を持つ未使用の招待',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importHoldUnknown => 'このバージョンのアプリでは内容を説明できない権限';
+
+  @override
+  String importHoldRestoredAt(String time) {
+    return '$timeに復元';
+  }
+
+  @override
+  String get importHoldAccept => '承認';
+
+  @override
+  String get importHoldDismiss => '却下';
+
+  @override
+  String get importHoldAcceptTitle => 'この権限を付与しますか？';
+
+  @override
+  String importHoldAcceptBody(String permission) {
+    return '$permission\n\n承認すると、サーバー上ですぐにこの権限が付与されます。';
+  }
+
+  @override
+  String get importHoldAccepted => '権限を付与しました。';
+
+  @override
+  String get importHoldNotApplied =>
+      '何も付与されませんでした。対象のメンバーまたはリポジトリが、このワークスペースにもう存在しません。';
 }

@@ -2,7 +2,7 @@
 title: تحلیل‌های استفاده
 description: وقتی تحلیل‌های استفاده روشن است Control Center چه چیزی را ثبت می‌کند، چه کسی تصمیم می‌گیرد و چه چیزی هرگز ارسال نمی‌شود.
 slug: fa-IR/راهنمای-کاربر/مرجع/تحلیل-استفاده
-sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
+sourceHash: c8c7e5472584acbbffe68fee4f2c9795b4753bbb
 ---
 
 Control Center می‌تواند **رویدادهای استفادهٔ مستعار** را به یک نمونهٔ [Umami](https://umami.is) بفرستد. تحلیل‌های استفاده **تا وقتی گردانندهٔ سرور روشنشان نکند خاموش‌اند**. این تنظیم متعلق به سرور است و برای همهٔ کلاینت‌های متصل به آن اعمال می‌شود: اپ دسکتاپ، اپ وب، تلفن و خود سرور.
@@ -109,7 +109,7 @@ Umami افزون بر این، نشانی IP درخواست را دریافت م
 | `skill_action` | `action` (`install`، `update`، `uninstall`، `source_added`، `source_removed`)، `skill_id`، `blocked` | مهارت‌های فضای کاری تغییر کرد |
 | `orchestration_decided` | `decision` (`approved`، `cancelled`)، `workspace_id`، `orchestration_id` | به یک پیشنهاد ارکستراسیون پاسخ داده شد |
 | `plan_decided` | `decision` (`approved`، `rejected`)، `plan_id`، `workspace_id`، `partial`، `node_count` | برنامه‌ای تأیید یا رد شد (تلفن) |
-| `goal_started` | `kind` (`goal`، `loop`)، `workspace_id`، `space_id`، `conversation_id`، `agent_id`، `budget_cents`، `accepted` | یک هدف یا حلقهٔ تحت نظارت شروع شد (تلفن) |
+| `goal_started` | `kind` (`goal`، `loop`)، `workspace_id`، `space_id`، `conversation_id`، `agent_id`، `budget_micros`، `accepted` | یک هدف یا حلقهٔ تحت نظارت شروع شد (تلفن) |
 | `conversation_created` | `workspace_id`، `space_id`، `conversation_id`، `source` (`new`، `fork`) | گفتگویی ساخته یا منشعب شد |
 | `conversation_rewound` | `conversation_id` | گفتگویی از یک پیام قبلی ادامه یافت |
 | `space_archived` | `workspace_id`، `space_id` | یک فضا بایگانی شد |
@@ -128,7 +128,7 @@ Umami افزون بر این، نشانی IP درخواست را دریافت م
 | `agent_run_completed` | `agent_id`، `workspace_id`، `conversation_id`، `run_id`، `status`، `error_family`، `role`، `adapter`، `model`، `effort`، `task_family`، `subagent`، `pipeline`، `resumed_native_session`، `duration_ms`، `time_to_first_token_ms`، `input_tokens`، `output_tokens`، `thought_tokens`، `cache_read_tokens`، `cache_write_tokens`، `output_rejections`، `cost_usd` | اجرای یک عامل تمام شد |
 | `agent_awaiting_input` | `kind` (`approval`، `question`، `credential`)، `workspace_id`، `agent_id`، `conversation_id` | عاملی برای منتظر ماندن برای یک شخص متوقف شد |
 | `agent_action_blocked` | `workspace_id`، `agent_id`، `space_id`، `source` | سیاست اقدام، اقدامی از یک عامل را رد کرد |
-| `pipeline_run_finished` | `outcome` (`completed`، `failed`، `cancelled`)، `workspace_id`، `pipeline_run_id`، `template_id`، `trigger`، `duration_ms`، `active_ms`، `attempt_count`، `template_version`، `cost_cents`، `tokens`، `dry_run`، `sub_pipeline` | اجرای یک پایپ‌لاین پایان یافت. `trigger` برابر `manual`، نوع رویدادی که آن را شروع کرد، یا فقط نوعِ یک تریگر نام‌دار (`webhook`) است |
+| `pipeline_run_finished` | `outcome` (`completed`، `failed`، `cancelled`)، `workspace_id`، `pipeline_run_id`، `template_id`، `trigger`، `duration_ms`، `active_ms`، `attempt_count`، `template_version`، `cost_micros`، `tokens`، `dry_run`، `sub_pipeline` | اجرای یک پایپ‌لاین پایان یافت. `trigger` برابر `manual`، نوع رویدادی که آن را شروع کرد، یا فقط نوعِ یک تریگر نام‌دار (`webhook`) است |
 | `pull_request_published` | `workspace_id`، `pr_id` | یک pull request از یک فضا منتشر شد |
 | `pull_request_merged` | `workspace_id`، `pr_id`، `agent_id` | یک pull request که عاملی باز کرده بود ادغام شد |
 | `meeting_recorded` | `workspace_id`، `meeting_id`، `transcript_chars` | ضبط یک جلسه ذخیره شد |
@@ -142,7 +142,7 @@ Umami افزون بر این، نشانی IP درخواست را دریافت م
 | `skill_updated` | `workspace_id`، `skill_id`، `origin`، `scan_verdict` | یک مهارت فضای کاری نصب، به‌روز یا روی دیسک تغییر داده شد |
 | `calendar_auth_expired` | `workspace_id` | اتصال یک تقویم به ورود دوباره نیاز دارد |
 | `calendar_meeting_starting_soon` | `workspace_id`، `calendar_event_id`، `has_meeting_link`، `lead_s` | یک رویداد تقویم به‌زودی شروع می‌شود |
-| `budget_threshold_crossed` | `scope_type`، `scope_id`، `spent_cents`، `budget_cents`، `hard_stop` | هزینه از آستانهٔ بودجه گذشت |
+| `budget_threshold_crossed` | `scope_type`، `scope_id`، `spent_micros`، `budget_micros`، `hard_stop` | هزینه از آستانهٔ بودجه گذشت |
 | `pull_request_review_requested` | `workspace_id`، `repo_id` | برای یک PR ردیابی‌شده بازبینی درخواست شد |
 | `pull_request_review_decision_changed` | `workspace_id`، `repo_id`، `decision`، `reviewers_remaining` | تصمیم بازبینی یک PR ردیابی‌شده تغییر کرد |
 | `external_pull_request_merged` | `workspace_id`، `repo_id` | در یک مخزن پیوندشده PRی که عاملی باز نکرده بود ادغام شد |

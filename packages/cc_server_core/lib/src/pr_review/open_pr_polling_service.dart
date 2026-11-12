@@ -13,6 +13,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/detect_pr_notifiable_transitions.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/evaluate_pr_merge_readiness.dart';
+import 'package:cc_domain/features/pr_review/domain/value_objects/pr_review_cache_kinds.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
@@ -86,13 +87,13 @@ class OpenPrPollingService {
   static const double forcedRefreshRateFloor = 0.05;
 
   /// Cache kind for the persisted per-workspace snapshot.
-  static const cacheKind = 'openPrList';
+  static const cacheKind = PrReviewCacheKinds.openPrList;
 
   /// Cache key (single row per workspace) for the persisted snapshot.
   static const cacheKey = 'v1';
 
   /// Persisted exact-head history, separate from the open-list wire frame.
-  static const branchHistoryCacheKind = 'branchPrHistory';
+  static const branchHistoryCacheKind = PrReviewCacheKinds.branchPrHistory;
 
   /// Maximum age of a successfully resolved branch inventory.
   static const branchHistoryRefreshInterval = Duration(minutes: 5);

@@ -161,17 +161,17 @@ class PhonePlanDetailContent extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               l10n.mobilePlanEstimatedCost(
-                (estimate!['total_cost_cents_low'] as num?) == null
+                (estimate!['total_cost_micros_low'] as num?) == null
                     ? l10n.mobilePlanCostUnknown
                     : planMoney(
                         context,
-                        (estimate!['total_cost_cents_low'] as num).toInt(),
+                        (estimate!['total_cost_micros_low'] as num).toInt(),
                       ),
-                (estimate!['total_cost_cents_high'] as num?) == null
+                (estimate!['total_cost_micros_high'] as num?) == null
                     ? l10n.mobilePlanCostUnknown
                     : planMoney(
                         context,
-                        (estimate!['total_cost_cents_high'] as num).toInt(),
+                        (estimate!['total_cost_micros_high'] as num).toInt(),
                       ),
               ),
               style: TextStyle(color: t.textSecondary),

@@ -1,5 +1,6 @@
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/settings/providers/backup_review_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One snapshot as `server.listBackups` or `workspace.listBackups` reports it.
@@ -20,6 +21,7 @@ class BackupSnapshotView {
     this.complete = true,
     this.workspaces = const [],
     this.skippedWorkspaceIds = const [],
+    this.pinnedReason,
   });
 
   /// Decodes one `server.listBackups` entry.
@@ -41,7 +43,12 @@ class BackupSnapshotView {
           for (final id in (json['skipped_workspace_ids'] as List?) ?? const [])
             if (id is String) id,
         ],
+        pinnedReason: json['pinned_reason'] as String?,
       );
+
+  /// [pinnedReason] of the newest verified copy of a workspace whose live
+  /// file is damaged.
+  static const lastGoodCopyPin = 'last_good_copy';
 
   /// Absolute path of the snapshot directory on the server host.
   final String path;
@@ -55,9 +62,18 @@ class BackupSnapshotView {
   /// Total bytes on disk.
   final int bytes;
 
-  /// Whether the manifest parsed and every file it names is present. False
-  /// marks a snapshot that died halfway, which is shown rather than hidden.
+  /// Whether the manifest parsed, every file it names is present and each
+  /// passed its check. False marks a snapshot that died halfway, or one taken
+  /// before snapshots recorded checksums, which is shown rather than hidden:
+  /// either way it cannot be verified.
   final bool complete;
+
+  /// Why cleanup keeps this snapshot whatever its age, or null when it ages
+  /// out like any other.
+  final String? pinnedReason;
+
+  /// Whether it is kept as the last good copy of a damaged workspace.
+  bool get isLastGoodCopy => pinnedReason == lastGoodCopyPin;
 
   /// The workspaces captured in it, each restorable on its own.
   final List<BackupSnapshotWorkspaceView> workspaces;
@@ -260,8 +276,10 @@ class BackupActions {
   ///
   /// Owner-only server-side and irreversible for the target, so every caller
   /// confirms first. [sourcePath] is a path on the SERVER host — either one
-  /// this page read out of a snapshot, or one the operator supplied.
-  Future<void> importWorkspace({
+  /// this page read out of a snapshot, or one the operator supplied. Returns
+  /// how many grants the file carried that now wait for review
+  /// ([settleRestore]).
+  Future<int> importWorkspace({
     required String workspaceId,
     required String sourcePath,
   }) async {
@@ -269,6 +287,30 @@ class BackupActions {
       'workspace_id': workspaceId,
       'source_path': sourcePath,
     });
+    return settleRestore(workspaceId);
+  }
+
+  /// Refreshes what a completed restore of [workspaceId] changed and returns
+  /// how many grants it held back for the server owner.
+  ///
+  /// A restore closes the workspace's notice (its file is good again), moves
+  /// its last-good-copy pin, writes a pre-restore backup and may hold grants
+  /// back, so every list that shows one of those reloads. Every restore lane
+  /// (a snapshot entry, a server path, an upload) ends here. The count is
+  /// read from the server rather than the cached list; a count that cannot
+  /// be read is reported as none, and the section itself still shows them.
+  Future<int> settleRestore(String workspaceId) async {
+    _ref
+      ..invalidate(serverNoticesProvider)
+      ..invalidate(importHoldsProvider(workspaceId))
+      ..invalidate(workspaceBackupsProvider(workspaceId))
+      ..invalidate(backupSnapshotsProvider);
+    try {
+      return (await _ref.read(importHoldReviewProvider).list(workspaceId))
+          .length;
+    } on Object {
+      return 0;
+    }
   }
 
   /// Soft-deletes [workspaceId].

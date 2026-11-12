@@ -1,51 +1,35 @@
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/repositories/cache_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_host/cc_host.dart';
+import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/catalog/editor_layout_cache_ops.dart';
+import 'package:drift/drift.dart' show Variable;
 import 'package:test/test.dart';
 
-class _MemoryCache implements CacheRepository {
-  final rows = <(String, String, String), String>{};
-
-  @override
-  Future<String?> read(String workspaceId, String kind, String key) async =>
-      rows[(workspaceId, kind, key)];
-
-  @override
-  Future<void> put(
-    String workspaceId,
-    String kind,
-    String key,
-    String payload,
-  ) async => rows[(workspaceId, kind, key)] = payload;
-
-  @override
-  Future<void> deleteEntry(String workspaceId, String kind, String key) async =>
-      rows.remove((workspaceId, kind, key));
-
-  @override
-  Future<void> deleteKind(String workspaceId, String kind) async =>
-      rows.removeWhere((k, _) => k.$1 == workspaceId && k.$2 == kind);
-
-  @override
-  Future<void> deleteKindWithPrefix(
-    String workspaceId,
-    String kind,
-    String keyPrefix,
-  ) async => rows.removeWhere(
-    (k, _) => k.$1 == workspaceId && k.$2 == kind && k.$3.startsWith(keyPrefix),
-  );
-}
+import 'helpers/test_database.dart';
 
 void main() {
-  late _MemoryCache cache;
+  late GlobalDatabase global;
+  late WorkspaceDatabaseManager dbs;
   late Map<String, RepoOp> ops;
 
-  setUp(() {
-    cache = _MemoryCache();
-    ops = {for (final op in buildEditorLayoutCacheOps(cache)) op.name: op};
+  setUp(() async {
+    global = createTestGlobalDatabase();
+    dbs = createTestWorkspaceDatabases(global: global);
+    await seedTestWorkspace(global, dbs, 'ws-1');
+    await seedTestWorkspace(global, dbs, 'ws-2');
+    ops = {
+      for (final op in buildEditorLayoutCacheOps(
+        DaoEditorLayoutRepository(dbs),
+      ))
+        op.name: op,
+    };
+  });
+
+  tearDown(() async {
+    await dbs.closeAll();
+    await global.close();
   });
 
   Future<Map<String, dynamic>> call(
@@ -82,59 +66,60 @@ void main() {
     'payload': payload,
   }, workspaceId: workspaceId ?? 'ws-1');
 
-  test('a layout is the writer\'s own, on every device', () async {
-    await write('alice', 'space-1', 'alice-layout');
-    await write('bob', 'space-1', 'bob-layout');
+  test("a layout is the writer's own, on every device", () async {
+    await write('alice', 'space-1', '{"who":"alice"}');
+    await write('bob', 'space-1', '{"who":"bob"}');
 
-    expect(await read('alice', 'space-1'), 'alice-layout');
-    expect(await read('bob', 'space-1'), 'bob-layout');
-    expect(
-      cache.rows.keys.map((k) => k.$3),
-      everyElement(startsWith('user:')),
-      reason: 'no write may land on the shared, unowned key',
-    );
+    expect(await read('alice', 'space-1'), '{"who":"alice"}');
+    expect(await read('bob', 'space-1'), '{"who":"bob"}');
   });
 
   test('a layout never crosses workspaces', () async {
-    await write('alice', 'space-1', 'ws-1-layout');
+    await write('alice', 'space-1', '{"ws":1}');
 
     expect(await read('alice', 'space-1', workspaceId: 'ws-2'), isNull);
   });
 
-  test('a key naming an owner is refused', () async {
-    await write('alice', 'space-1', 'alice-layout');
+  test('a layout is stored in editor_layouts, not in the cache', () async {
+    await write('alice', 'space-1', '{"ws":1}');
 
+    final db = dbs.of('ws-1');
+    final layouts = await db
+        .customSelect('SELECT user_id, surface, target FROM editor_layouts')
+        .get();
+    expect(layouts.single.data, {
+      'user_id': 'alice',
+      'surface': 'space',
+      'target': 'space-1',
+    });
+    final cached = await db
+        .customSelect(
+          'SELECT COUNT(*) AS n FROM caches WHERE kind = ?',
+          variables: [Variable.withString(EditorLayoutCacheKinds.space)],
+        )
+        .getSingle();
+    expect(cached.read<int>('n'), 0);
+  });
+
+  test('a payload that is not JSON is refused', () async {
     expect(
-      () => read('mallory', editorLayoutOwnerKey('alice', 'space-1')),
-      throwsA(isA<ValidationException>()),
-    );
-    expect(
-      () => write('mallory', editorLayoutOwnerKey('alice', 'space-1'), 'x'),
+      () => write('alice', 'space-1', 'not json'),
       throwsA(isA<ValidationException>()),
     );
   });
 
-  test('server-owned cache kinds are unreachable', () async {
-    cache.rows[('ws-1', 'approval_routing', 'policy')] = '{"secret":true}';
-
+  test('any other kind is unreachable', () async {
     expect(
-      () => call('cache.read', 'alice', {
-        'kind': 'approval_routing',
-        'key': 'policy',
-      }),
+      () => call('cache.read', 'alice', {'kind': 'prDetail', 'key': 'o/r#1'}),
       throwsA(isA<ValidationException>()),
     );
     expect(
       () => call('cache.write', 'alice', {
-        'kind': 'approval_routing',
-        'key': 'policy',
+        'kind': 'prDetail',
+        'key': 'o/r#1',
         'payload': '{}',
       }),
       throwsA(isA<ValidationException>()),
-    );
-    expect(
-      cache.rows[('ws-1', 'approval_routing', 'policy')],
-      '{"secret":true}',
     );
   });
 
@@ -143,13 +128,13 @@ void main() {
       await call('cache.write', 'alice', {
         'kind': kind,
         'key': 'k',
-        'payload': kind,
+        'payload': '"$kind"',
       });
       final result = await call('cache.read', 'alice', {
         'kind': kind,
         'key': 'k',
       });
-      expect(result['payload'], kind);
+      expect(result['payload'], '"$kind"');
     }
   });
 }

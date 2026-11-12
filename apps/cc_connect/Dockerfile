@@ -25,7 +25,7 @@
 # ---- Build stage: compile native AOT executables ----------------------------
 # Pinned by digest. Keep the tag in sync with the `environment:` of
 # apps/cc_connect/pubspec.yaml.
-FROM dart:3.13-sdk@sha256:854f3c50b1cbd4a5a54c9fa67d4f5b6702ac49b4a26d21a80e7712a72528b215 AS builder
+FROM dart:3.14-sdk@sha256:9ba97850b3154383a90f67844b09ea77751f7835836d8b2662ad2ffe03f60c8c AS builder
 
 WORKDIR /build
 COPY --from=core lib ./packages/cc_connect_core/lib

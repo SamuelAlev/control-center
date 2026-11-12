@@ -24,7 +24,7 @@ typedef EffectiveAutonomyResolver =
       String? spaceId,
     });
 
-/// Resolves an agent's remaining budget envelope in cents. Null = the agent
+/// Resolves an agent's remaining budget envelope in micro-dollars. Null = the agent
 /// has no hard-stop budget policy (unlimited). Injected as a port so the pure
 /// ticket domain can enforce the budget-envelope guard without depending on
 /// the budget store.
@@ -51,7 +51,7 @@ class TicketWorkflowService {
     required this.eventBus,
     this.onWarn,
     this.resolveEffectiveAutonomy,
-    this.resolveRemainingBudgetCents,
+    this.resolveRemainingBudgetMicros,
   });
 
   /// Local persistence (mirror + overlay).
@@ -72,7 +72,7 @@ class TicketWorkflowService {
   /// Port for the budget-envelope guard, read by `PeerDelegationGate`. Null
   /// makes every agent hand-off refuse ("not configured"); production wiring
   /// always supplies it.
-  final RemainingBudgetResolver? resolveRemainingBudgetCents;
+  final RemainingBudgetResolver? resolveRemainingBudgetMicros;
 
   static const _uuid = Uuid();
 

@@ -1,17 +1,46 @@
+import 'package:cc_persistence/database/tables/checks/column_checks.dart';
+import 'package:cc_persistence/database/tables/checks/stored_values_agents.dart';
 import 'package:drift/drift.dart';
 
 /// Drift table for pipeline runs.
 ///
 /// Each row represents one execution of a pipeline template. The engine
-/// persists state here so it can resume in-flight runs after a crash.
+/// persists state here so it can resume in-flight runs after a crash. The
+/// template graph the run was pinned to is in `pipeline_run_snapshots`: this
+/// row is rewritten on every step and read by every list, and neither needs
+/// the graph.
+///
+/// At most one live run per `(template_id, dedup_key)`: the trigger
+/// dispatcher's idempotency is a schema fact, not a read-then-insert.
+@TableIndex.sql(
+  'CREATE UNIQUE INDEX uq_pipeline_runs_active_dedup '
+  'ON pipeline_runs (template_id, dedup_key) '
+  'WHERE dedup_key IS NOT NULL '
+  "AND status IN ('pending','queued','running','suspended')",
+)
+// Admission reads exactly this shape on every run completion: count the slot
+// holders of one template, then find its oldest queued row. Template
+// retention reads its leading column.
+@TableIndex(
+  name: 'idx_pipeline_runs_template_status',
+  columns: {#templateId, #status, #startedAt},
+)
+// The newest-first run list (`started_at DESC, rowid DESC`; the entries carry
+// the rowid).
+@TableIndex(name: 'idx_pipeline_runs_started', columns: {#startedAt})
+// Recovery reads every non-terminal run on start; nearly every row is
+// terminal.
 @TableIndex(name: 'idx_pipeline_runs_status', columns: {#status})
-@TableIndex(name: 'idx_pipeline_runs_workspaceId', columns: {#workspaceId})
-@TableIndex(name: 'idx_pipeline_runs_templateId', columns: {#templateId})
+@TableIndex(name: 'idx_pipeline_runs_parent', columns: {#parentPipelineRunId})
 class PipelineRunsTable extends Table {
   /// Unique run identifier (UUID v4).
   TextColumn get id => text()();
 
   /// Which template this run instantiates.
+  ///
+  /// No foreign key: a run is history and outlives its template (it carries
+  /// its own snapshot in `pipeline_run_snapshots`), so a template delete must neither remove its
+  /// runs nor be blocked by them, and `PipelineRun.templateId` is required.
   TextColumn get templateId => text()();
 
   /// Workspace scope.
@@ -23,16 +52,25 @@ class PipelineRunsTable extends Table {
   /// `failed` | `cancelled`. A `queued` run was admitted but is waiting for a
   /// slot under its template's `max_parallel_runs` cap: it owns no step rows
   /// and nothing executes for it until the engine promotes it.
-  TextColumn get status => text().withDefault(const Constant('pending'))();
+  TextColumn get status => text()
+      // ignore: recursive_getters
+      .check(status.isIn(AgentsStoredValues.pipelineRunStatus))
+      .withDefault(const Constant('pending'))();
 
   /// JSON-serialized mutable state bag shared across steps.
-  TextColumn get stateJson => text().withDefault(const Constant('{}'))();
+  TextColumn get stateJson => text()
+      // ignore: recursive_getters
+      .check(isJsonObject(stateJson))
+      .withDefault(const Constant('{}'))();
 
   /// Fully-qualified domain event type that triggered this run (nullable).
   TextColumn get triggerEventType => text().nullable()();
 
-  /// JSON-serialized trigger event payload (nullable).
-  TextColumn get triggerPayloadJson => text().nullable()();
+  /// JSON-serialized trigger event payload (nullable); always an object,
+  /// which is what the run's mapper decodes.
+  TextColumn get triggerPayloadJson =>
+      // ignore: recursive_getters
+      text().nullable().check(isJsonObject(triggerPayloadJson))();
 
   /// When this run was FIRST created. Never rewritten — a retry or a
   /// crash-resume stamps [attemptStartedAt] instead, so the run keeps one
@@ -76,8 +114,13 @@ class PipelineRunsTable extends Table {
   TextColumn get dedupKey => text().nullable()();
 
   /// Parent pipeline run id when this run was started by a `flow.callPipeline`
-  /// node. Null for top-level runs.
-  TextColumn get parentPipelineRunId => text().nullable()();
+  /// node. Null for top-level runs. `SET NULL`: a child run's history
+  /// outlives its parent.
+  TextColumn get parentPipelineRunId => text().nullable().references(
+    PipelineRunsTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// The parent run's step id that called this child run (with
   /// [parentPipelineRunId]). Null for top-level runs.
@@ -85,12 +128,6 @@ class PipelineRunsTable extends Table {
 
   /// Template version this run was started against.
   IntColumn get templateVersion => integer().withDefault(const Constant(1))();
-
-  /// The template graph as it was when the run started
-  /// (`PipelineDefinition.toJson`), written once at insert. Resume, retry and
-  /// the run detail read it so a template edit mid-run can't change what the
-  /// run does or shows. Null for runs that predate it (v23).
-  TextColumn get templateSnapshotJson => text().nullable()();
 
   /// Which attempt of this run is current, 1-based.
   ///
@@ -101,8 +138,8 @@ class PipelineRunsTable extends Table {
   /// which cannot answer "is this the second try or the fifth".
   IntColumn get attemptCount => integer().withDefault(const Constant(1))();
 
-  /// Aggregated cost of all agent work in this run, in cents.
-  IntColumn get totalCostCents => integer().withDefault(const Constant(0))();
+  /// Aggregated cost of all agent work in this run, in micro-dollars.
+  IntColumn get totalCostMicros => integer().withDefault(const Constant(0))();
 
   /// Aggregated token usage across all agent work in this run.
   IntColumn get totalTokens => integer().withDefault(const Constant(0))();

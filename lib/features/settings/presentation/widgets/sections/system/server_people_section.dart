@@ -8,6 +8,7 @@ import 'package:control_center/features/settings/presentation/widgets/kit/settin
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/member_avatar.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -127,7 +128,7 @@ class _ServerPersonRowState extends ConsumerState<ServerPersonRow> {
       CcToastScope.maybeOf(context)?.show(
         e is ServerOwnerRequiredException
             ? l10n.serverPeopleOwnerOnly
-            : l10n.failedWithError('$e'),
+            : failureMessage(l10n, e),
         variant: CcToastVariant.danger,
       );
     } finally {

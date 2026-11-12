@@ -3,7 +3,7 @@ title: Arhitectură
 description: Cum este structurat Control Center cu un model de server pentru client subțire, Clean Architecture orientată pe funcționalități și modelul porturi și adaptoare.
 dateModified: 2026-09-19
 slug: ro-RO/manual/concepte/arhitectura
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## Prezentare generală
@@ -100,9 +100,9 @@ Rădăcina de compoziție a aplicației (`di/providers.dart`) leagă porturile d
 **Drift** (SQLite), împărțit în două baze de date, ambele în `cc_persistence`:
 
 - **`GlobalDatabase`** (`<dataDir>/global.db`) — o listă scurtă de tabele cu adevărat globale pentru server: registrul spațiilor de lucru, utilizatori/preferințe/dispozitive asociate, conexiuni SSO, setări de server la nivel de instalare, politici de acțiuni administrate (o limită la nivel de instalare care poate doar înăspri guardrail-urile spațiilor de lucru), fluxul de știri per utilizator, coada flotei (workeri/sarcini/jurnal de plasare), indexul `workspace_routes` dinainte de autentificare și metadatele instalării. Procesul de pornire deschide doar acest fișier, așa că costul pornirii rămâne constant indiferent cât de mult istoric acumulează spațiile de lucru. Adăugarea unui tabel aici este o decizie de izolare pe care un test de tip ratchet te obligă să o argumentezi.
-- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — un _director_ pentru fiecare spațiu de lucru, care conține un fișier SQLite plus tot ce aparține doar acelui spațiu de lucru, astfel încât worktree-urile unei conversații și fișierele agenților stau lângă baza de date și sunt șterse odată cu ea. Aproape totul se află aici: agenți, spații, tichete, memorie, pipeline-uri, întâlniri, graful de cod, revizuiri, repo-uri. Fișierele se deschid la cerere, la prima atingere, prin `WorkspaceDatabaseManager.of(workspaceId)`, și își plătesc atunci propriul `quick_check`, instalarea FTS/trigger și `vector_init`.
+- **`WorkspaceDatabase`** (`<dataDir>/<workspaceId>/workspace.db`) — un _director_ pentru fiecare spațiu de lucru, care conține un fișier SQLite plus tot ce aparține doar acelui spațiu de lucru, astfel încât worktree-urile unei conversații și fișierele agenților stau lângă baza de date și sunt șterse odată cu ea. Aproape totul se află aici: agenți, spații, tichete, memorie, pipeline-uri, întâlniri, revizuiri, repo-uri. Graful de cod este un al doilea fișier în același director, `code_index.db`, care este reconstruit în loc să fie copiat într-un backup. Fișierele se deschid la cerere, la prima atingere, prin `WorkspaceDatabaseManager.of(workspaceId)`, și își plătesc atunci propriul `quick_check`, instalarea FTS/trigger și `vector_init`.
 
-Ambele jumătăți au pornit de la o bază de referință v1 aplatizată — `onCreate` construiește schema actuală — cu pași de migrare adăugați doar atunci când o bază de date deja implementată trebuie dusă mai departe.
+Niciuna dintre cele două jumătăți nu are pași de migrare. Un fișier nou este construit din definițiile tabelelor. Un fișier dintr-o versiune mai veche este mai întâi copiat deoparte (`pre_upgrade/`) și apoi adus la aceleași definiții când este deschis, astfel încât o instalare nouă și una actualizată ajung la aceeași schemă. Un fișier scris de o versiune mai nouă este refuzat.
 
 Deoarece un spațiu de lucru este un singur fișier, exportul unui spațiu de lucru este o singură instrucțiune `VACUUM INTO` (`workspace.export`), nu un dump tabel cu tabel; `workspace.import` adoptă un astfel de fișier și folosește `workspace_meta` încorporat pentru a distinge propriul fișier readoptat de unul provenit din altă instalare.
 

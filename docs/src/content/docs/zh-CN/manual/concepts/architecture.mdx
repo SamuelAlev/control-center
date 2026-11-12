@@ -3,7 +3,7 @@ title: 架构
 description: Control Center 如何通过瘦客户端服务器模型、以功能为先的整洁架构以及端口与适配器进行组织。
 dateModified: 2026-09-19
 slug: zh-CN/手册/概念/架构
-sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
+sourceHash: f0a08b103616d70da998007ffe6fc6aa743c5340
 ---
 
 ## 概述
@@ -100,9 +100,9 @@ Control Center 是多用户的：人和智能体是由 `Principal` 统一起来�
 **Drift**（SQLite），拆分为两个数据库，两者都位于 `cc_persistence` 中：
 
 - **`GlobalDatabase`**（`<dataDir>/global.db`）——一份很短的、真正属于全服务器范围的表清单：工作区注册表、用户/偏好设置/已配对设备、SSO 连接、全安装范围的服务器设置、受管操作策略（一个全安装范围的约束，只能收紧工作区护栏）、每个用户的新闻流、机群队列（工作进程/作业/放置日志）、认证前的 `workspace_routes` 索引以及安装元数据。启动时只打开这个文件，因此无论各工作区积累了多少历史，启动开销都保持平稳。在这里新增一张表是一项隔离决策，棘轮测试会迫使你为此给出理由。
-- **`WorkspaceDatabase`**（`<dataDir>/<workspaceId>/workspace.db`）——每个工作区一个_目录_，其中存放一个 SQLite 文件，外加其他一切只属于该工作区的内容，因此某次对话的 worktree 和智能体文件就位于数据库旁边，并随数据库一起删除。几乎所有内容都在这里：智能体、空间、工单、记忆、流水线、会议、代码图、审查、仓库。文件在首次访问时通过 `WorkspaceDatabaseManager.of(workspaceId)` 延迟打开，并在那时各自承担自己的 `quick_check`、FTS/触发器安装和 `vector_init`。
+- **`WorkspaceDatabase`**（`<dataDir>/<workspaceId>/workspace.db`）——每个工作区一个_目录_，其中存放一个 SQLite 文件，外加其他一切只属于该工作区的内容，因此某次对话的 worktree 和智能体文件就位于数据库旁边，并随数据库一起删除。几乎所有内容都在这里：智能体、空间、工单、记忆、流水线、会议、审查、仓库。代码图是同一目录中的第二个文件，即 `code_index.db`，它是重建的而非备份的。文件在首次访问时通过 `WorkspaceDatabaseManager.of(workspaceId)` 延迟打开，并在那时各自承担自己的 `quick_check`、FTS/触发器安装和 `vector_init`。
 
-这两半都从一份压平的 v1 基线开始——`onCreate` 会构建当前 schema——只有在已部署的数据库需要向前迁移时才会追加迁移步骤。
+两部分都没有迁移步骤。新文件根据表定义构建。来自旧版本的文件会先被复制到一旁（`pre_upgrade/`），然后在打开时调整为相同的定义，因此全新安装与已更新的安装最终会得到相同的 schema。由较新版本写入的文件会被拒绝。
 
 由于一个工作区就是一个文件，导出工作区只需一条 `VACUUM INTO` 语句（`workspace.export`），而不是逐表转储；`workspace.import` 会接纳这样一个文件，并利用内嵌的 `workspace_meta` 来区分“重新接纳自己的文件”和“来自另一次安装的文件”。
 
