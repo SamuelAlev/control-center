@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/cache_for.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/review_code_pane.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,13 +40,23 @@ final _files = <PrFile>[];
 /// When set, the changeset load fails with it instead of answering [_files].
 Object? _failure;
 
-Widget _pane(String anchor) {
+/// How many times the changeset was loaded.
+var _loads = 0;
+
+/// When set, a load waits for it before answering.
+Completer<void>? _hold;
+
+Widget _pane(String anchor, {bool shown = true}) {
   return ProviderScope(
     retry: (_, _) => null,
     overrides: [
       codeFontFamilyProvider.overrideWithValue('monospace'),
       codeFontLigaturesProvider.overrideWithValue(false),
       repoChangesProvider.overrideWith((ref, args) async {
+        // As the real provider does: the diff outlives the tab for a while.
+        ref.cacheFor(kPanelCacheTtl);
+        _loads++;
+        await _hold?.future;
         final failure = _failure;
         if (failure != null) {
           throw failure;
@@ -52,7 +66,7 @@ Widget _pane(String anchor) {
     ],
     child: MaterialApp(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
@@ -60,12 +74,14 @@ Widget _pane(String anchor) {
       home: CcTheme(
         data: CcThemeData.light(),
         child: Scaffold(
-          body: ReviewCodePane(
-            workspaceId: 'ws',
-            repoId: 'repo',
-            spaceId: 'space',
-            anchorPath: anchor,
-          ),
+          body: shown
+              ? ReviewCodePane(
+                  workspaceId: 'ws',
+                  repoId: 'repo',
+                  spaceId: 'space',
+                  anchorPath: anchor,
+                )
+              : const SizedBox.shrink(),
         ),
       ),
     ),
@@ -104,6 +120,8 @@ void main() {
 
   setUp(() {
     _failure = null;
+    _loads = 0;
+    _hold = null;
     _files
       ..clear()
       ..addAll(files);
@@ -178,5 +196,31 @@ void main() {
 
     expect(find.text("Couldn't load the changes"), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('coming back paints the held diff and refetches it', (
+    tester,
+  ) async {
+    await runOnDesktop(tester, () async {
+      await tester.pumpWidget(_pane('first.dart'));
+      await _settledOffset(tester);
+      expect(find.text('first.dart'), findsOneWidget);
+      expect(_loads, 1);
+
+      await tester.pumpWidget(_pane('first.dart', shown: false));
+      await tester.pump();
+
+      // The refetch stays in flight: the held diff must paint meanwhile.
+      _hold = Completer<void>();
+      await tester.pumpWidget(_pane('first.dart'));
+      await tester.pump();
+      expect(find.byType(CcSpinner), findsNothing);
+      expect(find.text('first.dart'), findsOneWidget);
+      expect(_loads, 2);
+
+      _hold!.complete();
+      await _settledOffset(tester);
+      expect(find.text('first.dart'), findsOneWidget);
+    });
   });
 }

@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_history_menu.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -35,7 +36,7 @@ Widget _wrap(List<PipelineRun> runs, PipelineRun current) {
       ).overrideWith((ref) => Stream.value(runs)),
     ],
     child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: CcTheme(
         data: CcThemeData.light(),

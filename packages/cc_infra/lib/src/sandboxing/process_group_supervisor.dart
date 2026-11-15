@@ -6,18 +6,23 @@ import 'dart:io';
 /// or `setsid`, and macOS has no `setsid`. Either way `$!` is the group id,
 /// which is what `kill -- -$child` addresses. stdio is released after the spawn
 /// so that this shell holds no end of a pipe the server is waiting on.
+///
+/// stdin goes through fd 3: without job control, dash (Linux `/bin/sh`) points
+/// a background job's stdin at /dev/null before its redirections run, so a
+/// plain `<&0` would hand the command /dev/null instead of the server's pipe.
 const String _watcher = r'''
 server=$PPID
 self=$$
+exec 3<&0
 if command -v setsid >/dev/null 2>&1; then
-  setsid "$@" <&0 &
+  setsid "$@" <&3 3<&- &
 else
   set -m
-  "$@" <&0 &
+  "$@" <&3 3<&- &
   set +m
 fi
 child=$!
-exec </dev/null >/dev/null 2>&1
+exec </dev/null >/dev/null 2>&1 3<&-
 reap() {
   kill -TERM -"$child" 2>/dev/null || kill -TERM "$child" 2>/dev/null
   /bin/sleep 5

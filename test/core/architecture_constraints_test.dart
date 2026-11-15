@@ -928,6 +928,42 @@ void main() {
     });
   });
 
+  // ===== Localizations load through the loader =====
+  // l10n.yaml defers every locale so the web bundle stays under Cloudflare's
+  // per-asset cap. The generated delegate and lookup are then asynchronous: a
+  // MaterialApp on them renders a blank first frame and lookups need a Future.
+  group('Localizations load through localizations_loader.dart', () {
+    test('no generated AppLocalizations delegate or lookup outside l10n', () {
+      final generated = RegExp(
+        r'\bAppLocalizations\.(?:delegate|localizationsDelegates)\b|'
+        r'\blookupAppLocalizations\b',
+      );
+      final offenders = <String>[];
+      for (final dir in const ['lib', 'test']) {
+        for (final rel in _dartFilesRelative(projectRoot, dir)) {
+          if (rel.startsWith('lib/l10n/')) {
+            continue;
+          }
+          final content = _stripDartComments(
+            File('$projectRoot/$rel').readAsStringSync(),
+          );
+          if (content.contains(generated)) {
+            offenders.add(rel);
+          }
+        }
+      }
+      offenders.sort();
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Use appLocalizationsDelegate(s) and '
+            'AppLocalizationsLoader.lookupLoaded from '
+            'lib/l10n/localizations_loader.dart:\n${offenders.join('\n')}',
+      );
+    });
+  });
+
   // ===== Web Worker cores must be Flutter-free =====
   // Worker entry files (and the Flutter-free islands they pull in) are compiled
   // by `dart compile js` (tool/gen_workers.sh), which cannot see Flutter. A

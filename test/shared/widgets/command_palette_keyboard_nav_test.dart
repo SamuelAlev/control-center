@@ -3,6 +3,7 @@ import 'package:control_center/core/keybindings/keybinding_dispatcher.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:flutter/services.dart';
@@ -68,7 +69,7 @@ void main() {
         codeFontFamilyProvider.overrideWithValue('Fira Code'),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: CcTheme(
           data: CcThemeData.light(),

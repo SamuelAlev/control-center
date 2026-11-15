@@ -3,6 +3,7 @@ import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/settings_sidebar_nav.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +17,7 @@ void main() {
   late AppLocalizations l10n;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   Future<void> pump(WidgetTester tester, {required bool forgeConnected}) async {

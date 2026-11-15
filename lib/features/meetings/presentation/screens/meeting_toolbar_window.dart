@@ -10,6 +10,7 @@ import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_toolbar_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/live_dot.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
@@ -73,7 +74,7 @@ class _MeetingToolbarWindowState extends ConsumerState<MeetingToolbarWindow> {
         supportedLocales: AppLocalizations.supportedLocales,
         // Same material_ui delegates as ControlCenterApp.
         localizationsDelegates: const [
-          AppLocalizations.delegate,
+          appLocalizationsDelegate,
           ...GlobalMaterialLocalizations.delegates,
         ],
         // This sibling window must ignore the engine's current route (the main

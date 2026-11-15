@@ -2,6 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/server/server_discovery.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/l10n/app_localizations_en.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/server_discovery_button.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -33,7 +34,7 @@ void main() {
   }) {
     return tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: CcTheme(
           data: CcThemeData.light(),

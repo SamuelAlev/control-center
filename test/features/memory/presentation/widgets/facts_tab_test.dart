@@ -9,6 +9,7 @@ import 'package:control_center/features/memory/presentation/widgets/confidence_m
 import 'package:control_center/features/memory/presentation/widgets/facts_tab.dart';
 import 'package:control_center/features/memory/presentation/widgets/memory_fact_row.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -113,7 +114,7 @@ Future<void> _pump(WidgetTester tester, List<MemoryFact> facts) async {
         ),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: CcTheme(
           data: CcThemeData.light(),
@@ -176,7 +177,11 @@ void main() {
     tester,
   ) async {
     await _pump(tester, [
-      _fact(topic: 'a', content: 'An instruction', memoryType: MemoryType.instruction),
+      _fact(
+        topic: 'a',
+        content: 'An instruction',
+        memoryType: MemoryType.instruction,
+      ),
       _fact(topic: 'b', content: 'A plain fact'),
     ]);
 

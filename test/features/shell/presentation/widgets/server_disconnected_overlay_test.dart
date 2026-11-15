@@ -7,6 +7,7 @@ import 'package:control_center/core/providers/server_connection_status_provider.
 import 'package:control_center/core/providers/server_switch_provider.dart';
 import 'package:control_center/features/shell/presentation/widgets/server_disconnected_overlay.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -64,7 +65,7 @@ void main() {
         ],
         child: MaterialApp(
           localizationsDelegates: [
-            ...AppLocalizations.localizationsDelegates,
+            ...appLocalizationsDelegates,
             ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,

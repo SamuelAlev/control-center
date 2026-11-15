@@ -7,6 +7,7 @@ import 'package:control_center/features/settings/presentation/widgets/sections/c
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/claude_sign_in_watch.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,7 +58,7 @@ void main() {
   late FakeClaudeAccountsRepository repo;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   Future<void> settle(WidgetTester tester) async {
@@ -322,7 +323,7 @@ void main() {
 
   testWidgets('lays out right to left', (tester) async {
     // A dialog sits on the root navigator, so its direction is the locale's.
-    final arabic = await AppLocalizations.delegate.load(const Locale('ar'));
+    final arabic = await appLocalizationsDelegate.load(const Locale('ar'));
     await pumpHost(tester, [_expired], locale: const Locale('ar'));
     await open(tester, 'sign in one');
 

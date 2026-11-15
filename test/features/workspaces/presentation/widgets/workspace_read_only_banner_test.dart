@@ -4,7 +4,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/workspaces/presentation/widgets/workspace_read_only_banner.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -58,7 +58,7 @@ void main() {
         child: MaterialApp.router(
           routerConfig: router,
           localizationsDelegates: const [
-            AppLocalizations.delegate,
+            appLocalizationsDelegate,
             ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: kSupportedAppLocales,

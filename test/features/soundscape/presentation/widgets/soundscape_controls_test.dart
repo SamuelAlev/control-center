@@ -5,7 +5,7 @@ import 'package:control_center/features/soundscape/presentation/widgets/soundsca
 import 'package:control_center/features/soundscape/presentation/widgets/soundscape_tune_pad.dart';
 import 'package:control_center/features/soundscape/providers/soundscape_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,7 +50,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(tester.takeException(), isNull);
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.soundscapePlay), findsOneWidget);
     expect(find.text(l10n.soundscapeMoodFocus), findsOneWidget);
     expect(find.text(l10n.soundscapeMoodRise), findsOneWidget);

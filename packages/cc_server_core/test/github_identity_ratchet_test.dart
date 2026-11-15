@@ -598,7 +598,11 @@ Map<String, String> _serverSources(Directory root) {
       if (entity is! File || !entity.path.endsWith('.dart')) {
         continue;
       }
-      final path = entity.path.substring(root.path.length + 1);
+      // Repo-relative with `/`, as the allowlists spell it: a listing on
+      // Windows joins the segments it walks with `\`.
+      final path = entity.path
+          .substring(root.path.length + 1)
+          .replaceAll(r'\', '/');
       if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
         continue;
       }

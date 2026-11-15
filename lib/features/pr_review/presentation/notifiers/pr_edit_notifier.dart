@@ -10,7 +10,7 @@ import 'package:control_center/features/auth/providers/oauth_providers.dart'
 import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// In-flight edit state for a single PR's title/body/assignees/reviewers/labels.
@@ -186,7 +186,7 @@ class PrEditNotifier extends Notifier<PrEditState> {
     }
     // A repository replaced on its forge, or one the person's own forge
     // account cannot read, is worded by its kind, not the server's English.
-    final l10n = lookupAppLocalizations(
+    final l10n = AppLocalizationsLoader.lookupLoaded(
       remapTranslationLocale(
         ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
       ),

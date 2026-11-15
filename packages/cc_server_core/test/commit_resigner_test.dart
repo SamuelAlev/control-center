@@ -116,6 +116,12 @@ void main() {
         '${scratch.path}/gitconfig',
       )..writeAsStringSync('')).path,
       'GIT_CONFIG_NOSYSTEM': '1',
+      // `verify-commit` hands the signature to ssh-keygen through a temporary
+      // file. Without the parent environment, Git for Windows has no TEMP or
+      // TMP to derive its TMPDIR from and falls back to a `/tmp` that does
+      // not exist there.
+      'TMPDIR': scratch.path,
+      if (Platform.isWindows) ...{'TEMP': scratch.path, 'TMP': scratch.path},
     };
     await git(['init', '--quiet', '-b', 'main']);
     key = await SshSigningKey.generate();

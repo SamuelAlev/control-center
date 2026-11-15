@@ -7,6 +7,7 @@ import 'package:control_center/features/sandboxing/presentation/terminal_panel.d
 import 'package:control_center/features/sandboxing/providers/agent_shell_providers.dart';
 import 'package:control_center/features/sandboxing/providers/terminal_sessions_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -100,7 +101,7 @@ void main() {
           agentShellProcessPortProvider.overrideWithValue(port),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcTheme(
             data: CcThemeData(

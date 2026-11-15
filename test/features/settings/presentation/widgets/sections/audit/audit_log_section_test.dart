@@ -6,6 +6,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/settings/presentation/widgets/sections/audit/audit_log_section.dart';
 import 'package:control_center/features/settings/providers/audit_log_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -156,7 +157,7 @@ void main() {
       child: CcTheme(
         data: theme ?? CcThemeData.light(),
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Directionality(
             textDirection: direction,
@@ -377,7 +378,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: router,
           ),

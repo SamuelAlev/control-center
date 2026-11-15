@@ -5,6 +5,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/subscriptions/presentation/widgets/subscription_usage_pill.dart';
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,7 +65,7 @@ void main() {
               subscriptionUsageProvider.overrideWith(_FixedUsage.new),
             ],
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               locale: const Locale('en'),
               home: CcTheme(

@@ -1,3 +1,7 @@
+// Run sandboxes are Seatbelt and bubblewrap; Windows has none.
+@TestOn('mac-os || linux')
+library;
+
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/value_objects/mode.dart';

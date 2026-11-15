@@ -21,6 +21,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
@@ -186,7 +187,7 @@ _pumpRevisitHarness(WidgetTester tester) async {
         ],
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: _wrap(
           ValueListenableBuilder<String>(
@@ -282,7 +283,7 @@ void main() {
           workspacesProvider.overrideWith((ref) => Stream.value(const [])),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(const MessagingScreen()),
         ),
@@ -321,7 +322,7 @@ void main() {
           workspacesProvider.overrideWith((ref) => Stream.value(const [])),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(const MessagingScreen()),
         ),
@@ -361,7 +362,7 @@ void main() {
           workspacesProvider.overrideWith((ref) => Stream.value(const [])),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(const MessagingScreen()),
         ),
@@ -435,7 +436,7 @@ void main() {
           ).overrideWith((ref) async => 'ch-2'),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(const MessagingScreen(selectedSpaceId: 'ch-2')),
         ),
@@ -577,7 +578,7 @@ void main() {
           ).overrideWith((ref) async => 'ch-2'),
         ],
         child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
         ),
@@ -721,7 +722,7 @@ void main() {
           ],
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(
             ValueListenableBuilder<String>(
@@ -931,7 +932,7 @@ void main() {
         ],
         child: _PrefsLive(
           child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: router,
           ),
@@ -945,7 +946,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.deleteSpace), findsNothing);
     expect(archived, ['ch-2']);
     expect(
@@ -1029,7 +1030,7 @@ void main() {
     Widget app() => ProviderScope(
       overrides: overrides,
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: _wrap(
           const MessagingScreen(
@@ -1243,7 +1244,7 @@ void main() {
         ).overrideWith((ref) async => 'ch-1'),
       ],
       child: MaterialApp.router(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,
       ),
@@ -1506,7 +1507,7 @@ void main() {
           ).overrideWith((ref) async => 'ch-1'),
         ],
         child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
         ),

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/utils/failure_message.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late AppLocalizations l10n;
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   RemoteRpcException refused(String kind, {Map<String, Object?>? extra}) =>

@@ -19,7 +19,7 @@ import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/providers/rpc_client_workspace_sync_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -138,7 +138,7 @@ class DesktopBackendSession {
       session._notificationMapper = RpcNotificationMapper(
         client: backend.client,
         notificationPort: container.read(notificationServiceProvider),
-        localizations: () => lookupAppLocalizations(
+        localizations: () => AppLocalizationsLoader.lookupLoaded(
           container.read(localeProvider) ?? PlatformDispatcher.instance.locale,
         ),
         activeWorkspaceId: () => container.read(activeWorkspaceIdProvider),

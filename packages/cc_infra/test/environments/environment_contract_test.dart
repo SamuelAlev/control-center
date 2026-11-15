@@ -4,6 +4,7 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_template.dart';
 import 'package:cc_infra/src/environments/environment_contract.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
@@ -258,7 +259,7 @@ void main() {
         contract().workingDirectory(
           const EnvironmentCwd(role: 'e2e_suite', path: 'packages/ui'),
         ),
-        '${e2e.path}/packages/ui',
+        p.normalize(p.join(e2e.path, 'packages', 'ui')),
       );
     });
 

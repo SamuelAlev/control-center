@@ -688,6 +688,156 @@ void main() {
     expect(indexer.calls.first.checkoutId, isNull);
   });
 
+  // Runs go one at a time, so which checkout gets a freed slot, and when, is
+  // what keeps background indexing out of the operator's way: after a restart
+  // eight worktree passes of ~23k-file repos ran back to back for two minutes
+  // while git and diffs ran in the same trees.
+  group('slot queue', () {
+    late CodeGraphWatchService queued;
+    late _FakeWatchers queueWatchers;
+
+    setUp(() async {
+      // The suite's default service shares the indexer; it would add runs.
+      await service.dispose();
+      queueWatchers = _FakeWatchers();
+      queued = CodeGraphWatchService(
+        indexer: indexer,
+        workspaces: workspaces,
+        isolatedRepos: isolated,
+        debounce: debounce,
+        linkedDebounce: debounce,
+        reconcileInterval: const Duration(milliseconds: 50),
+        watcherFactory: queueWatchers.create,
+      )..start();
+    });
+
+    tearDown(() async {
+      indexer.releaseAll();
+      await queued.dispose();
+    });
+
+    test('a freed slot goes to a linked checkout before a worktree', () async {
+      final a = await Directory('${tempRoot.path}/a').create();
+      final b = await Directory('${tempRoot.path}/b').create();
+      final wt = await Directory('${tempRoot.path}/wt').create();
+      indexer.holdEveryRun = true;
+      workspaces.emit(
+        [workspace('ws1')],
+        {
+          'ws1': [repo('r1', a.path)],
+        },
+      );
+      await until(() => indexer.inFlight == 1);
+
+      // The worktree queues FIRST, another repo's linked checkout after it.
+      isolated.emit('ws1', [worktree('wt1', 'r1', wt.path)]);
+      await Future<void>.delayed(debounce * 3);
+      workspaces.emit(
+        [workspace('ws1')],
+        {
+          'ws1': [repo('r1', a.path), repo('r2', b.path)],
+        },
+      );
+      await Future<void>.delayed(debounce * 3);
+      expect(queued.status.pending, 2, reason: 'both wait for the slot');
+
+      indexer.releaseNext();
+      await until(() => indexer.calls.length == 2);
+      expect(indexer.calls[1].repoId, 'r2');
+      expect(indexer.calls[1].checkoutId, isNull);
+
+      indexer.releaseNext();
+      await until(() => indexer.calls.length == 3);
+      expect(indexer.calls[2].checkoutId, 'wt1');
+    });
+
+    test(
+      'a worktree full pass rests as long as the previous run took',
+      () async {
+        final linked = await Directory('${tempRoot.path}/linked').create();
+        final wt = await Directory('${tempRoot.path}/wt').create();
+        indexer.holdEveryRun = true;
+        workspaces.emit(
+          [workspace('ws1')],
+          {
+            'ws1': [repo('r1', linked.path)],
+          },
+        );
+        isolated.emit('ws1', [worktree('wt1', 'r1', wt.path)]);
+        await until(() => indexer.inFlight == 1);
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        indexer.releaseAll();
+
+        await until(() => indexer.calls.any((c) => c.checkoutId == 'wt1'));
+        final rested = indexer.calls.last.startedAt!.difference(
+          indexer.finishedAt.first,
+        );
+        expect(
+          rested,
+          greaterThanOrEqualTo(const Duration(milliseconds: 380)),
+          reason: 'the linked run took ~400ms, so the worktree waits as long',
+        );
+      },
+    );
+
+    test('a targeted worktree save does not wait out the rest', () async {
+      final linked = await Directory('${tempRoot.path}/linked').create();
+      final wt = await Directory('${tempRoot.path}/wt').create();
+      workspaces.emit(
+        [workspace('ws1')],
+        {
+          'ws1': [repo('r1', linked.path)],
+        },
+      );
+      isolated.emit('ws1', [worktree('wt1', 'r1', wt.path)]);
+      await until(() => indexer.calls.length == 2);
+
+      // A slow linked run, with an agent save queued behind it.
+      indexer.holdEveryRun = true;
+      queueWatchers.save(linked.path, 'lib/a.dart');
+      await until(() => indexer.inFlight == 1);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      queueWatchers.save(wt.path, 'lib/b.dart');
+      await Future<void>.delayed(debounce * 3);
+      indexer.releaseAll();
+
+      await until(() => indexer.calls.length == 4);
+      final run = indexer.calls.last;
+      expect(run.checkoutId, 'wt1');
+      expect(run.changedPaths, ['lib/b.dart']);
+      expect(
+        run.startedAt!.difference(indexer.finishedAt[2]),
+        lessThan(const Duration(milliseconds: 200)),
+        reason: 'a targeted run costs only the change; it never rests',
+      );
+    });
+
+    test('a save while the arm-time pass waits still gets the full '
+        'pass', () async {
+      // A targeted run writes the checkpoint too. Had the save turned the
+      // arm-time pass into a one-file run, that checkpoint would vouch for a
+      // tree whose offline changes were never indexed.
+      final linked = await Directory('${tempRoot.path}/linked').create();
+      final wt = await Directory('${tempRoot.path}/wt').create();
+      indexer.holdEveryRun = true;
+      workspaces.emit(
+        [workspace('ws1')],
+        {
+          'ws1': [repo('r1', linked.path)],
+        },
+      );
+      isolated.emit('ws1', [worktree('wt1', 'r1', wt.path)]);
+      await until(() => indexer.inFlight == 1);
+      await Future<void>.delayed(debounce * 3);
+      queueWatchers.save(wt.path, 'lib/early.dart');
+      indexer.releaseAll();
+
+      await until(() => indexer.calls.any((c) => c.checkoutId == 'wt1'));
+      final first = indexer.calls.firstWhere((c) => c.checkoutId == 'wt1');
+      expect(first.changedPaths, isNull);
+    });
+  });
+
   test('never watches a worktree whose conversation is dormant', () async {
     // `isolated_repos` accumulates — 117 rows on a real host, of which only 15
     // belonged to a conversation active in the last week and 72 had never
@@ -823,7 +973,18 @@ void main() {
     await until(() => indexer.calls.length == 1);
 
     watchers.save(dir.path, 'retry.dart');
-    await until(() => indexer.calls.length >= 2);
+    await until(() => indexer.calls.length == 2);
+    expect(
+      indexer.calls[1].changedPaths,
+      isNull,
+      reason:
+          'the failed run left its window unindexed; a targeted retry would '
+          'checkpoint over the gap',
+    );
+
+    watchers.save(dir.path, 'later.dart');
+    await until(() => indexer.calls.length == 3);
+    expect(indexer.calls[2].changedPaths, ['later.dart']);
   });
 
   test('the initial arm-time run passes force:false, an event-driven run '
@@ -1149,6 +1310,7 @@ class _IndexCall {
     required this.checkoutId,
     this.force = false,
     this.changedPaths,
+    this.startedAt,
   });
 
   final String workspaceId;
@@ -1159,6 +1321,9 @@ class _IndexCall {
 
   /// The work list the run was targeted at, or null when it took the full pass.
   final List<String>? changedPaths;
+
+  /// When the service started the run.
+  final DateTime? startedAt;
 }
 
 class _FakeIndexer implements CodeIndexer {
@@ -1175,6 +1340,15 @@ class _FakeIndexer implements CodeIndexer {
   final _held = <Completer<void>>[];
   int inFlight = 0;
   int maxObservedInFlight = 0;
+
+  /// When each run returned, in completion order.
+  final List<DateTime> finishedAt = <DateTime>[];
+
+  /// Releases the oldest held run only; later runs keep parking.
+  void releaseNext() {
+    final next = _held.removeAt(0);
+    next.complete();
+  }
 
   void releaseAll() {
     holdEveryRun = false;
@@ -1219,6 +1393,7 @@ class _FakeIndexer implements CodeIndexer {
         checkoutId: checkoutId,
         force: force,
         changedPaths: changedPaths,
+        startedAt: DateTime.now(),
       ),
     );
     inFlight++;
@@ -1240,6 +1415,7 @@ class _FakeIndexer implements CodeIndexer {
       }
     } finally {
       inFlight--;
+      finishedAt.add(DateTime.now());
     }
     if (failNext) {
       failNext = false;

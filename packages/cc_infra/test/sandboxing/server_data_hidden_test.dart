@@ -1,3 +1,7 @@
+// Run sandboxes are Seatbelt and bubblewrap; Windows has none.
+@TestOn('mac-os || linux')
+library;
+
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
@@ -132,7 +136,9 @@ void main() {
           'echo own > own.txt && cat own.txt && '
           'echo wt > "$repo/new.txt" && cat "$repo/new.txt" && '
           'mkdir "$repo/sub" && mv "$repo/new.txt" "$repo/sub/moved" && '
-          'rm -r "$repo/sub" && echo moved',
+          // `find -delete`, not `rm`: rm is exec-denied on every host where
+          // it is not a multi-call binary.
+          'find "$repo/sub" -delete && echo moved',
         ),
         'own\nwt\nmoved',
       );

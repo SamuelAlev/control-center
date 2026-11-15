@@ -9,6 +9,7 @@ import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/commit_signing_key_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,7 +84,7 @@ void main() {
   late _Keys keys;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   setUp(() => keys = _Keys());

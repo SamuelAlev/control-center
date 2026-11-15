@@ -44,6 +44,7 @@ export 'src/native_library.dart';
 export 'src/native_library_paths.dart';
 export 'src/native_runtime.dart';
 export 'src/native_unavailable.dart';
+export 'src/process/open_file_limit.dart';
 export 'src/pty/pty.dart';
 export 'src/pty/pty_ffi_bindings.dart';
 export 'src/rift/rift_client.dart';

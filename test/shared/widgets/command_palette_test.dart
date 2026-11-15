@@ -2,6 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:flutter/services.dart';
@@ -32,7 +33,7 @@ List<CommandItem> _testCommands(int count, {String prefix = 'Command'}) {
 Widget wrap(Widget child) {
   return ProviderScope(
     child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: CcTheme(
         data: CcThemeData.light(),
@@ -57,7 +58,7 @@ void main() {
           codeFontFamilyProvider.overrideWithValue('Fira Code'),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcTheme(
             data: CcThemeData.light(),

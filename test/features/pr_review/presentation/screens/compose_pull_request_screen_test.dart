@@ -17,6 +17,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart'
     show PageWrapper;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -242,7 +243,7 @@ Widget _wrapComposeScreen(
     ],
     child: MaterialApp.router(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,

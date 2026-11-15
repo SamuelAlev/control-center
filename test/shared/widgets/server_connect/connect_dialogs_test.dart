@@ -4,7 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/server/pairing_link.dart';
 import 'package:control_center/core/server/server_discovery.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/connection_error_alert.dart';
 import 'package:control_center/shared/widgets/server_connect/connect_dialog_host.dart';
 import 'package:control_center/shared/widgets/server_connect/pairing_link_dialog.dart';
@@ -36,7 +36,7 @@ Widget _app(WidgetBuilder builder) {
     child: WidgetsApp(
       color: theme.tokens.bgPrimary,
       supportedLocales: kSupportedAppLocales,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       builder: (context, _) => ConnectDialogHost(builder: builder),
     ),
   );

@@ -1818,7 +1818,7 @@ void main() {
       final object = await PushedCommitInspector.read('commit', 'head', raw);
       expect(object.signedBy, key.publicKey);
       expect(PushedCommitInspector.violation([object], identity), isNull);
-    });
+    }, skip: Platform.isWindows ? 'the signing shim is a shell script' : false);
   });
 
   group('fetch proxy', () {

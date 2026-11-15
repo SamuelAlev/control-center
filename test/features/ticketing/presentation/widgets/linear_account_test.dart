@@ -11,6 +11,7 @@ import 'package:control_center/features/settings/providers/workspace_settings_pr
 import 'package:control_center/features/ticketing/presentation/widgets/linear_account_card.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:control_center/shared/widgets/your_account_line.dart';
 import 'package:flutter/widgets.dart';
@@ -43,7 +44,7 @@ void main() {
   late AppLocalizations l10n;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   // Not `testWrap`: its own scope pins the active workspace to none, and the
@@ -83,7 +84,7 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           home: Directionality(

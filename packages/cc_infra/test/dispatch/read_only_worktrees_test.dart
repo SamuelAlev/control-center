@@ -323,7 +323,7 @@ final class _Tree {
     }
     Directory(t.configDir).createSync(recursive: true);
     Directory(t.overlay).createSync(recursive: true);
-    Link(p.join(t.overlay, 'repos')).createSync('../../repos');
+    Link(p.join(t.overlay, 'repos')).createSync(p.join('..', '..', 'repos'));
     return t;
   }
 

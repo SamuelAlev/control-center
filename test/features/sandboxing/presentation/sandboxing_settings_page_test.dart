@@ -8,6 +8,7 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/sandboxing_sections.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -257,7 +258,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               routerConfig: router,
             ),

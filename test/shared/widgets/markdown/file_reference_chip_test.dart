@@ -1,6 +1,7 @@
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/markdown/file_reference_chip.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
@@ -24,10 +25,9 @@ void main() {
   group('FileRefInlinePlugin', () {
     test('claims a reference as its own node', () {
       final inlines = inlinesOf('look at @[file:shot.png] please');
-      expect(
-        inlines.whereType<CcFileRefInline>().map((n) => n.name),
-        ['shot.png'],
-      );
+      expect(inlines.whereType<CcFileRefInline>().map((n) => n.name), [
+        'shot.png',
+      ]);
       expect(inlines.first, const CcText('look at '));
       expect(inlines.last, const CcText(' please'));
     });
@@ -75,7 +75,7 @@ void main() {
   group('rendering', () {
     Widget app(Widget child) => ProviderScope(
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: CcTheme(
           data: CcThemeData.light(),

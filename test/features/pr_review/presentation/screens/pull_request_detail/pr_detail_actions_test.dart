@@ -13,6 +13,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/pr_review/providers/pr_review_run_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -116,7 +117,7 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) =>
               CcTheme(data: CcThemeData.light(), child: child!),
@@ -139,7 +140,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await tester.tap(find.byType(CcIconButton).last);
     await tester.pumpAndSettle();
 

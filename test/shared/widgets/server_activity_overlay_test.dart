@@ -7,6 +7,7 @@ import 'package:control_center/core/infrastructure/speech/diarization_model_cont
 import 'package:control_center/core/infrastructure/speech/voice_model_control.dart';
 import 'package:control_center/core/server/server_startup_status.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/popup_route_tracker.dart';
 import 'package:control_center/shared/widgets/server_activity_overlay.dart';
 import 'package:flutter/widgets.dart';
@@ -104,7 +105,7 @@ void main() {
         ],
         child: MaterialApp(
           navigatorObservers: [popupRoutes],
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcTheme(
             data: CcThemeData.light(),
@@ -337,7 +338,7 @@ void main() {
         data: CcThemeData.light(),
         child: WidgetsApp(
           color: const Color(0xFFFFFFFF),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) =>
               const ServerStartupIndicator(child: SizedBox.expand()),

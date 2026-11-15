@@ -138,7 +138,8 @@ class CalendarDao extends DatabaseAccessor<WorkspaceDatabase>
           .watch();
 
   /// Replaces the synced calendar sources for `(workspaceId, accountId)` with
-  /// [sources] (deleting any the provider no longer lists), atomically. The
+  /// [sources] (deleting any the provider no longer lists, with their events),
+  /// atomically. The
   /// provider returns the full current calendar list on every sync, so a
   /// delete-then-insert replace-all is correct and idempotent.
   ///
@@ -171,6 +172,18 @@ class CalendarDao extends DatabaseAccessor<WorkspaceDatabase>
             (t) =>
                 t.workspaceId.equals(workspaceId) &
                 t.accountId.equals(accountId),
+          ))
+          .go();
+      // A calendar the provider no longer lists takes its events with it: no
+      // later pass syncs that calendar id, so nothing else would ever reconcile
+      // or delete them (an unsubscribed calendar, or rows a pass once stored
+      // under an alias such as `primary`).
+      final listed = {for (final s in sources) s.calendarId.value};
+      await (delete(calendarEventsTable)..where(
+            (t) =>
+                t.workspaceId.equals(workspaceId) &
+                t.accountId.equals(accountId) &
+                t.calendarId.isNotIn(listed),
           ))
           .go();
       for (final source in sources) {

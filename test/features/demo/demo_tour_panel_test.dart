@@ -6,6 +6,7 @@ import 'package:control_center/features/demo/presentation/widgets/demo_tour_pane
 import 'package:control_center/features/demo/providers/demo_repo_stars_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,7 +88,7 @@ Widget _wrap(GoRouter router, List<Override> overrides) => ProviderScope(
     data: CcThemeData.light(),
     child: MaterialApp.router(
       routerConfig: router,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
     ),
   ),
@@ -116,9 +117,9 @@ void main() {
     _setDesktopViewport(tester);
     final router = _router(openUrl: openUrl);
     final overrides = [
-      workspaceSpacesProvider(_workspaceId).overrideWith(
-        (ref) => Stream.value(spaces),
-      ),
+      workspaceSpacesProvider(
+        _workspaceId,
+      ).overrideWith((ref) => Stream.value(spaces)),
       if (repoStars != null)
         demoRepoStarsProvider.overrideWith((ref) => Future.value(repoStars)),
     ];

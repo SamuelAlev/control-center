@@ -4,6 +4,7 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/ide_sidebar_view_strip.dart';
 import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,7 +78,7 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcTheme(
             data: CcThemeData(
@@ -220,7 +221,7 @@ void main() {
       await tester.tap(caret);
       await tester.pumpAndSettle();
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       for (final label in [
         l10n.ideTabGeneral,
         l10n.ideTabExplorer,

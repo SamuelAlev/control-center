@@ -7,7 +7,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/l
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +23,7 @@ void main() {
     testWidgets('a Claude sign-in failure is a notice with a sign-in action', (
       tester,
     ) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -69,7 +69,7 @@ void main() {
 
     testWidgets('a provider sign-in failure explains the fix without a '
         'Claude action', (tester) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.pumpWidget(
         testWrap(
           TranscriptFlow(
@@ -93,7 +93,7 @@ void main() {
 
     testWidgets('a run refused for want of a sandbox is guidance in the '
         "client's words", (tester) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.pumpWidget(
         testWrap(
           TranscriptFlow(

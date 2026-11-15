@@ -13,7 +13,7 @@ import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/desktop_app/presentation/tray/tray_panel.dart';
 import 'package:control_center/features/desktop_app/presentation/tray/tray_panel_actions.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/src/widgets/_window.dart' show Window, WindowController;
 import 'package:flutter/widgets.dart';
@@ -140,7 +140,7 @@ class _TrayPanelApp extends ConsumerWidget {
       locale: locale,
       supportedLocales: kSupportedAppLocales,
       localeResolutionCallback: resolveAppLocale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
         settings: settings,
         pageBuilder: (context, _, _) => builder(context),

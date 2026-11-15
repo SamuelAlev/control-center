@@ -10,6 +10,7 @@ import 'package:control_center/features/auth/presentation/screens/onboarding_mod
 import 'package:control_center/features/settings/presentation/widgets/sections/system/voice_section_extras.dart'
     show VoiceModelPicker;
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -71,7 +72,7 @@ void main() {
       child: CcTheme(
         data: CcThemeData.light(),
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcToastScope(
             child: Scaffold(

@@ -8,6 +8,7 @@ import 'package:control_center/features/connect/presentation/settings/connect_se
 import 'package:control_center/features/connect/presentation/settings/connect_server_actions.dart';
 import 'package:control_center/features/connect/providers/connect_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,7 +45,7 @@ void main() {
   late List<(String, Map<String, dynamic>)> calls;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   setUp(() {

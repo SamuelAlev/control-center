@@ -18,6 +18,7 @@ import 'package:control_center/features/pr_review/providers/pr_filter_providers.
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:flutter/gestures.dart';
@@ -110,7 +111,7 @@ const _prRef = (
 Widget _app(PrSidebar sidebar) {
   return MaterialApp(
     localizationsDelegates: [
-      ...AppLocalizations.localizationsDelegates,
+      ...appLocalizationsDelegates,
       ...GlobalMaterialLocalizations.delegates,
     ],
     supportedLocales: AppLocalizations.supportedLocales,
@@ -779,7 +780,7 @@ void main() {
           ],
           child: MaterialApp(
             localizationsDelegates: [
-              ...AppLocalizations.localizationsDelegates,
+              ...appLocalizationsDelegates,
               ...GlobalMaterialLocalizations.delegates,
             ],
             supportedLocales: AppLocalizations.supportedLocales,

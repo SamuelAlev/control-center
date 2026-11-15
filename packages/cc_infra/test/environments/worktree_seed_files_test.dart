@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cc_infra/src/environments/worktree_seed_files.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'helpers/environment_fakes.dart';
@@ -55,13 +56,19 @@ void main() {
     await Process.run('chmod', ['600', '$source/.env.local']);
     await copy(['.env.local']);
     expect(File('$worktree/.env.local').statSync().modeString(), 'rw-------');
-  });
+  }, skip: Platform.isWindows ? 'POSIX modes only' : false);
 
   test('copies a directory file by file', () async {
     write('certs/a.pem', 'a');
     write('certs/deep/b.pem', 'b');
     final result = await copy(['certs']);
-    expect(result.copied, unorderedEquals(['certs/a.pem', 'certs/deep/b.pem']));
+    expect(
+      result.copied,
+      unorderedEquals([
+        p.join('certs', 'a.pem'),
+        p.join('certs', 'deep', 'b.pem'),
+      ]),
+    );
   });
 
   test('reports a file the source lacks and carries on', () async {

@@ -5,3 +5,8 @@ output-dir: lib/l10n/
 nullable-getter: false
 # Flutter falls back to the FIRST supported locale when the system's matches none of them (C/POSIX), and the generated list is otherwise A–Z (Arabic).
 preferred-supported-locales: [en]
+# Each locale compiles to its own deferred part on web: the 29 locales' strings
+# are over half of main.dart.js, which must stay under Cloudflare's 25 MiB
+# per-asset cap. Load and look them up through localizations_loader.dart, never
+# the generated delegate or lookupAppLocalizations (async; blank first frame).
+use-deferred-loading: true

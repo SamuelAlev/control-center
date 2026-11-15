@@ -52,6 +52,22 @@ class DefaultCodeIndexer implements CodeIndexer {
   /// same 32; the only consumer is the pipeline step-run snapshot.
   static const _ingestBatchSize = 32;
 
+  /// How many extracted rows (symbols + edges) a batch may carry before it is
+  /// flushed early, whatever its file count.
+  ///
+  /// The file cap alone let a batch's size follow the files in it, and an
+  /// ingest does synchronous work on the server's MAIN isolate in proportion
+  /// to its rows: building a companion and an embed text per symbol, encoding
+  /// the batch for the database isolate, decoding the stored-symbol read that
+  /// comes back. This repo's 29 generated `app_localizations_*.dart` files
+  /// hold ~6000 getters each, and an ARB edit re-extracts all of them into one
+  /// batch: measured against the real repository, a 32 x 6000 batch froze the
+  /// event loop for up to 1.1s (every RPC waits behind that), 8 x 6000 for
+  /// 0.3-0.4s and a single 6000-symbol file for 45-75ms. At this budget a
+  /// batch stays at about one such file. A file is never split: its rows commit in
+  /// one transaction.
+  static const _ingestRowBudget = 4000;
+
   /// Test seam: when injected, runs one file's parse + extraction directly
   /// (no worker isolate spawns at all). Production leaves it null and uses a
   /// long-lived [ExtractionWorker] per run.
@@ -393,6 +409,8 @@ class DefaultCodeIndexer implements CodeIndexer {
     // pathological file wedges it (see the timeout handler).
     ExtractionWorker? worker;
     final pending = <CodeFileIngest>[];
+    // Symbols + edges in [pending], against [_ingestRowBudget].
+    var pendingRows = 0;
 
     // The work this run actually has, computed before any of it happens: the
     // files the loop below will parse, i.e. the ones whose hash moved. It is the
@@ -426,6 +444,7 @@ class DefaultCodeIndexer implements CodeIndexer {
       }
       await _repository.ingestFiles(List.of(pending));
       pending.clear();
+      pendingRows = 0;
       onProgress?.call(progressAt(indexed));
     }
 
@@ -526,7 +545,9 @@ class DefaultCodeIndexer implements CodeIndexer {
           indexed++;
           symbols += result.symbols.length;
           edges += result.edges.length;
-          if (pending.length >= _ingestBatchSize) {
+          pendingRows += result.symbols.length + result.edges.length;
+          if (pending.length >= _ingestBatchSize ||
+              pendingRows >= _ingestRowBudget) {
             await flush();
           }
         }

@@ -6,6 +6,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/mcp/providers/mcp_server_control_provider.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,7 +18,7 @@ import '../../../../../../helpers/test_wrap.dart';
 void main() {
   late AppLocalizations l10n;
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   Future<_FakeControl> pump(

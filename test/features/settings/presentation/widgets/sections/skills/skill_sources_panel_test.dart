@@ -10,6 +10,7 @@ import 'package:control_center/features/settings/presentation/widgets/sections/s
 import 'package:control_center/features/settings/providers/skill_source_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -201,7 +202,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: CcToastScope(
               child: Scaffold(body: SkillSourcesPanel(workspaceId: 'ws-1')),
@@ -343,20 +344,14 @@ void main() {
     expect(find.text('curl piped into sh'), findsOneWidget);
     // Install is disabled until the override checkbox is ticked.
     final installButton = tester.widget<CcButton>(
-      find.ancestor(
-        of: find.text('Install'),
-        matching: find.byType(CcButton),
-      ),
+      find.ancestor(of: find.text('Install'), matching: find.byType(CcButton)),
     );
     expect(installButton.onPressed, isNull);
 
     await tester.tap(find.text('I understand the risk — install anyway'));
     await tester.pump();
     final armedButton = tester.widget<CcButton>(
-      find.ancestor(
-        of: find.text('Install'),
-        matching: find.byType(CcButton),
-      ),
+      find.ancestor(of: find.text('Install'), matching: find.byType(CcButton)),
     );
     expect(armedButton.onPressed, isNotNull);
   });

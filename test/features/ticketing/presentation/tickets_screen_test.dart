@@ -9,6 +9,7 @@ import 'package:control_center/features/ticketing/presentation/screens/tickets_s
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -54,7 +55,7 @@ Widget _wrap(Widget child, AppPreferences prefs) => ProviderScope(
     child: MaterialApp(
       builder: (context, child) =>
           CcTheme(data: CcThemeData.light(), child: child!),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: child),
     ),
@@ -174,7 +175,7 @@ void main() {
             child: MaterialApp(
               builder: (context, child) =>
                   CcTheme(data: CcThemeData.light(), child: child!),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: const Scaffold(body: TicketsScreen()),
             ),
@@ -219,7 +220,7 @@ void main() {
           child: MaterialApp(
             builder: (context, child) =>
                 CcTheme(data: CcThemeData.light(), child: child!),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(body: TicketsScreen()),
           ),

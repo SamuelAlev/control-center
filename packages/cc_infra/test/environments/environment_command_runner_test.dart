@@ -10,6 +10,14 @@ import 'package:test/test.dart';
 
 import 'helpers/environment_fakes.dart';
 
+/// Why a test that spawns `bash`, `/bin/echo` or `/bin/cat`, or signals the
+/// process it started, does not run on Windows.
+final String _pathSep = Platform.isWindows ? ';' : ':';
+
+final String? _posix = Platform.isWindows
+    ? 'spawns POSIX tools (bash, /bin/echo) and signals them'
+    : null;
+
 void main() {
   late Directory dir;
   late EnvironmentCommandRunner runner;
@@ -34,7 +42,7 @@ void main() {
       );
       expect(result.stdout, r'$HOME; touch pwned `id`');
       expect(File('${dir.path}/pwned').existsSync(), isFalse);
-    });
+    }, skip: _posix);
 
     test('expands placeholders and conditions', () async {
       final result = await runner.run(
@@ -49,7 +57,7 @@ void main() {
         values: const EnvironmentValues({'name': 'shop', 'opt.extra': 'false'}),
       );
       expect(result.stdout, 'shop');
-    });
+    }, skip: _posix);
 
     test('appends extra arguments', () async {
       final result = await runner.run(
@@ -57,12 +65,12 @@ void main() {
         arguments: ['b c'],
       );
       expect(result.stdout, 'a b c');
-    });
+    }, skip: _posix);
 
     test('runArgv takes braces literally', () async {
       final result = await runner.runArgv(['/bin/echo', '{name}']);
       expect(result.stdout, '{name}');
-    });
+    }, skip: _posix);
 
     test('fails before running on an unknown placeholder', () {
       expect(
@@ -98,7 +106,7 @@ void main() {
       );
       expect(result.stdout, '{name}');
     });
-  });
+  }, skip: _posix);
 
   test('stdin is closed, so a reader gets end of file', () async {
     final result = await runner.run(
@@ -107,7 +115,7 @@ void main() {
     );
     expect(result.exitCode, 0);
     expect(result.timedOut, isFalse);
-  });
+  }, skip: _posix);
 
   group('deadline', () {
     test('SIGTERM, synthetic exit 124', () async {
@@ -142,7 +150,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 1200));
       expect(File(marker).existsSync(), isFalse);
     });
-  });
+  }, skip: _posix);
 
   test('cancel uses the same ladder and keeps the real exit code', () async {
     final handle = runner.startArgv(['/bin/sleep', '30']);
@@ -152,7 +160,7 @@ void main() {
     expect(result.timedOut, isFalse);
     expect(result.exitCode, isNot(0));
     expect(result.exitCode, isNot(environmentTimeoutExitCode));
-  });
+  }, skip: _posix);
 
   test('the exit is the last thing a command says', () async {
     final events = <EnvironmentCommandEvent>[];
@@ -165,7 +173,7 @@ void main() {
     expect(exit, isA<EnvironmentCommandExit>());
     expect((exit as EnvironmentCommandExit).exitCode, 4);
     expect(exit.succeeded, isFalse);
-  });
+  }, skip: _posix);
 
   test('a daemon holding stdout open does not fail the command', () async {
     final watch = Stopwatch()..start();
@@ -176,7 +184,7 @@ void main() {
     expect(result.error, isNull);
     expect(result.stdout, contains('started'));
     expect(watch.elapsed, lessThan(const Duration(milliseconds: 1500)));
-  });
+  }, skip: _posix);
 
   group('stderr', () {
     test('streams progress and lines apart', () async {
@@ -349,7 +357,7 @@ exit 3
       expect(result.error?.command, 'sudo tool hosts');
       expect(result.error?.blocker, EnvironmentBlocker.input);
     });
-  });
+  }, skip: _posix);
 
   test('keeps raw stdout for parsing only', () async {
     final result = await runner.run(
@@ -359,7 +367,7 @@ exit 3
     );
     expect(jsonDecode(result.rawStdout), {'auth': 'Authorization: Bearer abc'});
     expect(result.stdout, isNot(contains('abc')));
-  });
+  }, skip: _posix);
 
   test('redacts stdout, stderr, events and errors', () async {
     const secret = 'ghp_abcdefghijklmnopqrstuvwxyz0123456789';
@@ -379,7 +387,7 @@ exit 3
     expect(result.stderr, isNot(contains('hunter2')));
     expect(seen.join('\n'), isNot(contains(secret)));
     expect(result.error?.message, isNot(contains(secret)));
-  });
+  }, skip: _posix);
 
   group('environment', () {
     test('caller variables reach the process', () async {
@@ -388,7 +396,7 @@ exit 3
         environment: const {'CC_ENV_NAME': 'shop'},
       );
       expect(result.stdout, 'shop');
-    });
+    }, skip: _posix);
 
     test('caller NODE_OPTIONS survives sanitizing', () {
       final variables = environmentProcessVariables(const {
@@ -401,14 +409,15 @@ exit 3
       final variables = environmentProcessVariables(const {
         'PATH': '/usr/bin',
       }, executable: '/opt/acme/bin/tool');
-      expect(variables['PATH'], '/usr/bin:/opt/acme/bin');
+      expect(variables['PATH'], ['/usr/bin', '/opt/acme/bin'].join(_pathSep));
     });
 
     test('a directory already on PATH is left alone', () {
-      final variables = environmentProcessVariables(const {
-        'PATH': '/opt/acme/bin:/usr/bin',
+      final path = ['/opt/acme/bin', '/usr/bin'].join(_pathSep);
+      final variables = environmentProcessVariables({
+        'PATH': path,
       }, executable: '/opt/acme/bin/tool');
-      expect(variables['PATH'], '/opt/acme/bin:/usr/bin');
+      expect(variables['PATH'], path);
     });
 
     test('the process does not inherit past the sanitizer', () async {

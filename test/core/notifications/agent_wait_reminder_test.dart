@@ -5,7 +5,7 @@ import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:control_center/core/notifications/agent_wait_reminder.dart';
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,7 +25,7 @@ class _RecordingPort implements NotificationPort {
 }
 
 void main() {
-  final l10n = lookupAppLocalizations(const Locale('en'));
+  final l10n = AppLocalizationsLoader.lookupLoaded(const Locale('en'));
 
   late _RecordingPort port;
   late bool appFocused;

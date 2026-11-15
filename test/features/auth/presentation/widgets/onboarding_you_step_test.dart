@@ -6,6 +6,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_you_step.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,7 +66,7 @@ void main() {
   late int continued;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   setUp(() {

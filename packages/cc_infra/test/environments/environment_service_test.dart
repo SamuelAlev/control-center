@@ -19,6 +19,7 @@ import 'package:cc_infra/src/environments/compose_driver.dart'
     show ComposeServiceState;
 import 'package:cc_infra/src/environments/environment_command_runner.dart';
 import 'package:cc_infra/src/environments/environment_service_ports.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'helpers/environment_fakes.dart';
@@ -1316,7 +1317,9 @@ void main() {
     });
 
     test('a seed escape is a WorktreeTaskException', () async {
-      Link('${h.sourcePath}/.env.local').createSync('/etc/hosts');
+      final secret = File(p.join(root, 'outside-secret'))
+        ..writeAsStringSync('secret');
+      Link('${h.sourcePath}/.env.local').createSync(secret.path);
       h.store(
         definitionJson(
           [
@@ -3283,7 +3286,7 @@ void main() {
       expect(
         variables['COMPOSE_FILE'],
         allOf(
-          contains('$root/worktrees/space-1/compose.yaml'),
+          contains(p.join('$root/worktrees/space-1', 'compose.yaml')),
           contains('compose.override.yaml'),
         ),
       );

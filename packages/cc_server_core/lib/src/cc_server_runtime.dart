@@ -159,6 +159,7 @@ import 'package:cc_natives/cc_natives.dart'
         samlLibraryEnvVar,
         platformLibraryFileName,
         ptyLibraryBaseName,
+        raiseOpenFileLimit,
         ptyLibraryEnvVar,
         setPreferredInferenceLibPath,
         tryOpenFirst,
@@ -272,6 +273,7 @@ import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
 import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 import 'package:cc_server_core/src/local_rpc_server.dart';
+import 'package:cc_server_core/src/meeting_alert_sweep.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
 import 'package:cc_server_core/src/models/selectable_voice_model_control.dart';
 import 'package:cc_server_core/src/native_preflight.dart';
@@ -393,6 +395,17 @@ Future<CcServer> runCcServer({
   // owner-only (0700) before anything in it is created or opened, or no boot.
   secureDataDirectory(config.dataDir);
   _configureBootLogging(config);
+  // macOS starts a process at 256 open files. Databases, sockets, watchers and
+  // the git children the IDE polls start reach that in ordinary use, and every
+  // spawn then fails with "Too many open files". Raise the soft limit to the
+  // hard one before anything opens.
+  final fileLimit = raiseOpenFileLimit();
+  if (fileLimit != null && fileLimit.after != fileLimit.before) {
+    CcHostLog.info(
+      'cc_server: open file limit raised from ${fileLimit.before} to '
+      '${fileLimit.after}',
+    );
+  }
 
   // Load the headless rhttp native library BEFORE any HTTP client exists:
   // every `createHttpClient()` (and every cc_infra client built on one) rides
@@ -8045,6 +8058,7 @@ Future<CcServer> runCcServer({
     .._auditStream = auditStream
     .._skillWatch = skillWatch
     .._pipelineScheduler = pipelineScheduler
+    .._stopPipelines = pipeline.engine.dispose
     .._databaseRetention = databaseRetention
     .._transcriptRetention = transcriptRetention
     .._debugSupervisor = debugSupervisor
@@ -8162,6 +8176,14 @@ Future<CcServer> runCcServer({
     serverCalendar.start();
   }
   ccServer._calendarSync = serverCalendar.sync;
+  // "Meeting starting soon" alerts over the synced events. Local reads only,
+  // so it runs in a demo too.
+  ccServer._meetingAlerts = MeetingAlertSweep(
+    calendarRepository: calendarRepository,
+    workspaceRepository: workspaceRepository,
+    userPreferences: userPreferencesRepository,
+    eventBus: eventBus,
+  )..start();
   ccServer._weatherService = weatherService;
   ccServer._soundscapeHub = soundscapeHub;
   // demo: the weather service fetches a public API — still egress.

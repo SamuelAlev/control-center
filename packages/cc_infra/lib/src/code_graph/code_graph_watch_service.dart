@@ -128,6 +128,35 @@ class CodeGraphWatchService {
   final int _maxConcurrentRuns;
   var _activeRuns = 0;
 
+  /// Checkouts whose run is due but has no slot yet, in arrival order.
+  ///
+  /// A free slot goes to the best of them ([_queueRank]), not to whichever
+  /// checkout's retry timer happens to fire first. Each waiter used to poll on
+  /// its own 2s timer, so on a cold start the order between a linked checkout
+  /// and some other repo's worktrees was a race, and a freed slot sat idle for
+  /// up to a tick.
+  final Set<String> _waitingForSlot = {};
+
+  /// Until when worktree full passes hold off, so background indexing never
+  /// runs back to back. See [_worktreeRestCap].
+  DateTime? _restUntil;
+  Timer? _restTimer;
+
+  /// Ceiling on the rest a worktree full pass takes after the previous run.
+  ///
+  /// After any run, the next worktree full pass waits as long as that run
+  /// took, so a burst of them keeps the indexer busy at most half the time.
+  /// Measured on a host with eight active worktrees of ~23k-file repos: after a
+  /// restart they ran back to back for two minutes (5-24s each, a SHA-256 of
+  /// every file and a `git status`/`git ls-files` per pass), right while the
+  /// operator was running git and opening diffs in the same trees. Capped
+  /// because a cold run of a big repo takes minutes and the worktree only
+  /// needs to wait out the burst, not mirror it.
+  ///
+  /// Linked checkouts and targeted runs never rest: the first is the
+  /// operator's own editor and the second costs only the change.
+  static const _worktreeRestCap = Duration(seconds: 30);
+
   /// Whether a conversation is worth watching (exists + recently active).
   ///
   /// Dormant/`isolated_repos` rows still cost OS watches + initial index;
@@ -201,8 +230,13 @@ class CodeGraphWatchService {
   ({int watching, int indexing, int pending}) get status => (
     watching: _checkouts.length,
     indexing: _activeRuns,
-    pending: _checkouts.values
-        .where((w) => w.debounceTimer != null || w.dirty)
+    pending: _checkouts.entries
+        .where(
+          (e) =>
+              e.value.debounceTimer != null ||
+              e.value.dirty ||
+              _waitingForSlot.contains(e.key),
+        )
         .length,
   );
 
@@ -220,6 +254,8 @@ class CodeGraphWatchService {
     _disposed = true;
     _reconcileTimer?.cancel();
     _startupHoldTimer?.cancel();
+    _restTimer?.cancel();
+    _waitingForSlot.clear();
     await _workspaceSub?.cancel();
     for (final sources in _workspaceSources.values) {
       await sources.dispose();
@@ -338,12 +374,14 @@ class CodeGraphWatchService {
       if (want == null) {
         watch.dispose();
         _checkouts.remove(key);
+        _waitingForSlot.remove(key);
         _baseIndexed.remove(key);
         _skipped.remove(key);
       } else if (want.path != watch.path) {
         // The checkout moved on disk (re-provisioned at a new path): re-arm.
         watch.dispose();
         _checkouts.remove(key);
+        _waitingForSlot.remove(key);
       }
     }
 
@@ -463,6 +501,7 @@ class CodeGraphWatchService {
           if (current != null && identical(current.checkout, checkout)) {
             current.dispose();
             _checkouts.remove(key);
+            _waitingForSlot.remove(key);
           }
         },
       );
@@ -488,6 +527,7 @@ class CodeGraphWatchService {
     // (re)heals the linked checkout's on boot. Incremental — cheap when the
     // graph is already current (and near-free when the index checkpoint
     // matches).
+    watch.needsFullPass = true;
     _scheduleIndex(key, initial: true);
   }
 
@@ -549,6 +589,12 @@ class CodeGraphWatchService {
     if (watch == null) {
       return;
     }
+    if (_waitingForSlot.contains(key)) {
+      // Already due and queued: the run it gets drains this event's paths with
+      // the rest of the window. Restarting the debounce would only give up its
+      // place in the queue.
+      return;
+    }
     watch.debounceTimer?.cancel();
     final window = _windowFor(watch, initial: initial);
     // Past the ceiling, stop deferring: run now and let the next event open a
@@ -583,16 +629,18 @@ class CodeGraphWatchService {
       watch.rerunRequested = true;
       return;
     }
-    if (_activeRuns >= _maxConcurrentRuns) {
-      // At the concurrency ceiling — retry on the next debounce tick. Not
-      // counted as a base wait: this checkout is ready, the machine is not.
-      //
-      // Deliberately the SHORT tick even for a linked checkout: this is a
-      // "is a slot free yet" poll, not a coalescing window. The wait already
-      // happened; stretching it here would just add latency to a run that has
-      // finished deciding to go.
+    final noSlot = _activeRuns >= _maxConcurrentRuns;
+    if (noSlot || _mustRest(watch)) {
+      // No slot, or a worktree full pass still resting after the last run:
+      // queue for the next free slot ([_startWaiting]). Not counted as a base
+      // wait: this checkout is ready, the machine is not.
       watch.debounceTimer?.cancel();
-      watch.debounceTimer = Timer(_debounce, () => _runIndex(key));
+      watch.debounceTimer = null;
+      _waitingForSlot.add(key);
+      if (!noSlot) {
+        // A finishing run wakes slot waiters; only the rest needs a timer.
+        _armRestTimer();
+      }
       return;
     }
     if (_mustWaitForBase(watch)) {
@@ -611,6 +659,8 @@ class CodeGraphWatchService {
       watch.debounceTimer = Timer(_debounce, () => _runIndex(key));
       return;
     }
+    watch.debounceTimer?.cancel();
+    watch.debounceTimer = null;
     watch.dirty = false;
     final force = watch.sawEvent;
     watch.sawEvent = false;
@@ -672,6 +722,11 @@ class CodeGraphWatchService {
             // Worktrees of this repo can now measure a real delta.
             _baseIndexed.add(key);
           }
+          if (report?.cancelRequested ?? false) {
+            // Stopped part-way: whatever it had not reached is still unindexed,
+            // and the next targeted run would checkpoint over that gap.
+            watch.needsFullPass = true;
+          }
           await report?.finish(result);
           final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
           final summary =
@@ -694,6 +749,10 @@ class CodeGraphWatchService {
             );
             return;
           }
+          // The window this run drained was never indexed. A later targeted
+          // run would write a checkpoint that vouches for the whole tree, gap
+          // included, so the next run has to be a full pass.
+          watch.needsFullPass = true;
           await report?.fail(e, st);
           CcInfraLog.warning(
             'code-graph watch: index failed for $label '
@@ -705,12 +764,98 @@ class CodeGraphWatchService {
     await run;
     watch.running = null;
     _activeRuns--;
-    if (_disposed || !_checkouts.containsKey(key)) {
+    if (_disposed) {
       return;
     }
-    if (watch.rerunRequested || watch.dirty) {
+    _restAfter(startedAt);
+    if (_checkouts.containsKey(key) && (watch.rerunRequested || watch.dirty)) {
       watch.rerunRequested = false;
       _scheduleIndex(key);
+    }
+    _startWaiting();
+  }
+
+  /// Whether [watch]'s next run is a worktree full pass that must still rest
+  /// (see [_worktreeRestCap]).
+  bool _mustRest(_CheckoutWatch watch) {
+    final restUntil = _restUntil;
+    return restUntil != null &&
+        watch.checkout.checkoutId != null &&
+        !watch.isTargetable &&
+        DateTime.now().isBefore(restUntil);
+  }
+
+  /// Records the rest owed after a run that started at [startedAt] and has
+  /// just finished: as long as it took, up to [_worktreeRestCap].
+  void _restAfter(DateTime startedAt) {
+    final now = DateTime.now();
+    var rest = now.difference(startedAt);
+    if (rest > _worktreeRestCap) {
+      rest = _worktreeRestCap;
+    }
+    final until = now.add(rest);
+    final current = _restUntil;
+    if (current == null || until.isAfter(current)) {
+      _restUntil = until;
+    }
+  }
+
+  /// Wakes the queue when the current rest ends. Called only for a waiter that
+  /// [_mustRest] just held back.
+  void _armRestTimer() {
+    final restUntil = _restUntil;
+    if (_restTimer != null || restUntil == null || _disposed) {
+      return;
+    }
+    // The rest may have ended since [_mustRest] looked; the waiter still needs
+    // its wake-up, so this never skips the timer, it only clamps it to now.
+    var wait = restUntil.difference(DateTime.now());
+    if (wait < Duration.zero) {
+      wait = Duration.zero;
+    }
+    _restTimer = Timer(wait, () {
+      _restTimer = null;
+      _startWaiting();
+    });
+  }
+
+  /// Where [watch] stands in the slot queue; lower goes first.
+  ///
+  /// Linked checkouts before worktrees, so the operator's own trees are
+  /// current first and every worktree measures its delta against a fresh base.
+  /// Targeted runs before full passes: they cost only the change, and an
+  /// agent may query the graph in its very next tool call.
+  static int _queueRank(_CheckoutWatch watch) =>
+      (watch.isTargetable ? 0 : 2) +
+      (watch.checkout.checkoutId == null ? 0 : 1);
+
+  /// Hands free slots to the queued checkouts, best rank first and in arrival
+  /// order within a rank.
+  ///
+  /// Each waiter goes back through [_runIndex], which starts it, parks it on
+  /// its base partition or, for a worktree full pass still resting, queues it
+  /// again behind the rest timer.
+  void _startWaiting() {
+    if (_disposed || _waitingForSlot.isEmpty) {
+      return;
+    }
+    final queued = <(int, String)>[
+      for (final key in _waitingForSlot)
+        if (_checkouts[key] case final watch?) (_queueRank(watch), key),
+    ];
+    _waitingForSlot.clear();
+    // `List.sort` is not stable; the index keeps arrival order within a rank.
+    final ordered = queued.indexed.toList()
+      ..sort((a, b) {
+        final byRank = a.$2.$1.compareTo(b.$2.$1);
+        return byRank != 0 ? byRank : a.$1.compareTo(b.$1);
+      });
+    for (final (_, (_, key)) in ordered) {
+      if (_activeRuns >= _maxConcurrentRuns) {
+        _waitingForSlot.add(key);
+        continue;
+      }
+      unawaited(_runIndex(key));
     }
   }
 }
@@ -837,6 +982,17 @@ class _CheckoutWatch {
   /// Debounce ticks this worktree has spent waiting for its base partition.
   int baseWaits = 0;
 
+  /// Whether the next run must be a full pass whatever paths the window
+  /// collects: the arm-time pass, or a retry after a run that failed or was
+  /// stopped.
+  ///
+  /// Without it a save landing while the arm-time pass waits (behind its
+  /// debounce, its base or other checkouts' runs) turns that pass into a
+  /// targeted run of the saved file. A targeted run writes the checkpoint too,
+  /// which then vouches for a tree whose offline changes were never indexed,
+  /// and every later boot short-circuits on it.
+  bool needsFullPass = false;
+
   /// Distinct repo-relative paths seen in the current coalescing window, in
   /// arrival order. A set because an editor writing the same file four times
   /// (write, rename, chmod, atomic-replace) is ONE reason, not four, and the
@@ -900,8 +1056,10 @@ class _CheckoutWatch {
   /// something unrelated touched them — so both degrade to the full pass.
   ///
   /// An EMPTY set is not targetable either: that is the arm-time pass, which is
-  /// exactly the full-enumeration run the checkpoint exists to make cheap.
+  /// exactly the full-enumeration run the checkpoint exists to make cheap. Nor
+  /// is any set while [needsFullPass] holds.
   bool get isTargetable =>
+      !needsFullPass &&
       !pendingRescan &&
       pendingPaths.isNotEmpty &&
       pendingPaths.length == pendingChangeCount;
@@ -918,10 +1076,10 @@ class _CheckoutWatch {
         ? List<String>.unmodifiable(pendingPaths)
         : null;
     final CodeIndexCause cause;
-    if (pendingRescan && pendingPaths.isEmpty) {
-      cause = const CodeIndexCause.rescan();
-    } else if (pendingPaths.isEmpty) {
+    if (needsFullPass || (!pendingRescan && pendingPaths.isEmpty)) {
       cause = const CodeIndexCause.initial();
+    } else if (pendingPaths.isEmpty) {
+      cause = const CodeIndexCause.rescan();
     } else {
       cause = CodeIndexCause.changes(
         List.unmodifiable(pendingPaths.take(CodeIndexCause.maxPaths)),
@@ -931,6 +1089,7 @@ class _CheckoutWatch {
     pendingPaths.clear();
     pendingChangeCount = 0;
     pendingRescan = false;
+    needsFullPass = false;
     return (cause: cause, targeted: targeted);
   }
 

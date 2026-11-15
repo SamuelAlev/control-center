@@ -6,7 +6,7 @@ import 'package:control_center/core/notifications/desktop_notification_delivery.
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
 import 'package:control_center/core/notifications/notification_service.dart';
 import 'package:control_center/core/notifications/notification_sound_service.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -184,7 +184,7 @@ void main() {
           'kind': kind,
           'agent_name': 'engineer',
           'summary': 'Push to a Git remote',
-        }, l10n: lookupAppLocalizations(const Locale('en')))!;
+        }, l10n: AppLocalizationsLoader.lookupLoaded(const Locale('en')))!;
 
     test(
       'an approval is time-sensitive, keyed by its wait and answerable',
@@ -373,7 +373,7 @@ void main() {
     test(
       'a policy block notifies in the active space, unlike its approval card',
       () async {
-        final l10n = lookupAppLocalizations(const Locale('en'));
+        final l10n = AppLocalizationsLoader.lookupLoaded(const Locale('en'));
         const params = {
           'workspace_id': 'w1',
           'space_id': 'sp-1',

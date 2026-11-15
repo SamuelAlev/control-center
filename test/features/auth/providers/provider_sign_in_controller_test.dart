@@ -10,6 +10,7 @@ import 'package:control_center/features/auth/presentation/widgets/provider_sign_
 import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -518,7 +519,7 @@ void main() {
     late AppLocalizations l10n;
 
     setUpAll(() async {
-      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      l10n = await appLocalizationsDelegate.load(const Locale('en'));
     });
 
     test('every failure code reads as its own sentence, never the code', () {

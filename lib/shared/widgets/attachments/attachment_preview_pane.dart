@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:chewie/chewie.dart';
@@ -15,7 +16,7 @@ import 'package:control_center/shared/widgets/composer/attachments/attachment_me
 import 'package:control_center/shared/widgets/composer/attachments/attachment_registry.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/image_viewer_labels.dart';
-import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
+import 'package:control_center/shared/widgets/markdown/highlighted_code_lines.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -612,13 +613,23 @@ class _TextPreview extends StatelessWidget {
         child: StyledMarkdownBody(data: text),
       );
     }
-    // Through the shared code block so a previewed file is highlighted by the
-    // same grammars, theme and tokenizer the transcript and the diff use —
-    // one syntax pipeline, not a second one that drifts.
-    final language = shikiLangForPath(source.path ?? attachment.label);
+    // The pane IS the file, so it renders flat the way the repo file viewer
+    // does — not as a transcript code card with its own frame, copy button
+    // and "Show more" fold nested inside a tab. Same grammars, theme and
+    // tokenize budget as every other code surface via [HighlightedCodeLines].
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
-      child: buildSharedCodeBlock(context, text, language),
+      child: HighlightedCodeLines(
+        code: text,
+        languageId: shikiLangForPath(source.path ?? attachment.label),
+        // One selectable region over the whole file: a per-line selection
+        // only ever copies the line the drag started on.
+        builder: (context, lines) => CcSelectionRegion(
+          child: Text.rich(
+            TextSpan(style: CcFonts.code(), children: joinCodeLineSpans(lines)),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -720,10 +731,13 @@ IconData attachmentIcon(ComposerAttachment attachment) {
   if (attachment.kind == 'scratchpad') {
     return AppIcons.notebookText;
   }
-  return switch (attachmentMediaKind(
-    mimeType: attachment.mimeType,
-    name: attachment.label,
-  )) {
+  return attachmentIconForName(attachment.label, mimeType: attachment.mimeType);
+}
+
+/// [attachmentIcon] from the file name alone — for the tab strip, which only
+/// has the persisted tab arguments and not the attachment itself.
+IconData attachmentIconForName(String? name, {String? mimeType}) {
+  return switch (attachmentMediaKind(mimeType: mimeType, name: name)) {
     AttachmentMediaKind.image => AppIcons.image,
     AttachmentMediaKind.video => AppIcons.video,
     AttachmentMediaKind.audio => AppIcons.audioLines,

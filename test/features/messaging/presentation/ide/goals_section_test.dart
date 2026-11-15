@@ -7,6 +7,7 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/goals_section.dart';
 import 'package:control_center/features/todos/providers/goal_run_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,7 +87,7 @@ void main() {
           ).overrideWith((ref) => Stream.value(goals)),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcTheme(
             data: CcThemeData(

@@ -10,6 +10,7 @@ import 'package:control_center/features/messaging/presentation/widgets/space_sid
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,7 +123,7 @@ Widget _wrap(
     data: CcThemeData.light(reducedMotion: true),
     child: MaterialApp.router(
       routerConfig: router,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
     ),
   ),
@@ -137,7 +138,7 @@ Future<void> _openArchive(WidgetTester tester) async {
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
-  final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  final l10n = await appLocalizationsDelegate.load(const Locale('en'));
   await tester.tap(find.text(l10n.archivedConversations));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
@@ -156,7 +157,7 @@ void main() {
     final router = _router();
     await tester.pumpWidget(_wrap(router, repository, Stream.value(const [])));
     await _openArchive(tester);
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.archivedConversations), findsOneWidget);
     expect(find.text(l10n.archivedConversationsEmpty), findsOneWidget);
     expect(_restoreButton(), findsNothing);
@@ -170,7 +171,7 @@ void main() {
     final updates = StreamController<List<Conversation>>.broadcast();
     await tester.pumpWidget(_wrap(router, repository, updates.stream));
     await _openArchive(tester);
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.byType(CcSpinner), findsOneWidget);
     expect(find.text(l10n.archivedConversationsEmpty), findsNothing);
     updates.addError(StateError('stream offline'));
@@ -209,7 +210,7 @@ void main() {
         ),
       );
       await _openArchive(tester);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text('Archived here'), findsOneWidget);
       expect(find.text(l10n.untitledConversation), findsOneWidget);
       expect(find.text('Still active'), findsNothing);
@@ -316,7 +317,7 @@ void main() {
     await _openArchive(tester);
     await tester.tap(_restoreButton());
     await tester.pump();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(
       find.text(l10n.failedWithError('Bad state: offline')),
       findsOneWidget,

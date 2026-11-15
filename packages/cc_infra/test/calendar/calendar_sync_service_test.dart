@@ -26,18 +26,23 @@ class FakeGoogleCalendarApiClient extends GoogleCalendarApiClient {
 
   final List<String?> syncTokenCalls = [];
 
+  /// When set, listing the account's calendars fails.
+  bool failCalendarList = false;
+
   @override
   Future<List<GoogleCalendarListEntry>> listCalendars({
     required String accountId,
     CancelToken? cancelToken,
-  }) async => const [
-    GoogleCalendarListEntry(
-      id: 'cal-1',
-      summary: 'Primary',
-      primary: true,
-      accessRole: 'owner',
-    ),
-  ];
+  }) async => failCalendarList
+      ? throw StateError('calendar list unavailable')
+      : const [
+          GoogleCalendarListEntry(
+            id: 'cal-1',
+            summary: 'Primary',
+            primary: true,
+            accessRole: 'owner',
+          ),
+        ];
 
   @override
   Future<GoogleCalendarEventsSyncResult> listEventsSync({
@@ -70,6 +75,7 @@ class FakeCalendarRepository implements CalendarRepository {
   final Map<String, ({String token, DateTime? mintedAt})> syncStates = {};
 
   final List<Set<String>> deletedByExternalIds = [];
+  int lastSyncedCalls = 0;
   int deleteMissingCalls = 0;
   int upsertSourcesCalls = 0;
 
@@ -145,7 +151,9 @@ class FakeCalendarRepository implements CalendarRepository {
     String workspaceId,
     String accountId,
     DateTime at,
-  ) async {}
+  ) async {
+    lastSyncedCalls++;
+  }
 
   @override
   Future<void> syncLinkedMeetingTitles(String workspaceId) async {}
@@ -237,6 +245,25 @@ void main() {
       reason: 'incremental sweeps never window-reconcile',
     );
   });
+
+  test(
+    'a failed calendar list fails the pass instead of syncing an alias',
+    () async {
+      api
+        ..failCalendarList = true
+        ..fullResult = GoogleCalendarEventsSyncResult(
+          events: [_gEvent('e1')],
+          nextSyncToken: 'tok-1',
+        );
+
+      await service.refreshNow();
+
+      expect(api.syncTokenCalls, isEmpty, reason: 'no calendar was fetched');
+      expect(repository.events, isEmpty);
+      expect(repository.syncStates, isEmpty);
+      expect(repository.lastSyncedCalls, 0);
+    },
+  );
 
   test('a 410 falls back to a token-minting full re-sync', () async {
     api.fullResult = GoogleCalendarEventsSyncResult(

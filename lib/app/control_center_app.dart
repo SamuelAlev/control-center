@@ -24,7 +24,7 @@ import 'package:control_center/features/workspaces/providers/rpc_client_workspac
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_url_sync_provider.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/app_shortcuts.dart';
@@ -139,7 +139,7 @@ class ControlCenterApp extends ConsumerWidget {
           // the widgets ones. Third-party widgets still on the framework's
           // deprecated Material library get theirs from [LegacyMaterialBridge].
           localizationsDelegates: const [
-            AppLocalizations.delegate,
+            appLocalizationsDelegate,
             ...GlobalMaterialLocalizations.delegates,
           ],
           builder: (context, child) {

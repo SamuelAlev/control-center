@@ -1276,7 +1276,7 @@ void main() {
           // Relative link that resolves via the shared mount (identical
           // host/guest paths): cwd nests as convRoot/agents/<slug>, so the shared
           // repos dir is two levels up.
-          expect(await reposLink.target(), '../../repos');
+          expect(await reposLink.target(), path.join('..', '..', 'repos'));
         } finally {
           tempDir.deleteSync(recursive: true);
         }

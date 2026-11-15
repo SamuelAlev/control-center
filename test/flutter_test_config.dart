@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cc_ui/cc_ui.dart' show CcFonts;
 import 'package:control_center/core/storage/app_support_path_provider.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
 
 /// Runs once before any test file: temp dir for [AppSupportPathProvider], and
@@ -19,6 +20,9 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   }
   AppSupportPathProvider.setRealAppSupportDirForTesting(appSupportDir);
   CcFonts.loadScriptFonts = false;
+  // Locales are deferred libraries (l10n.yaml): load them all once so every
+  // test's localizations delegate and lookup answer synchronously.
+  await AppLocalizationsLoader.preloadAll();
 
   await testMain();
 

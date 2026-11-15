@@ -16,6 +16,7 @@ import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/presentation/screens/workspace_list_screen.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/workspace_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +89,7 @@ Widget _wrap({
     ],
     child: MaterialApp(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,

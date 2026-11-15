@@ -201,6 +201,11 @@ class PipelineEngine implements PipelineEnginePort {
   /// wait for them on app shutdown.
   final Set<Future<void>> _inFlight = {};
 
+  /// Set by [dispose]: no step starts after it. A step scheduled but not yet
+  /// started stays unstarted, the state a stopped process leaves, which
+  /// [resumeAll] continues at the next boot.
+  bool _disposed = false;
+
   /// Step-run ids whose body is executing in this process right now. A row in
   /// here is doing work, not waiting on a ticket or a child run, so the
   /// liveness sweep leaves it alone.
@@ -418,15 +423,19 @@ class PipelineEngine implements PipelineEnginePort {
   Future<void> retry(String workspaceId, String pipelineRunId) =>
       _retry(workspaceId, pipelineRunId);
 
-  /// Wait for any in-flight step futures to settle. Call from
-  /// `Provider.onDispose` so we don't leak work across hot reloads.
+  /// Stops starting steps and waits for the in-flight ones to settle.
+  ///
+  /// The server calls this before it closes the databases: a step still
+  /// running afterwards would write to a workspace whose database is gone,
+  /// and opening it again there races its teardown. Work an in-flight step
+  /// schedules as it finishes is waited for too, and starts nothing.
   Future<void> dispose() async {
+    _disposed = true;
     _sweepTimer?.cancel();
     _sweepTimer = null;
-    if (_inFlight.isEmpty) {
-      return;
+    while (_inFlight.isNotEmpty) {
+      await Future.wait(_inFlight.toList());
     }
-    await Future.wait(_inFlight, eagerError: false);
   }
 
   /// Runs [sweepStalledSteps] every [interval] until [dispose]. Idempotent.
@@ -499,9 +508,19 @@ class PipelineEngine implements PipelineEnginePort {
 
   // ── Step execution ──────────────────────────────────────────────────
 
+  /// Holds [f] in [_inFlight] until it settles.
+  ///
+  /// Nothing awaits tracked work, so a failure is logged here: left on the
+  /// future it would surface as an uncaught error of whichever zone started
+  /// the step.
   void _track(Future<void> f) {
-    _inFlight.add(f);
-    f.whenComplete(() => _inFlight.remove(f));
+    late final Future<void> tracked;
+    tracked = f
+        .catchError((Object error, StackTrace stack) {
+          CcDomainLog.error('PipelineEngine: step work failed', error, stack);
+        })
+        .whenComplete(() => _inFlight.remove(tracked));
+    _inFlight.add(tracked);
   }
 
   /// Drops the in-memory step-count bookkeeping for a finished run.

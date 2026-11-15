@@ -13,6 +13,7 @@ import 'package:control_center/features/forge/presentation/widgets/forge_connect
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,7 +54,7 @@ void main() {
   late AppLocalizations l10n;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   testWidgets('connected row names the signed-in account', (tester) async {
@@ -258,7 +259,7 @@ void main() {
           // Not `testWrap`: its own scope pins the active workspace to none,
           // and the line names the workspace.
           child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             locale: const Locale('en'),
             home: Directionality(

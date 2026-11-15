@@ -17,6 +17,7 @@ import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -147,7 +148,7 @@ Future<void> _pumpAgentsSettings(WidgetTester tester, List overrides) async {
       child: CcTheme(
         data: CcThemeData.light(),
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           // CcToastScope above the navigator overlay (mirrors lib/main.dart) so
           // create/rename/save flows that raise a CcToast resolve a host.
@@ -201,7 +202,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -236,7 +237,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -268,7 +269,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -308,7 +309,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -344,7 +345,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -380,7 +381,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -419,7 +420,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -465,7 +466,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -512,7 +513,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -559,7 +560,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -606,7 +607,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -650,7 +651,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -697,7 +698,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -735,7 +736,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -776,7 +777,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: AgentRegistryScreen()),
           ),
@@ -819,7 +820,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: AgentRegistryScreen()),
             ),
@@ -865,7 +866,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: AgentRegistryScreen()),
             ),
@@ -911,7 +912,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: AgentRegistryScreen()),
             ),
@@ -955,7 +956,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: AgentRegistryScreen()),
             ),
@@ -994,7 +995,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: AgentRegistryScreen()),
             ),
@@ -1028,7 +1029,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: AgentRegistryScreen()),
             ),

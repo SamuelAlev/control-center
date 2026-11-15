@@ -1,5 +1,5 @@
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_regex_tester_popover.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,7 +12,7 @@ void main() {
     await tester.pumpWidget(
       testWrap(const DiffRegexTesterPopover(literal: r'/hello/i')),
     );
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.regexTesterTitle), findsOneWidget);
     expect(find.text('hello'), findsOneWidget);
 
@@ -35,7 +35,7 @@ void main() {
     );
     await tester.enterText(find.byType(EditableText), 'abc');
     await tester.pump();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.regexInvalidPattern), findsOneWidget);
     expect(find.text(l10n.regexMatch), findsNothing);
   });

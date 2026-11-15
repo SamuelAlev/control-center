@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/observability/presentation/widgets/sections/skill_behavior_summary.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
@@ -42,7 +43,7 @@ class _SkillBehaviorPreview extends StatelessWidget {
         color: theme.tokens.bgPrimary,
         debugShowCheckedModeBanner: false,
         locale: Locale(rtl ? 'ar' : 'en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         textStyle: CcFonts.ui(textStyle: CcTypography.body).copyWith(
           color: theme.tokens.textPrimary,

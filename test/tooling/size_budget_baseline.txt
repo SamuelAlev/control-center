@@ -68,6 +68,8 @@
 # Lowered 2026-11-12: nine files to their current counts (pipeline run detail,
 # template editor, condition editor, run waterfall, plan studio screen, PR
 # diff view, focus pill window, server sharing section, skills settings).
+# Raised 2026-11-13 by 1: meeting_toolbar_window.dart imports the l10n loader
+# (deferred web locales) for its localizations delegate.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  628
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  746
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
@@ -83,7 +85,7 @@ lib/features/inbox/presentation/widgets/inbox_pr_row.dart  508
 lib/features/inbox/presentation/widgets/inbox_section_card.dart  509
 lib/features/meetings/presentation/screens/meeting_detail_screen.dart  720
 lib/features/meetings/presentation/screens/meeting_record_screen.dart  801
-lib/features/meetings/presentation/screens/meeting_toolbar_window.dart  325
+lib/features/meetings/presentation/screens/meeting_toolbar_window.dart  326
 lib/features/meetings/presentation/screens/meetings_screen.dart  643
 lib/features/meetings/presentation/widgets/detail/meeting_notes_tab.dart  398
 lib/features/meetings/presentation/widgets/detail/meeting_playback_bar.dart  422

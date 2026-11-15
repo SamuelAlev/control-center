@@ -46,8 +46,9 @@ extension _PipelineStepExecution on PipelineEngine {
     String? existingStepRunId,
   }) async {
     // Terminal sentinel steps never have a body — they're markers consumed
-    // by [_evaluateDownstream] to detect pipeline completion.
-    if (stepDef.kind == StepKind.terminal) {
+    // by [_evaluateDownstream] to detect pipeline completion. And nothing
+    // starts once the engine is disposed: the next boot resumes it.
+    if (stepDef.kind == StepKind.terminal || _disposed) {
       return;
     }
 

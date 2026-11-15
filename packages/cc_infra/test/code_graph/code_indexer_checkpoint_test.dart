@@ -46,6 +46,7 @@ void main() {
     RepoStateFingerprint? fingerprint,
     List<String> stamps = const ['stamp-1'],
     bool failExtraction = false,
+    int symbolsPerFile = 1,
   }) {
     walker = _CountingWalker(materialize(tree), tmp.path);
     return DefaultCodeIndexer(
@@ -60,20 +61,21 @@ void main() {
         }
         return ExtractionResult(
           symbols: [
-            CodeSymbol(
-              id: 'sym:${request.filePath}',
-              workspaceId: request.workspaceId,
-              repoId: request.repoId,
-              checkoutId: request.checkoutId,
-              name: 'S',
-              qualifiedName: 'S',
-              kind: CodeSymbolKind.classKind,
-              filePath: request.filePath,
-              language: 'dart',
-              startLine: 1,
-              endLine: 2,
-              signature: '',
-            ),
+            for (var i = 0; i < symbolsPerFile; i++)
+              CodeSymbol(
+                id: 'sym:${request.filePath}:$i',
+                workspaceId: request.workspaceId,
+                repoId: request.repoId,
+                checkoutId: request.checkoutId,
+                name: 'S',
+                qualifiedName: 'S',
+                kind: CodeSymbolKind.classKind,
+                filePath: request.filePath,
+                language: 'dart',
+                startLine: 1,
+                endLine: 2,
+                signature: '',
+              ),
           ],
           edges: const [],
         );
@@ -396,6 +398,44 @@ void main() {
     expect(written.worktreeDigest, 'digest-1', reason: 'digest refreshed');
   });
 
+  // An ingest does main-isolate work in proportion to its rows, so a batch is
+  // bounded by rows as well as by files: 29 generated l10n files of ~6000
+  // getters each, re-extracted by one ARB edit, used to land in ONE batch and
+  // freeze the server's event loop for over a second.
+  group('ingest batching', () {
+    test('a batch flushes early once its rows reach the budget', () async {
+      await indexer(
+        tree: {'a.dart': 'h1', 'b.dart': 'h2', 'c.dart': 'h3'},
+        fingerprint: fp,
+        symbolsPerFile: 2500,
+      ).indexRepo(workspaceId: 'ws1', repoId: 'repo1', repoPath: tmp.path);
+
+      expect(repo.ingestBatches, [
+        2,
+        1,
+      ], reason: 'the second file crosses the 4000-row budget');
+    });
+
+    test('a single file over the budget is never split', () async {
+      await indexer(
+        tree: {'big.dart': 'h1'},
+        fingerprint: fp,
+        symbolsPerFile: 9000,
+      ).indexRepo(workspaceId: 'ws1', repoId: 'repo1', repoPath: tmp.path);
+
+      expect(repo.ingestBatches, [1]);
+    });
+
+    test('small files still batch by file count', () async {
+      await indexer(
+        tree: {for (var i = 0; i < 40; i++) 'f$i.dart': 'h$i'},
+        fingerprint: fp,
+      ).indexRepo(workspaceId: 'ws1', repoId: 'repo1', repoPath: tmp.path);
+
+      expect(repo.ingestBatches, [32, 8]);
+    });
+  });
+
   // Two lanes reach one indexer for the same checkout and neither knows about
   // the other: the `index_code` pipeline (fired by `RepoAdded`) and the
   // code-graph watcher's own sweep, whose run row is deliberately outside that
@@ -599,6 +639,9 @@ class _CheckpointRepo implements CodeGraphRepository {
   final Map<String?, Map<String, String>> hashesByCheckout = {};
   final Map<String, CodeIndexCheckpoint> checkpoints = {};
   final List<String> ingestedPaths = [];
+
+  /// File count of each `ingestFiles` call, in order.
+  final List<int> ingestBatches = [];
   int fileStatesCalls = 0;
 
   /// Per-path `indexedAt` for [fileStates] rows; everything else is old.
@@ -643,6 +686,7 @@ class _CheckpointRepo implements CodeGraphRepository {
 
   @override
   Future<void> ingestFiles(List<CodeFileIngest> files) async {
+    ingestBatches.add(files.length);
     for (final file in files) {
       ingestedPaths.add(file.filePath);
     }

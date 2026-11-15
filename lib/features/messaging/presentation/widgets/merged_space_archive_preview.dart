@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/merged_space_archive_prompt.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
@@ -40,7 +41,7 @@ class _MergedSpacePreviewState extends State<_MergedSpacePreview> {
       color: theme.tokens.bgPrimary,
       debugShowCheckedModeBanner: false,
       locale: Locale(widget.rtl ? 'ar' : 'en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => CcTheme(
         data: theme,

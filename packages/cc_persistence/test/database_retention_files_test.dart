@@ -87,11 +87,11 @@ void main() {
     final db = dbs.of('w-1');
     await db.checkpoint();
     final path = dbs.pathFor('w-1');
-    final before = File(path).lengthSync();
+    final before = _sizeOnDisk(path);
 
     await service().runOnce();
 
-    final after = File(path).lengthSync();
+    final after = _sizeOnDisk(path);
     expect(
       after,
       lessThan(before ~/ 2),
@@ -230,4 +230,16 @@ void main() {
 
     expect(dbs.openIds, isEmpty);
   });
+}
+
+/// The length of the file at [path] as an open handle reports it. A path
+/// lookup on Windows can answer with the size its directory entry last
+/// recorded while SQLite still holds the file open.
+int _sizeOnDisk(String path) {
+  final file = File(path).openSync();
+  try {
+    return file.lengthSync();
+  } finally {
+    file.closeSync();
+  }
 }

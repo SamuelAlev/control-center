@@ -12,6 +12,7 @@ import 'package:control_center/features/messaging/presentation/widgets/message_f
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -31,7 +32,7 @@ Widget _wrap(Widget child) => Scaffold(
 /// of the navigation surface these two tests touch (permalink opening), which a
 /// bare [MaterialApp] has no answer for.
 Widget _routedApp(Widget child) => MaterialApp.router(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  localizationsDelegates: appLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   routerConfig: GoRouter(
     initialLocation: '/workspaces/ws-1',
@@ -124,7 +125,7 @@ void main() {
           ).overrideWith((ref) => Stream.value(null)),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(
             const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
@@ -193,7 +194,7 @@ void main() {
             agentDetailProvider('agent-$i').overrideWith((ref) async => null),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(
             const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
@@ -257,7 +258,7 @@ void main() {
             agentDetailProvider('agent-$i').overrideWith((ref) async => null),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(
             const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
@@ -341,7 +342,7 @@ void main() {
           agentDetailProvider('agent-1').overrideWith((ref) async => null),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(
             const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
@@ -480,7 +481,7 @@ void main() {
           agentDetailProvider('agent-1').overrideWith((ref) async => null),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(
             const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
@@ -614,7 +615,7 @@ void main() {
           agentDetailProvider('agent-1').overrideWith((ref) async => null),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: _wrap(
             const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
@@ -666,7 +667,7 @@ void main() {
     Widget host(int index) => ProviderScope(
       overrides: overrides,
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: _wrap(
           IndexedStack(
@@ -760,7 +761,7 @@ void main() {
             agentDetailProvider('agent-1').overrideWith((ref) async => null),
           ],
           child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: _wrap(
               ValueListenableBuilder<int>(
@@ -893,7 +894,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: _wrap(
               const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),
@@ -1051,7 +1052,7 @@ Future<void> _pumpLiveFeed(
         agentDetailProvider('agent-1').overrideWith((ref) async => null),
       ],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: _wrap(
           const SpaceMessageFeed(spaceId: 'ch-1', conversationId: 'ch-1'),

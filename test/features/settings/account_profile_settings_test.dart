@@ -8,6 +8,7 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/settings/presentation/widgets/sections/user/account_profile_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/user/identity_provider_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -94,7 +95,7 @@ void main() {
   late _Identity identity;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   setUp(() => identity = _Identity());

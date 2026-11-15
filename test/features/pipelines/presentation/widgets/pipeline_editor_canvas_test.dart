@@ -17,6 +17,7 @@ import 'package:control_center/features/pipelines/presentation/widgets/pipeline_
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_quick_insert.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/template_node_title.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/canvas/canvas_zoom_controls.dart';
 import 'package:control_center/shared/widgets/graph_node_card.dart';
 import 'package:flutter/gestures.dart';
@@ -174,7 +175,7 @@ void main() {
   final library = defaultNodeTypeLibrary();
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   Future<void> pumpEditor(

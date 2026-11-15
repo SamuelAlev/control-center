@@ -14,6 +14,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -132,7 +133,7 @@ Widget _host(List<Override> overrides) {
     ],
     child: MaterialApp(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
@@ -184,7 +185,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('Pull requests'), findsOneWidget);
-    expect(find.text('Connect a code host to load pull requests'), findsOneWidget);
+    expect(
+      find.text('Connect a code host to load pull requests'),
+      findsOneWidget,
+    );
     await tester.pumpWidget(Container());
     await tester.pump(const Duration(milliseconds: 100));
   });
@@ -285,7 +289,7 @@ void main() {
         ],
         child: MaterialApp.router(
           localizationsDelegates: [
-            ...AppLocalizations.localizationsDelegates,
+            ...appLocalizationsDelegates,
             ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
@@ -338,7 +342,7 @@ void main() {
         ],
         child: MaterialApp.router(
           localizationsDelegates: [
-            ...AppLocalizations.localizationsDelegates,
+            ...appLocalizationsDelegates,
             ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,

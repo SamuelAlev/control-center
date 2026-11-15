@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/condition_config_editor.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,7 +9,7 @@ import 'package:material_ui/material_ui.dart';
 Widget _wrap(Widget child) {
   return MaterialApp(
     localizationsDelegates: const [
-      ...AppLocalizations.localizationsDelegates,
+      ...appLocalizationsDelegates,
       ...GlobalMaterialLocalizations.delegates,
     ],
     supportedLocales: AppLocalizations.supportedLocales,

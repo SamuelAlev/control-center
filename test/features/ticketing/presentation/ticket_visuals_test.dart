@@ -3,6 +3,7 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart'
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_visuals.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -11,7 +12,7 @@ Widget _wrap(Widget child) => CcTheme(
   child: MaterialApp(
     builder: (context, child) =>
         CcTheme(data: CcThemeData.light(), child: child!),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(body: Center(child: child)),
   ),
@@ -53,7 +54,7 @@ void main() {
         CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Center(

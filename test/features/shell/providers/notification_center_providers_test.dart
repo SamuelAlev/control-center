@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
@@ -37,12 +38,16 @@ void main() {
     List<NotificationFeedItem> items, {
     List<NotificationItemState> states = const [],
     NotificationReadMark? mark,
+    Set<NotificationCategory> disabled = const {},
   }) async {
     final container = ProviderContainer(
       overrides: [
         localeProvider.overrideWith(_English.new),
         currentUserIdProvider.overrideWithValue('user-1'),
         mutedReposProvider.overrideWith((ref) async => const <String>{}),
+        disabledNotificationCategoriesProvider.overrideWith(
+          (ref) async => disabled,
+        ),
         viewerLoginSetProvider.overrideWithValue(const <String>{}),
         notificationFeedProvider.overrideWith((ref) => Stream.value(items)),
         // Never acknowledged anything: only the item itself can say read.
@@ -60,7 +65,9 @@ void main() {
     container
       ..listen(notificationFeedProvider, (_, _) {})
       ..listen(notificationReadMarkProvider, (_, _) {})
-      ..listen(notificationItemStatesProvider, (_, _) {});
+      ..listen(notificationItemStatesProvider, (_, _) {})
+      ..listen(disabledNotificationCategoriesProvider, (_, _) {});
+    await container.read(disabledNotificationCategoriesProvider.future);
     await container.read(notificationFeedProvider.future);
     await container.read(notificationReadMarkProvider.future);
     await container.read(notificationItemStatesProvider.future);
@@ -119,4 +126,26 @@ void main() {
       );
     },
   );
+
+  test('a category switched off in Settings leaves the bell', () async {
+    final merged = NotificationFeedItem(
+      id: 'merged',
+      workspaceId: 'ws-1',
+      method: 'notifications/pr_merged',
+      params: const {'workspace_id': 'ws-1'},
+      createdAt: DateTime.utc(2026, 10, 9, 10),
+      seq: 1,
+    );
+    expect(await readById([_wait('open'), merged]), {
+      'open': false,
+      'merged': false,
+    });
+    expect(
+      await readById(
+        [_wait('open'), merged],
+        disabled: {NotificationCategory.prMerged},
+      ),
+      {'open': false},
+    );
+  });
 }

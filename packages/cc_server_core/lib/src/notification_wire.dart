@@ -344,6 +344,7 @@ NotificationFrame meetingStartingSoonFrame(MeetingStartingSoon event) => (
     'start_time': event.startTime.toIso8601String(),
     if (event.meetingUrl != null) 'meeting_url': event.meetingUrl,
     'workspace_id': event.workspaceId,
+    'for_user_id': event.forUserId,
   },
 );
 

@@ -200,5 +200,8 @@ Future<void> copyWorktreeFile(String source, String destination) async {
       CcInfraLog.debug('CoW copy unavailable: $e');
     }
   }
-  await File(source).copy(destination);
+  // The copy of what a link names, as `cp` makes it: dart:io refuses to copy
+  // a link itself on Windows. The caller has checked it resolves inside the
+  // source.
+  await File(File(source).resolveSymbolicLinksSync()).copy(destination);
 }

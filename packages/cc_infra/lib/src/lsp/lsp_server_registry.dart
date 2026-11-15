@@ -207,7 +207,8 @@ String? resolveServerBinary(
     return file.existsSync() ? command : null;
   }
   for (final dir in projectLocalBins ? projectLocalBinDirs : const <String>[]) {
-    final candidate = p.join(projectRoot, dir, command);
+    // The dirs are spelled with `/`; the path takes the platform's separator.
+    final candidate = p.joinAll([projectRoot, ...dir.split('/'), command]);
     if (File(candidate).existsSync()) {
       return candidate;
     }

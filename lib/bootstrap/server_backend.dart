@@ -14,6 +14,7 @@ import 'package:control_center/core/server/sso_pair_link.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/desktop_update_lifecycle.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
@@ -397,7 +398,7 @@ class _ServerSetupAppState extends State<ServerSetupApp> {
                 color: t.bgBrandSolid,
                 title: 'Control Center',
                 locale: _appearance.locale,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: appLocalizationsDelegates,
                 supportedLocales: kSupportedAppLocales,
                 localeResolutionCallback: resolveAppLocale,
                 textStyle: CcFonts.ui(textStyle: CcTypography.body).copyWith(

@@ -30,6 +30,7 @@ import 'package:control_center/features/pr_review/providers/pr_space_provider.da
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
@@ -173,7 +174,7 @@ Widget _wrap(GoRouter router, {bool reducedMotion = false}) => CcTheme(
   data: CcThemeData.light(reducedMotion: reducedMotion),
   child: MaterialApp.router(
     routerConfig: router,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
   ),
 );
@@ -292,7 +293,7 @@ Future<void> _openFolderDelete(
   WidgetTester tester, {
   required String folderName,
 }) async {
-  final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+  final l10n = await appLocalizationsDelegate.load(const Locale('en'));
   final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
   await mouse.addPointer(location: Offset.zero);
   try {
@@ -578,7 +579,7 @@ void main() {
       await tester.pump();
       expect(zone, findsOneWidget);
       expect(tester.getSize(zone).height, 48);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.removeSpaceFromFolder), findsOneWidget);
       BoxDecoration decoration() =>
           tester.widget<AnimatedContainer>(zone).decoration! as BoxDecoration;
@@ -683,7 +684,7 @@ void main() {
         expect(fixture.writes, hasLength(2));
 
         await _dragSpaceTo(tester, 'Dev Team', find.text('Ops'));
-        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        final l10n = await appLocalizationsDelegate.load(const Locale('en'));
         expect(find.text(l10n.newSpaceFolder), findsOneWidget);
         await tester.enterText(find.byType(CcTextField).last, 'Paired');
         await tester.tap(find.text(l10n.create));
@@ -710,7 +711,7 @@ void main() {
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        final l10n = await appLocalizationsDelegate.load(const Locale('en'));
 
         await _dragSpaceTo(tester, 'Ops', find.text('Dev Team'));
         expect(find.text(l10n.newSpaceFolder), findsOneWidget);
@@ -759,7 +760,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
 
       await _dragSpaceTo(tester, 'Ops', find.text('Dev Team'));
       expect(fixture.writes, isEmpty);
@@ -798,7 +799,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
 
       await _openOverflow(tester, find.text('Ops'));
       await tester.tap(find.text(l10n.moveSpaceToFolder));
@@ -858,7 +859,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
 
       await _openOverflow(tester, find.text('Dev Team'));
       await tester.tap(find.text(l10n.moveSpaceToFolder));
@@ -934,7 +935,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _openOverflow(tester, find.text('Dev Team'));
       await tester.tap(find.text(l10n.moveSpaceToFolder));
       await tester.pump();
@@ -974,7 +975,7 @@ void main() {
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _openFolderDelete(tester, folderName: 'Planning');
       expect(tester.widget<CcCheckbox>(find.byType(CcCheckbox)).value, isFalse);
       await tester.tap(find.byType(CcCheckbox));
@@ -1026,7 +1027,7 @@ void main() {
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        final l10n = await appLocalizationsDelegate.load(const Locale('en'));
         await _openFolderDelete(tester, folderName: 'Planning');
         expect(
           tester.widget<CcCheckbox>(find.byType(CcCheckbox)).value,
@@ -1291,7 +1292,7 @@ void main() {
       // reversible hide, so it fires with no confirmation dialog.
       await _openOverflow(tester, find.text('Dev Team'));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.archiveSpace), findsOneWidget);
       expect(find.text(l10n.deleteSpace), findsNothing);
 
@@ -1348,7 +1349,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _openOverflow(tester, find.text('Dev Team'));
       await tester.tap(find.text(l10n.archiveSpace));
       await tester.pump();
@@ -1436,7 +1437,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        final l10n = await appLocalizationsDelegate.load(const Locale('en'));
         expect(find.text(l10n.archiveSpace), findsOneWidget);
         expect(_overflowTrigger(), findsOneWidget);
 
@@ -1486,7 +1487,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.archiveSpace), findsNothing);
       expect(find.text(l10n.renameSpace), findsNothing);
       await tester.pumpWidget(Container());
@@ -1515,7 +1516,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.archiveSpace), findsNothing);
       expect(
         port.archived,
@@ -1576,7 +1577,7 @@ void main() {
 
       await _openOverflow(tester, find.text('Dev Team'));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.renameSpace), findsOneWidget);
       expect(find.text(l10n.editSpaceRepos), findsOneWidget);
       expect(find.text(l10n.archiveSpace), findsOneWidget);
@@ -1603,7 +1604,7 @@ void main() {
 
       await _openOverflow(tester, find.text('Dev Team'));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.renameSpace));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -1653,7 +1654,7 @@ void main() {
 
       await _openOverflow(tester, find.text('Dev Team'));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.editSpaceRepos));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -1779,7 +1780,7 @@ void main() {
       );
       await _pumpOpenCard(tester);
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       final label = l10n.conversationCount(2);
       expect(find.text(label), findsOneWidget);
       expect(find.text('Design review'), findsOneWidget);
@@ -2134,7 +2135,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text('Dev Team'), findsOneWidget);
       expect(find.text(l10n.conversationCount(2)), findsNothing);
       expect(find.text('Design review'), findsNothing);
@@ -2170,7 +2171,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text('Dev Team'), findsOneWidget);
       expect(find.text(l10n.conversationCount(1)), findsNothing);
       expect(find.text('Main thread'), findsNothing);
@@ -2225,7 +2226,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.sidebarAgeHours(6)), findsOneWidget);
       expect(find.text(l10n.sidebarAgeHours(8)), findsOneWidget);
       expect(
@@ -2357,7 +2358,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.archivedSpaces), findsOneWidget);
       expect(find.text('Old project'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -2444,7 +2445,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.deleteSpaceConfirm), findsOneWidget);
       expect(port.deleted, isEmpty);
 

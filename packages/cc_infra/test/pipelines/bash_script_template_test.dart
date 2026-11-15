@@ -300,8 +300,10 @@ void main() {
             script:
                 'echo ok > mine.txt && cat mine.txt\n'
                 // Renames and deletes in the run dir work (git needs both).
-                'mkdir sub && echo x > sub/a && mv sub/a sub/b && rm -r sub '
-                '&& echo moved\n'
+                // `find -delete`, not `rm`: rm is exec-denied wherever it is
+                // not a multi-call binary.
+                'mkdir sub && echo x > sub/a && mv sub/a sub/b '
+                '&& find sub -delete && echo moved\n'
                 'cat ${data.path}/global.db 2>/dev/null || echo db-denied\n'
                 'cat ${root.path}/.env 2>/dev/null || echo env-denied\n'
                 'echo pwned > ${data.path}/planted 2>/dev/null || echo write-denied',

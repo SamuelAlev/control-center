@@ -31,6 +31,7 @@ import 'package:control_center/core/storage/observable_key_value_backend.dart';
 import 'package:control_center/core/storage/web_local_storage_backend.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/shiki_bootstrap.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
@@ -93,6 +94,14 @@ Future<void> bootstrapAndRun([List<String> arguments = const []]) async {
     debugPrint('Platform error: $error\n$stack');
     return true;
   };
+
+  // Each locale is a deferred part (l10n.yaml): fetch the starting one before
+  // the first frame so it renders text, and sync lookups have a locale.
+  await AppLocalizationsLoader.load(
+    remapTranslationLocale(
+      _webAppearance.locale ?? PlatformDispatcher.instance.locale,
+    ),
+  );
 
   runApp(const ControlCenterWebApp());
 
@@ -191,7 +200,7 @@ class _ControlCenterWebAppState extends State<ControlCenterWebApp>
             // installs the same l10n delegates the desktop app does — no
             // Material ancestor needed (WidgetsApp wires up Localizations).
             locale: _webAppearance.locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: kSupportedAppLocales,
             localeResolutionCallback: resolveAppLocale,
             // Default UI font = the bundled Manrope (cc_ui host asset, no

@@ -10,6 +10,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/messaging/providers/space_adapter_enforcement_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,7 +51,7 @@ Widget _wrap(Widget child) {
   return CcTheme(
     data: CcThemeData.light(),
     child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: child),
     ),
@@ -135,18 +136,21 @@ void main() {
       expect(resolved?.enforcement.enforcesModeGuarantees, isFalse);
     });
 
-    test('an agent missing from the roster runs on the built-in loop', () async {
-      final container = await _primed(
-        agents: const [],
-        participants: [_participant('ghost')],
-      );
+    test(
+      'an agent missing from the roster runs on the built-in loop',
+      () async {
+        final container = await _primed(
+          agents: const [],
+          participants: [_participant('ghost')],
+        );
 
-      final resolved = container.read(
-        spaceAdapterEnforcementProvider(_spaceId),
-      );
-      expect(resolved?.adapter.id, 'cc-harness');
-      expect(resolved?.enforcement.enforcesModeGuarantees, isTrue);
-    });
+        final resolved = container.read(
+          spaceAdapterEnforcementProvider(_spaceId),
+        );
+        expect(resolved?.adapter.id, 'cc-harness');
+        expect(resolved?.enforcement.enforcesModeGuarantees, isTrue);
+      },
+    );
 
     test('reports the weakest adapter when agents disagree', () async {
       // A fully-enforced peer must never mask a sandbox-only one.
@@ -162,20 +166,23 @@ void main() {
       expect(resolved?.enforcement.enforcesModeGuarantees, isFalse);
     });
 
-    test('an agent with no runner of its own reports the built-in loop', () async {
-      // Which is what dispatch does with an agent that has no adapter set, so
-      // the badge cannot claim one thing while the run does another.
-      final container = await _primed(
-        agents: [_agent('a1', null)],
-        participants: [_participant('a1')],
-      );
+    test(
+      'an agent with no runner of its own reports the built-in loop',
+      () async {
+        // Which is what dispatch does with an agent that has no adapter set, so
+        // the badge cannot claim one thing while the run does another.
+        final container = await _primed(
+          agents: [_agent('a1', null)],
+          participants: [_participant('a1')],
+        );
 
-      final resolved = container.read(
-        spaceAdapterEnforcementProvider(_spaceId),
-      );
-      expect(resolved?.adapter.id, 'cc-harness');
-      expect(resolved?.enforcement.enforcesModeGuarantees, isTrue);
-    });
+        final resolved = container.read(
+          spaceAdapterEnforcementProvider(_spaceId),
+        );
+        expect(resolved?.adapter.id, 'cc-harness');
+        expect(resolved?.enforcement.enforcesModeGuarantees, isTrue);
+      },
+    );
 
     test('is null for a space with no agent in it', () async {
       // Nothing runs there until an agent is mentioned in, so there is no

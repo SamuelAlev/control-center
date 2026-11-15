@@ -26,6 +26,7 @@ import 'package:control_center/features/sandboxing/providers/sandboxing_provider
 import 'package:control_center/features/workspaces/presentation/widgets/no_workspace_state.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/server_activity_panel.dart';
 import 'package:control_center/shared/widgets/server_connect/pre_app_settings.dart';
@@ -135,7 +136,7 @@ void main() {
         ],
         child: routed
             ? MaterialApp.router(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: appLocalizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 locale: const Locale('en'),
                 routerConfig: GoRouter(
@@ -159,7 +160,7 @@ void main() {
                 ),
               )
             : MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                localizationsDelegates: appLocalizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 locale: const Locale('en'),
                 home: CcTheme(

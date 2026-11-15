@@ -13,6 +13,7 @@ import 'package:control_center/features/messaging/presentation/ide/ide_sidebar.d
 import 'package:control_center/features/messaging/providers/ide_sidebar_prefs_provider.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
@@ -187,7 +188,7 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           routerConfig: router,

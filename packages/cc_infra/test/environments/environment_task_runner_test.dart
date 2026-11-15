@@ -11,6 +11,9 @@ import 'package:test/test.dart';
 
 import 'helpers/environment_fakes.dart';
 
+/// Why a task that runs as `bash -lc` does not run on Windows.
+final String? _posix = Platform.isWindows ? 'tasks run as bash -lc' : null;
+
 void main() {
   late Directory dir;
   late InMemoryRuns runs;
@@ -98,7 +101,7 @@ void main() {
       outcome.run.output,
       '${dir.path}/packages/ui fix-login cc-env-1 42000',
     );
-  });
+  }, skip: _posix);
 
   test('extra arguments arrive as "\$@"', () async {
     final outcome = await run(
@@ -106,7 +109,7 @@ void main() {
       arguments: ['--grep', 'a b'],
     );
     expect(outcome.run.output, '--grep,a b,');
-  });
+  }, skip: _posix);
 
   test('records a running row, then the result', () async {
     final outcome = await run(task(ShellEnvironmentCommand('echo done')));
@@ -120,7 +123,7 @@ void main() {
     expect(stored.exitCode, 0);
     expect(stored.output, 'done');
     expect(stored.completedAt, isNotNull);
-  });
+  }, skip: _posix);
 
   test('a failure carries the structured error and the stderr tail', () async {
     final outcome = await run(
@@ -138,7 +141,7 @@ exit 2
     expect(outcome.run.exitCode, 2);
     expect(outcome.run.error, 'No database');
     expect(outcome.run.output, contains('[stderr] oops'));
-  });
+  }, skip: _posix);
 
   test('a deadline is recorded as timedOut', () async {
     final outcome = await run(
@@ -146,7 +149,7 @@ exit 2
     );
     expect(outcome.run.status, EnvironmentRunStatus.timedOut);
     expect(outcome.run.exitCode, environmentTimeoutExitCode);
-  });
+  }, skip: _posix);
 
   test('a bad placeholder still finishes the row', () async {
     final outcome = await run(
@@ -183,7 +186,7 @@ exit 2
     expect(outcome.run.output, endsWith('line-3-200'));
     expect(runs.outputWrites, isNotEmpty);
     expect(runs.outputWrites.length, lessThan(30));
-  });
+  }, skip: _posix);
 
   test('progress lands in the tail', () async {
     final outcome = await run(
@@ -194,14 +197,14 @@ exit 2
       ),
     );
     expect(outcome.run.output, '[step] Migrate');
-  });
+  }, skip: _posix);
 
   test('output is redacted', () async {
     final outcome = await run(
       task(ShellEnvironmentCommand('echo --token=hunter2')),
     );
     expect(outcome.run.output, isNot(contains('hunter2')));
-  });
+  }, skip: _posix);
 
   group('runInWorktree', () {
     test('sees only what it is given, and records the repo', () async {
@@ -244,5 +247,5 @@ exit 2
       );
       expect(outcome.run.output, '/w');
     });
-  });
+  }, skip: _posix);
 }

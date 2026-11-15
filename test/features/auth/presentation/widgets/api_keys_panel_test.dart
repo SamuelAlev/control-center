@@ -12,6 +12,7 @@ import 'package:control_center/features/auth/providers/oauth_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/settings/providers/workspace_settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,7 +50,7 @@ void main() {
       ),
     ],
     child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('en'),
       home: CcTheme(
@@ -122,7 +123,10 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.widgetWithText(CcButton, 'Sign in to Linear'), findsOneWidget);
+      expect(
+        find.widgetWithText(CcButton, 'Sign in to Linear'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('local tickets show no credential row', (tester) async {

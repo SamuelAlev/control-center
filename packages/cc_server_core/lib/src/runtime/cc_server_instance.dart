@@ -43,6 +43,11 @@ class CcServer {
   /// Per-minute cron evaluator for pipeline triggers. Disposed on [shutdown].
   PipelineSchedulerService? _pipelineScheduler;
 
+  /// Stops the pipeline engine starting steps and waits for the running ones.
+  /// Called on [shutdown] once nothing can start a run, before the databases
+  /// those steps write to close.
+  Future<void> Function()? _stopPipelines;
+
   /// Daily audit/log retention prune. Stopped on [shutdown].
   DatabaseRetentionService? _databaseRetention;
 
@@ -176,6 +181,9 @@ class CcServer {
   /// Server-side Google Calendar sync sweep, started after boot when a Google
   /// client id is configured (else null). Disposed on [shutdown].
   ServerCalendarSync? _calendarSync;
+
+  /// The "meeting starting soon" sweep. Disposed on [shutdown].
+  MeetingAlertSweep? _meetingAlerts;
 
   /// Per-workspace live weather (Open-Meteo, keyless) feeding the soundscape
   /// engine and the `weather.*` ops. Disposed on [shutdown].
@@ -372,7 +380,10 @@ class CcServer {
       () async => _skillEvaluation?.dispose(),
       timeout: const Duration(seconds: 30),
     );
-    await step('calendar', () async => _calendarSync?.dispose());
+    await step('calendar', () async {
+      _meetingAlerts?.dispose();
+      _calendarSync?.dispose();
+    });
     await step('weather', () async => _weatherService?.dispose());
     await step('soundscape', () async => _soundscapeHub?.dispose());
     await step('meetings', () async {
@@ -440,6 +451,15 @@ class CcServer {
     // per open workspace.)
     await guard('rpc', rpc.stop);
     await guard('mcpControl', _mcpControl.dispose);
+    // No client, trigger or listener can start a run any more. A step still
+    // running (a skill scan a new workspace's seeding started, say) finishes
+    // now: after the close below its next statement would open the workspace
+    // database again, on a server that has shut down.
+    await guard(
+      'pipelines',
+      () async => _stopPipelines?.call(),
+      timeout: const Duration(seconds: 5),
+    );
     await guard('forgeClients', () async {
       _githubClients?.close();
       _forgeHttpClients?.close();

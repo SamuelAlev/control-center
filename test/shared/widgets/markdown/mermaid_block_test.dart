@@ -1,6 +1,7 @@
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +13,7 @@ import 'package:material_ui/material_ui.dart';
 Widget _app(Widget child, {Brightness brightness = Brightness.light}) {
   return ProviderScope(
     child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(brightness: brightness),
       home: CcTheme(
@@ -98,7 +99,7 @@ void main() {
       await tester.pumpWidget(_app(const StyledMarkdownBody(data: _flowchart)));
       await tester.pumpAndSettle();
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.tap(
         find.byWidgetPredicate(
           (widget) =>
@@ -128,7 +129,7 @@ void main() {
       await tester.pumpWidget(_app(const StyledMarkdownBody(data: _flowchart)));
       await tester.pumpAndSettle();
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.tap(
         find.byWidgetPredicate(
           (widget) => widget is CcIconButton && widget.tooltip == l10n.expand,
@@ -195,7 +196,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.showMore), findsOneWidget);
       await tester.tap(find.text(l10n.showMore));
       await tester.pumpAndSettle();

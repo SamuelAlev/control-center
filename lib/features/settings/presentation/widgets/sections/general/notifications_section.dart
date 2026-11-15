@@ -277,7 +277,9 @@ class _CategoryRow extends ConsumerWidget {
         onChanged: (v) async {
           final prefs = ref.read(notificationPreferencesProvider);
           await prefs.setCategoryEnabled(category, enabled: v);
-          ref.invalidate(_categoryEnabledFutureProvider(category));
+          ref
+            ..invalidate(_categoryEnabledFutureProvider(category))
+            ..invalidate(disabledNotificationCategoriesProvider);
         },
       ),
     );

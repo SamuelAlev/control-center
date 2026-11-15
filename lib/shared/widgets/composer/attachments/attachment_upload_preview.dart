@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/composer/attachments/attachment_strip.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:flutter/widget_previews.dart';
@@ -68,7 +69,7 @@ class _AttachmentUploadPreviewState extends State<_AttachmentUploadPreview> {
         color: theme.tokens.bgPrimary,
         debugShowCheckedModeBanner: false,
         locale: Locale(widget.rtl ? 'ar' : 'en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         textStyle: CcFonts.ui(textStyle: CcTypography.body).copyWith(
           color: theme.tokens.textPrimary,

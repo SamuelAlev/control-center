@@ -11,7 +11,7 @@ import 'package:control_center/features/pipelines/providers/pipeline_providers.d
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,7 +141,7 @@ Widget _routedShell(GoRouter router) {
     data: CcThemeData.light(),
     child: MaterialApp.router(
       localizationsDelegates: const [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: kSupportedAppLocales,

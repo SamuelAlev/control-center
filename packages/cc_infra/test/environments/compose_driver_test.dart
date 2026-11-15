@@ -8,6 +8,7 @@ import 'package:cc_infra/src/environments/compose_driver.dart';
 import 'package:cc_infra/src/environments/compose_plan.dart';
 import 'package:cc_infra/src/environments/environment_command_runner.dart';
 import 'package:cc_infra/src/environments/environment_lease_allocator.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
 
@@ -58,8 +59,8 @@ void main() {
 
   setUp(() {
     dir = tempDir(addTearDown);
-    worktree = '${dir.path}/worktree';
-    stateDir = '${dir.path}/state';
+    worktree = p.join(dir.path, 'worktree');
+    stateDir = p.join(dir.path, 'state');
     Directory(worktree).createSync();
     File('$worktree/compose.yaml').writeAsStringSync('services: {}\n');
     model = {
@@ -148,7 +149,8 @@ void main() {
         ),
         {
           'COMPOSE_PROJECT_NAME': 'cc-3f2a9c1e-7b4',
-          'COMPOSE_FILE': '/w/compose.yaml:/state/compose.override.yaml',
+          'COMPOSE_FILE':
+              '/w/compose.yaml:${p.join('/state', 'compose.override.yaml')}',
         },
       );
       expect(
@@ -168,7 +170,7 @@ void main() {
       File('$worktree/compose.yaml').deleteSync();
       for (final name in composeFileNames.reversed) {
         File('$worktree/$name').writeAsStringSync('');
-        expect(discoverComposeFile(worktree), '$worktree/$name');
+        expect(discoverComposeFile(worktree), p.join(worktree, name));
       }
     });
 
@@ -176,7 +178,7 @@ void main() {
       File('$worktree/ops.yaml').writeAsStringSync('');
       expect(
         discoverComposeFile(worktree, explicit: 'ops.yaml'),
-        '$worktree/ops.yaml',
+        p.join(worktree, 'ops.yaml'),
       );
       expect(
         () => discoverComposeFile(worktree, explicit: 'nope.yaml'),
@@ -291,7 +293,7 @@ services: {}
         '-p',
         'cc-3f2a9c1e-7b4',
         '-f',
-        '$worktree/compose.yaml',
+        p.join(worktree, 'compose.yaml'),
         'config',
         '--format',
         'json',
@@ -509,7 +511,7 @@ services:
       expect(result.ok, isFalse);
       final bind = result.missingBinds.single;
       expect(bind.gitignored, isTrue);
-      expect(bind.message, contains('docker/seed.sh'));
+      expect(bind.message, contains(p.join('docker', 'seed.sh')));
       expect(bind.message, contains('gitignored'));
       expect(bind.message, contains('seedFiles'));
       expect(
@@ -610,7 +612,8 @@ services:
       });
 
       test('a link in the worktree pointing out', () async {
-        Link('$worktree/link').createSync('/etc');
+        final outside = Directory(p.join(dir.path, 'outside'))..createSync();
+        Link('$worktree/link').createSync(outside.path);
         expect(
           await rules({
             'volumes': [
@@ -1160,9 +1163,9 @@ services:
         '-p',
         'cc-3f2a9c1e-7b4',
         '-f',
-        '$stateDir/compose.resolved.json',
+        p.join(stateDir, 'compose.resolved.json'),
         '-f',
-        '$stateDir/compose.override.yaml',
+        p.join(stateDir, 'compose.override.yaml'),
         'up',
         '-d',
         '--remove-orphans',
@@ -1199,7 +1202,7 @@ services:
       expect(file, subject.model);
       expect(
         runner.callsWith('up').single.argv,
-        isNot(contains('$worktree/compose.yaml')),
+        isNot(contains(p.join(worktree, 'compose.yaml'))),
       );
     });
 

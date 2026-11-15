@@ -2,6 +2,7 @@ import 'package:cc_domain/features/observability/domain/usage_stats.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/observability/presentation/widgets/usage/usage_trend_chart.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/charts/chart_hover.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
@@ -28,7 +29,7 @@ Future<void> _pump(WidgetTester tester, List<UsageTrendSeries> series) async {
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: CcTheme(
         data: CcThemeData(

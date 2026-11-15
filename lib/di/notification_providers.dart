@@ -9,6 +9,7 @@ library;
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
+import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/ports/notification_port.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/app/app_window_focused.dart';
@@ -28,6 +29,7 @@ import 'package:control_center/features/messaging/providers/pending_confirmation
 import 'package:control_center/features/shell/providers/current_route_provider.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,6 +43,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final mutedReposProvider = FutureProvider<Set<String>>((ref) {
   return ref.watch(notificationPreferencesProvider).getMutedRepos();
 });
+
+/// The notification categories the operator switched off in Settings.
+///
+/// Shared for the same reason as [mutedReposProvider]: the OS toast checks the
+/// category itself (`LocalNotificationService`), but the bell and the banner
+/// rail render without the service, so they read this set. A category switched
+/// off must disappear from every surface, not only from the toasts.
+final disabledNotificationCategoriesProvider =
+    FutureProvider<Set<NotificationCategory>>((ref) async {
+      final preferences = ref.watch(notificationPreferencesProvider);
+      return {
+        for (final category in NotificationCategory.values)
+          if (!await preferences.isCategoryEnabled(category)) category,
+      };
+    });
 
 /// The operator's account names across every connected forge, lower-cased.
 ///
@@ -110,20 +127,31 @@ final desktopNotificationServiceProvider = Provider<NotificationPort>((ref) {
 /// history is NOT recorded here any more — the server records it per
 /// workspace (`NotificationFeedRecorder`) and the bell watches that feed.
 final notificationServiceProvider = Provider<NotificationPort>((ref) {
+  // Keeps the disabled set loaded for `onRecord` without rebuilding the port:
+  // the session holds the port it read at boot.
+  ref.listen(disabledNotificationCategoriesProvider, (_, _) {});
   return RecordingNotificationPort(
     inner: ref.watch(desktopNotificationServiceProvider),
-    onRecord: (notification) =>
-        ref.read(liveNotificationLaneProvider).add(notification),
+    onRecord: (notification) {
+      // A category switched off never raises a banner either.
+      final disabled =
+          ref.read(disabledNotificationCategoriesProvider).value ??
+          const <NotificationCategory>{};
+      if (!disabled.contains(notification.category)) {
+        ref.read(liveNotificationLaneProvider).add(notification);
+      }
+    },
   );
 });
 
 /// The localizations notifications render in: the app's chosen locale, else
 /// the system's.
-AppLocalizations notificationLocalizations(Ref ref) => lookupAppLocalizations(
-  remapTranslationLocale(
-    ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
-  ),
-);
+AppLocalizations notificationLocalizations(Ref ref) =>
+    AppLocalizationsLoader.lookupLoaded(
+      remapTranslationLocale(
+        ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
+      ),
+    );
 
 /// Answers approval [id] from an OS notification's Approve or Deny button.
 ///

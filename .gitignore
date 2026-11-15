@@ -77,6 +77,8 @@ web/*.js.map
 .env.*
 !.env.template
 **/secrets.*
+# Source that reads secrets from the environment, not a secret itself.
+!apps/cc_connect/lib/src/secrets.dart
 
 coverage
 

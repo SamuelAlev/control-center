@@ -376,7 +376,12 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
 
     // Shared repos live at <spaceRoot>/repos; the cwd is nested two levels
     // under it (<spaceRoot>/agents/<overlay>), so the link is `../../repos`.
-    await _ensureSymlink(p.join(overlayDir.path, 'repos'), '../../repos');
+    // Joined with the platform separator: Windows does not follow a relative
+    // link whose target is spelled with `/`.
+    await _ensureSymlink(
+      p.join(overlayDir.path, 'repos'),
+      p.join('..', '..', 'repos'),
+    );
 
     if (agentConfigDir != null && agentConfigDir.isNotEmpty) {
       final agentMd = p.join(agentConfigDir, 'AGENTS.md');

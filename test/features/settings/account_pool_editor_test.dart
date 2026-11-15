@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/account_pool_editor.dart';
 import 'package:control_center/features/settings/providers/account_pool_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -21,7 +22,7 @@ List<AccountPoolCandidate> _candidates([int n = 3]) => [
 Widget _wrap(Widget child) => CcTheme(
   data: CcThemeData.light(),
   child: MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(body: SingleChildScrollView(child: child)),
   ),
@@ -77,7 +78,7 @@ void main() {
     // must say so and offer the way out — even with one account left, where
     // it would otherwise render nothing at all.
     testWidgets('says so with one account left', (tester) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _pump(
         tester,
         scope: _agentScope,
@@ -89,7 +90,7 @@ void main() {
     });
 
     testWidgets('says so above the full editor', (tester) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _pump(tester, pool: const AccountPool(accountIds: ['gone']));
       expect(find.text(l10n.accountPoolAllRemoved), findsOneWidget);
       expect(
@@ -101,7 +102,7 @@ void main() {
     testWidgets('stays quiet while one listed account survives', (
       tester,
     ) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _pump(tester, pool: const AccountPool(accountIds: ['gone', 'c1']));
       expect(find.text(l10n.accountPoolAllRemoved), findsNothing);
     });
@@ -112,7 +113,7 @@ void main() {
       // Editing must start from what WOULD run. An empty list would imply
       // nothing is attached, which is the opposite of the truth.
       await _pump(tester);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.accountPoolUsingAll), findsOneWidget);
       for (var i = 0; i < 3; i++) {
         expect(find.text('Account $i'), findsOneWidget);
@@ -133,7 +134,7 @@ void main() {
           strategy: AccountRotationStrategy.serial,
         ),
       );
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       expect(find.text(l10n.accountPoolInheriting), findsOneWidget);
       // Only the inherited one carries a position; the rest are detached.
       expect(find.text('1'), findsOneWidget);
@@ -154,7 +155,7 @@ void main() {
     });
 
     testWidgets('the strategy hint changes with the strategy', (tester) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _pump(
         tester,
         pool: const AccountPool(
@@ -169,7 +170,7 @@ void main() {
     testWidgets('an agent override offers a reset to the workspace', (
       tester,
     ) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _pump(
         tester,
         scope: _agentScope,
@@ -181,7 +182,7 @@ void main() {
 
     testWidgets('a workspace scope has no reset affordance', (tester) async {
       // There is nothing above a workspace to fall back to.
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _pump(tester, pool: const AccountPool(accountIds: ['c0']));
       expect(find.text(l10n.accountPoolResetToWorkspace), findsNothing);
     });

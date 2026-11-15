@@ -2,12 +2,12 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_kinds.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final l10n = lookupAppLocalizations(const Locale('en'));
+  final l10n = AppLocalizationsLoader.lookupLoaded(const Locale('en'));
 
   group('mapNotificationFrame', () {
     test('unknown methods (task lifecycle, ticket_reassigned) render null', () {

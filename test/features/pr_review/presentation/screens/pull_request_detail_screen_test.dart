@@ -20,6 +20,7 @@ import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart'
     show EditorLayoutPersistence;
@@ -34,7 +35,7 @@ Widget _wrap(Widget child) {
   return ProviderScope(
     child: MaterialApp.router(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,

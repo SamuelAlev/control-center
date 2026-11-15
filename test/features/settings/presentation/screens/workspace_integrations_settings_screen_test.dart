@@ -2,6 +2,7 @@ import 'package:control_center/di/settings_registry.dart';
 import 'package:control_center/features/settings/presentation/screens/workspace_integrations_settings_screen.dart';
 import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,7 +20,7 @@ void main() {
   late SettingsRegistry shipped;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
     final container = ProviderContainer();
     shipped = container.read(settingsRegistryProvider);
     container.dispose();

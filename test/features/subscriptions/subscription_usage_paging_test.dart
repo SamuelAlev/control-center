@@ -4,6 +4,7 @@ import 'package:control_center/features/subscriptions/presentation/widgets/subsc
 import 'package:control_center/features/subscriptions/presentation/widgets/subscription_usage_pill.dart';
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/ai_brand_logo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,7 +55,7 @@ Future<void> _openPill(
       child: CcTheme(
         data: CcThemeData.light(),
         child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Align(
@@ -157,7 +158,7 @@ void main() {
 
     await tester.tap(find.byIcon(AppIcons.chevronRight));
     await tester.pumpAndSettle();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text('2/3'), findsOneWidget);
     expect(find.text('me@quiet'), findsOneWidget);
     // …and it says WHY it is quiet, rather than reading as breakage.
@@ -173,7 +174,7 @@ void main() {
     ]);
     // Scoped to the block: the pill CHIP also renders a percentage (each
     // provider's worst account), so a bare text finder would prove nothing.
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     Finder inBlock(int percent) => find.descendant(
       of: find.byType(SubscriptionProviderBlock),
       matching: find.text(l10n.subscriptionUsagePercentUsed(percent)),
@@ -205,7 +206,7 @@ void main() {
         ),
       ),
     ]);
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.subscriptionUsageCredits), findsOneWidget);
     // One line, reading as a sentence: the amount and the cap are one fact.
     expect(
@@ -220,7 +221,7 @@ void main() {
   testWidgets('an account with both windows and spend shows both', (
     tester,
   ) async {
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await _openPill(tester, [
       const SubscriptionUsage(
         providerId: 'claude',
@@ -247,7 +248,7 @@ void main() {
   testWidgets('a spent plan says so, and quotes the provider', (tester) async {
     // "Unavailable" would send the operator looking for a broken integration.
     // The plan answered; the answer is that it has nothing left.
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await _openPill(tester, [
       SubscriptionUsage(
         providerId: 'kimi-code',
@@ -276,7 +277,7 @@ void main() {
     // It has quietly dropped out of the rotation. "No usage reported for this
     // account" made that indistinguishable from an account nobody happened to
     // use, which is how two Claude logins sat dead for hours.
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await _openPill(tester, [
       const SubscriptionUsage(
         providerId: 'claude',
@@ -297,7 +298,7 @@ void main() {
   ) async {
     // Every account nobody used overnight is in this state by morning, so it
     // must NOT read as the one that needs a human.
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await _openPill(tester, [
       const SubscriptionUsage(
         providerId: 'claude',
@@ -323,7 +324,7 @@ void main() {
   ) async {
     // An unreadable account contributes NOTHING to the headline. Counting it as
     // fully consumed would report a quota problem where the problem is a login.
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await _openPill(tester, [
       _usage(accountId: 'a', accountLabel: 'me@example.com'),
       const SubscriptionUsage(

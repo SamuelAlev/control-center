@@ -5,12 +5,12 @@ import 'package:control_center/core/desktop/desktop_shell.dart';
 import 'package:control_center/features/desktop_app/presentation/tray/tray_menu.dart';
 import 'package:control_center/features/desktop_app/providers/desktop_app_preferences.dart';
 import 'package:control_center/features/desktop_app/providers/tray_status_providers.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/foundation.dart' show TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final l10n = lookupAppLocalizations(const Locale('en'));
+  final l10n = AppLocalizationsLoader.lookupLoaded(const Locale('en'));
 
   const waiting = [
     TrayAttentionSpace(spaceId: 's1', name: 'Checkout', openQuestions: 2),

@@ -45,10 +45,12 @@ void main() {
         final scratch = await Directory.systemTemp.createTemp('walker_rig');
         addTearDown(() => scratch.delete(recursive: true));
         ran = File(p.join(scratch.path, 'ran'));
+        // Spelled with `/`: git hands a hook path with a `\` to `sh -c`, which
+        // eats it, so on Windows the hook would never run.
         final script = File(p.join(scratch.path, 'planted.sh'))
-          ..writeAsStringSync('#!/bin/sh\ntouch "${ran.path}"\n');
+          ..writeAsStringSync('#!/bin/sh\ntouch "${_slashed(ran.path)}"\n');
         await Process.run('chmod', ['755', script.path]);
-        await git(['config', 'core.fsmonitor', script.path]);
+        await git(['config', 'core.fsmonitor', _slashed(script.path)]);
         await write('lib/a.dart', 'void a() {}\n');
         await write('.gitignore', 'ignored.dart\n');
         await write('ignored.dart', 'void b() {}\n');
@@ -184,3 +186,6 @@ void main() {
     });
   });
 }
+
+/// [path] with `/` for every separator, as git and `sh` take it on Windows.
+String _slashed(String path) => path.replaceAll(r'\', '/');

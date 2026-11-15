@@ -9,6 +9,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_group.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/attachments/attachment_preview_pane.dart'
+    show attachmentIconForName;
 import 'package:flutter/widgets.dart';
 
 /// The messaging chrome injected into the shared editor: kind icons, live
@@ -37,6 +39,11 @@ EditorChrome messagingIdeChrome({
     // already looked when it opened the tab.
     if (tab.kind == MessagingTabKinds.rig) {
       return RigTabSurfaces.iconForArgs(tab.args);
+    }
+    // Same for an attachment: a pasted .txt is not a picture. The file name
+    // rides in the persisted args, so a restored layout gets it right too.
+    if (tab.kind == MessagingTabKinds.attachment) {
+      return attachmentIconForName(tab.args['label'] as String?);
     }
     return MessagingTabKinds.iconFor(tab.kind);
   },

@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/utils/github_markdown_preprocessor.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_media_metrics.dart';
@@ -21,7 +22,7 @@ const double _blockPadding = 16;
 const double _column = 700;
 
 Widget _app(Widget child) => MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  localizationsDelegates: appLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: CcTheme(
     data: CcThemeData.light(),

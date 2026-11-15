@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/server_activity_panel.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
@@ -19,7 +20,7 @@ Widget _preview(bool dark) {
     child: WidgetsApp(
       debugShowCheckedModeBanner: false,
       color: theme.tokens.bgPrimary,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);

@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
     show ForgeConnectionStatus;
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/your_account_line.dart';
 import 'package:flutter/widgets.dart';
@@ -13,7 +14,7 @@ void main() {
   late AppLocalizations l10n;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   Future<GoRouter> pump(

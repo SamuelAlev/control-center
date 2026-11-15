@@ -274,4 +274,164 @@ void main() {
       expect(changed.map((f) => f.filename), expected);
     });
   });
+
+  group('working-tree diff without a capture', () {
+    test('a move without git mv still reads as a rename', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      final body = List.generate(20, (i) => 'line $i').join('\n');
+      File(p.join(repo.path, 'old.txt')).writeAsStringSync('$body\n');
+      await _git(['add', '-A'], repo.path);
+      await _git(['commit', '-q', '-m', 'old'], repo.path);
+      File(
+        p.join(repo.path, 'old.txt'),
+      ).renameSync(p.join(repo.path, 'new.txt'));
+
+      final files = await adapter.changedFiles(repo.path, 'HEAD');
+
+      expect(files.single.filename, 'new.txt');
+      expect(files.single.status, PrFileStatus.renamed);
+      expect(files.single.previousFilename, 'old.txt');
+    });
+
+    test(
+      'a path dropped from the index but kept on disk is unchanged',
+      () async {
+        const adapter = ProcessSessionDiffAdapter();
+        await _git(['rm', '-q', '--cached', 'tracked.txt'], repo.path);
+
+        expect(await adapter.changedFiles(repo.path, 'HEAD'), isEmpty);
+      },
+    );
+
+    test('lists every untracked file past the per-file limit', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      for (var i = 0; i < 30; i++) {
+        File(p.join(repo.path, 'n$i.txt')).writeAsStringSync('n $i\n');
+      }
+      File(p.join(repo.path, 'tracked.txt')).writeAsStringSync('changed\n');
+
+      final files = await adapter.changedFiles(repo.path, 'HEAD');
+
+      expect(files, hasLength(31));
+      expect(files.where((f) => f.status == PrFileStatus.added), hasLength(30));
+    });
+
+    test('a staged-only change and an untracked file both show', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      File(p.join(repo.path, 'tracked.txt')).writeAsStringSync('staged\n');
+      await _git(['add', 'tracked.txt'], repo.path);
+      File(p.join(repo.path, 'fresh.txt')).writeAsStringSync('fresh\n');
+
+      final files = await adapter.changedFiles(repo.path, 'HEAD');
+      final byName = {for (final f in files) f.filename: f};
+
+      expect(byName.keys, ['fresh.txt', 'tracked.txt']);
+      expect(byName['tracked.txt']!.patch, contains('+staged'));
+      expect(byName['fresh.txt']!.patch, contains('+fresh'));
+    });
+  });
+
+  group('repeated reads', () {
+    test('a further edit to an already-modified file is seen', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      final file = File(p.join(repo.path, 'tracked.txt'))
+        ..writeAsStringSync('first edit\n');
+      final first = await adapter.groupedChanges(repo.path);
+      expect(first.unstaged.single.patch, contains('first edit'));
+      expect(
+        (await adapter.changedFiles(repo.path, 'HEAD')).single.patch,
+        contains('first edit'),
+      );
+
+      file.writeAsStringSync('second edit, longer\n');
+      final second = await adapter.groupedChanges(repo.path);
+      expect(second.unstaged.single.patch, contains('second edit'));
+      expect(
+        (await adapter.changedFiles(repo.path, 'HEAD')).single.patch,
+        contains('second edit'),
+      );
+    });
+
+    test('a new staged blob with the file untouched on disk is seen', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      final file = File(p.join(repo.path, 'tracked.txt'))
+        ..writeAsStringSync('one\n');
+      await _git(['add', 'tracked.txt'], repo.path);
+      file.writeAsStringSync('two\n');
+      final before = await adapter.groupedChanges(repo.path);
+      expect(before.staged.single.patch, contains('+one'));
+
+      // Only the index moves: status still reads `MM` and the file's stat is
+      // unchanged, so only the index blob in the fingerprint can tell.
+      final blob = File(p.join(repo.path, 'three.tmp'))
+        ..writeAsStringSync('three\n');
+      final hashed = await Process.run('git', [
+        'hash-object',
+        '-w',
+        blob.path,
+      ], workingDirectory: repo.path);
+      blob.deleteSync();
+      final sha = (hashed.stdout as String).trim();
+      await _git([
+        'update-index',
+        '--cacheinfo',
+        '100644,$sha,tracked.txt',
+      ], repo.path);
+
+      final after = await adapter.groupedChanges(repo.path);
+      expect(after.staged.single.patch, contains('+three'));
+    });
+
+    test('an unchanged tree answers with the same result', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      File(p.join(repo.path, 'tracked.txt')).writeAsStringSync('edited\n');
+      final first = await adapter.groupedChanges(repo.path);
+      final second = await adapter.groupedChanges(repo.path);
+      expect(identical(first, second), isTrue);
+    });
+
+    test('a commit clears the changes', () async {
+      const adapter = ProcessSessionDiffAdapter();
+      File(p.join(repo.path, 'tracked.txt')).writeAsStringSync('edited\n');
+      expect(await adapter.changedFiles(repo.path, 'HEAD'), hasLength(1));
+      await _git(['commit', '-q', '-am', 'edit'], repo.path);
+      expect(await adapter.changedFiles(repo.path, 'HEAD'), isEmpty);
+      final grouped = await adapter.groupedChanges(repo.path);
+      expect(grouped.staged, isEmpty);
+      expect(grouped.unstaged, isEmpty);
+    });
+  });
+
+  group('parseGitStatusV2Z', () {
+    test('reads HEAD, untracked files, renames and deletions', () {
+      const out =
+          '# branch.oid 0123456789abcdef0123456789abcdef01234567\x00'
+          '# branch.head main\x00'
+          '1 .M N... 100644 100644 100644 aaa aaa src/a b.txt\x00'
+          '2 R. N... 100644 100644 100644 bbb bbb R100 to.txt\x00from.txt\x00'
+          '1 D. N... 100644 000000 000000 ccc 000 gone.txt\x00'
+          '? new dir/n.txt\x00';
+
+      final parsed = parseGitStatusV2Z(out);
+
+      expect(parsed.headOid, '0123456789abcdef0123456789abcdef01234567');
+      expect(parsed.paths, [
+        'src/a b.txt',
+        'to.txt',
+        'from.txt',
+        'gone.txt',
+        'new dir/n.txt',
+      ]);
+      expect(parsed.untracked, ['new dir/n.txt']);
+      expect(parsed.hasTrackedDeletion, isTrue);
+    });
+
+    test('an unborn branch has no HEAD', () {
+      final parsed = parseGitStatusV2Z(
+        '# branch.oid (initial)\x00# branch.head main\x00? a.txt\x00',
+      );
+      expect(parsed.headOid, isNull);
+      expect(parsed.hasTrackedDeletion, isFalse);
+    });
+  });
 }

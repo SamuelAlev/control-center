@@ -10,6 +10,7 @@ import 'package:control_center/features/messaging/providers/context_inspection_p
 import 'package:control_center/features/messaging/providers/context_usage_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -110,7 +111,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: ValueListenableBuilder<String>(

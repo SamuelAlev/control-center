@@ -13,6 +13,7 @@ import 'package:control_center/features/messaging/providers/context_inspection_p
 import 'package:control_center/features/messaging/providers/context_usage_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/agent_avatar.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
@@ -132,7 +133,7 @@ List<Override> _overrides({
 Widget _wrap(Widget child) => CcTheme(
   data: CcThemeData.light(),
   child: MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     // Bounded like the real space header: without the tight row the chip's
     // inner Center expands to fill the whole body and its MouseRegion

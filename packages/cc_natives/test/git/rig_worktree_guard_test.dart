@@ -183,15 +183,17 @@ void main() {
 
   test('the hardening really stops a planted fsmonitor and hook', () async {
     final proof = p.join(root.path, 'ran');
+    // Spelled with `/`: git hands a hook path with a `\` to `sh -c`, which
+    // eats it, so on Windows the script would never run.
     final script = File(p.join(root.path, 'evil.sh'))
-      ..writeAsStringSync('#!/bin/sh\ntouch "$proof"\n');
+      ..writeAsStringSync('#!/bin/sh\ntouch "${_slashed(proof)}"\n');
     await Process.run('chmod', ['+x', script.path]);
     // Planted before the quarantine, so the fingerprint trusts it and only
     // the flags stand between git and the script.
-    await git(['config', 'core.fsmonitor', script.path]);
+    await git(['config', 'core.fsmonitor', _slashed(script.path)]);
     File(
       p.join(worktree, '.git', 'hooks', 'pre-commit'),
-    ).writeAsStringSync('#!/bin/sh\ntouch "$proof"\n');
+    ).writeAsStringSync('#!/bin/sh\ntouch "${_slashed(proof)}"\n');
     await Process.run('chmod', [
       '+x',
       p.join(worktree, '.git', 'hooks', 'pre-commit'),
@@ -225,3 +227,6 @@ void main() {
     expect(File(proof).existsSync(), isTrue);
   });
 }
+
+/// [path] with `/` for every separator, as git and `sh` take it on Windows.
+String _slashed(String path) => path.replaceAll(r'\', '/');

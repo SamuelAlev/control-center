@@ -18,6 +18,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/messaging/providers/space_attachment_upload_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -238,7 +239,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
@@ -285,7 +286,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
@@ -332,7 +333,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               builder: (context, child) => Stack(
                 children: [
@@ -410,7 +411,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
@@ -467,7 +468,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: CcToastScope(
@@ -496,7 +497,7 @@ void main() {
 
     testWidgets('a conversation with no agent starts nothing', (tester) async {
       final sender = await pumpRoom(tester, participants: const []);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
 
       // The placeholder says what is missing before anything is typed.
       expect(find.text(l10n.conversationNeedsAgent), findsOneWidget);
@@ -597,7 +598,7 @@ void main() {
         participants: [_agentParticipant('a1')],
         roster: [_agent('a1')],
       );
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
 
       expect(find.text(l10n.conversationNeedsAgent), findsNothing);
       await typeAndSend(tester, 'Hello');
@@ -636,7 +637,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
@@ -686,7 +687,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceInputBar(spaceId: 'ch-1', conversationId: 'conv-1'),
@@ -738,7 +739,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body:

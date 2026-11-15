@@ -13,6 +13,7 @@ import 'package:control_center/features/desktop_app/providers/tray_status_provid
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter/foundation.dart';
@@ -83,7 +84,7 @@ class _TrayPresenterState extends ConsumerState<TrayPresenter>
     super.dispose();
   }
 
-  AppLocalizations get _l10n => lookupAppLocalizations(
+  AppLocalizations get _l10n => AppLocalizationsLoader.lookupLoaded(
     remapTranslationLocale(
       ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
     ),

@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
+import 'package:meta/meta.dart';
 
 /// The only way the server runs `git`.
 ///
@@ -49,6 +53,16 @@ import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
 /// clones pass it themselves, as before.
 ///
 /// Nothing here reads the host's own git config.
+///
+/// [run] admits at most [localConcurrency] local commands at once, server
+/// wide; the rest wait their turn. Polls of several worktrees (the IDE's
+/// Source Control panel reads each repository every few seconds with about
+/// ten commands) otherwise start dozens of children together: they thrash the
+/// disk the interactive read needs and, at macOS's default limit of 256 open
+/// files, fail with "Too many open files". Commands that talk to a remote
+/// ([networkSubcommands]) skip the queue, so a slow fetch never holds up a
+/// diff and a diff never holds up a push. [runSync] and [start] are not
+/// queued: one blocks the isolate and the other hands back a live process.
 // A namespace: the one way server code runs git.
 // ignore: avoid_classes_with_only_static_members
 abstract final class IsolatedGit {
@@ -169,22 +183,54 @@ abstract final class IsolatedGit {
     overrides: {...?environment, ...isolationEnvironment},
   );
 
-  /// Runs git with [arguments].
+  /// Local git commands [run] lets execute at once.
+  static final int localConcurrency = math.max(
+    4,
+    math.min(8, Platform.numberOfProcessors),
+  );
+
+  /// Subcommands that reach a remote. [run] never queues them.
+  static const Set<String> networkSubcommands = {
+    'clone',
+    'fetch',
+    'pull',
+    'push',
+    'ls-remote',
+    'remote',
+    'submodule',
+    'archive',
+  };
+
+  static final _localGate = _Gate(localConcurrency);
+
+  /// Local commands [run] has queued but not started.
+  @visibleForTesting
+  static int get queuedLocalRuns => _localGate.waiting;
+
+  /// Runs git with [arguments]. A local command waits for one of
+  /// [localConcurrency] slots first.
   static Future<ProcessResult> run(
     List<String> arguments, {
     String? workingDirectory,
     Map<String, String>? environment,
     Encoding? stdoutEncoding = systemEncoding,
     Encoding? stderrEncoding = systemEncoding,
-  }) => Process.run(
-    executable,
-    args(arguments),
-    workingDirectory: workingDirectory,
-    environment: environmentFor(environment: environment),
-    includeParentEnvironment: false,
-    stdoutEncoding: stdoutEncoding,
-    stderrEncoding: stderrEncoding,
-  );
+  }) {
+    Future<ProcessResult> spawn() => Process.run(
+      executable,
+      args(arguments),
+      workingDirectory: workingDirectory,
+      environment: environmentFor(environment: environment),
+      includeParentEnvironment: false,
+      stdoutEncoding: stdoutEncoding,
+      stderrEncoding: stderrEncoding,
+    );
+    final command = _subcommandIndex(arguments);
+    if (command != null && networkSubcommands.contains(arguments[command])) {
+      return spawn();
+    }
+    return _localGate.run(spawn);
+  }
 
   /// Runs git with [arguments], synchronously.
   static ProcessResult runSync(
@@ -217,4 +263,35 @@ abstract final class IsolatedGit {
     includeParentEnvironment: false,
     mode: mode,
   );
+}
+
+/// A first-come, first-served limit on how many tasks run at once.
+class _Gate {
+  _Gate(this._capacity);
+
+  final int _capacity;
+  int _running = 0;
+  final _waiters = Queue<Completer<void>>();
+
+  int get waiting => _waiters.length;
+
+  Future<T> run<T>(Future<T> Function() task) async {
+    if (_running >= _capacity) {
+      final turn = Completer<void>();
+      _waiters.add(turn);
+      // The slot is handed over by the task that frees it, already counted.
+      await turn.future;
+    } else {
+      _running++;
+    }
+    try {
+      return await task();
+    } finally {
+      if (_waiters.isNotEmpty) {
+        _waiters.removeFirst().complete();
+      } else {
+        _running--;
+      }
+    }
+  }
 }

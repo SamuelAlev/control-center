@@ -9,6 +9,7 @@ import 'package:control_center/features/soundscape/presentation/notifiers/sounds
 import 'package:control_center/features/soundscape/providers/soundscape_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/src/widgets/_window.dart' show Window, WindowController;
@@ -59,7 +60,7 @@ class _SoundscapeMiniPlayerWindowState
         localeResolutionCallback: resolveAppLocale,
         // Same material_ui delegates as ControlCenterApp.
         localizationsDelegates: const [
-          AppLocalizations.delegate,
+          appLocalizationsDelegate,
           ...GlobalMaterialLocalizations.delegates,
         ],
         // This sibling window must ignore the engine's shared platform route

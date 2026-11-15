@@ -4,6 +4,7 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/forge/presentation/widgets/github_installations_group.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -51,7 +52,7 @@ void main() {
           myWorkspaceRoleProvider.overrideWith((ref, ws) => role),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           home: CcTheme(

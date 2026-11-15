@@ -19,6 +19,7 @@ import 'package:control_center/features/settings/presentation/widgets/skills_set
 import 'package:control_center/features/settings/providers/skill_security_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/skill_evaluation/skill_campaign_providers.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -154,7 +155,7 @@ void main() {
       child: CcTheme(
         data: CcThemeData.light(),
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcToastScope(child: Scaffold(body: child)),
         ),
@@ -205,7 +206,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -232,7 +233,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -265,7 +266,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -306,7 +307,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -335,7 +336,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -365,7 +366,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -398,7 +399,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -425,7 +426,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -452,7 +453,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -494,7 +495,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -537,7 +538,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -736,7 +737,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -767,7 +768,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -801,7 +802,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -841,7 +842,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -909,7 +910,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -951,7 +952,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -987,7 +988,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1023,7 +1024,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1070,7 +1071,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1110,7 +1111,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1158,7 +1159,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1212,7 +1213,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1266,7 +1267,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1311,7 +1312,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1345,7 +1346,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1402,7 +1403,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1443,7 +1444,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1505,7 +1506,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1554,7 +1555,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1605,7 +1606,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1687,7 +1688,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1719,7 +1720,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1762,7 +1763,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1817,7 +1818,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1871,7 +1872,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -1951,7 +1952,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2014,7 +2015,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2081,7 +2082,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2141,7 +2142,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2206,7 +2207,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2267,7 +2268,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2331,7 +2332,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2411,7 +2412,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2468,7 +2469,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2534,7 +2535,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2585,7 +2586,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: CcToastScope(child: Scaffold(body: SkillsSettings())),
             ),
@@ -2624,7 +2625,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: CcToastScope(child: Scaffold(body: SkillsSettings())),
           ),

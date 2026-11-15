@@ -8,6 +8,7 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/quick_open/quick_open_dialog.dart';
 import 'package:control_center/features/messaging/providers/recent_files_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/services.dart';
@@ -88,7 +89,7 @@ void main() {
           appPreferencesProvider.overrideWithValue(prefs),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           // Above the Navigator, so the dialog route inherits both.

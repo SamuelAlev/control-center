@@ -2,7 +2,7 @@ import 'package:cc_domain/core/domain/value_objects/code_symbol_kind.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_lookup_port.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_symbol_popover.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +90,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(lookup.lastName, 'Animal');
     expect(lookup.lastSpaceId, 'space-1');
     expect(find.text(l10n.symbolLookupFromBase), findsOneWidget);
@@ -131,7 +131,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.symbolLookupNone), findsOneWidget);
   });
 
@@ -173,7 +173,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.symbolLookupInDiff), findsOneWidget);
     expect(find.text('fetchUser'), findsWidgets);
     expect(find.text(l10n.symbolLookupFromBase), findsNothing);

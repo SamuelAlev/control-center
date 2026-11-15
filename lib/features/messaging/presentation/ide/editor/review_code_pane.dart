@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
@@ -71,6 +73,22 @@ class _ReviewCodePaneState extends ConsumerState<ReviewCodePane> {
     repoId: widget.repoId,
     spaceId: widget.spaceId,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    // A diff held from the last visit paints at once; refetch it behind that
+    // paint. The pane keeps showing it until the fresh one lands. Deferred:
+    // a provider write must not land mid-build.
+    final args = _args;
+    if (ref.exists(repoChangesProvider(args))) {
+      scheduleMicrotask(() {
+        if (mounted) {
+          ref.invalidate(repoChangesProvider(args));
+        }
+      });
+    }
+  }
 
   @override
   void didUpdateWidget(covariant ReviewCodePane oldWidget) {

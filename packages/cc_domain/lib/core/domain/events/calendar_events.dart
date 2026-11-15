@@ -28,14 +28,15 @@ class CalendarAuthExpired implements DomainEvent {
 
 /// Fired when a calendar event is starting within the configured lead window.
 ///
-/// Drives the desktop "meeting starting soon" notification (see
-/// `NotificationEventMapper`). Carries a real [workspaceId] (the alert is
-/// workspace-scoped) and the [meetingUrl] so the notification / event card can
-/// offer a join action.
+/// Raised by the server's meeting alert sweep. Carries a real [workspaceId],
+/// the calendar owner [forUserId] (a meeting on one person's calendar is
+/// nobody else's alert) and the [meetingUrl] so the notification / event card
+/// can offer a join action.
 class MeetingStartingSoon implements DomainEvent {
   /// Creates a [MeetingStartingSoon].
   const MeetingStartingSoon({
     required this.workspaceId,
+    required this.forUserId,
     required this.eventId,
     required this.title,
     required this.startTime,
@@ -45,6 +46,9 @@ class MeetingStartingSoon implements DomainEvent {
 
   /// Owning workspace.
   final String workspaceId;
+
+  /// The member whose calendar holds the event: the only one alerted.
+  final String forUserId;
 
   /// The calendar event's local id.
   final String eventId;

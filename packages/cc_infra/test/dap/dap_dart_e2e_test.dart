@@ -179,6 +179,10 @@ int compute(int a, int b) {
           'lines': [8],
         }, ctx());
 
+        // Every launch and stack answer, so a CI failure says why each
+        // attempt was not enough instead of showing only the last one.
+        final trail = <String>[];
+
         Future<void> launchUntilStopped() async {
           var launched = await tool.execute({
             'op': 'launch',
@@ -194,6 +198,7 @@ int compute(int a, int b) {
               'program': 'bin/main.dart',
             }, ctx());
           }
+          trail.add('launch: ${launched.content}');
           expect(launched.isError, isFalse, reason: launched.content);
           expect(
             launched.content,
@@ -233,6 +238,7 @@ int compute(int a, int b) {
           }
 
           stack = await tool.execute({'op': 'stack'}, ctx());
+          trail.add('stack: ${stack.content}');
           if (!stack.isError && stack.content.contains('compute')) {
             break;
           }
@@ -245,11 +251,12 @@ int compute(int a, int b) {
           }
           await Future<void>.delayed(const Duration(milliseconds: 250));
         }
-        expect(stack.isError, isFalse, reason: stack.content);
+        expect(stack.isError, isFalse, reason: trail.join('\n'));
         expect(
           stack.content,
           contains('compute'),
-          reason: 'the frame is inside compute(), not main()',
+          reason:
+              'the frame is inside compute(), not main()\n${trail.join('\n')}',
         );
         // The adapter reports frame paths with platform separators.
         expect(stack.content.replaceAll(r'\', '/'), contains('bin/main.dart'));

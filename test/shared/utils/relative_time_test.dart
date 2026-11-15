@@ -1,4 +1,5 @@
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +14,7 @@ void main() {
     return tester.pumpWidget(
       Localizations(
         locale: locale,
-        delegates: AppLocalizations.localizationsDelegates,
+        delegates: appLocalizationsDelegates,
         child: Builder(
           builder: (context) {
             ctx = context;

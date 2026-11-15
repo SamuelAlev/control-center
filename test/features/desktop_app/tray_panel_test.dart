@@ -18,7 +18,7 @@ import 'package:control_center/features/messaging/providers/messaging_providers.
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +29,7 @@ import '../../helpers/test_wrap.dart';
 
 const _ws = 'ws-1';
 final _now = DateTime.now();
-final _l10n = lookupAppLocalizations(const Locale('en'));
+final _l10n = AppLocalizationsLoader.lookupLoaded(const Locale('en'));
 
 Space _space(String id, String name) => Space(
   id: id,

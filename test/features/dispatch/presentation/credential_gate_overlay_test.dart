@@ -8,6 +8,7 @@ import 'package:control_center/features/dispatch/presentation/widgets/credential
 import 'package:control_center/features/dispatch/providers/credential_gate_providers.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -39,7 +40,7 @@ Future<void> _pump(
     ProviderScope(
       overrides: [blockedRunsProvider.overrideWith((ref) => blocks)],
       child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: CcTheme(
           data: CcThemeData.light(),
@@ -66,7 +67,7 @@ void main() {
     controller.add([_block()]);
     await tester.pumpAndSettle();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     // The plan-limit title, not a generic "credential problem": the four
     // reasons have four different fixes.
     expect(find.text(l10n.credentialGatePlanSpentTitle), findsOneWidget);
@@ -152,7 +153,7 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: CcTheme(
             data: CcThemeData.light(),
@@ -163,7 +164,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text('Work'), findsOneWidget);
     expect(find.text(l10n.claudeAccountSignInFailed), findsOneWidget);
     expect(
@@ -184,7 +185,7 @@ void main() {
     controller.add([_block(reason: RunCredentialReason.accountsRemoved)]);
     await tester.pumpAndSettle();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(find.text(l10n.credentialGateAccountsRemovedTitle), findsOneWidget);
     expect(find.text(l10n.credentialGateAccountsRemovedHint), findsOneWidget);
     // Signing in cannot fix it, and the sign-in page is not where the list is
@@ -212,7 +213,7 @@ void main() {
     ]);
     await tester.pumpAndSettle();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     expect(
       find.text(l10n.credentialGateHarnessTitle('anthropic')),
       findsOneWidget,
@@ -256,7 +257,7 @@ void main() {
         child: CcTheme(
           data: CcThemeData.light(),
           child: MaterialApp.router(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: router,
           ),
@@ -272,7 +273,7 @@ void main() {
     ]);
     await tester.pumpAndSettle();
 
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await tester.tap(find.text(l10n.credentialGateOpenSettings));
     await tester.pumpAndSettle();
 
@@ -323,7 +324,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp.router(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               routerConfig: router,
             ),
@@ -339,7 +340,7 @@ void main() {
       ]);
       await tester.pumpAndSettle();
 
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.credentialGateOpenSettings));
       await tester.pumpAndSettle();
       expect(find.text('adapters:claude-code'), findsOneWidget);

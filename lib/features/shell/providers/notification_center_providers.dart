@@ -13,7 +13,7 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A single entry in the in-app notification center: the rendered
@@ -120,10 +120,17 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
   final states =
       ref.watch(notificationItemStatesProvider).value ??
       const <String, NotificationItemState>{};
-  final l10n = lookupAppLocalizations(
+  // On web a newly picked locale may still be loading: render in a loaded one
+  // meanwhile, then once more in the picked one.
+  final l10n = AppLocalizationsLoader.lookupLoaded(
     remapTranslationLocale(
       ref.watch(localeProvider) ?? PlatformDispatcher.instance.locale,
     ),
+    onLoaded: () {
+      if (ref.mounted) {
+        ref.invalidateSelf();
+      }
+    },
   );
   final me = ref.watch(currentUserIdProvider);
   // Muted repositories are filtered on RENDER, not on record: the server feed
@@ -133,6 +140,11 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
   // The operator's own forge logins, so their own merges/reviews/comments are
   // not replayed at them as history.
   final viewerLogins = ref.watch(viewerLoginSetProvider);
+  // Categories switched off in Settings, filtered on render like the muted
+  // repositories, so switching one back on restores its history.
+  final disabled =
+      ref.watch(disabledNotificationCategoriesProvider).value ??
+      const <NotificationCategory>{};
 
   final entries = <NotificationEntry>[];
   for (final item in items) {
@@ -151,7 +163,7 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
       mutedRepos: muted,
       viewerLogins: viewerLogins,
     );
-    if (notification == null) {
+    if (notification == null || disabled.contains(notification.category)) {
       continue;
     }
     // A per-item state is an OVERRIDE: where one exists it is the whole

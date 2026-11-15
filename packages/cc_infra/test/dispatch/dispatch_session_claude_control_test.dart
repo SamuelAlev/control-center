@@ -1,3 +1,8 @@
+// The fake `claude` binaries are `#!/bin/sh` scripts, which Windows cannot
+// exec.
+@TestOn('!windows')
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

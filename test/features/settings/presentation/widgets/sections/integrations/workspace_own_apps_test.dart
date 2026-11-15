@@ -11,6 +11,7 @@ import 'package:control_center/features/settings/providers/workspace_provider_ap
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -69,7 +70,7 @@ void main() {
   late AppLocalizations l10n;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   Future<void> pump(
@@ -100,7 +101,7 @@ void main() {
         ],
         child: MaterialApp(
           localizationsDelegates: [
-            ...AppLocalizations.localizationsDelegates,
+            ...appLocalizationsDelegates,
             ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: kSupportedAppLocales,

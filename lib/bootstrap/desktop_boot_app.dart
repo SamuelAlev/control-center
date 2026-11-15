@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/foreground_ticker_gate.dart';
 import 'package:control_center/shared/widgets/server_activity_overlay.dart'
     show ServerStartupIndicator;
@@ -32,7 +33,7 @@ class DesktopBootApp extends StatelessWidget {
           color: theme.tokens.bgPrimary,
           title: _productName,
           debugShowCheckedModeBanner: false,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           textStyle: CcFonts.ui(textStyle: CcTypography.body).copyWith(
             color: theme.tokens.textPrimary,

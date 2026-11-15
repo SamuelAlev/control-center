@@ -6,6 +6,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/presentation/widgets/org_chart_view.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/agent_avatar.dart';
 import 'package:control_center/shared/widgets/canvas/canvas_zoom_controls.dart';
 import 'package:flutter/gestures.dart';
@@ -36,7 +37,7 @@ Widget _wrap(List<OrgNode> roots) => ProviderScope(
   child: CcTheme(
     data: CcThemeData.light(),
     child: const MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: OrgChartView(workspaceId: 'ws-1')),
     ),

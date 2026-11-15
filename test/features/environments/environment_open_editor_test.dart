@@ -9,7 +9,7 @@ import 'package:control_center/features/environments/presentation/widgets/enviro
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,7 +56,7 @@ Future<void> _pump(
       child: MaterialApp.router(
         routerConfig: router,
         localizationsDelegates: [
-          ...AppLocalizations.localizationsDelegates,
+          ...appLocalizationsDelegates,
           ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: kSupportedAppLocales,

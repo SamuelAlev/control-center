@@ -176,42 +176,35 @@ class CalendarSyncService {
     // Sync every calendar the user has (not just `primary`) so secondary
     // calendars — Family, Sports, holidays… — show up and can be toggled.
     // `freeBusyReader` calendars expose no event details, so skip them.
-    final calendarIds = <String>[];
-    try {
-      final calendars = await _apiClient.listCalendars(accountId: accountId);
-      // Persist the full per-account calendar list (the sidebar's source list).
-      // The host owns the OAuth tokens, so thin clients read this via
-      // `calendar.watchSources` instead of calling the provider directly.
-      await _repository.upsertSources(
-        workspaceId: workspaceId,
-        accountId: accountId,
-        sources: calendars
-            .map(
-              (c) => CalendarSource(
-                workspaceId: workspaceId,
-                accountId: accountId,
-                id: c.id,
-                summary: c.summary,
-                backgroundColor: c.backgroundColor,
-                primary: c.primary,
-                writable: c.accessRole == 'owner' || c.accessRole == 'writer',
-              ),
-            )
-            .toList(growable: false),
-      );
-      for (final c in calendars) {
-        if (c.accessRole != 'freeBusyReader') {
-          calendarIds.add(c.id);
-        }
-      }
-    } on Object catch (e) {
-      CcInfraLog.warning(
-        'calendar_sync: listCalendars failed for $accountId: $e',
-      );
-    }
-    if (calendarIds.isEmpty) {
-      calendarIds.add('primary');
-    }
+    //
+    // A failed calendar list fails the pass. Falling back to the `primary`
+    // alias stored every event under a calendar id no later pass visits, so
+    // neither a cancellation nor the window reconcile could ever remove them.
+    final calendars = await _apiClient.listCalendars(accountId: accountId);
+    // Persist the full per-account calendar list (the sidebar's source list).
+    // The host owns the OAuth tokens, so thin clients read this via
+    // `calendar.watchSources` instead of calling the provider directly.
+    await _repository.upsertSources(
+      workspaceId: workspaceId,
+      accountId: accountId,
+      sources: calendars
+          .map(
+            (c) => CalendarSource(
+              workspaceId: workspaceId,
+              accountId: accountId,
+              id: c.id,
+              summary: c.summary,
+              backgroundColor: c.backgroundColor,
+              primary: c.primary,
+              writable: c.accessRole == 'owner' || c.accessRole == 'writer',
+            ),
+          )
+          .toList(growable: false),
+    );
+    final calendarIds = [
+      for (final c in calendars)
+        if (c.accessRole != 'freeBusyReader') c.id,
+    ];
 
     for (final calendarId in calendarIds) {
       if (incremental) {

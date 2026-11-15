@@ -9,6 +9,7 @@ import 'package:control_center/features/messaging/presentation/widgets/merged_sp
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -89,7 +90,7 @@ class _Fixture {
       child: CcTheme(
         data: CcThemeData.light(),
         child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
         ),
@@ -106,7 +107,7 @@ void main() {
       addTearDown(fixture.host.close);
       final router = fixture.router();
       addTearDown(router.dispose);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.pumpWidget(fixture.app(router));
       await tester.pumpAndSettle();
       expect(find.text(l10n.spaceAllPrsMerged), findsOneWidget);
@@ -148,7 +149,7 @@ void main() {
       await snapshots.close();
       await fixture.host.close();
     });
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await tester.pumpWidget(
       fixture.app(router, initialPrefs: snapshots.stream),
     );
@@ -181,7 +182,7 @@ void main() {
       addTearDown(fixture.host.close);
       final router = fixture.router();
       addTearDown(router.dispose);
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await tester.pumpWidget(fixture.app(router));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.archiveSpace));

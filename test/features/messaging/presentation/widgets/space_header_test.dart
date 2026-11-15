@@ -13,6 +13,7 @@ import 'package:control_center/features/messaging/presentation/widgets/space_hea
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,7 +105,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -144,7 +145,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -181,7 +182,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -219,7 +220,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -257,7 +258,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -300,7 +301,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -357,7 +358,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -419,7 +420,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -492,7 +493,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -558,7 +559,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -599,7 +600,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -653,7 +654,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: SpaceHeader(
@@ -751,7 +752,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -789,7 +790,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -827,7 +828,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -864,7 +865,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -915,7 +916,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -951,7 +952,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -987,7 +988,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -1022,7 +1023,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),
@@ -1057,7 +1058,7 @@ void main() {
           child: CcTheme(
             data: CcThemeData.light(),
             child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(body: ManageSpaceDialog(spaceId: 'ch-1')),
             ),

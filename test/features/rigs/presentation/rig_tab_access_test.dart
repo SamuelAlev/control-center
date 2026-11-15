@@ -17,6 +17,7 @@ import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart'
 import 'package:control_center/features/rigs/providers/rig_access_provider.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -152,7 +153,7 @@ Widget _app(
 }) => UncontrolledProviderScope(
   container: container,
   child: MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Directionality(
       textDirection: direction,

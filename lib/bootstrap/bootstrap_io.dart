@@ -30,6 +30,7 @@ import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/core/utils/cc_domain_logging.dart';
 import 'package:control_center/core/utils/cc_infra_logging.dart';
 import 'package:control_center/features/desktop_app/providers/desktop_app_preferences.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/syntax/shiki_bootstrap.dart';
 import 'package:flutter/foundation.dart';
 import 'package:local_notifier/local_notifier.dart';
@@ -74,6 +75,9 @@ WindowGeometryWatcher? _windowGeometryWatcher;
 Future<void> bootstrapAndRun([List<String> arguments = const []]) async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
+    // Locales are deferred libraries (l10n.yaml), which only split on web.
+    // Loading them all here is instant and keeps every lookup synchronous.
+    await AppLocalizationsLoader.preloadAll();
     await _prepareDesktop(arguments);
   } on Object catch (error, stack) {
     // Startup can fail before the first window or while the localized boot

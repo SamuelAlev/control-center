@@ -4,7 +4,7 @@ import 'package:control_center/features/rigs/presentation/rig_clipboard_permissi
 import 'package:control_center/features/rigs/presentation/settings/rig_clipboard_settings_section.dart';
 import 'package:control_center/features/rigs/providers/rig_clipboard_permissions.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -129,7 +129,7 @@ Widget _wrap(Widget child, AppPreferences preferences) => ProviderScope(
   child: MaterialApp(
     key: ValueKey(child.runtimeType),
     localizationsDelegates: [
-      ...AppLocalizations.localizationsDelegates,
+      ...appLocalizationsDelegates,
       ...GlobalMaterialLocalizations.delegates,
     ],
     supportedLocales: kSupportedAppLocales,

@@ -3,6 +3,7 @@ import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.d
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_canvas.dart';
 import 'package:control_center/features/plan_studio/presentation/widgets/plan_node_visuals.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
@@ -38,7 +39,7 @@ Widget _wrap(
 }) => MaterialApp(
   // The canvas now carries the shared zoom controls, whose tooltips are
   // localized, so the harness has to install the delegates.
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  localizationsDelegates: appLocalizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   home: Scaffold(
     body: PlanCanvas(
@@ -155,7 +156,7 @@ void main() {
     /// A deliberately small viewport: the canvas must be larger than what is on
     /// screen for a pan to have anywhere to go.
     Widget wrapSmall(PlanGraph graph) => MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Center(

@@ -10,6 +10,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/review_ac
 import 'package:control_center/features/pr_review/providers/pr_review_run_providers.dart';
 import 'package:control_center/features/pr_review/providers/review_artifact_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -109,7 +110,7 @@ void main() {
           ).overrideWith((ref) => _findings),
         ],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) =>
               CcTheme(data: CcThemeData.light(), child: child!),

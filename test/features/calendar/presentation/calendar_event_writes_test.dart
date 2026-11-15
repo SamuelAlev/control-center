@@ -10,6 +10,7 @@ import 'package:control_center/features/calendar/presentation/widgets/calendar_e
 import 'package:control_center/features/calendar/presentation/widgets/calendar_header_actions.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,7 +120,7 @@ Future<GoRouter> _pump(
       child: MaterialApp.router(
         routerConfig: router,
         localizationsDelegates: const [
-          AppLocalizations.delegate,
+          appLocalizationsDelegate,
           ...GlobalMaterialLocalizations.delegates,
         ],
         supportedLocales: kSupportedAppLocales,
@@ -143,7 +144,7 @@ Future<GoRouter> _pump(
 void main() {
   late AppLocalizations l10n;
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   group('composer', () {

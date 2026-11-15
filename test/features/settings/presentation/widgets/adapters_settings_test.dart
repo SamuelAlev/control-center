@@ -13,6 +13,7 @@ import 'package:control_center/features/settings/providers/claude_account_provid
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -22,7 +23,7 @@ Widget _wrap(Widget child) {
   return CcTheme(
     data: CcThemeData.light(),
     child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(body: child),
     ),
@@ -345,7 +346,7 @@ void main() {
     testWidgets('expired non-default login warns until credentials refresh', (
       tester,
     ) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       var accounts = [
         const ClaudeAccountView(
           account: ClaudeAccount(
@@ -413,7 +414,7 @@ void main() {
     testWidgets('missing CLI keeps detection status ahead of account expiry', (
       tester,
     ) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      final l10n = await appLocalizationsDelegate.load(const Locale('en'));
       await _pump(
         tester,
         [

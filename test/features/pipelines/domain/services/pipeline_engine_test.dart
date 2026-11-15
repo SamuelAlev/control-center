@@ -1794,6 +1794,53 @@ void main() {
       final stored = runRepo.runs[run!.id]!;
       expect(stored.isTerminal, isTrue);
     });
+
+    test('dispose lets the running step finish and starts nothing after '
+        'it', () async {
+      // The server disposes the engine before it closes the databases: a step
+      // started after that would write to a closed workspace.
+      final def = _linearDefinition();
+      templateRepo.seed(def);
+
+      bodies.registerBody('pipeline.trigger', (_) async => StepResult.ok());
+      final releaseA = Completer<void>();
+      var aFinished = false;
+      bodies.registerBody('bodyA', (_) async {
+        await releaseA.future;
+        aFinished = true;
+        return StepResult.ok();
+      });
+      var bStarted = false;
+      bodies.registerBody('bodyB', (_) async {
+        bStarted = true;
+        return StepResult.ok();
+      });
+
+      final run = await engine.start('tpl', workspaceId: 'ws');
+      await _waitFor(
+        () => runRepo.steps.values.any(
+          (s) =>
+              s.pipelineRunId == run!.id &&
+              s.stepId == 'stepA' &&
+              s.status == PipelineStepStatus.running,
+        ),
+        reason: 'stepA should be running before dispose',
+      );
+
+      final disposed = engine.dispose();
+      releaseA.complete();
+      await disposed;
+
+      expect(aFinished, isTrue, reason: 'dispose waits for the running step');
+      expect(bStarted, isFalse, reason: 'nothing starts after dispose');
+      expect(
+        runRepo.steps.values.where(
+          (s) => s.pipelineRunId == run!.id && s.stepId == 'stepB',
+        ),
+        isEmpty,
+        reason: 'the next boot resumes the run from stepA',
+      );
+    });
   });
 
   // ── 11. dryRun mode ──────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import 'package:control_center/features/auth/presentation/widgets/provider_sign_
 import 'package:control_center/features/auth/presentation/widgets/sign_in_prompts.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,7 +45,7 @@ void main() {
   late List<Map<String, dynamic>> completes;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   setUp(() {

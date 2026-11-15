@@ -14,6 +14,7 @@ import 'package:control_center/features/sandboxing/presentation/terminal_panel.d
 import 'package:control_center/features/sandboxing/presentation/terminal_session_controller.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
@@ -211,11 +212,7 @@ class _FakeChannel implements RemoteRpcChannelPort {
     _incoming.add({
       'jsonrpc': '2.0',
       'method': 'sub/error',
-      'params': {
-        'subscriptionId': subscriptionId,
-        'code': code,
-        'data': data,
-      },
+      'params': {'subscriptionId': subscriptionId, 'code': code, 'data': data},
     });
   }
 
@@ -249,7 +246,7 @@ Widget _terminalWrap(
     ],
     child: MaterialApp(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,

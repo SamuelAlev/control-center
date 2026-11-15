@@ -3,14 +3,14 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/features/auth/providers/oauth_providers.dart'
     show LaneSignInNeed;
 import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A refused code read is worded by `data.kind`, naming the forge when
 /// `data.forge` does and wording it without one otherwise.
 void main() {
-  final l10n = lookupAppLocalizations(const Locale('en'));
+  final l10n = AppLocalizationsLoader.lookupLoaded(const Locale('en'));
 
   RemoteRpcException refusal(Map<String, Object?> data) =>
       RemoteRpcException(RpcErrorCodes.unauthorized, 'server words', data);

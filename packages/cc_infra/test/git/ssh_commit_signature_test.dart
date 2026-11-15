@@ -250,6 +250,14 @@ void main() {
         'GIT_COMMITTER_NAME': 'Ada',
         'GIT_COMMITTER_EMAIL': 'ada@example.com',
         'HOME': scratch.path,
+        // Git writes the buffer it signs to a temporary file. With no parent
+        // environment, Git for Windows has no TEMP to find one with.
+        'TMPDIR': scratch.path,
+        if (Platform.isWindows) ...{
+          'TEMP': scratch.path,
+          'TMP': scratch.path,
+          'SystemRoot': Platform.environment['SystemRoot'] ?? r'C:\Windows',
+        },
       };
       Future<ProcessResult> git(List<String> args, {Encoding? out = utf8}) =>
           Process.run(

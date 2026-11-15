@@ -622,6 +622,51 @@ void main() {
         isNot(contains('other workspace')),
       );
     });
+
+    test("replaceSources drops the account's events of calendars no longer "
+        'listed', () async {
+      final t = DateTime.utc(2026, 11, 13, 9);
+      await db.calendarDao.upsertEvents([
+        // Stored once under the `primary` alias: no later pass visits it.
+        event(
+          id: 'stuck',
+          workspaceId: 'ws-A',
+          accountId: 'acc-A',
+          externalEventId: 'ext-stuck',
+          start: t,
+        ),
+        event(
+          id: 'live',
+          workspaceId: 'ws-A',
+          accountId: 'acc-A',
+          externalEventId: 'ext-live',
+          start: t,
+          calendarId: 'me@example.com',
+        ),
+        // Another account's `primary` row is not this account's to drop.
+        event(
+          id: 'other',
+          workspaceId: 'ws-A',
+          accountId: 'acc-B',
+          externalEventId: 'ext-other',
+          start: t,
+        ),
+      ]);
+
+      await db.calendarDao.replaceSources('ws-A', 'acc-A', [
+        source(
+          id: 's1',
+          workspaceId: 'ws-A',
+          accountId: 'acc-A',
+          calendarId: 'me@example.com',
+          summary: 'Me',
+          primary: true,
+        ),
+      ]);
+
+      final rows = await db.select(db.calendarEventsTable).get();
+      expect(rows.map((r) => r.id).toSet(), {'live', 'other'});
+    });
   });
 
   group('CalendarDao.markNeedsReauth', () {

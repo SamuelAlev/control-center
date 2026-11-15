@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/claude_account_row.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,7 +24,7 @@ void main() {
   testWidgets('warns on expiry even while the CLI reports logged in', (
     tester,
   ) async {
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await tester.pumpWidget(
       testWrap(
         ClaudeAccountRow(
@@ -45,7 +45,7 @@ void main() {
   });
 
   testWidgets('a still-valid login does not claim it expired', (tester) async {
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     await tester.pumpWidget(
       testWrap(
         ClaudeAccountRow(
@@ -66,7 +66,7 @@ void main() {
   testWidgets('a signed-out expired login keeps the warning badge', (
     tester,
   ) async {
-    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final l10n = await appLocalizationsDelegate.load(const Locale('en'));
     final expiredAt = DateTime.utc(2000);
     await tester.pumpWidget(
       testWrap(

@@ -3,12 +3,13 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_pa
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/utils/review_item_palette.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
 Widget _buildTestApp(WidgetBuilder builder) {
   return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: appLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     builder: (context, child) =>
         CcTheme(data: CcThemeData.light(), child: child!),

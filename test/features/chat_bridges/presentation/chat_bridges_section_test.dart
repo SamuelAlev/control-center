@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/chat_bridges/presentation/widgets/sections/chat_bridges_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -50,7 +51,7 @@ void main() {
   late AppLocalizations l10n;
 
   setUpAll(() async {
-    l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    l10n = await appLocalizationsDelegate.load(const Locale('en'));
   });
 
   testWidgets('a shared-app connection offers no tokens or bot settings', (

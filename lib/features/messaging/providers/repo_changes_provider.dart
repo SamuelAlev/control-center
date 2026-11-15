@@ -26,8 +26,12 @@ typedef RepoChangesArgs = ({
 /// linked-repo checkout. When the connected server doesn't expose the op (e.g.
 /// a remote headless server that owns no checkouts), this resolves to an empty
 /// list — "no changes" — rather than surfacing an error.
+///
+/// Held for [kPanelCacheTtl] after the review tab unmounts, so switching back
+/// paints the last diff at once; the tab revalidates it on mount.
 final repoChangesProvider = FutureProvider.autoDispose
     .family<List<PrFile>, RepoChangesArgs>((ref, args) async {
+      ref.cacheFor(kPanelCacheTtl);
       try {
         final data = await ref.watch(rpcClientProvider).call('repos.changes', {
           'workspace_id': args.workspaceId,

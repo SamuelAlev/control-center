@@ -3,6 +3,7 @@ import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -157,7 +158,7 @@ Widget languagePickerPreview() => ProviderScope(
           locale: ref.watch(localeProvider),
           supportedLocales: kSupportedAppLocales,
           localeResolutionCallback: resolveAppLocale,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           textStyle: CcFonts.ui(textStyle: CcTypography.body).copyWith(
             color: theme.tokens.textPrimary,
             decoration: TextDecoration.none,

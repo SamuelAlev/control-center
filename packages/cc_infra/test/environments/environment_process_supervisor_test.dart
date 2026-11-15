@@ -7,6 +7,7 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_infra/src/environments/environment_command_runner.dart';
 import 'package:cc_infra/src/environments/environment_contract.dart';
 import 'package:cc_infra/src/environments/environment_process_supervisor.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'helpers/environment_fakes.dart';
@@ -162,7 +163,7 @@ void main() {
       Directory('${dir.path}/target').createSync();
       File('${dir.path}/target/editor').writeAsStringSync('');
       await supervisor.start(spec(argv: const ['target/editor']));
-      expect(terminals.last.executable, '${dir.path}/target/editor');
+      expect(terminals.last.executable, p.join(dir.path, 'target/editor'));
     });
 
     test('state carries the session and the label', () async {
@@ -883,14 +884,14 @@ void main() {
     test('isolate: home covers that process alone', () async {
       await supervisor.start(app(isolateHome: true));
       final environment = terminals.last.environment;
-      final home = '$stateDir/home';
+      final home = p.join(stateDir, 'home');
       expect(environment['HOME'], home);
       expect(environment['CFFIXED_USER_HOME'], home);
-      expect(environment['XDG_CONFIG_HOME'], '$home/.config');
-      expect(environment['XDG_DATA_HOME'], '$home/.local/share');
-      expect(environment['XDG_STATE_HOME'], '$home/.local/state');
-      expect(environment['XDG_CACHE_HOME'], '$home/.cache');
-      expect(environment['XDG_RUNTIME_DIR'], '$home/.run');
+      expect(environment['XDG_CONFIG_HOME'], p.join(home, '.config'));
+      expect(environment['XDG_DATA_HOME'], p.join(home, '.local', 'share'));
+      expect(environment['XDG_STATE_HOME'], p.join(home, '.local', 'state'));
+      expect(environment['XDG_CACHE_HOME'], p.join(home, '.cache'));
+      expect(environment['XDG_RUNTIME_DIR'], p.join(home, '.run'));
       expect(Directory('$home/.config').existsSync(), isTrue);
 
       await supervisor.start(spec());

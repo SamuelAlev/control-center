@@ -7,6 +7,7 @@ import 'package:control_center/features/artifacts/providers/artifact_providers.d
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/artifact_bubble.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/editor_tab_opener.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -70,7 +71,7 @@ Future<List<EditorTab>> _pump(
       child: CcTheme(
         data: CcThemeData.light(),
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: EditorTabOpenerScope(

@@ -3,6 +3,7 @@ import 'package:cc_markdown/cc_markdown.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/artifacts/presentation/widgets/artifact_view.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:flutter/gestures.dart';
@@ -22,7 +23,7 @@ import 'package:material_ui/material_ui.dart';
 Widget _app(Widget child) {
   return ProviderScope(
     child: MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: CcTheme(
         data: CcThemeData.light(),

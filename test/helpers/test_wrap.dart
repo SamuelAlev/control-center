@@ -6,7 +6,7 @@ import 'package:control_center/features/meetings/providers/meeting_providers.dar
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_locales.dart';
-import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,7 +78,7 @@ Widget testRouterWrap(
   child: MaterialApp.router(
     routerConfig: router,
     localizationsDelegates: [
-      ...AppLocalizations.localizationsDelegates,
+      ...appLocalizationsDelegates,
       ...GlobalMaterialLocalizations.delegates,
     ],
     supportedLocales: kSupportedAppLocales,
@@ -129,7 +129,7 @@ Widget testWrap(
     ],
     child: MaterialApp(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: kSupportedAppLocales,
@@ -165,7 +165,7 @@ Widget testWrapWithToastOverlay(
     ],
     child: MaterialApp(
       localizationsDelegates: [
-        ...AppLocalizations.localizationsDelegates,
+        ...appLocalizationsDelegates,
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: kSupportedAppLocales,

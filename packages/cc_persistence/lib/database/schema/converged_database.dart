@@ -22,19 +22,23 @@ import 'package:drift/drift.dart';
 ///   is the setting SQLite recommends for WAL.
 /// * `temp_store = MEMORY`: sorts and transient indexes stay off disk.
 /// * `mmap_size` / `cache_size`: 8 MB each per connection. N open workspaces
-///   mean N caches, so the bound matters.
+///   mean N caches, so the bound matters. No mapping on Windows: there a file
+///   cannot be cut shorter while any handle holds a view of it, and SQLite
+///   ignores that refusal (`ERROR_USER_MAPPED_FILE`), so with the pooled
+///   readers mapping the file the checkpoint after an incremental vacuum
+///   never handed a page back to the disk.
 /// * `journal_size_limit`: a long-running server does not accumulate an
 ///   unbounded `-wal`.
-const connectionPragmas = <String>[
+final List<String> connectionPragmas = List.unmodifiable(<String>[
   'PRAGMA busy_timeout = 5000',
   'PRAGMA foreign_keys = ON',
   'PRAGMA trusted_schema = OFF',
   'PRAGMA synchronous = NORMAL',
   'PRAGMA temp_store = MEMORY',
-  'PRAGMA mmap_size = 8388608',
+  if (!Platform.isWindows) 'PRAGMA mmap_size = 8388608',
   'PRAGMA cache_size = -8192',
   'PRAGMA journal_size_limit = 67108864',
-];
+]);
 
 /// The table the sqlite_vector extension creates in every database a
 /// connection opens once the extension is registered. The extension owns it:
