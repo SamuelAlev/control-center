@@ -114,10 +114,12 @@ void main() {
           expect(id, matches(RegExp(r'^[A-Za-z0-9_-]{22}$')));
         }
         expect(ids.toSet(), hasLength(3));
-        final line = _lines(
-          harness.logs,
-        ).lastWhere((l) => l['event'] == 'http.request');
-        expect(line['request_id'], ids.last);
+        // The line is written once the response is sent, so the client can
+        // read the response before it exists.
+        bool logged(Map<String, Object?> l) =>
+            l['event'] == 'http.request' && l['request_id'] == ids.last;
+        await _eventually(() => _lines(harness.logs).any(logged));
+        final line = _lines(harness.logs).singleWhere(logged);
         expect(line['route'], '/v1/config');
         expect(line['install'], matches(RegExp(r'^[0-9a-f]{16}$')));
         expect(line['level'], 'info');

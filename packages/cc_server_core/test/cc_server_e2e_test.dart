@@ -177,9 +177,14 @@ void main() {
           ...file.readAsLinesSync(),
     ];
     expect(lines, isNotEmpty, reason: 'the boot writes its log');
+    // A boot reaches out at once (models, feeds). A runner without that
+    // network logs a refused connection, which is not the stop's doing; a
+    // client the stop closed under a request logs `client_disposed` and still
+    // counts.
     expect([
       for (final line in lines)
-        if (line.contains('[error]') ||
+        if ((line.contains('[error]') &&
+                !line.contains('[error] HTTP connection ')) ||
             line.contains('reconcile failed') ||
             line.contains('newsfeed refresh failed') ||
             line.contains('newsfeed seed/refresh failed'))

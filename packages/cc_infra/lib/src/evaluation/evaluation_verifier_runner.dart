@@ -1142,8 +1142,16 @@ json.dump(getattr(module, sys.argv[2])(json.loads(sys.argv[3])), sys.stdout,
     final stdoutBuffer = StringBuffer();
     final stderrBuffer = StringBuffer();
     final done = Completer<int>();
-    process.stdout.transform(utf8.decoder).listen(stdoutBuffer.write);
-    process.stderr.transform(utf8.decoder).listen(stderrBuffer.write);
+    final drained = Future.wait([
+      process.stdout
+          .transform(utf8.decoder)
+          .listen(stdoutBuffer.write)
+          .asFuture<void>(),
+      process.stderr
+          .transform(utf8.decoder)
+          .listen(stderrBuffer.write)
+          .asFuture<void>(),
+    ]);
     unawaited(
       process.exitCode.then((code) {
         if (!done.isCompleted) {
@@ -1159,6 +1167,14 @@ json.dump(getattr(module, sys.argv[2])(json.loads(sys.argv[3])), sys.stdout,
       timedOut = true;
       process.kill(ProcessSignal.sigkill);
       exitCode = 124;
+    }
+    // The exit code can land before the last of the pipes' output, which a
+    // failing check quotes. A grandchild still holding a pipe open must not
+    // hang the check, so the wait is bounded.
+    try {
+      await drained.timeout(const Duration(seconds: 2));
+    } on Object {
+      // Report what arrived.
     }
     final result = _ProcessOutcome(
       exitCode: exitCode,

@@ -87,6 +87,45 @@ final class ConnectService {
     DateTime Function()? clock,
     Duration pollTimeout = const Duration(seconds: 25),
   }) async {
+    // A refused boot closes what it opened: the binding store holds the data
+    // dir's lock file, so a later start in this process (or, on Windows,
+    // removing the directory) would fail on it.
+    final opened = <FutureOr<void> Function()>[];
+    try {
+      return await _start(
+        config,
+        opened: opened,
+        upstream: upstream,
+        state: state,
+        bindings: bindings,
+        cipher: cipher,
+        logSink: logSink,
+        clock: clock,
+        pollTimeout: pollTimeout,
+      );
+    } on Object {
+      for (final close in opened.reversed) {
+        try {
+          await close();
+        } on Object {
+          // The boot error is the one worth reporting.
+        }
+      }
+      rethrow;
+    }
+  }
+
+  static Future<ConnectService> _start(
+    ConnectServiceConfig config, {
+    required List<FutureOr<void> Function()> opened,
+    required UpstreamHttp? upstream,
+    required StateStore? state,
+    required BindingStore? bindings,
+    required SealCipher? cipher,
+    required ConnectLogSink? logSink,
+    required DateTime Function()? clock,
+    required Duration pollTimeout,
+  }) async {
     final now = clock ?? DateTime.now;
     final hmacKey = config.logHmacKey?.value ?? '';
     final log = ConnectLog(
@@ -115,6 +154,9 @@ final class ConnectService {
             : (config.servesSignedConfig ? 'hosted' : 'self-hosted'),
         clock: now,
       ).report;
+    }
+    if (upstream == null) {
+      opened.add(rawHttp.close);
     }
     final http = ObservedUpstream(rawHttp, log, clock: now);
     final tokens = GcpMetadataTokenSource(http, clock: now);
@@ -170,6 +212,9 @@ final class ConnectService {
         }, ConnectLogLevel.error),
       );
     }
+    if (state == null) {
+      opened.add(stateStore.close);
+    }
     try {
       await stateStore.probe();
     } on StateStoreUnavailable catch (error) {
@@ -220,6 +265,9 @@ final class ConnectService {
       } on BindingStoreUnavailable catch (error) {
         throw ConnectConfigException('CONNECT_DATA_DIR: ${error.reason}');
       }
+    }
+    if (bindings == null) {
+      opened.add(bindingStore.close);
     }
     try {
       await bindingStore.probe();

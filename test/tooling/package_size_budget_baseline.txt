@@ -116,6 +116,8 @@
 # Raised 2026-11-13 by 13: cc_server_runtime.dart raises the open file
 # limit at boot (+12) and hands the server the pipeline engine to drain on
 # shutdown, before the databases close (+1).
+# Raised 2026-11-15 by 9: cc_server_runtime.dart starts the "meeting starting
+# soon" alert sweep (meeting_alert_sweep.dart holds the sweep itself).
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
 packages/cc_domain/lib/src/dtos/dtos.dart  3680
@@ -133,7 +135,7 @@ packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1660
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2803
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3116
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8355
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8364
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
 packages/cc_server_core/lib/src/local_rpc_server.dart  2503
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1834

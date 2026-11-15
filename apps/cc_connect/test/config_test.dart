@@ -516,6 +516,24 @@ void main() {
       );
     });
 
+    test('a refused start lets go of the data directory', () async {
+      final dir = await Directory.systemTemp.createTemp('cc_connect_refused');
+      addTearDown(() => dir.delete(recursive: true));
+      final path = await _writeSigned(scratch, seed(43));
+      final config = ConnectServiceConfig.fromEnvironment({
+        ...Harness.defaultEnv([a], dir.path),
+        'CONNECT_SIGNED_CONFIG_FILE': path,
+        'CONNECT_CONFIG_PUBLIC_KEYS': publicKey,
+      });
+      await expectLater(
+        ConnectService.start(config, upstream: FakeUpstream()),
+        throwsA(isA<ConnectConfigException>()),
+      );
+      // The binding store's lock is released, so the directory opens again.
+      final store = await FileBindingStore.open(dir.path);
+      await store.close();
+    });
+
     test('a lane whose secret file is missing refuses signed boot', () async {
       final path = await _writeSigned(scratch, signingSeed);
       await expectLater(

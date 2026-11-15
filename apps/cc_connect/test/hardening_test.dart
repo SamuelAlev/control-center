@@ -828,10 +828,11 @@ void main() {
           'retired': [for (var i = 0; i < maxRetiredInstalls; i++) 'i$i'],
         }),
       );
-      final harness = await Harness.start(
-        allowed: [a],
-        bindings: await FileBindingStore.open(dir.path),
-      );
+      // The harness closes only the stores it opens; this one holds the
+      // directory's lock file, which Windows refuses to delete.
+      final bindings = await FileBindingStore.open(dir.path);
+      addTearDown(bindings.close);
+      final harness = await Harness.start(allowed: [a], bindings: bindings);
       addTearDown(harness.close);
       FakeGitHub(harness.upstream);
       final grant = await signInGitHub(harness, a);

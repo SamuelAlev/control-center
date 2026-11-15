@@ -1624,7 +1624,13 @@ void main() {
         h.addSpace('pr', prNumber: 7, prRepo: 'acme/shop', kind: 'pr');
         await h.service.start(runRecovery: false);
         h.events.publish(provisioned('pr'));
-        await h.until(() => h.environments.rows.isNotEmpty);
+        // Ready, not just created: a start still writing under the root holds
+        // files Windows will not let the teardown delete.
+        await h.until(
+          () =>
+              h.environments.rows.isNotEmpty &&
+              row('pr').status == EnvironmentStatus.ready,
+        );
       });
 
       test('off does nothing', () async {

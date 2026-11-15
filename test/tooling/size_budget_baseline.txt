@@ -70,6 +70,8 @@
 # diff view, focus pill window, server sharing section, skills settings).
 # Raised 2026-11-13 by 1: meeting_toolbar_window.dart imports the l10n loader
 # (deferred web locales) for its localizations delegate.
+# Raised 2026-11-15 by 2: notifications_section.dart refreshes the disabled
+# categories when a category toggles.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  628
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  746
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
@@ -203,7 +205,7 @@ lib/features/settings/presentation/widgets/providers/add_provider_pane.dart  343
 lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341
 lib/features/settings/presentation/widgets/providers/provider_model_list.dart  326
 lib/features/settings/presentation/widgets/sections/audit/audit_formatting.dart  391
-lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  545
+lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  547
 lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart  344
 lib/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart  390
 lib/features/settings/presentation/widgets/sections/skills/skill_sources_panel.dart  1040
