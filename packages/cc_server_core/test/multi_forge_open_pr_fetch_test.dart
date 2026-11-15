@@ -2,6 +2,8 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show ClosedPrOutcome;
 import 'package:cc_server_core/src/pr_review/multi_forge_open_pr_fetch.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:test/test.dart';
@@ -87,11 +89,11 @@ class _FakePort implements OpenPrFetchPort {
   }
 
   @override
-  Future<bool?> wasMerged(
+  Future<ClosedPrOutcome?> closedOutcome(
     Repo repo,
     int prNumber, {
     String? workspaceId,
-  }) async => fail ? null : true;
+  }) async => fail ? null : ClosedPrOutcome.merged;
 
   @override
   Future<List<PullRequest>?> fetchBranchHistory(
@@ -230,7 +232,7 @@ void main() {
       expect(result.resolvedRepoIds, {'web'});
     });
 
-    test('probe and wasMerged route to the repo’s own forge', () async {
+    test('probe and closedOutcome route to the repo’s own forge', () async {
       final adapter = MultiForgeOpenPrFetchAdapter({
         ForgeHost.github: _FakePort(),
         ForgeHost.bitbucket: _FakePort(fail: true),
@@ -245,16 +247,16 @@ void main() {
         isTrue,
       );
       expect(
-        await adapter.wasMerged(
+        await adapter.closedOutcome(
           _repo('web', ForgeHost.github),
           1,
           workspaceId: 'ws',
         ),
-        isTrue,
+        ClosedPrOutcome.merged,
       );
       // An unregistered forge answers "unknown", never "closed".
       expect(
-        await adapter.wasMerged(
+        await adapter.closedOutcome(
           _repo('x', ForgeHost.gitlab),
           1,
           workspaceId: 'ws',

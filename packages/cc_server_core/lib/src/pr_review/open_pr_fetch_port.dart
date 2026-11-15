@@ -1,5 +1,7 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show ClosedPrOutcome, ForgePrClient;
 
 /// One repo's enriched open-PR group (checks already overlaid), matching the
 /// catalog's `OpenPrListFetcher` result shape. `totalCount` is the repo's open
@@ -59,9 +61,9 @@ abstract interface class OpenPrFetchPort {
     required String workspaceId,
   });
 
-  /// Whether a PR that vanished from the open list was merged (true), closed
-  /// unmerged (false), or couldn't be resolved (null).
-  Future<bool?> wasMerged(
+  /// How a PR that vanished from the open list ended, or null when it couldn't
+  /// be resolved ([ForgePrClient.closedOutcome]).
+  Future<ClosedPrOutcome?> closedOutcome(
     Repo repo,
     int prNumber, {
     required String workspaceId,

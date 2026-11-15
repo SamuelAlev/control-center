@@ -94,12 +94,12 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
   }) => Future.value(const {});
 
   @override
-  Future<bool?> wasMerged(
+  Future<ClosedPrOutcome?> closedOutcome(
     Repo repo,
     int prNumber, {
     required String workspaceId,
   }) =>
-      _clientFor(repo, workspaceId: workspaceId).wasMerged(prNumber);
+      _clientFor(repo, workspaceId: workspaceId).closedOutcome(prNumber);
 
   @override
   Future<List<PullRequest>?> fetchBranchHistory(
@@ -311,7 +311,7 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
   }
 
   @override
-  Future<bool?> wasMerged(
+  Future<ClosedPrOutcome?> closedOutcome(
     Repo repo,
     int prNumber, {
     required String workspaceId,
@@ -320,7 +320,7 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
     if (delegate == null) {
       return null;
     }
-    return delegate.wasMerged(repo, prNumber, workspaceId: workspaceId);
+    return delegate.closedOutcome(repo, prNumber, workspaceId: workspaceId);
   }
 
   @override

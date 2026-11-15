@@ -181,23 +181,28 @@ class BitbucketForgePrClient
     return const <PullRequest>[];
   }
 
-  /// Whether a pull request left the open list by merging.
+  /// How a pull request left the open list.
   ///
-  /// `true` for `MERGED`, `false` for `DECLINED`/`SUPERSEDED`, and `null` for
-  /// anything else. "Anything else" deliberately includes a pull request that
-  /// reads back as still `OPEN` — the caller asks this about one that vanished
-  /// from the open list, so an open answer means the two reads disagree and the
-  /// honest report is "unresolved", not a closure that did not happen.
+  /// Merged for `MERGED`, closed for `DECLINED`/`SUPERSEDED`, not found for a
+  /// 404, and `null` for anything else. "Anything else" deliberately includes
+  /// a pull request that reads back as still `OPEN` — the caller asks this
+  /// about one that vanished from the open list, so an open answer means the
+  /// two reads disagree and the honest report is "unresolved", not a closure
+  /// that did not happen.
   ///
-  /// This is the one read that swallows its errors: a 404 or an API failure
-  /// returns `null` rather than propagating, because the caller fires a merged
-  /// lifecycle event off `true` and must be able to tell "not merged" from
-  /// "could not tell". A cancellation still propagates — that is the caller
-  /// standing down, not the forge failing to answer.
+  /// This is the one read that swallows its errors: any failure other than a
+  /// 404 returns `null` rather than propagating, because the caller fires a
+  /// merged lifecycle event off a merge and must be able to tell "not merged"
+  /// from "could not tell". A cancellation still propagates — that is the
+  /// caller standing down, not the forge failing to answer.
   @override
-  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken}) async {
+  Future<ClosedPrOutcome?> closedOutcome(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) async {
     try {
-      return mergeOutcomeOf(
+      // The client answers a 404 as null.
+      return closedPrOutcomeOf(
         await getPullRequest(prNumber, cancelToken: cancelToken),
       );
     } on Object catch (e) {

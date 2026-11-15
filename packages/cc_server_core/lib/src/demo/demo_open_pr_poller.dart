@@ -1,5 +1,7 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show ClosedPrOutcome;
 import 'package:cc_server_core/src/forge/repo_access_registry.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 
@@ -32,7 +34,7 @@ class _OfflineOpenPrFetchPort implements OpenPrFetchPort {
   }) async => const {};
 
   @override
-  Future<bool?> wasMerged(
+  Future<ClosedPrOutcome?> closedOutcome(
     Repo repo,
     int prNumber, {
     String? workspaceId,

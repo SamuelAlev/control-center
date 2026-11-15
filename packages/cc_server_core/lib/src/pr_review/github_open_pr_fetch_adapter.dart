@@ -2,6 +2,8 @@ import 'package:cc_domain/cc_domain.dart'
     show NetworkException, ValidationException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show ClosedPrOutcome;
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_fetch_port.dart';
@@ -206,8 +208,11 @@ class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
       );
 
   @override
-  Future<bool?> wasMerged(Repo repo, int prNumber, {String? workspaceId}) =>
-      _forgeClient(repo, workspaceId: workspaceId).wasMerged(prNumber);
+  Future<ClosedPrOutcome?> closedOutcome(
+    Repo repo,
+    int prNumber, {
+    String? workspaceId,
+  }) => _forgeClient(repo, workspaceId: workspaceId).closedOutcome(prNumber);
 
   @override
   Future<List<PullRequest>?> fetchBranchHistory(

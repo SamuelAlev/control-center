@@ -10,6 +10,8 @@ import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show ClosedPrOutcome;
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/detect_pr_notifiable_transitions.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/evaluate_pr_merge_readiness.dart';
@@ -845,6 +847,8 @@ class OpenPrPollingService {
       // it up front would turn the next probe into a 304 for a list this
       // server never actually read, freezing the repo until it next changes.
       final changedIds = <String>{};
+      // Repos the token read in this sweep (their probe answered).
+      final readableIds = <String>{};
       final probedEtags = <String, String>{};
       final toProbe = <Repo>[];
       for (final repo in repos) {
@@ -874,6 +878,7 @@ class OpenPrPollingService {
                 force ? null : st.etagByRepoId[repo.id],
                 workspaceId: workspaceId,
               );
+              readableIds.add(repo.id);
               final etag = probe.etag;
               if (etag != null && etag.isNotEmpty) {
                 probedEtags[repo.id] = etag;
@@ -1019,7 +1024,12 @@ class OpenPrPollingService {
         if (includeChecks && unfetched.isNotEmpty) {
           await _checksPass(workspaceId, unfetched, st, _SweepContext());
         }
-        await _resolveUnknownTerminals(workspaceId, fetchable, st);
+        await _resolveUnknownTerminals(
+          workspaceId,
+          fetchable,
+          st,
+          readableRepoIds: readableIds,
+        );
       }
     } on Object catch (e) {
       CcHostLog.warning('open_pr_poll: sweep failed for $workspaceId: $e');
@@ -1580,12 +1590,13 @@ class OpenPrPollingService {
         // This previously observed PR left the open list. Retain its wire
         // identity (including head ref), but never turn a failed status
         // confirmation into a merge. Unknown can be retried on idle sweeps.
+        // The repo's list was read in this sweep, so a 404 is about this PR
+        // alone (deleted, or archived and hidden from the App): closed.
         bool? merged;
         try {
-          merged = await _port.wasMerged(
-            repo,
-            number,
-            workspaceId: workspaceId,
+          merged = _mergedFrom(
+            await _port.closedOutcome(repo, number, workspaceId: workspaceId),
+            repoReadable: true,
           );
         } on Object catch (e) {
           CcHostLog.warning('open_pr_poll: PR status lookup failed: $e');
@@ -1648,13 +1659,29 @@ class OpenPrPollingService {
     return false;
   }
 
+  /// Whether [outcome] is a merge (true) or a closure (false); null when it is
+  /// unknown. A 404 is a closure only when [repoReadable]: the same token
+  /// read the repository in this sweep, so the 404 is about this one PR
+  /// rather than a token that lost the whole repository.
+  static bool? _mergedFrom(
+    ClosedPrOutcome? outcome, {
+    required bool repoReadable,
+  }) => switch (outcome) {
+    ClosedPrOutcome.merged => true,
+    ClosedPrOutcome.closed => false,
+    ClosedPrOutcome.notFound => repoReadable ? false : null,
+    null => null,
+  };
+
   /// Retry status lookups that failed on the transition sweep, without
   /// re-fetching the historical list or polling one request per space row.
+  /// [readableRepoIds] are the repos whose probe answered in this sweep.
   Future<void> _resolveUnknownTerminals(
     String workspaceId,
     List<Repo> repos,
-    _WorkspacePollState st,
-  ) async {
+    _WorkspacePollState st, {
+    required Set<String> readableRepoIds,
+  }) async {
     final snapshot = st.snapshot;
     if (snapshot == null) {
       return;
@@ -1684,7 +1711,10 @@ class OpenPrPollingService {
       attempts++;
       bool? merged;
       try {
-        merged = await _port.wasMerged(repo, number, workspaceId: workspaceId);
+        merged = _mergedFrom(
+          await _port.closedOutcome(repo, number, workspaceId: workspaceId),
+          repoReadable: readableRepoIds.contains(repo.id),
+        );
       } on Object catch (e) {
         CcHostLog.warning('open_pr_poll: PR status retry failed: $e');
       }

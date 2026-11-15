@@ -10,6 +10,8 @@ import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart'
+    show ClosedPrOutcome;
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/forge/github_rate_budget.dart';
@@ -101,6 +103,10 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   /// PR numbers whose terminal status cannot be confirmed yet.
   final Set<int> unknownNumbers = {};
 
+  /// PR numbers the forge answers 404 for (deleted, or archived and hidden
+  /// from the App's token).
+  final Set<int> notFoundNumbers = {};
+
   final Map<String, List<PullRequest>> branchHistory = {};
   final Set<String> unavailableHistoryBranches = {};
   int branchHistoryCalls = 0;
@@ -159,13 +165,25 @@ class FakeOpenPrFetchPort implements OpenPrFetchPort {
   }
 
   @override
-  Future<bool?> wasMerged(
+  Future<ClosedPrOutcome?> closedOutcome(
     Repo repo,
     int prNumber, {
     String? workspaceId,
-  }) async => unknownNumbers.contains(prNumber)
-      ? null
-      : mergedNumbers.contains(prNumber);
+  }) async {
+    closedOutcomeCalls.add(prNumber);
+    if (unknownNumbers.contains(prNumber)) {
+      return null;
+    }
+    if (notFoundNumbers.contains(prNumber)) {
+      return ClosedPrOutcome.notFound;
+    }
+    return mergedNumbers.contains(prNumber)
+        ? ClosedPrOutcome.merged
+        : ClosedPrOutcome.closed;
+  }
+
+  /// PR numbers asked about, in order (across sweeps).
+  final List<int> closedOutcomeCalls = [];
 
   @override
   Future<List<PullRequest>?> fetchBranchHistory(
@@ -445,6 +463,28 @@ void main() {
     expect(events.single.status, 'merged');
     expect(events.single.prNumber, 2);
     expect(events.single.workspaceId, 'ws1');
+
+    await sub.cancel();
+  });
+
+  test('a vanished PR the forge 404s for publishes closed', () async {
+    port.groups = [
+      (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false, totalCount: null),
+    ];
+    await poller.refreshNow('ws1');
+
+    final events = <PullRequestStatusChanged>[];
+    final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
+
+    now = now.add(const Duration(minutes: 5));
+    port.notFoundNumbers.add(2);
+    port.groups = [
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+    ];
+    await poller.refreshNow('ws1');
+    await pump();
+
+    expect(events.map((e) => (e.prNumber, e.status)), [(2, 'closed')]);
 
     await sub.cancel();
   });
@@ -1787,6 +1827,70 @@ void main() {
           )).complete,
           true,
         );
+      },
+    );
+
+    // GitHub answers 404 to an App token for an archived PR. Retrying that
+    // forever logged a failed request per PR every sweep.
+    test('an unconfirmed PR that 404s on a readable repo is closed', () async {
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+      ];
+      await poller.refreshNow('ws1');
+      now = now.add(const Duration(minutes: 5));
+      port.groups = [(repo: repo1, prs: [], hasMore: false, totalCount: null)];
+      port.unknownNumbers.add(1);
+      await poller.refreshNow('ws1');
+      expect((await lookup('f1')).single['status_unconfirmed'], true);
+
+      port.unknownNumbers.clear();
+      port.notFoundNumbers.add(1);
+      now = now.add(const Duration(minutes: 5));
+      await poller.pollSoon('ws1');
+      expect((await lookup('f1')).single['state'], 'closed');
+      expect(
+        (await lookup('f1')).single.containsKey('status_unconfirmed'),
+        false,
+      );
+
+      port.closedOutcomeCalls.clear();
+      now = now.add(const Duration(minutes: 5));
+      await poller.pollSoon('ws1');
+      expect(port.closedOutcomeCalls, isEmpty, reason: 'settled, not retried');
+    });
+
+    test(
+      'a 404 while the repo itself is unreadable stays unconfirmed',
+      () async {
+        port.groups = [
+          (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        ];
+        await poller.refreshNow('ws1');
+        now = now.add(const Duration(minutes: 5));
+        port.groups = [
+          (repo: repo1, prs: [], hasMore: false, totalCount: null),
+        ];
+        port.unknownNumbers.add(1);
+        await poller.refreshNow('ws1');
+
+        // The token lost the repository: its probe and the PR both 404.
+        port.unknownNumbers.clear();
+        port.notFoundNumbers.add(1);
+        port.probeErrors[repo1.id] = const NetworkException(
+          'Resource not found',
+          statusCode: 404,
+          code: 'not_found',
+        );
+        now = now.add(const Duration(minutes: 5));
+        await poller.pollSoon('ws1');
+        final uncertain = (await lookup('f1')).single;
+        expect(uncertain['state'], 'open');
+        expect(uncertain['status_unconfirmed'], true);
+
+        port.probeErrors.clear();
+        now = now.add(const Duration(minutes: 5));
+        await poller.pollSoon('ws1');
+        expect((await lookup('f1')).single['state'], 'closed');
       },
     );
 

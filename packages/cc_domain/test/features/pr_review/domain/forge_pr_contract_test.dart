@@ -28,20 +28,20 @@ PullRequest _pr(
 );
 
 void main() {
-  group('mergeOutcomeOf', () {
+  group('closedPrOutcomeOf', () {
     test('a still-open PR is unknown, never closed', () {
       // The poller asks about a PR missing from page 1 of a long open list;
       // "closed" here used to publish a closure for a live PR.
-      expect(mergeOutcomeOf(_pr(1, PrState.open)), isNull);
+      expect(closedPrOutcomeOf(_pr(1, PrState.open)), isNull);
     });
 
-    test('merged and closed map to true and false', () {
-      expect(mergeOutcomeOf(_pr(1, PrState.merged)), isTrue);
-      expect(mergeOutcomeOf(_pr(1, PrState.closed)), isFalse);
+    test('merged and closed map to their outcomes', () {
+      expect(closedPrOutcomeOf(_pr(1, PrState.merged)), ClosedPrOutcome.merged);
+      expect(closedPrOutcomeOf(_pr(1, PrState.closed)), ClosedPrOutcome.closed);
     });
 
-    test('an absent PR is unknown', () {
-      expect(mergeOutcomeOf(null), isNull);
+    test('an absent PR (a 404) is not found', () {
+      expect(closedPrOutcomeOf(null), ClosedPrOutcome.notFound);
     });
   });
 

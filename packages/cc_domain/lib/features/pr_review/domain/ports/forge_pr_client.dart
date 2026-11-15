@@ -351,16 +351,22 @@ abstract interface class ForgePrClient {
     ForgeCancelToken? cancelToken,
   });
 
-  /// Whether [prNumber] left the open list by being merged (true) or closed
-  /// unmerged (false); null when it is still open, does not exist, or cannot
-  /// be read ([mergeOutcomeOf]). Every failure except a cancellation answers
-  /// null; a cancellation rethrows.
+  /// How [prNumber] left the open list ([closedPrOutcomeOf]): merged, closed
+  /// unmerged, or answered "not found" (404) by the forge. Null when it is
+  /// still open or cannot be read; every other failure except a cancellation
+  /// answers null, and a cancellation rethrows.
   ///
   /// The poller asks this about a PR that vanished between two passes, so
   /// "unknown" must stay distinguishable from "closed" — reporting a merge that
   /// did not happen would fire the wrong lifecycle event. A PR merely pushed
   /// off the first page of a long open list is still open, hence null.
-  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken});
+  /// [ClosedPrOutcome.notFound] is only the forge's word for this one PR: a
+  /// token that lost the whole repository answers the same, so the caller
+  /// decides whether the repository was readable at the time.
+  Future<ClosedPrOutcome?> closedOutcome(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  });
 
   /// The unified diff for a PR.
   Future<String> getPullRequestDiff(int prNumber, {ForgeCancelToken? cancelToken});
@@ -766,12 +772,28 @@ abstract interface class ForgePrClient {
   Future<PrStack?> unstack({required int stackNumber, ForgeCancelToken? cancelToken});
 }
 
-/// The [ForgePrClient.wasMerged] answer for [pr] as just read from the forge:
-/// merged → true, closed unmerged → false, still open or absent → null.
-bool? mergeOutcomeOf(PullRequest? pr) => switch (pr?.state) {
-  PrState.merged => true,
-  PrState.closed => false,
-  PrState.open || null => null,
+/// How a pull request that left the open list ended
+/// ([ForgePrClient.closedOutcome]).
+enum ClosedPrOutcome {
+  /// Merged.
+  merged,
+
+  /// Closed without merging.
+  closed,
+
+  /// The forge answers 404 for it while the repository stays readable: a
+  /// deleted pull request, or one hidden from this credential (GitHub hides
+  /// an archived pull request from an App token).
+  notFound,
+}
+
+/// The [ForgePrClient.closedOutcome] answer for [pr] as just read from the
+/// forge, where null means the forge answered 404: still open → null.
+ClosedPrOutcome? closedPrOutcomeOf(PullRequest? pr) => switch (pr?.state) {
+  PrState.merged => ClosedPrOutcome.merged,
+  PrState.closed => ClosedPrOutcome.closed,
+  PrState.open => null,
+  null => ClosedPrOutcome.notFound,
 };
 
 /// Sorts [prs] in place into [ForgePrClient.listMergedByAuthor] order: most

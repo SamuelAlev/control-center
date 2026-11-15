@@ -245,17 +245,21 @@ class GitLabForgePrClient
     return List<PullRequest>.unmodifiable(prs);
   }
 
-  /// Whether merge request [prNumber] left the open list by merging.
+  /// How merge request [prNumber] left the open list.
   ///
-  /// Null is the deliberate answer to every uncertainty — a deleted merge
-  /// request, a revoked token, a 500, a merge request that is somehow still
-  /// open — because the caller fires a "merged" lifecycle event off `true` and
-  /// must never do so on a guess. Cancellation still propagates: a cancelled
-  /// poll is not an answer.
+  /// A 404 answers not found; null is the deliberate answer to every other
+  /// uncertainty — a 401, a 500, a merge request that is somehow still open —
+  /// because the caller fires a "merged" lifecycle event off a merge and must
+  /// never do so on a guess. Cancellation still propagates: a cancelled poll
+  /// is not an answer.
   @override
-  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken}) async {
+  Future<ClosedPrOutcome?> closedOutcome(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) async {
     try {
-      return mergeOutcomeOf(
+      // The client answers a 404 as null.
+      return closedPrOutcomeOf(
         await getPullRequest(prNumber, cancelToken: cancelToken),
       );
     } on Object catch (e) {

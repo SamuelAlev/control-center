@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show NetworkException;
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/commit_status.dart';
@@ -204,14 +205,21 @@ class GitHubForgePrClient
   }
 
   @override
-  Future<bool?> wasMerged(int prNumber, {ForgeCancelToken? cancelToken}) async {
+  Future<ClosedPrOutcome?> closedOutcome(
+    int prNumber, {
+    ForgeCancelToken? cancelToken,
+  }) async {
     try {
       // GitHub reports a merged PR as `closed` + `merged_at`; the mapper
       // promotes that to merged, and a still-open PR (one pushed off the
-      // first page of a long list) answers null rather than "closed".
-      return mergeOutcomeOf(
-        await getPullRequest(prNumber, cancelToken: cancelToken),
-      );
+      // first page of a long list) answers null rather than "closed". An
+      // unreadable body is not a 404, so it stays unknown.
+      final pr = await getPullRequest(prNumber, cancelToken: cancelToken);
+      return pr == null ? null : closedPrOutcomeOf(pr);
+    } on NetworkException catch (e) {
+      // GitHub answers 404 for an archived PR to an App token, as it does
+      // for a deleted one.
+      return e.statusCode == 404 ? ClosedPrOutcome.notFound : null;
     } on Object catch (e) {
       if (_isCancellation(e)) {
         rethrow;
