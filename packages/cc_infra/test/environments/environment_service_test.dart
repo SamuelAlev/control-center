@@ -3745,6 +3745,15 @@ void main() {
           final sessions = h.terminals.sessions.length;
           await crashOnce();
           await h.until(() => h.terminals.sessions.length > sessions);
+          // The new session shows before the respawn has written its pid
+          // file; wait for it to be ready again, or teardown races the write
+          // (Windows refuses to delete a file still open). The crash sets
+          // `restarts` and `starting` together, so `ready` after it means the
+          // respawn finished.
+          await h.until(() {
+            final web = component('web', 'fork');
+            return web.restarts == 1 && web.state == 'ready';
+          });
           expect(row('fork').lastError, isNull);
         });
 

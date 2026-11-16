@@ -3,7 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/feed_favicon.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/proxied_image.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/widgets.dart';
 
 /// An article card's thumbnail: the article's image, or the source-favicon
 /// placeholder when it has none (or it fails to load).
@@ -34,7 +34,7 @@ class _NetworkThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designSystem;
+    final tokens = context.ds;
     // The card grid caps each tile at maxCrossAxisExtent 340; size the proxy
     // resize / decode to that width (cover crops, so width-only keeps aspect).
     final targetWidth = (340 * MediaQuery.devicePixelRatioOf(context)).ceil();
@@ -42,11 +42,7 @@ class _NetworkThumbnail extends StatelessWidget {
       url: url,
       maxWidth: targetWidth,
       fit: BoxFit.cover,
-      placeholder: ColoredBox(
-        color:
-            tokens?.bgSecondary ??
-            Theme.of(context).colorScheme.surfaceContainerHighest,
-      ),
+      placeholder: ColoredBox(color: tokens.bgSecondary),
       // The error widget fades in over prior content, so a failed load settles
       // onto the source-favicon fallback instead of flashing.
       errorBuilder: (_, _) => _PlaceholderThumbnail(feed: feed),
@@ -67,28 +63,20 @@ class _PlaceholderThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final tokens = context.designSystem;
+    final tokens = context.ds;
     final feed = this.feed;
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: AlignmentDirectional.topStart,
           end: AlignmentDirectional.bottomEnd,
-          colors: [
-            tokens?.bgSecondary ?? colors.surfaceContainerHighest,
-            tokens?.bgTertiary ?? colors.surfaceContainerHighest,
-          ],
+          colors: [tokens.bgSecondary, tokens.bgTertiary],
         ),
       ),
       child: Center(
         child: feed != null
             ? Opacity(opacity: 0.85, child: FeedFavicon(feed: feed, size: 36))
-            : Icon(
-                AppIcons.newspaper,
-                size: 28,
-                color: tokens?.fgQuaternary ?? colors.onSurfaceVariant,
-              ),
+            : Icon(AppIcons.newspaper, size: 28, color: tokens.fgQuaternary),
       ),
     );
   }
