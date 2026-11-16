@@ -8121,14 +8121,18 @@ Future<CcServer> runCcServer({
 
   telemetry.analytics?.reportStarted(workspaceRepository);
   // Connect the owner's personal MCP servers and every workspace's
-  // configured ones; never blocks boot.
-  unawaited(
-    _connectMcpServers(
-      personal: mcpClientControl,
-      workspaces: workspaceMcpServers,
-      workspaceRepository: workspaceRepository,
-    ),
-  );
+  // configured ones; never blocks boot. demo: none. The personal ones are the
+  // host OS user's own tool configs, started as that user, and a demo has no
+  // owner to be accountable for them (nor ops to configure either kind).
+  if (demo == null) {
+    unawaited(
+      _connectMcpServers(
+        personal: mcpClientControl,
+        workspaces: workspaceMcpServers,
+        workspaceRepository: workspaceRepository,
+      ),
+    );
+  }
 
   // The open-PR poller sweeps every workspace's linked repos: cheap conditional
   // (ETag) probes on a fast cadence for watched workspaces, a slow baseline for

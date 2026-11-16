@@ -51,6 +51,11 @@ class _ShaderBackgroundState extends State<ShaderBackground>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   ui.FragmentProgram? _program;
   ui.FragmentShader? _shader;
+
+  /// The shader's `u_resolution` and `u_time` uniforms, resolved by name once
+  /// per loaded shader.
+  ui.UniformVec2Slot? _resolution;
+  ui.UniformFloatSlot? _timeUniform;
   Ticker? _ticker;
   // ValueNotifier instead of setState — the ticker fires every frame and
   // rebuilding the whole subtree (Scaffold, forms, providers) every frame
@@ -113,10 +118,14 @@ class _ShaderBackgroundState extends State<ShaderBackground>
         return;
       }
       final newShader = program.fragmentShader();
+      final resolution = newShader.getUniformVec2('u_resolution');
+      final timeUniform = newShader.getUniformFloat('u_time');
       final oldShader = _shader;
       setState(() {
         _program = program;
         _shader = newShader;
+        _resolution = resolution;
+        _timeUniform = timeUniform;
         _loaded = true;
       });
       oldShader?.dispose();
@@ -236,10 +245,8 @@ class _ShaderBackgroundState extends State<ShaderBackground>
               return AnimatedBuilder(
                 animation: _time,
                 builder: (context, _) {
-                  _shader!
-                    ..setFloat(0, size.width)
-                    ..setFloat(1, size.height)
-                    ..setFloat(2, _time.value);
+                  _resolution!.set(size.width, size.height);
+                  _timeUniform!.set(_time.value);
                   return CustomPaint(
                     size: size,
                     painter: _ShaderPainter(_shader!),

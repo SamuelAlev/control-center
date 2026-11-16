@@ -219,10 +219,10 @@ packages:
   cnativeapi:
     dependency: "direct main"
     description:
-      path: ".dart_tool/patchwork/cnativeapi@0.5.10"
+      path: ".dart_tool/patchwork/cnativeapi@0.6.1"
       relative: true
     source: path
-    version: "0.5.10"
+    version: "0.6.1"
   code_assets:
     dependency: "direct overridden"
     description:
@@ -1085,18 +1085,19 @@ packages:
   nativeapi:
     dependency: "direct main"
     description:
-      path: ".dart_tool/patchwork/nativeapi@0.5.10"
-      relative: true
-    source: path
-    version: "0.5.10"
+      name: nativeapi
+      sha256: c0c566cf6788a6b6a32ce2666f02364b7fb50133f07a744bc1e793b5b8bb2c78
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.1"
   nativeapi_flutter:
     dependency: "direct main"
     description:
       name: nativeapi_flutter
-      sha256: "357a405c69212f5157da1bd3be183a53c2b841d0de0eb51f4a3947913712aec4"
+      sha256: "3bb647f299932a4a19aa066051aabc6872f6876fa50c38a0ef132da414e9db26"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.10"
+    version: "0.6.1"
   nested:
     dependency: transitive
     description:
@@ -1912,10 +1913,10 @@ packages:
     dependency: transitive
     description:
       name: vector_math
-      sha256: "92b9910f66ed1057fd4da7b040ae7c74cafacf885bdc81be496928d5049b032d"
+      sha256: fa49e1674cb84acb900141714e6c6e1f9ae099827c24d141430ff6819db4e1bc
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.3"
+    version: "2.4.4"
   video_player:
     dependency: "direct main"
     description:
@@ -2108,5 +2109,5 @@ packages:
     source: hosted
     version: "0.0.6"
 sdks:
-  dart: ">=3.13.0 <4.0.0"
-  flutter: ">=3.47.0"
+  dart: ">=3.14.0 <4.0.0"
+  flutter: ">=3.50.0"

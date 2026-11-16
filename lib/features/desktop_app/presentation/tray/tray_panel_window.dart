@@ -2,6 +2,9 @@
 // feature flag). Confined to the window wrapper; the UI below is ordinary.
 // ignore_for_file: invalid_use_of_internal_member, implementation_imports
 
+import 'dart:async';
+import 'dart:ui' show ViewFocusEvent;
+
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/app/native_window_handle.dart';
 import 'package:control_center/app/window_chrome.dart';
@@ -24,6 +27,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Created when the panel opens and destroyed when it closes. It closes when
 /// it loses focus, as a menu-bar popover does, and on Escape.
+///
+/// Losing focus is read from the window's activation on every report of it:
+/// Windows and Linux notify the controller, macOS sends only a view focus
+/// event (its controller notifies on resize and close alone).
 class TrayPanelWindow extends ConsumerStatefulWidget {
   /// Creates a [TrayPanelWindow].
   const TrayPanelWindow({required this.actions, super.key});
@@ -35,7 +42,8 @@ class TrayPanelWindow extends ConsumerStatefulWidget {
   ConsumerState<TrayPanelWindow> createState() => _TrayPanelWindowState();
 }
 
-class _TrayPanelWindowState extends ConsumerState<TrayPanelWindow> {
+class _TrayPanelWindowState extends ConsumerState<TrayPanelWindow>
+    with WidgetsBindingObserver {
   final WindowController _controller = WindowController(
     size: trayPanelSize,
     // Loose: a short display gets a shorter panel (see `_styleTrayPanel`).
@@ -45,27 +53,62 @@ class _TrayPanelWindowState extends ConsumerState<TrayPanelWindow> {
     ),
     title: trayPanelWindowTitle,
   );
+  final FocusNode _panelFocus = FocusNode(debugLabel: 'Tray panel');
   bool _wasActive = false;
+
+  /// Set once the panel is on its way out. The blur and hide that close it
+  /// report a focus loss of their own, which must not count as the operator
+  /// clicking away (that would swallow the next click on the icon).
+  bool _closing = false;
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_onWindowChanged);
+    _controller.addListener(_onActivationChanged);
+    WidgetsBinding.instance.addObserver(this);
     // Now, not on the first frame: frames are off while the main window is
     // hidden in the tray, and showing also activates the app, which a click
     // on a status item does not.
     showNativeWindowNow(_controller);
+    _wasActive = _controller.isActivated;
   }
 
-  void _onWindowChanged() {
+  @override
+  void didChangeViewFocus(ViewFocusEvent event) => _onActivationChanged();
+
+  void _onActivationChanged() {
+    if (_closing || !mounted) {
+      return;
+    }
     final active = _controller.isActivated;
     if (_wasActive && !active) {
+      _closing = true;
       widget.actions.dismiss();
+      return;
     }
     _wasActive = active;
+    if (active) {
+      // Activating the app also reports the main window's focus, and its
+      // view takes the keyboard into its own tree (or parks it) when it
+      // handles that, after the panel's autofocus. The panel is the key
+      // window, so take the keyboard back once that handling has run, or
+      // Escape lands in the main window.
+      scheduleMicrotask(_reclaimFocus);
+    }
+  }
+
+  void _reclaimFocus() {
+    if (!mounted ||
+        _closing ||
+        _panelFocus.context == null ||
+        _panelFocus.hasFocus) {
+      return;
+    }
+    _panelFocus.requestFocus();
   }
 
   void _dismissWithKeyboard() {
+    _closing = true;
     // Hand the keyboard back to whichever app had it before the panel.
     final window = nativeWindowOf(_controller);
     if (window != null) {
@@ -80,7 +123,9 @@ class _TrayPanelWindowState extends ConsumerState<TrayPanelWindow> {
 
   @override
   void dispose() {
-    _controller.removeListener(_onWindowChanged);
+    _closing = true;
+    WidgetsBinding.instance.removeObserver(this);
+    _controller.removeListener(_onActivationChanged);
     final controller = _controller;
     // Gone at once; destroyed after the frame, when focus teardown is
     // allowed again (see `PrimaryWindow.dispose`).
@@ -93,6 +138,7 @@ class _TrayPanelWindowState extends ConsumerState<TrayPanelWindow> {
       }
     }
     SchedulerBinding.instance.addPostFrameCallback((_) => controller.destroy());
+    _panelFocus.dispose();
     super.dispose();
   }
 
@@ -101,6 +147,7 @@ class _TrayPanelWindowState extends ConsumerState<TrayPanelWindow> {
     controller: _controller,
     child: _TrayPanelApp(
       actions: widget.actions,
+      focusNode: _panelFocus,
       onEscape: _dismissWithKeyboard,
     ),
   );
@@ -110,9 +157,14 @@ class _TrayPanelWindowState extends ConsumerState<TrayPanelWindow> {
 /// single route that ignores the engine's shared platform route (the main
 /// window's deep link).
 class _TrayPanelApp extends ConsumerWidget {
-  const _TrayPanelApp({required this.actions, required this.onEscape});
+  const _TrayPanelApp({
+    required this.actions,
+    required this.focusNode,
+    required this.onEscape,
+  });
 
   final TrayPanelActions actions;
+  final FocusNode focusNode;
   final VoidCallback onEscape;
 
   @override
@@ -131,7 +183,11 @@ class _TrayPanelApp extends ConsumerWidget {
           },
         ),
       },
-      child: const Focus(autofocus: true, child: TrayPanel()),
+      child: Focus(
+        focusNode: focusNode,
+        autofocus: true,
+        child: const TrayPanel(),
+      ),
     );
     return WidgetsApp(
       debugShowCheckedModeBanner: false,

@@ -72,6 +72,11 @@
 # (deferred web locales) for its localizations delegate.
 # Raised 2026-11-15 by 2: notifications_section.dart refreshes the disabled
 # categories when a category toggles.
+# Raised 2026-11-16 (narrow PR tables): the inbox row, inbox section card and
+# PR repo section card switch to a compact layout below a measured width,
+# where churn and age join the meta line. The newsfeed article card moved its
+# thumbnails to article_thumbnail.dart instead. Lowered notification_bell.dart,
+# which lazy-loading the notifications shrank.
 lib/features/agents/presentation/screens/agent_registry_screen.dart  628
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  746
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
@@ -83,8 +88,8 @@ lib/features/calendar/presentation/widgets/calendar_sidebar.dart  330
 lib/features/chat_bridges/presentation/widgets/chat_create_app_dialog.dart  392
 lib/features/dispatch/presentation/widgets/credential_gate_overlay.dart  307
 lib/features/focus_mode/presentation/screens/focus_pill_window.dart  426
-lib/features/inbox/presentation/widgets/inbox_pr_row.dart  508
-lib/features/inbox/presentation/widgets/inbox_section_card.dart  509
+lib/features/inbox/presentation/widgets/inbox_pr_row.dart  568
+lib/features/inbox/presentation/widgets/inbox_section_card.dart  556
 lib/features/meetings/presentation/screens/meeting_detail_screen.dart  720
 lib/features/meetings/presentation/screens/meeting_record_screen.dart  801
 lib/features/meetings/presentation/screens/meeting_toolbar_window.dart  326
@@ -184,7 +189,7 @@ lib/features/pr_review/presentation/widgets/pr_meta_strip.dart  465
 lib/features/pr_review/presentation/widgets/pr_sidebar.dart  1011
 lib/features/pr_review/presentation/widgets/pr_stack_popover.dart  347
 lib/features/pr_review/presentation/widgets/pr_table/pr_bulk_action_bar.dart  550
-lib/features/pr_review/presentation/widgets/pr_table/pr_repo_section_card.dart  410
+lib/features/pr_review/presentation/widgets/pr_table/pr_repo_section_card.dart  457
 lib/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart  917
 lib/features/pr_review/presentation/widgets/reaction_bar.dart  396
 lib/features/pr_review/presentation/widgets/review_accordion_item.dart  500
@@ -211,7 +216,7 @@ lib/features/settings/presentation/widgets/sections/skills/skill_sources_panel.d
 lib/features/settings/presentation/widgets/sections/system/audio_input_row.dart  329
 lib/features/settings/presentation/widgets/sections/workspace/members_roster_section.dart  523
 lib/features/settings/presentation/widgets/skills_settings.dart  785
-lib/features/shell/presentation/widgets/notification_bell.dart  574
+lib/features/shell/presentation/widgets/notification_bell.dart  566
 lib/features/shell/presentation/widgets/server_shutdown_overlay.dart  441
 lib/features/shell/presentation/widgets/title_bar_workspace_chip.dart  365
 lib/features/teams/presentation/widgets/team_detail_panel.dart  559

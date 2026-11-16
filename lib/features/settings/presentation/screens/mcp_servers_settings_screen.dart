@@ -1,3 +1,4 @@
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/screens/settings_page.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/external_mcp_section.dart';
@@ -11,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// MCP servers, and the server owner's personal (external) MCP servers.
 ///
 /// Workspace admins reach the page for the workspace list; the personal list
-/// is the owner's alone, so nobody else is shown it.
+/// is the owner's alone, so nobody else is shown it, and a demo has none.
 class McpServersSettingsScreen extends ConsumerWidget {
   /// Creates an [McpServersSettingsScreen].
   const McpServersSettingsScreen({super.key});
@@ -25,7 +26,8 @@ class McpServersSettingsScreen extends ConsumerWidget {
       sections: [
         const McpSection(),
         const WorkspaceMcpServersSection(),
-        if (ref.watch(canUseHostProvider)) const ExternalMcpSection(),
+        if (ref.watch(canUseHostProvider) && !ref.watch(isDemoServerProvider))
+          const ExternalMcpSection(),
       ],
     );
   }

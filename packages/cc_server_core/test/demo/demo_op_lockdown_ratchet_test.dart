@@ -231,6 +231,20 @@ void main() {
       // The server's MCP token.
       'mcp.token',
       'mcp.rotateToken',
+      // Configured MCP servers: a stdio server is a host command, a remote
+      // one a URL the server dials, and either can carry secrets. A demo
+      // neither lists, adds, approves nor connects any.
+      'mcpServers.list',
+      'mcpServers.save',
+      'mcpServers.approve',
+      'mcpServers.delete',
+      'mcpServers.reconnect',
+      'mcp.client.servers',
+      'mcp.client.saveServer',
+      'mcp.client.deleteServer',
+      'mcp.client.setApprovalMode',
+      'mcp.client.authorize',
+      'mcp.client.reconnect',
       'oauth.begin',
       'oauth.complete',
       'oauth.disconnect',

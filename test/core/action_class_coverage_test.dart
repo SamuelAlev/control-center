@@ -302,6 +302,11 @@ void main() {
     'environments.setDefinition': {'processSpawn'},
     'environments.deleteDefinition': {'processSpawn'},
     'environments.approveSource': {'processSpawn'},
+    // Configured MCP servers: a saved (owner) or approved stdio server is a
+    // command the server starts on the host as its OS user.
+    'mcpServers.save': {'processSpawn'},
+    'mcpServers.approve': {'processSpawn'},
+    'mcp.client.saveServer': {'processSpawn'},
     'environments.testDefinition': {
       'enclosureControl',
       'hostExecution',

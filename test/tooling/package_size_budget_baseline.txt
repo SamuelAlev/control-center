@@ -123,16 +123,20 @@
 # so a feed subscriber can reuse an unchanged message's decode. The outline and
 # range queries went to messaging_dao_history.dart and the conversation scope
 # check to catalog/conversation_scope.dart instead of entering the list.
+# Raised 2026-11-16: the archived-PR 404 fix grew both forge PR clients
+# (github +8, gitlab +4) and open_pr_polling_service.dart (+30);
+# cc_server_runtime.dart (+50) wires the configured MCP servers (workspace and
+# owner-personal) into the catalog and keeps a demo from connecting any.
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
 packages/cc_domain/lib/src/dtos/dtos.dart  3686
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2355
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1763
-packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1681
+packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1689
 packages/cc_infra/lib/src/network/github_graphql_client.dart  2215
 packages/cc_infra/lib/src/network/github_pr_client.dart  2254
-packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1803
+packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1807
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2495
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1795
 packages/cc_infra/lib/src/rigs/rig_service.dart  2298
@@ -140,9 +144,9 @@ packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1660
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2803
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3118
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8364
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8414
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
 packages/cc_server_core/lib/src/local_rpc_server.dart  2503
-packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1834
+packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1864
 packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14779
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  2365
