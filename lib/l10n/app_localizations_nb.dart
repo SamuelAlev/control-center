@@ -18752,4 +18752,208 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Ingenting ble gitt: den det gjaldt, finnes ikke lenger i dette arbeidsområdet.';
+
+  @override
+  String get mcpWorkspaceServers => 'MCP-servere for arbeidsområdet';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Hver agentkjøring i dette arbeidsområdet får verktøyene fra disse serverne, i Claude Code og i den innebygde harnessen. Control Center kobler til hver server og sender verktøyene videre.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Bare administratorer i dette arbeidsområdet kan se og endre MCP-serverne for arbeidsområdet.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'MCP-servere for arbeidsområdet er ikke tilgjengelige på serveren du er koblet til.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Ingen MCP-servere for arbeidsområdet ennå';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Legg til en server for å gi verktøyene til hver agentkjøring i dette arbeidsområdet.';
+
+  @override
+  String get mcpAddServer => 'Legg til server';
+
+  @override
+  String get mcpHandAddedSource => 'Lagt til i Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Venter på godkjenning';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Bare offentlige adresser';
+
+  @override
+  String get mcpApproveServer => 'Godkjenn';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Denne serveren kjører en kommando på serververtens maskin, som serverens bruker. Den starter ikke før du godkjenner den.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Denne serveren kjører en kommando på serververtens maskin, så den starter ikke før serverens eier godkjenner den.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Denne serveren kan bare nå offentlige adresser. Godkjenn den for at den også skal nå vertens private nettverk, for eksempel localhost og det lokale nettverket.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Denne serveren kan bare nå offentlige adresser før serverens eier godkjenner den.';
+
+  @override
+  String get mcpRemoveServer => 'Fjern server';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Fjerne $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Agentkjøringer mister verktøyene til denne serveren, og de lagrede hemmelige verdiene slettes.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Slå $name av eller på';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Legg til MCP-server';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Rediger $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Bokstaver, siffer, bindestreker og understreker. Agenter ser verktøyene under dette navnet.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Bruk opptil 24 bokstaver, siffer, bindestreker eller understreker, og start med en bokstav eller et siffer.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'En annen server her har allerede dette navnet.';
+
+  @override
+  String get mcpServerTransportLabel => 'Transportmåte';
+
+  @override
+  String get mcpServerTransportStdio => 'Kommando';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Kommando';
+
+  @override
+  String get mcpServerCommandRequired =>
+      'Skriv inn kommandoen som skal kjøres.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumenter';
+
+  @override
+  String get mcpServerArgsHelper => 'Ett argument per linje.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Skriv inn en http- eller https-URL uten brukernavn, passord eller #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Miljøvariabler';
+
+  @override
+  String get mcpServerHeadersLabel => 'Overskrifter';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Verdiene lagres som hemmeligheter og vises aldri igjen.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'For eksempel en Authorization-overskrift med et bearer-token.';
+
+  @override
+  String get mcpServerEnvAdd => 'Legg til variabel';
+
+  @override
+  String get mcpServerHeaderAdd => 'Legg til overskrift';
+
+  @override
+  String get mcpServerSecretValueHint => 'Verdi';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Ny verdi';
+
+  @override
+  String get mcpServerSecretReplace => 'Erstatt verdi';
+
+  @override
+  String get mcpServerSecretUndo => 'Angre';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Fjernes ved lagring';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name er ikke et gyldig variabelnavn. Bruk bokstaver, siffer og understreker, og ikke start med et siffer.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name kan ikke settes. Bruk et gyldig overskriftsnavn som tilkoblingen ikke håndterer selv.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Endring av transport fjerner de lagrede verdiene.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Når den er av, startes ikke serveren, og agenter ser ikke verktøyene.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Den kjører på serververtens maskin, så den starter ikke før serverens eier godkjenner den. Endring av oppstartsmåten krever ny godkjenning.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Den når bare offentlige adresser før serverens eier godkjenner den. Endring av tilkoblingen krever ny godkjenning.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Den kjører på serververtens maskin som serverens bruker. Lagring godkjenner den.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Lagring godkjenner at den også kan nå vertens private nettverk.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Brukes bare i kjøringer du starter eller er ansvarlig for.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center kunne ikke lagre denne serveren. Sjekk innstillingene og prøv igjen.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Denne serveren finnes ikke lenger. Noen kan ha fjernet den.';
 }

@@ -2,7 +2,7 @@
 title: Autorisation — qui peut faire quoi, et comment vous le prouvez
 description: Le catalogue de permissions qui sous-tend les rôles de Control Center, le journal d’audit à l’épreuve des altérations où aboutit chaque décision d’autorisation, et les contrôles à l’échelle de l’installation qu’un opérateur peut imposer.
 slug: fr-FR/manuel/concepts/autorisation
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center répond à deux questions d’autorisation, et elles sont réellement
@@ -112,7 +112,8 @@ La personne qui a installé le serveur en est le **propriétaire**. Le serveur l
 - Exécuter des agents sur un serveur dont la machine n’a pas de bac à sable. Les exécutions des autres y sont refusées, sauf si le propriétaire a lancé le serveur avec `--sandbox off`, ce qui exécute les agents de chaque membre sans confinement (voir [Agents sur un hôte sans bac à sable](/fr-FR/manuel/concepts/bac-a-sable-et-securite/#agents-sur-un-hôte-sans-bac-à-sable)).
 - Relier une copie de dépôt située hors du stockage propre à l’espace de travail, confirmer une copie reliée avant cette règle, et parcourir les dossiers du serveur lors de l’ajout d’un dépôt (voir [Ajouter des dépôts](/fr-FR/manuel/guides/ajouter-des-depots/)).
 - Voir et arrêter chaque processus d’agent en cours sur le serveur. Les autres voient et arrêtent seulement les exécutions d’agents en direct dans les espaces de travail auxquels ils appartiennent.
-- Faire utiliser aux agents les serveurs MCP configurés dans les outils propres à l’utilisateur du serveur (Claude, Codex, Cursor et les autres). Seules les exécutions du harnais intégré dont le propriétaire est responsable les obtiennent (voir [Les serveurs MCP personnels restent ceux du propriétaire](/fr-FR/manuel/guides/serveur-mcp/#les-serveurs-mcp-personnels-restent-ceux-du-propriétaire)).
+- Faire utiliser aux agents des serveurs MCP personnels : ceux configurés dans les outils propres à l’utilisateur du serveur (Claude, Codex, Cursor et les autres) et ceux que le propriétaire ajoute. Seules les exécutions dont le propriétaire est responsable les obtiennent ; voir [Serveurs personnels](/fr-FR/manuel/guides/serveur-mcp/#serveurs-personnels).
+- Approuver un serveur MCP de l’espace de travail qui exécute une commande sur la machine du serveur ou qui atteint son réseau privé (voir [Serveurs d’espace de travail](/fr-FR/manuel/guides/serveur-mcp/#serveurs-despace-de-travail)).
 - Confirmer l’adresse e-mail d’une personne, pour que l’authentification unique puisse la reconnaître (voir [Connecter un fournisseur OpenID Connect](/fr-FR/manuel/guides/sso-oidc/#comment-les-connexions-correspondent-aux-comptes-existants)).
 - Modifier les réglages à l’échelle de l’installation, comme SSO, les identifiants des fournisseurs, le point de terminaison MCP et son jeton, la gestion des modèles, Connect et les sauvegardes complètes de l’installation. Ces opérations déclarent une **autorité serveur** et sont refusées à tous les autres.
 

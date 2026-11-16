@@ -18722,4 +18722,206 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Chưa cấp quyền nào: người hoặc thứ mà quyền này dành cho không còn trong không gian làm việc này.';
+
+  @override
+  String get mcpWorkspaceServers => 'Máy chủ MCP của không gian làm việc';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Mọi lượt chạy tác tử trong không gian làm việc này đều nhận công cụ từ các máy chủ này, trong Claude Code cũng như harness tích hợp sẵn. Control Center kết nối tới từng máy chủ và chuyển tiếp công cụ của máy chủ đó.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Chỉ quản trị viên không gian làm việc mới xem và thay đổi được máy chủ MCP của không gian làm việc này.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Máy chủ MCP của không gian làm việc không khả dụng trên máy chủ đang kết nối.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Chưa có máy chủ MCP nào của không gian làm việc';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Thêm máy chủ để mọi lượt chạy tác tử trong không gian làm việc này đều có công cụ của nó.';
+
+  @override
+  String get mcpAddServer => 'Thêm máy chủ';
+
+  @override
+  String get mcpHandAddedSource => 'Đã thêm trong Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Đang chờ phê duyệt';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Chỉ địa chỉ công khai';
+
+  @override
+  String get mcpApproveServer => 'Phê duyệt';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Máy chủ này chạy một lệnh trên máy chủ host, với tư cách người dùng của máy chủ. Máy chủ sẽ không khởi động cho đến khi bạn phê duyệt.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Máy chủ này chạy một lệnh trên máy chủ host, nên sẽ không khởi động cho đến khi chủ sở hữu máy chủ phê duyệt.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Máy chủ này chỉ có thể truy cập địa chỉ công khai. Hãy phê duyệt để cho phép máy chủ truy cập cả mạng riêng của host, chẳng hạn localhost và mạng cục bộ.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Máy chủ này chỉ có thể truy cập địa chỉ công khai cho đến khi chủ sở hữu máy chủ phê duyệt.';
+
+  @override
+  String get mcpRemoveServer => 'Xóa máy chủ';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Xóa $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Các lượt chạy tác tử sẽ mất công cụ của máy chủ này, và các giá trị bí mật đã lưu sẽ bị xóa.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Bật hoặc tắt $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Thêm máy chủ MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Sửa $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Chữ cái, chữ số, dấu gạch ngang và dấu gạch dưới. Tác tử thấy công cụ của máy chủ dưới tên này.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Dùng tối đa 24 chữ cái, chữ số, dấu gạch ngang hoặc dấu gạch dưới, bắt đầu bằng chữ cái hoặc chữ số.';
+
+  @override
+  String get mcpServerNameTaken => 'Đã có máy chủ khác ở đây dùng tên này.';
+
+  @override
+  String get mcpServerTransportLabel => 'Giao thức';
+
+  @override
+  String get mcpServerTransportStdio => 'Lệnh';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Lệnh';
+
+  @override
+  String get mcpServerCommandRequired => 'Nhập lệnh cần chạy.';
+
+  @override
+  String get mcpServerArgsLabel => 'Đối số';
+
+  @override
+  String get mcpServerArgsHelper => 'Mỗi đối số một dòng.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Nhập URL http hoặc https, không có tên người dùng, mật khẩu hoặc #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Biến môi trường';
+
+  @override
+  String get mcpServerHeadersLabel => 'Tiêu đề';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Giá trị được lưu như bí mật và sẽ không hiển thị lại.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Ví dụ: tiêu đề Authorization với bearer token.';
+
+  @override
+  String get mcpServerEnvAdd => 'Thêm biến';
+
+  @override
+  String get mcpServerHeaderAdd => 'Thêm tiêu đề';
+
+  @override
+  String get mcpServerSecretValueHint => 'Giá trị';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Giá trị mới';
+
+  @override
+  String get mcpServerSecretReplace => 'Thay giá trị';
+
+  @override
+  String get mcpServerSecretUndo => 'Hoàn tác';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Sẽ xóa khi lưu';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name không phải là tên biến hợp lệ. Dùng chữ cái, chữ số và dấu gạch dưới, không bắt đầu bằng chữ số.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return 'Không thể đặt $name. Dùng tên tiêu đề hợp lệ mà kết nối không tự quản lý.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Đổi giao thức sẽ xóa các giá trị đã lưu.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Khi tắt, máy chủ sẽ không khởi động và tác tử không thấy công cụ của máy chủ.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Máy chủ chạy trên host của máy chủ, nên sẽ không khởi động cho đến khi chủ sở hữu máy chủ phê duyệt. Thay đổi cách khởi động sẽ yêu cầu phê duyệt lại.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Máy chủ chỉ truy cập được địa chỉ công khai cho đến khi chủ sở hữu máy chủ phê duyệt. Thay đổi cách kết nối sẽ yêu cầu phê duyệt lại.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Máy chủ chạy trên host của máy chủ, với tư cách người dùng của máy chủ. Lưu sẽ phê duyệt máy chủ.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Lưu sẽ phê duyệt để máy chủ truy cập cả mạng riêng của host.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Chỉ dùng trong các lượt chạy do bạn khởi động hoặc bạn chịu trách nhiệm.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center không thể lưu máy chủ này. Kiểm tra cài đặt và thử lại.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Máy chủ này không còn tồn tại. Có thể ai đó đã xóa nó.';
 }

@@ -18690,6 +18690,207 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Nothing was granted: who or what it was for is no longer in this workspace.';
+
+  @override
+  String get mcpWorkspaceServers => 'Workspace MCP servers';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Every agent run in this workspace gets these servers\' tools, in Claude Code and the built-in harness alike. Control Center connects to each server and passes its tools through.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Only workspace admins can see and change this workspace\'s MCP servers.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Workspace MCP servers aren\'t available on the connected server.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'No workspace MCP servers yet';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Add a server to give every agent run in this workspace its tools.';
+
+  @override
+  String get mcpAddServer => 'Add server';
+
+  @override
+  String get mcpHandAddedSource => 'Added in Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Awaiting approval';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Public addresses only';
+
+  @override
+  String get mcpApproveServer => 'Approve';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'This server runs a command on the server host, as the server\'s user. It won\'t start until you approve it.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'This server runs a command on the server host, so it won\'t start until the server owner approves it.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'This server can reach only public addresses. Approve it to let it reach the host\'s private network too, such as localhost and the local network.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'This server can reach only public addresses until the server owner approves it.';
+
+  @override
+  String get mcpRemoveServer => 'Remove server';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Agent runs lose this server\'s tools, and its stored secret values are deleted.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Turn $name on or off';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Add MCP server';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Edit $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Letters, digits, hyphens and underscores. Agents see its tools under this name.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Use up to 24 letters, digits, hyphens or underscores, starting with a letter or digit.';
+
+  @override
+  String get mcpServerNameTaken => 'Another server here already has this name.';
+
+  @override
+  String get mcpServerTransportLabel => 'Transport';
+
+  @override
+  String get mcpServerTransportStdio => 'Command';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Command';
+
+  @override
+  String get mcpServerCommandRequired => 'Enter the command to run.';
+
+  @override
+  String get mcpServerArgsLabel => 'Arguments';
+
+  @override
+  String get mcpServerArgsHelper => 'One argument per line.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Enter an http or https URL with no user name, password or #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Environment variables';
+
+  @override
+  String get mcpServerHeadersLabel => 'Headers';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Values are stored as secrets and never shown again.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'For example, an Authorization header with a bearer token.';
+
+  @override
+  String get mcpServerEnvAdd => 'Add variable';
+
+  @override
+  String get mcpServerHeaderAdd => 'Add header';
+
+  @override
+  String get mcpServerSecretValueHint => 'Value';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'New value';
+
+  @override
+  String get mcpServerSecretReplace => 'Replace value';
+
+  @override
+  String get mcpServerSecretUndo => 'Undo';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Removed on save';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name isn\'t a valid variable name. Use letters, digits and underscores, not starting with a digit.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name can\'t be set. Use a valid header name the connection doesn\'t manage itself.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Changing the transport removes the stored values.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'When off, the server isn\'t started and agents don\'t see its tools.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'It runs on the server host, so it won\'t start until the server owner approves it. Changing how it starts asks for approval again.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'It reaches only public addresses until the server owner approves it. Changing how it connects asks for approval again.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'It runs on the server host as the server\'s user. Saving approves it.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Saving approves it to reach the host\'s private network too.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Used only in runs you start or are accountable for.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center couldn\'t save this server. Check its settings and try again.';
+
+  @override
+  String get mcpServerNotFound =>
+      'This server no longer exists. Someone may have removed it.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

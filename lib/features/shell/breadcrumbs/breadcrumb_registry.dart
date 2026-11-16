@@ -58,6 +58,7 @@ final Map<String, BreadcrumbBuilder> breadcrumbRegistry = {
   '${calendarRoute(workspaceIdParam)}/:eventId': _calendarEventDetailCrumbs,
   memoryRoute(workspaceIdParam): _memoryCrumbs,
   apiKeysRoute(workspaceIdParam): _apiKeysCrumbs,
+  observabilityRoute(workspaceIdParam): _observabilityCrumbs,
   // Settings breadcrumbs are DERIVED from `kSettingsNav`, so a page cannot
   // move between scopes and leave a stale trail. Each is three deep —
   // Settings › <scope> › <page> — which is what makes the scope legible from
@@ -275,6 +276,13 @@ List<CcBreadcrumbItem> _apiKeysCrumbs(
   GoRouterState state,
   AppLocalizations l10n,
 ) => [CcBreadcrumbItem(current: true, child: Text(l10n.apiKeys))];
+
+List<CcBreadcrumbItem> _observabilityCrumbs(
+  WidgetRef ref,
+  BuildContext context,
+  GoRouterState state,
+  AppLocalizations l10n,
+) => [CcBreadcrumbItem(current: true, child: Text(l10n.navObservability))];
 
 List<CcBreadcrumbItem> _manageWorkspacesCrumbs(
   WidgetRef ref,

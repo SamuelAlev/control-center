@@ -274,6 +274,30 @@ void main() {
       expect(ShellActionClassifier.pushRefs('git push origin :old'), ['old']);
     });
 
+    test('redirections do not hide the branch', () {
+      for (final command in [
+        'cd repos/web && git push origin space/f1 2>&1 | tail -5',
+        'git push -u origin space/f1 2>&1',
+        'git push origin HEAD:space/f1 2>&1 | tail -2',
+        'git push origin space/f1 2> /dev/null',
+        'git push origin space/f1 > out.log',
+        'git push origin space/f1 >> log 2>&1',
+        'git push origin space/f1 &>/dev/null',
+        'git push origin space/f1 </dev/null',
+        'git push origin space/f1 2>&-',
+      ]) {
+        expect(ShellActionClassifier.pushRefs(command), [
+          'space/f1',
+        ], reason: command);
+      }
+      // A redirection's target is not a refspec.
+      expect(ShellActionClassifier.pushRefs('git push origin > main'), isNull);
+      expect(
+        ShellActionClassifier.pushRefs('git push origin a <<<main'),
+        isNull,
+      );
+    });
+
     test('anything that might land elsewhere is unknown', () {
       for (final command in [
         'git push',

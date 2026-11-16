@@ -2,7 +2,7 @@
 title: Gunakan server MCP
 description: Arahkan klien MCP eksternal ke server alat Control Center, kirimkan token bearer-nya, dan ketahui apa yang diekspos permukaannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/server-mcp
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Panduan ini menunjukkan cara menghubungkan klien MCP eksternal — Claude Code,
@@ -131,17 +131,35 @@ Katalog lengkapnya diumumkan di `tools/list` tanpa gerbang penemuan — klien MC
 eksternal menolak memanggil alat yang tidak ada dalam daftar cache-nya, jadi
 menyembunyikan alat justru merusaknya alih-alih merapikannya.
 
-## Server MCP pribadi tetap milik pemilik
+## Server MCP yang digunakan agen Anda
 
-Panduan ini membahas endpoint Control Center sendiri. Arah sebaliknya, yaitu server MCP yang Control Center berikan kepada agen yang dijalankannya, tercantum di bawah **Pengaturan → Server → Server MCP → Server MCP eksternal**. Server yang dikonfigurasi di mesin server untuk Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode, atau dalam `.mcp.json` ditemukan di sana secara otomatis.
+Panduan ini membahas endpoint milik Control Center sendiri. Arah sebaliknya adalah Server MCP yang dihubungkan Control Center dan diserahkan kepada agen yang dijalankannya. Anda mengaturnya di **Pengaturan → Server → Server MCP**, pada dua tingkat. Dalam kedua kasus, Control Center terhubung ke servernya sendiri dan meneruskan alatnya ke run, sehingga harness bawaan dan Claude Code mendapatkan alat serta permintaan persetujuan yang sama. Run Claude Code melihatnya di bawah `control-center`, sebagai `mcp__control-center__mcp__<server>__<tool>`.
 
-Server yang ditemukan itu berasal dari konfigurasi alat milik pengguna server dan bertindak dengan identitas serta kredensial pengguna tersebut, sehingga menjadi milik pemilik server:
+### Server ruang kerja
 
-- Server itu hanya tersedia di dalam run harness bawaan yang dimulai pemilik server atau yang dipertanggungjawabkan kepadanya, termasuk otomatisasi di ruang kerja yang dipertanggungjawabkan pemilik.
-- Run anggota, otomatisasi yang terikat pada anggota, dan setiap run di server tanpa pemilik yang tercatat tidak mendapatkannya sama sekali. Di sana alat-alat itu tidak didaftarkan, tidak dapat dipanggil, dan tidak muncul dalam pencarian alat.
-- Endpoint ini tidak pernah mendaftar, memanggil, atau mencari server tersebut, untuk siapa pun, termasuk pemilik dengan tokennya, dan tidak meneruskan sumber daya atau prompt-nya. Jadi agen CLI yang menjangkau Control Center melalui MCP, seperti Claude Code, tidak mendapatkannya lewat Control Center; ia memakai konfigurasinya sendiri.
+Admin ruang kerja menambahkannya di **Server MCP ruang kerja**. Setiap run agen di ruang kerja itu mendapatkan alatnya, dan run di ruang kerja lain tidak.
 
-Server MCP yang dikonfigurasi untuk ruang kerja tidak terpengaruh oleh semua ini.
+1. Pilih **Tambah server** dan beri nama singkat: huruf, angka, `-` dan `_`, hingga 24 karakter. Alat muncul sebagai `mcp__<name>__<tool>`.
+2. Pilih cara menjangkaunya:
+   - **Perintah (stdio):** sebuah executable beserta argumennya, ditambah variabel lingkungan yang dibutuhkannya.
+   - **URL (HTTP atau SSE):** endpoint-nya, ditambah header yang dibutuhkannya, seperti `Authorization: Bearer …`.
+3. Simpan. Pemeriksaan: Server menampilkan **Terhubung** dengan jumlah alat.
+
+Nilai variabel lingkungan dan header disimpan di berkas rahasia Server dan tidak pernah ditampilkan lagi. Untuk mengubah nilai, ganti nilainya; untuk menghapusnya, hapus namanya.
+
+Perintah dijalankan di mesin pemilik Server sebagai pengguna Server itu sendiri, jadi perintah tidak mulai sebelum pemiliknya menyetujuinya. Sampai saat itu statusnya **Menunggu persetujuan**. Server URL langsung berfungsi, tetapi hanya dapat menjangkau alamat publik sampai pemiliknya menyetujuinya, yang juga mengizinkan `localhost` dan jaringan privat. Ketika pemiliknya menyimpan Server, itu dihitung sebagai persetujuan. Jika pihak lain mengubah cara Server dijalankan atau tempat ia terhubung, Server perlu disetujui lagi. Mengaktifkan atau menonaktifkan Server tidak menghapus persetujuannya.
+
+### Server pribadi
+
+Server pribadi adalah milik pemiliknya dan tercantum di bawah **Server MCP eksternal**. Server yang dikonfigurasi di mesin Server untuk Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode, atau dalam `.mcp.json` ditemukan di sana secara otomatis. Pemilik juga dapat menambahkan Server sendiri dengan **Tambah server**, memakai formulir yang sama. Server yang Anda tambahkan mengalahkan Server yang ditemukan dengan nama yang sama.
+
+Server pribadi bertindak dengan identitas dan kredensial pemiliknya:
+
+- Server pribadi hanya tersedia dalam run yang dimulai pemiliknya atau yang dipertanggungjawabkan kepadanya, termasuk otomatisasi di ruang kerja yang dipertanggungjawabkan pemilik. Itu mencakup run harness bawaan dan run Claude Code.
+- Run anggota, otomatisasi yang terikat pada anggota, dan setiap run yang berjalan tanpa pemilik tercatat tidak mendapatkan satu pun darinya. Di sana alat-alatnya tidak didaftarkan, tidak dapat dipanggil, dan tidak muncul dalam pencarian alat.
+- Baik Server pribadi maupun Server ruang kerja tidak disajikan ke token MCP atau ke perangkat yang dipasangkan, dan sumber daya serta prompt-nya tidak diteruskan.
+
+Masuk ke Server dengan OAuth tidak tersedia dari formulir. Gunakan Server yang menerima token di header, atau konfigurasikan untuk salah satu alat di atas agar ditemukan secara otomatis.
 
 ## Pemecahan masalah
 

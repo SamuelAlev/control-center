@@ -346,6 +346,27 @@ class RemoteMessagingRepository {
     String spaceId,
     String conversationId, {
     required int limit,
+  }) =>
+      watchMessagesWindowRows(
+        workspaceId,
+        spaceId,
+        conversationId,
+        limit: limit,
+      ).map(
+        (w) => (
+          messages: [for (final row in w.rows) MessageDto.fromJson(row)],
+          hasMore: w.hasMore,
+        ),
+      );
+
+  /// [watchMessagesWindow] before any row is decoded: the wire maps, so a
+  /// caller can skip the rows it already holds (`revision`).
+  Stream<({List<Map<String, dynamic>> rows, bool hasMore})>
+  watchMessagesWindowRows(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required int limit,
   }) => _client
       .subscribe('messaging.watchMessagesWindow', {
         'workspace_id': workspaceId,
@@ -355,10 +376,85 @@ class RemoteMessagingRepository {
       })
       .map(
         (data) => (
-          messages: _messages(data),
+          rows: _messageRows(data),
           hasMore: data['has_more'] as bool? ?? false,
         ),
       );
+
+  /// Live messages around [anchorId] in a conversation of [workspaceId]: the
+  /// anchor, up to [before] older and up to [after] newer, with whether the
+  /// conversation continues past either edge. The server clamps both counts
+  /// to 0..200 and fails the subscription when the anchor is not a live
+  /// message of the conversation.
+  Stream<({List<MessageDto> messages, bool hasOlder, bool hasNewer})>
+  watchMessagesRange(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required String anchorId,
+    required int before,
+    required int after,
+  }) =>
+      watchMessagesRangeRows(
+        workspaceId,
+        spaceId,
+        conversationId,
+        anchorId: anchorId,
+        before: before,
+        after: after,
+      ).map(
+        (r) => (
+          messages: [for (final row in r.rows) MessageDto.fromJson(row)],
+          hasOlder: r.hasOlder,
+          hasNewer: r.hasNewer,
+        ),
+      );
+
+  /// [watchMessagesRange] before any row is decoded.
+  Stream<({List<Map<String, dynamic>> rows, bool hasOlder, bool hasNewer})>
+  watchMessagesRangeRows(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required String anchorId,
+    required int before,
+    required int after,
+  }) => _client
+      .subscribe('messaging.watchMessagesRange', {
+        'workspace_id': workspaceId,
+        'space_id': spaceId,
+        'conversation_id': conversationId,
+        'anchor_id': anchorId,
+        'before': before,
+        'after': after,
+      })
+      .map(
+        (data) => (
+          rows: _messageRows(data),
+          hasOlder: data['has_older'] as bool? ?? false,
+          hasNewer: data['has_newer'] as bool? ?? false,
+        ),
+      );
+
+  /// The outline of a whole conversation in [workspaceId]: one compact
+  /// array per live message, `[id, created_at_ms, sender_id, sender_type,
+  /// message_type, content_chars, segment_count?, steer_state?, answered
+  /// (0/1), revision]`, oldest first.
+  Future<List<List<Object?>>> getConversationOutline(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) async {
+    final data = await _client.call('messaging.getConversationOutline', {
+      'workspace_id': workspaceId,
+      'space_id': spaceId,
+      'conversation_id': conversationId,
+    });
+    return [
+      for (final entry in (data['entries'] as List?) ?? const [])
+        if (entry is List) entry.cast<Object?>(),
+    ];
+  }
 
   /// The caller's recent plain-text prompts, oldest first. The server decides
   /// who "the caller" is; this never takes a user id.
@@ -445,6 +541,11 @@ class RemoteMessagingRepository {
           .whereType<Map>()
           .map((m) => MessageDto.fromJson(m.cast<String, dynamic>()))
           .toList();
+
+  List<Map<String, dynamic>> _messageRows(Map<String, dynamic> data) => [
+    for (final m in (data['messages'] as List?) ?? const [])
+      if (m is Map) m.cast<String, dynamic>(),
+  ];
 
   List<SpaceParticipantDto> _participants(Map<String, dynamic> data) =>
       ((data['participants'] as List?) ?? const [])

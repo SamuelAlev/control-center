@@ -18049,6 +18049,190 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get importHoldNotApplied => '未授予任何权限：其对应的成员或仓库已不在此工作区中。';
+
+  @override
+  String get mcpWorkspaceServers => '工作区 MCP 服务器';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      '此工作区中的每次智能体运行都会获得这些服务器的工具，Claude Code 和内置执行环境均适用。Control Center 会连接每个服务器并传递其工具。';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly => '只有工作区管理员可以查看和更改此工作区的 MCP 服务器。';
+
+  @override
+  String get mcpWorkspaceServersUnavailable => '已连接的服务器不支持工作区 MCP 服务器。';
+
+  @override
+  String get mcpWorkspaceServersEmpty => '还没有工作区 MCP 服务器';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      '添加服务器，让此工作区中的每次智能体运行都能使用其工具。';
+
+  @override
+  String get mcpAddServer => '添加服务器';
+
+  @override
+  String get mcpHandAddedSource => '在 Control Center 中添加';
+
+  @override
+  String get mcpStatusAwaitingApproval => '等待批准';
+
+  @override
+  String get mcpPublicAddressesOnly => '仅限公共地址';
+
+  @override
+  String get mcpApproveServer => '批准';
+
+  @override
+  String get mcpApprovalStdioOwner => '此服务器会在服务器主机上以服务器用户身份运行命令。批准前不会启动。';
+
+  @override
+  String get mcpApprovalStdioMember => '此服务器会在服务器主机上运行命令，因此须等服务器所有者批准后才会启动。';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      '此服务器只能访问公共地址。批准后，它也可以访问主机的私有网络，例如 localhost 和本地网络。';
+
+  @override
+  String get mcpApprovalRemoteMember => '在服务器所有者批准之前，此服务器只能访问公共地址。';
+
+  @override
+  String get mcpRemoveServer => '移除服务器';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '移除 $name？';
+  }
+
+  @override
+  String get mcpRemoveServerBody => '智能体运行将失去此服务器的工具，其已存储的密钥值也会被删除。';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '开启或关闭 $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => '添加 MCP 服务器';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '编辑 $name';
+  }
+
+  @override
+  String get mcpServerNameHelper => '仅限字母、数字、连字符和下划线。智能体会以此名称看到其工具。';
+
+  @override
+  String get mcpServerNameInvalid => '最多使用 24 个字母、数字、连字符或下划线，并以字母或数字开头。';
+
+  @override
+  String get mcpServerNameTaken => '此处已有另一个服务器使用此名称。';
+
+  @override
+  String get mcpServerTransportLabel => '传输方式';
+
+  @override
+  String get mcpServerTransportStdio => '命令';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => '命令';
+
+  @override
+  String get mcpServerCommandRequired => '请输入要运行的命令。';
+
+  @override
+  String get mcpServerArgsLabel => '参数';
+
+  @override
+  String get mcpServerArgsHelper => '每行一个参数。';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      '请输入 http 或 https URL，且不能包含用户名、密码或 #fragment。';
+
+  @override
+  String get mcpServerEnvLabel => '环境变量';
+
+  @override
+  String get mcpServerHeadersLabel => '请求头';
+
+  @override
+  String get mcpServerSecretsDescription => '值会作为密钥存储，且不会再次显示。';
+
+  @override
+  String get mcpServerHeadersExample => '例如，带有 Bearer 令牌的 Authorization 请求头。';
+
+  @override
+  String get mcpServerEnvAdd => '添加变量';
+
+  @override
+  String get mcpServerHeaderAdd => '添加请求头';
+
+  @override
+  String get mcpServerSecretValueHint => '值';
+
+  @override
+  String get mcpServerSecretNewValueHint => '新值';
+
+  @override
+  String get mcpServerSecretReplace => '替换值';
+
+  @override
+  String get mcpServerSecretUndo => '撤销';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => '保存时移除';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name 不是有效的变量名。请使用字母、数字和下划线，且不能以数字开头。';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '无法设置 $name。请使用有效的请求头名称，且不能是连接自行管理的请求头。';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues => '更改传输方式会删除已存储的值。';
+
+  @override
+  String get mcpServerEnabledDescription => '关闭后，服务器不会启动，智能体也看不到其工具。';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      '它在服务器主机上运行，因此须等服务器所有者批准后才会启动。更改启动方式需要重新批准。';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      '在服务器所有者批准之前，它只能访问公共地址。更改连接方式需要重新批准。';
+
+  @override
+  String get mcpServerEditorStdioOwner => '它会在服务器主机上以服务器用户身份运行。保存即表示批准。';
+
+  @override
+  String get mcpServerEditorRemoteOwner => '保存即表示批准它访问主机的私有网络。';
+
+  @override
+  String get mcpServerEditorPersonal => '仅用于您发起或负责的运行。';
+
+  @override
+  String get mcpServerRefusedInvalid => 'Control Center 无法保存此服务器。请检查其设置后重试。';
+
+  @override
+  String get mcpServerNotFound => '此服务器已不存在，可能已被移除。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -36100,6 +36284,190 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get importHoldNotApplied => '未授予任何權限：其對應的成員或儲存庫已不在此工作區中。';
+
+  @override
+  String get mcpWorkspaceServers => '工作區 MCP 伺服器';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      '此工作區嘅每次代理執行都會攞到呢啲伺服器嘅工具，Claude Code 同內建執行環境都一樣。Control Center 會連接每個伺服器並傳遞其工具。';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly => '只有工作區管理員可以查看同更改此工作區嘅 MCP 伺服器。';
+
+  @override
+  String get mcpWorkspaceServersUnavailable => '已連線嘅伺服器唔支援工作區 MCP 伺服器。';
+
+  @override
+  String get mcpWorkspaceServersEmpty => '暫時未有工作區 MCP 伺服器';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      '新增伺服器，等此工作區嘅每次代理執行都可以用其工具。';
+
+  @override
+  String get mcpAddServer => '新增伺服器';
+
+  @override
+  String get mcpHandAddedSource => '喺 Control Center 入面新增';
+
+  @override
+  String get mcpStatusAwaitingApproval => '等待核准';
+
+  @override
+  String get mcpPublicAddressesOnly => '只限公開地址';
+
+  @override
+  String get mcpApproveServer => '核准';
+
+  @override
+  String get mcpApprovalStdioOwner => '呢個伺服器會喺伺服器主機上以伺服器用戶身份執行指令。核准前唔會啟動。';
+
+  @override
+  String get mcpApprovalStdioMember => '呢個伺服器會喺伺服器主機上執行指令，所以要等伺服器擁有者核准先會啟動。';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      '呢個伺服器只可以連到公開地址。核准後，佢都可以連到主機嘅私人網絡，例如 localhost 同本地網絡。';
+
+  @override
+  String get mcpApprovalRemoteMember => '喺伺服器擁有者核准之前，呢個伺服器只可以連到公開地址。';
+
+  @override
+  String get mcpRemoveServer => '移除伺服器';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '要移除 $name 嗎？';
+  }
+
+  @override
+  String get mcpRemoveServerBody => '代理執行會失去呢個伺服器嘅工具，而其已儲存嘅密鑰值亦會一併刪除。';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '開啟或關閉 $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => '新增 MCP 伺服器';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '編輯 $name';
+  }
+
+  @override
+  String get mcpServerNameHelper => '只限字母、數字、連字號同底線。代理會以呢個名稱見到其工具。';
+
+  @override
+  String get mcpServerNameInvalid => '最多用 24 個字母、數字、連字號或底線，而且要以字母或數字開頭。';
+
+  @override
+  String get mcpServerNameTaken => '呢度已有其他伺服器用咗呢個名稱。';
+
+  @override
+  String get mcpServerTransportLabel => '傳輸方式';
+
+  @override
+  String get mcpServerTransportStdio => '指令';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => '指令';
+
+  @override
+  String get mcpServerCommandRequired => '請輸入要執行嘅指令。';
+
+  @override
+  String get mcpServerArgsLabel => '引數';
+
+  @override
+  String get mcpServerArgsHelper => '每行一個引數。';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      '請輸入 http 或 https URL，而且唔可以包含用戶名稱、密碼或 #fragment。';
+
+  @override
+  String get mcpServerEnvLabel => '環境變數';
+
+  @override
+  String get mcpServerHeadersLabel => '標頭';
+
+  @override
+  String get mcpServerSecretsDescription => '數值會以密鑰形式儲存，而且唔會再次顯示。';
+
+  @override
+  String get mcpServerHeadersExample => '例如，帶有 Bearer 權杖嘅 Authorization 標頭。';
+
+  @override
+  String get mcpServerEnvAdd => '新增變數';
+
+  @override
+  String get mcpServerHeaderAdd => '新增標頭';
+
+  @override
+  String get mcpServerSecretValueHint => '數值';
+
+  @override
+  String get mcpServerSecretNewValueHint => '新數值';
+
+  @override
+  String get mcpServerSecretReplace => '取代數值';
+
+  @override
+  String get mcpServerSecretUndo => '復原';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => '儲存時移除';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name 唔係有效嘅變數名稱。請用字母、數字同底線，而且唔可以以數字開頭。';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '無法設定 $name。請用有效嘅標頭名稱，而且唔可以係由連線自行管理嘅標頭。';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues => '更改傳輸方式會刪除已儲存嘅數值。';
+
+  @override
+  String get mcpServerEnabledDescription => '關閉時，伺服器唔會啟動，代理都見唔到其工具。';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      '佢喺伺服器主機上執行，所以要等伺服器擁有者核准先會啟動。更改啟動方式會再次要求核准。';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      '喺伺服器擁有者核准之前，佢只可以連到公開地址。更改連線方式會再次要求核准。';
+
+  @override
+  String get mcpServerEditorStdioOwner => '佢會喺伺服器主機上以伺服器用戶身份執行。儲存即代表核准。';
+
+  @override
+  String get mcpServerEditorRemoteOwner => '儲存即代表核准佢連到主機嘅私人網絡。';
+
+  @override
+  String get mcpServerEditorPersonal => '只用於你發起或負責嘅代理執行。';
+
+  @override
+  String get mcpServerRefusedInvalid => 'Control Center 無法儲存呢個伺服器。請檢查其設定後再試。';
+
+  @override
+  String get mcpServerNotFound => '呢個伺服器已經唔存在，可能已被移除。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -54153,4 +54521,188 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get importHoldNotApplied => '未授予任何權限：其對應的成員或儲存庫已不在此工作區中。';
+
+  @override
+  String get mcpWorkspaceServers => '工作區 MCP 伺服器';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      '此工作區的每次代理執行都會取得這些伺服器的工具，無論是 Claude Code 或內建執行環境。Control Center 會連接每個伺服器並傳遞其工具。';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly => '只有工作區管理員可以查看及變更此工作區的 MCP 伺服器。';
+
+  @override
+  String get mcpWorkspaceServersUnavailable => '已連線的伺服器不支援工作區 MCP 伺服器。';
+
+  @override
+  String get mcpWorkspaceServersEmpty => '尚無工作區 MCP 伺服器';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      '新增伺服器，讓此工作區的每次代理執行都能使用其工具。';
+
+  @override
+  String get mcpAddServer => '新增伺服器';
+
+  @override
+  String get mcpHandAddedSource => '在 Control Center 中新增';
+
+  @override
+  String get mcpStatusAwaitingApproval => '等待核准';
+
+  @override
+  String get mcpPublicAddressesOnly => '僅限公開位址';
+
+  @override
+  String get mcpApproveServer => '核准';
+
+  @override
+  String get mcpApprovalStdioOwner => '此伺服器會在伺服器主機上以伺服器使用者身分執行指令。核准前不會啟動。';
+
+  @override
+  String get mcpApprovalStdioMember => '此伺服器會在伺服器主機上執行指令，因此須等伺服器擁有者核准後才會啟動。';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      '此伺服器只能連到公開位址。核准後，它也能連到主機的私人網路，例如 localhost 和區域網路。';
+
+  @override
+  String get mcpApprovalRemoteMember => '在伺服器擁有者核准前，此伺服器只能連到公開位址。';
+
+  @override
+  String get mcpRemoveServer => '移除伺服器';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '要移除 $name 嗎？';
+  }
+
+  @override
+  String get mcpRemoveServerBody => '代理執行將失去此伺服器的工具，其已儲存的密鑰值也會一併刪除。';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '開啟或關閉 $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => '新增 MCP 伺服器';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '編輯 $name';
+  }
+
+  @override
+  String get mcpServerNameHelper => '僅限字母、數字、連字號和底線。代理會以此名稱看到其工具。';
+
+  @override
+  String get mcpServerNameInvalid => '最多使用 24 個字母、數字、連字號或底線，且須以字母或數字開頭。';
+
+  @override
+  String get mcpServerNameTaken => '此處已有其他伺服器使用此名稱。';
+
+  @override
+  String get mcpServerTransportLabel => '傳輸方式';
+
+  @override
+  String get mcpServerTransportStdio => '指令';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => '指令';
+
+  @override
+  String get mcpServerCommandRequired => '請輸入要執行的指令。';
+
+  @override
+  String get mcpServerArgsLabel => '引數';
+
+  @override
+  String get mcpServerArgsHelper => '每行一個引數。';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      '請輸入 http 或 https URL，且不得包含使用者名稱、密碼或 #fragment。';
+
+  @override
+  String get mcpServerEnvLabel => '環境變數';
+
+  @override
+  String get mcpServerHeadersLabel => '標頭';
+
+  @override
+  String get mcpServerSecretsDescription => '值會以密鑰形式儲存，且不會再次顯示。';
+
+  @override
+  String get mcpServerHeadersExample => '例如，帶有 Bearer 權杖的 Authorization 標頭。';
+
+  @override
+  String get mcpServerEnvAdd => '新增變數';
+
+  @override
+  String get mcpServerHeaderAdd => '新增標頭';
+
+  @override
+  String get mcpServerSecretValueHint => '值';
+
+  @override
+  String get mcpServerSecretNewValueHint => '新值';
+
+  @override
+  String get mcpServerSecretReplace => '取代值';
+
+  @override
+  String get mcpServerSecretUndo => '復原';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => '儲存時移除';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name 不是有效的變數名稱。請使用字母、數字和底線，且不可以數字開頭。';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '無法設定 $name。請使用有效的標頭名稱，且不得是由連線自行管理的標頭。';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues => '變更傳輸方式會刪除已儲存的值。';
+
+  @override
+  String get mcpServerEnabledDescription => '關閉時，伺服器不會啟動，代理也看不到其工具。';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      '它在伺服器主機上執行，因此須等伺服器擁有者核准後才會啟動。變更啟動方式會再次要求核准。';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      '在伺服器擁有者核准前，它只能連到公開位址。變更連線方式會再次要求核准。';
+
+  @override
+  String get mcpServerEditorStdioOwner => '它會在伺服器主機上以伺服器使用者身分執行。儲存即代表核准。';
+
+  @override
+  String get mcpServerEditorRemoteOwner => '儲存即代表核准它連到主機私人網路。';
+
+  @override
+  String get mcpServerEditorPersonal => '僅用於您發起或負責的代理執行。';
+
+  @override
+  String get mcpServerRefusedInvalid => 'Control Center 無法儲存此伺服器。請檢查其設定後再試一次。';
+
+  @override
+  String get mcpServerNotFound => '此伺服器已不存在，可能已被移除。';
 }

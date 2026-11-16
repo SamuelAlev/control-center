@@ -2,10 +2,10 @@
 title: Ferramentas MCP
 description: Catálogo completo das ferramentas MCP que o cc_server regista, por família.
 slug: pt-PT/manual/referencia/ferramentas-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-O `cc_server` aloja um único registo de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (predefinida: `9030`) em `POST /mcp` e `GET /sse`, com a versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registo: a aplicação de ambiente de trabalho, a build web, os clientes MCP externos e o runtime de agentes integrado. Os servidores MCP externos podem ser ligados ao mesmo registo como uma camada dinâmica. Os servidores descobertos na configuração de ferramentas do próprio utilizador do servidor são a exceção: este endpoint nunca os lista, chama nem pesquisa, e apenas as execuções do harness incorporado, de que o proprietário do servidor é responsável, os obtêm (veja [Os servidores MCP pessoais continuam a ser do proprietário](/pt-PT/manual/guias/servidor-mcp/#os-servidores-mcp-pessoais-continuam-a-ser-do-proprietário)).
+O `cc_server` aloja um único registo de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (predefinida: `9030`) em `POST /mcp` e `GET /sse`, com a versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registo: a aplicação de ambiente de trabalho, a build web, os clientes MCP externos e o runtime de agentes integrado. Os servidores MCP externos são ligados ao mesmo registo em camadas próprias: uma por espaço de trabalho, para os servidores que os respetivos administradores configuram, e uma para os servidores pessoais do proprietário do servidor. Este endpoint só os lista, chama e pesquisa numa execução de agente: os servidores do próprio espaço de trabalho e, quando o proprietário do servidor é responsável pela execução, os pessoais. O token MCP e os dispositivos emparelhados nunca os veem (veja [Servidores MCP usados pelos seus agentes](/pt-PT/manual/guias/servidor-mcp/#servidores-mcp-usados-pelos-seus-agentes)).
 
 ## Dimensão do registo
 

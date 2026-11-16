@@ -18722,4 +18722,205 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'לא הוענק דבר: מי שההרשאה נועדה לו, או מה שהיא נוגעת בו, כבר לא נמצא בסביבת העבודה הזו.';
+
+  @override
+  String get mcpWorkspaceServers => 'שרתי MCP של סביבת העבודה';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'כל הרצת סוכן בסביבת העבודה הזו מקבלת את הכלים של השרתים האלה, גם ב-Claude Code וגם בהרנס המובנה. Control Center מתחבר לכל שרת ומעביר את הכלים שלו הלאה.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'רק מנהלי סביבת העבודה יכולים לראות ולשנות את שרתי ה-MCP של סביבת העבודה הזו.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'שרתי MCP של סביבת העבודה אינם זמינים בשרת המחובר.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'עדיין אין שרתי MCP של סביבת העבודה';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'הוסיפו שרת כדי שכל הרצת סוכן בסביבת העבודה הזו תקבל את הכלים שלו.';
+
+  @override
+  String get mcpAddServer => 'הוספת שרת';
+
+  @override
+  String get mcpHandAddedSource => 'נוסף ב-Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'ממתין לאישור';
+
+  @override
+  String get mcpPublicAddressesOnly => 'כתובות ציבוריות בלבד';
+
+  @override
+  String get mcpApproveServer => 'אישור';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'השרת הזה מריץ פקודה על מארח השרת, בהרשאות המשתמש של השרת. הוא לא יתחיל לפני שתאשרו אותו.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'השרת הזה מריץ פקודה על מארח השרת, ולכן הוא לא יתחיל לפני שבעל השרת יאשר אותו.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'השרת הזה יכול להגיע רק לכתובות ציבוריות. אשרו אותו כדי שיוכל להגיע גם לרשת הפרטית של המארח, כמו localhost והרשת המקומית.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'השרת הזה יכול להגיע רק לכתובות ציבוריות עד שבעל השרת יאשר אותו.';
+
+  @override
+  String get mcpRemoveServer => 'הסרת שרת';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'להסיר את $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'הרצות סוכנים יאבדו את הכלים של השרת הזה, וערכי הסודות השמורים שלו יימחקו.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'הפעלה או כיבוי של $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'הוספת שרת MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'עריכת $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'אותיות, ספרות, מקפים וקווים תחתונים. הסוכנים רואים את הכלים שלו תחת השם הזה.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'השתמשו בעד 24 אותיות, ספרות, מקפים או קווים תחתונים, והתחילו באות או בספרה.';
+
+  @override
+  String get mcpServerNameTaken => 'כבר יש כאן שרת אחר בשם הזה.';
+
+  @override
+  String get mcpServerTransportLabel => 'תעבורה';
+
+  @override
+  String get mcpServerTransportStdio => 'פקודה';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'פקודה';
+
+  @override
+  String get mcpServerCommandRequired => 'הזינו את הפקודה להרצה.';
+
+  @override
+  String get mcpServerArgsLabel => 'ארגומנטים';
+
+  @override
+  String get mcpServerArgsHelper => 'ארגומנט אחד בכל שורה.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'הזינו כתובת http או https ללא שם משתמש, סיסמה או #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'משתני סביבה';
+
+  @override
+  String get mcpServerHeadersLabel => 'כותרות';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'הערכים נשמרים כסודות ולא מוצגים שוב.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'לדוגמה, כותרת Authorization עם טוקן bearer.';
+
+  @override
+  String get mcpServerEnvAdd => 'הוספת משתנה';
+
+  @override
+  String get mcpServerHeaderAdd => 'הוספת כותרת';
+
+  @override
+  String get mcpServerSecretValueHint => 'ערך';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'ערך חדש';
+
+  @override
+  String get mcpServerSecretReplace => 'החלפת ערך';
+
+  @override
+  String get mcpServerSecretUndo => 'ביטול';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'יוסר בשמירה';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name אינו שם משתנה תקין. השתמשו באותיות, בספרות ובקווים תחתונים, ואל תתחילו בספרה.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return 'לא ניתן להגדיר את $name. השתמשו בשם כותרת תקין שהחיבור אינו מנהל בעצמו.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'שינוי התעבורה מסיר את הערכים השמורים.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'כשהוא כבוי, השרת לא מופעל והסוכנים לא רואים את הכלים שלו.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'הוא רץ על מארח השרת, ולכן לא יתחיל לפני שבעל השרת יאשר אותו. שינוי אופן ההפעלה שלו יחייב אישור מחדש.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'הוא מגיע רק לכתובות ציבוריות עד שבעל השרת יאשר אותו. שינוי אופן החיבור שלו יחייב אישור מחדש.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'הוא רץ על מארח השרת בהרשאות המשתמש של השרת. שמירה מאשרת אותו.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'שמירה מאשרת את הגישה שלו גם לרשת הפרטית של המארח.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'משמש רק בהרצות שאתם מתחילים או אחראים להן.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center לא הצליח לשמור את השרת הזה. בדקו את ההגדרות שלו ונסו שוב.';
+
+  @override
+  String get mcpServerNotFound =>
+      'השרת הזה כבר לא קיים. ייתכן שמישהו הסיר אותו.';
 }

@@ -93,12 +93,11 @@ lib/features/meetings/presentation/widgets/detail/meeting_notes_tab.dart  398
 lib/features/meetings/presentation/widgets/detail/meeting_playback_bar.dart  422
 lib/features/meetings/presentation/widgets/detail/meeting_transcript_tab.dart  846
 lib/features/memory/presentation/widgets/knowledge_graph_layout.dart  391
-lib/features/messaging/presentation/widgets/bubbles/agent_turn.dart  554
-lib/features/messaging/presentation/widgets/bubbles/focusable_bubble.dart  360
+lib/features/messaging/presentation/widgets/bubbles/agent_turn.dart  486
 lib/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart  376
 lib/features/messaging/presentation/widgets/context_usage_flyout.dart  304
 lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart  530
-lib/features/messaging/presentation/widgets/message_feed.dart  314
+lib/features/messaging/presentation/widgets/message_feed.dart  307
 lib/features/messaging/presentation/widgets/space_folders_list.dart  466
 lib/features/newsfeed/presentation/screens/article_webview_screen.dart  430
 lib/features/newsfeed/presentation/settings/newsfeed_feeds_section.dart  519

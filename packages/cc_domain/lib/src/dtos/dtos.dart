@@ -626,6 +626,7 @@ class MessageDto {
     this.conversationId,
     this.compacted = false,
     this.createdAt,
+    this.revision = 0,
   });
 
   factory MessageDto.fromJson(Map<String, dynamic> json) => MessageDto(
@@ -641,6 +642,7 @@ class MessageDto {
     createdAt: json['created_at'] is String
         ? DateTime.tryParse(json['created_at'] as String)
         : null,
+    revision: (json['revision'] as num?)?.toInt() ?? 0,
   );
 
   final String id;
@@ -662,6 +664,9 @@ class MessageDto {
   final bool compacted;
   final DateTime? createdAt;
 
+  /// The row's change counter (`Message.revision`); 0 when the wire omits it.
+  final int revision;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'content': content,
@@ -673,6 +678,7 @@ class MessageDto {
     if (conversationId != null) 'conversation_id': conversationId,
     if (compacted) 'compacted': compacted,
     if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+    'revision': revision,
   };
 }
 

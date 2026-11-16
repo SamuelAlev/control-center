@@ -18866,4 +18866,206 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Nichts wurde gewährt: Wer oder was dafür vorgesehen war, ist nicht mehr in diesem Arbeitsbereich.';
+
+  @override
+  String get mcpWorkspaceServers => 'Workspace-MCP-Server';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Jeder Agentenlauf in diesem Workspace erhält die Tools dieser Server, sowohl in Claude Code als auch im integrierten Harness. Control Center verbindet sich mit jedem Server und leitet seine Tools weiter.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Nur Workspace-Admins können die MCP-Server dieses Workspaces sehen und ändern.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Workspace-MCP-Server sind auf dem verbundenen Server nicht verfügbar.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'Noch keine Workspace-MCP-Server';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Füge einen Server hinzu, damit jeder Agentenlauf in diesem Workspace seine Tools erhält.';
+
+  @override
+  String get mcpAddServer => 'Server hinzufügen';
+
+  @override
+  String get mcpHandAddedSource => 'In Control Center hinzugefügt';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Wartet auf Freigabe';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Nur öffentliche Adressen';
+
+  @override
+  String get mcpApproveServer => 'Freigeben';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Dieser Server führt einen Befehl auf dem Serverhost als Benutzer des Servers aus. Er startet erst, wenn du ihn freigibst.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Dieser Server führt einen Befehl auf dem Serverhost aus, daher startet er erst, wenn der Serverinhaber ihn freigibt.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Dieser Server kann nur öffentliche Adressen erreichen. Gib ihn frei, damit er auch das private Netzwerk des Hosts erreichen kann, etwa localhost und das lokale Netzwerk.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Dieser Server kann nur öffentliche Adressen erreichen, bis der Serverinhaber ihn freigibt.';
+
+  @override
+  String get mcpRemoveServer => 'Server entfernen';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '$name entfernen?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Agentenläufe verlieren die Tools dieses Servers, und seine gespeicherten geheimen Werte werden gelöscht.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '$name ein- oder ausschalten';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'MCP-Server hinzufügen';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '$name bearbeiten';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Buchstaben, Ziffern, Bindestriche und Unterstriche. Agenten sehen die Tools unter diesem Namen.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Verwende bis zu 24 Buchstaben, Ziffern, Bindestriche oder Unterstriche, beginnend mit einem Buchstaben oder einer Ziffer.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'Hier hat bereits ein anderer Server diesen Namen.';
+
+  @override
+  String get mcpServerTransportLabel => 'Transportart';
+
+  @override
+  String get mcpServerTransportStdio => 'Befehl';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Befehl';
+
+  @override
+  String get mcpServerCommandRequired => 'Gib den auszuführenden Befehl ein.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumente';
+
+  @override
+  String get mcpServerArgsHelper => 'Ein Argument pro Zeile.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Gib eine http- oder https-URL ohne Benutzername, Passwort oder #fragment ein.';
+
+  @override
+  String get mcpServerEnvLabel => 'Umgebungsvariablen';
+
+  @override
+  String get mcpServerHeadersLabel => 'Header';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Werte werden als Geheimnisse gespeichert und nie wieder angezeigt.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Zum Beispiel ein Authorization-Header mit einem Bearer-Token.';
+
+  @override
+  String get mcpServerEnvAdd => 'Variable hinzufügen';
+
+  @override
+  String get mcpServerHeaderAdd => 'Header hinzufügen';
+
+  @override
+  String get mcpServerSecretValueHint => 'Wert';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Neuer Wert';
+
+  @override
+  String get mcpServerSecretReplace => 'Wert ersetzen';
+
+  @override
+  String get mcpServerSecretUndo => 'Rückgängig';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Wird beim Speichern entfernt';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name ist kein gültiger Variablenname. Verwende Buchstaben, Ziffern und Unterstriche, nicht beginnend mit einer Ziffer.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name kann nicht gesetzt werden. Verwende einen gültigen Headernamen, den die Verbindung nicht selbst verwaltet.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Ein Wechsel des Transports entfernt die gespeicherten Werte.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Wenn ausgeschaltet, wird der Server nicht gestartet und Agenten sehen seine Tools nicht.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Er läuft auf dem Serverhost, daher startet er erst, wenn der Serverinhaber ihn freigibt. Eine Änderung der Startweise erfordert erneut eine Freigabe.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Er erreicht nur öffentliche Adressen, bis der Serverinhaber ihn freigibt. Eine Änderung der Verbindungsweise erfordert erneut eine Freigabe.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Er läuft auf dem Serverhost als Benutzer des Servers. Speichern gibt ihn frei.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Speichern gibt ihn frei, damit er auch das private Netzwerk des Hosts erreichen kann.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Wird nur in Läufen verwendet, die du startest oder verantwortest.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center konnte diesen Server nicht speichern. Prüfe seine Einstellungen und versuche es erneut.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Dieser Server existiert nicht mehr. Möglicherweise wurde er entfernt.';
 }

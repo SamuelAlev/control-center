@@ -18764,4 +18764,206 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Tiada kebenaran diberikan: pihak yang dituju, sama ada ahli atau repositori, tidak lagi wujud dalam ruang kerja ini.';
+
+  @override
+  String get mcpWorkspaceServers => 'Pelayan MCP ruang kerja';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Setiap larian ejen dalam ruang kerja ini mendapat alatan pelayan ini, sama ada dalam Claude Code atau harness terbina dalam. Control Center menyambung ke setiap pelayan dan menghantar alatannya.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Hanya pentadbir ruang kerja boleh melihat dan menukar pelayan MCP ruang kerja ini.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Pelayan MCP ruang kerja tidak tersedia pada pelayan yang disambungkan.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'Belum ada pelayan MCP ruang kerja';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Tambah pelayan untuk memberi setiap larian ejen dalam ruang kerja ini alatannya.';
+
+  @override
+  String get mcpAddServer => 'Tambah pelayan';
+
+  @override
+  String get mcpHandAddedSource => 'Ditambah dalam Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Menunggu kelulusan';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Alamat awam sahaja';
+
+  @override
+  String get mcpApproveServer => 'Luluskan';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Pelayan ini menjalankan arahan pada hos pelayan, sebagai pengguna pelayan. Ia tidak akan dimulakan sehingga anda meluluskannya.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Pelayan ini menjalankan arahan pada hos pelayan, jadi ia tidak akan dimulakan sehingga pemilik pelayan meluluskannya.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Pelayan ini hanya boleh mencapai alamat awam. Luluskannya untuk membenarkan ia mencapai rangkaian persendirian hos juga, seperti localhost dan rangkaian tempatan.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Pelayan ini hanya boleh mencapai alamat awam sehingga pemilik pelayan meluluskannya.';
+
+  @override
+  String get mcpRemoveServer => 'Buang pelayan';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Buang $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Larian ejen kehilangan alatan pelayan ini, dan nilai rahsia yang disimpan akan dipadam.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Hidupkan atau matikan $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Tambah pelayan MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Sunting $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Huruf, digit, sengkang dan garis bawah. Ejen melihat alatannya di bawah nama ini.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Gunakan sehingga 24 huruf, digit, sengkang atau garis bawah, bermula dengan huruf atau digit.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'Pelayan lain di sini sudah mempunyai nama ini.';
+
+  @override
+  String get mcpServerTransportLabel => 'Pengangkutan';
+
+  @override
+  String get mcpServerTransportStdio => 'Arahan';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Arahan';
+
+  @override
+  String get mcpServerCommandRequired => 'Masukkan arahan untuk dijalankan.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumen';
+
+  @override
+  String get mcpServerArgsHelper => 'Satu argumen setiap baris.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Masukkan URL http atau https tanpa nama pengguna, kata laluan atau #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Pembolehubah persekitaran';
+
+  @override
+  String get mcpServerHeadersLabel => 'Pengepala';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Nilai disimpan sebagai rahsia dan tidak akan ditunjukkan semula.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Contohnya, pengepala Authorization dengan token pembawa.';
+
+  @override
+  String get mcpServerEnvAdd => 'Tambah pembolehubah';
+
+  @override
+  String get mcpServerHeaderAdd => 'Tambah pengepala';
+
+  @override
+  String get mcpServerSecretValueHint => 'Nilai';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Nilai baharu';
+
+  @override
+  String get mcpServerSecretReplace => 'Gantikan nilai';
+
+  @override
+  String get mcpServerSecretUndo => 'Buat asal';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Dibuang semasa simpan';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name bukan nama pembolehubah yang sah. Gunakan huruf, digit dan garis bawah, tidak bermula dengan digit.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name tidak boleh ditetapkan. Gunakan nama pengepala yang sah yang tidak diurus oleh sambungan itu sendiri.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Menukar pengangkutan akan mengalih keluar nilai yang disimpan.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Apabila dimatikan, pelayan tidak dimulakan dan ejen tidak melihat alatannya.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Ia berjalan pada hos pelayan, jadi ia tidak akan dimulakan sehingga pemilik pelayan meluluskannya. Menukar cara ia dimulakan akan meminta kelulusan semula.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Ia hanya boleh mencapai alamat awam sehingga pemilik pelayan meluluskannya. Menukar cara ia bersambung akan meminta kelulusan semula.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Ia berjalan pada hos pelayan sebagai pengguna pelayan. Menyimpan akan meluluskannya.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Menyimpan akan meluluskannya untuk mencapai rangkaian persendirian hos juga.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Digunakan hanya dalam larian yang anda mulakan atau yang anda bertanggungjawab untuknya.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center tidak dapat menyimpan pelayan ini. Semak tetapannya dan cuba semula.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Pelayan ini tidak wujud lagi. Mungkin seseorang telah membuangnya.';
 }

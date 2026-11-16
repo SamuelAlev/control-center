@@ -747,6 +747,7 @@ const _safeSubscriptions = <String>{
   'messaging.watchMessages',
   'messaging.watchSpaceMessages',
   'messaging.watchMessagesWindow',
+  'messaging.watchMessagesRange',
   'messaging.watchParticipants',
   'messaging.watchSpaceActivity',
   'messaging.watchConversationTokens',

@@ -30,7 +30,9 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_access_gran
 import 'package:cc_domain/features/memory/domain/repositories/memory_domain_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
@@ -193,6 +195,7 @@ void main() {
       projectRepository: _Projects(),
       ticketWorkflow: _TicketWorkflow(),
       messagingRepository: _Messaging(),
+      conversationRepository: _Conversations(),
       workspaceRepository: workspaces,
       newsfeedRepository: _Newsfeed(),
       agentRepository: _Agents(),
@@ -602,6 +605,23 @@ void main() {
       'status': 'completed',
     });
     expect(res['error'], isNull, reason: '$res');
+  });
+
+  test('a message watch refuses a conversation of another space', () async {
+    // The space gate admits the caller to the space named; the conversation
+    // named must be that space's, or the watch would stream another space's
+    // messages. nora reads general only; gina reads widgets too, and is
+    // refused the same way: the conversation is not general's.
+    for (final user in ['nora', 'gina']) {
+      await expectLater(
+        watchWith('messaging.watchMessagesWindow', user, {
+          'space_id': 'space-general',
+          'conversation_id': 'conv-space-widgets',
+        }),
+        throwsA(isA<NotFoundException>()),
+        reason: user,
+      );
+    }
   });
 
   group('PR data outside the PR surfaces', () {
@@ -1148,6 +1168,30 @@ class _Poller implements OpenPrPollingService {
         checkedAt: DateTime.utc(2026),
       ),
   ]);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Every space's standing conversation, `conv-<space id>`.
+class _Conversations implements ConversationRepository {
+  @override
+  Future<Conversation?> getById({
+    required String workspaceId,
+    required String conversationId,
+  }) async {
+    if (workspaceId != 'ws1' || !conversationId.startsWith('conv-')) {
+      return null;
+    }
+    return Conversation(
+      id: conversationId,
+      workspaceId: 'ws1',
+      spaceId: conversationId.substring('conv-'.length),
+      title: 'standing',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

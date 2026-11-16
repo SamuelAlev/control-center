@@ -19,8 +19,8 @@ import 'package:super_sliver_list/super_sliver_list.dart';
 
 import '../../../../../helpers/active_workspace.dart';
 
-/// The window a freshly opened conversation ships: [kSpaceFeedInitialWindow].
-const int _windowSize = kSpaceFeedInitialWindow;
+/// The window a freshly opened conversation ships: [kSpaceFeedLiveWindow].
+const int _windowSize = kSpaceFeedLiveWindow;
 
 /// A conversation of [_windowSize] agent turns, each from a DIFFERENT agent.
 ///

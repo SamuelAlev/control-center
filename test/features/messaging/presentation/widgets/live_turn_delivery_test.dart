@@ -18,6 +18,7 @@ import 'package:control_center/features/messaging/presentation/widgets/ask_user/
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/question_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_turn_row_views.dart';
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -27,6 +28,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../helpers/active_workspace.dart';
 import '../../../../helpers/test_wrap.dart';
+
+/// The turn's transcript: its own transcript rows in the feed (a turn whose
+/// transcript is known is laid out row by row), or one [TranscriptFlow].
+final Finder _insideTurn = find.byWidgetPredicate(
+  (widget) => widget is TurnPartRowView || widget is TranscriptFlow,
+);
 
 void main() {
   testWidgets(
@@ -215,7 +222,7 @@ void main() {
       expect(
         find.ancestor(
           of: find.byType(QuestionBubble),
-          matching: find.byType(TranscriptFlow),
+          matching: _insideTurn,
         ),
         findsNothing,
       );
@@ -227,7 +234,7 @@ void main() {
       expect(
         find.ancestor(
           of: find.byType(QuestionBubble),
-          matching: find.byType(TranscriptFlow),
+          matching: _insideTurn,
         ),
         findsOneWidget,
       );

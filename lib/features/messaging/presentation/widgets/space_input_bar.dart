@@ -205,10 +205,12 @@ class _SpaceInputBarState extends ConsumerState<SpaceInputBar> {
       leading: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ModeDropdown(
-            currentMode: currentMode,
-            onChanged: (mode) =>
-                ref.read(activeSpaceModeProvider.notifier).setMode(mode),
+          Flexible(
+            child: ModeDropdown(
+              currentMode: currentMode,
+              onChanged: (mode) =>
+                  ref.read(activeSpaceModeProvider.notifier).setMode(mode),
+            ),
           ),
           ModeEnforcementBadge(spaceId: spaceId, currentMode: currentMode),
         ],

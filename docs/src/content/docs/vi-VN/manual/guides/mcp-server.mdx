@@ -2,7 +2,7 @@
 title: Dùng máy chủ MCP
 description: Trỏ một máy khách MCP bên ngoài vào máy chủ công cụ của Control Center, gửi bearer token của nó và hiểu bề mặt này phơi ra những gì.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Hướng dẫn này chỉ bạn cách kết nối một máy khách MCP bên ngoài — Claude Code, một
@@ -135,30 +135,35 @@ Toàn bộ danh mục được quảng bá trong `tools/list` mà không có ch�
 máy khách MCP bên ngoài từ chối gọi công cụ không nằm trong danh sách đã lưu của
 nó, nên việc ẩn công cụ làm chúng hỏng chứ không phải dọn dẹp chúng.
 
-## Máy chủ MCP cá nhân thuộc về chủ sở hữu
+## Máy chủ MCP mà các agent của bạn sử dụng
 
-Hướng dẫn này nói về điểm cuối riêng của Control Center. Chiều ngược lại, các máy chủ MCP mà
-Control Center giao cho những agent nó chạy, được liệt kê dưới **Cài đặt → Máy chủ → Máy chủ
-MCP → Máy chủ MCP bên ngoài**. Các máy chủ được cấu hình trên máy của máy chủ cho Claude,
-Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode hoặc trong `.mcp.json` sẽ được tìm thấy ở
-đó tự động.
+Hướng dẫn này nói về điểm cuối riêng của Control Center. Chiều ngược lại là các máy chủ MCP mà Control Center kết nối và giao cho các agent nó chạy. Bạn thiết lập chúng trong **Cài đặt → Máy chủ → Máy chủ MCP**, ở hai cấp. Dù theo cách nào, Control Center cũng kết nối tới chính máy chủ đó và chuyển các công cụ của nó cho lượt chạy, nên harness tích hợp và Claude Code nhận được cùng công cụ và cùng các yêu cầu phê duyệt. Lượt chạy Claude Code thấy chúng dưới máy chủ `control-center`, dưới dạng `mcp__control-center__mcp__<server>__<tool>`.
 
-Các máy chủ được phát hiện đó đến từ cấu hình công cụ riêng của người dùng máy chủ và hành
-động với danh tính và thông tin xác thực của người dùng đó, nên chúng thuộc về chủ sở hữu máy chủ:
+### Máy chủ của không gian làm việc
 
-- Chúng chỉ khả dụng bên trong các lượt chạy harness tích hợp mà chủ sở hữu máy chủ khởi động
-  hoặc chịu trách nhiệm, bao gồm tự động hóa trong một không gian làm việc mà chủ sở hữu chịu
-  trách nhiệm.
-- Lượt chạy của một thành viên, tự động hóa gắn với một thành viên, và mọi lượt chạy trên một
-  máy chủ không có chủ sở hữu được ghi nhận đều không nhận được chúng nào. Ở đó các công cụ
-  không được liệt kê, không thể gọi, và không xuất hiện trong tìm kiếm công cụ.
-- Điểm cuối này không bao giờ liệt kê, gọi hay tìm kiếm chúng, với bất kỳ ai, kể cả token của
-  chủ sở hữu, và nó không chuyển tiếp tài nguyên hay prompt của chúng. Vì vậy một CLI agent kết
-  nối tới Control Center qua MCP, chẳng hạn Claude Code, cũng không nhận được chúng qua Control
-  Center; nó dùng cấu hình riêng của nó.
+Quản trị viên không gian làm việc thêm các máy chủ này trong **Máy chủ MCP của không gian làm việc**. Mọi lượt chạy agent trong không gian làm việc đều nhận công cụ của họ, còn lượt chạy ở các không gian làm việc khác thì không.
 
-Các máy chủ MCP được cấu hình cho không gian làm việc không bị ảnh hưởng bởi bất kỳ điều nào
-trong số này.
+1. Chọn **Thêm máy chủ** và đặt một tên ngắn: chữ cái, chữ số, `-` và `_`, tối đa 24 ký tự. Công cụ xuất hiện dưới dạng `mcp__<name>__<tool>`.
+2. Chọn cách kết nối tới máy chủ:
+   - **Lệnh (stdio):** một tệp thực thi và đối số của nó, cùng mọi biến môi trường cần thiết.
+   - **URL (HTTP hoặc SSE):** điểm cuối, cùng mọi tiêu đề cần thiết, chẳng hạn `Authorization: Bearer …`.
+3. Lưu. Kiểm tra: máy chủ hiển thị **Đã kết nối** kèm số lượng công cụ.
+
+Giá trị biến môi trường và tiêu đề được lưu trong tệp bí mật của máy chủ và không bao giờ hiển thị lại. Muốn đổi giá trị thì thay thế; muốn bỏ thì xóa tên.
+
+Lệnh chạy trên máy của máy chủ dưới tên người dùng của chính máy chủ, nên nó không khởi động cho tới khi chủ sở hữu máy chủ phê duyệt. Trước đó, trạng thái hiển thị là **Đang chờ phê duyệt**. Máy chủ URL hoạt động ngay, nhưng chỉ truy cập được các địa chỉ công cộng cho tới khi chủ sở hữu máy chủ phê duyệt, và việc phê duyệt này cũng cho phép `localhost` và mạng riêng. Khi chủ sở hữu máy chủ lưu một máy chủ, việc đó được tính là phê duyệt. Nếu người khác thay đổi cách máy chủ khởi chạy hoặc nơi nó kết nối, máy chủ cần được phê duyệt lại. Bật hoặc tắt máy chủ không làm mất phê duyệt.
+
+### Máy chủ cá nhân
+
+Máy chủ cá nhân thuộc về chủ sở hữu máy chủ và được liệt kê dưới **Máy chủ MCP bên ngoài**. Các máy chủ được cấu hình trên máy của máy chủ cho Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode hoặc trong `.mcp.json` sẽ được tìm thấy ở đó tự động. Chủ sở hữu cũng có thể tự thêm máy chủ của mình bằng **Thêm máy chủ**, dùng cùng biểu mẫu. Máy chủ bạn thêm sẽ được ưu tiên hơn máy chủ được phát hiện có cùng tên.
+
+Chúng hoạt động với danh tính và thông tin xác thực của chủ sở hữu máy chủ:
+
+- Chúng chỉ khả dụng trong các lượt chạy mà chủ sở hữu máy chủ khởi động hoặc chịu trách nhiệm, bao gồm tự động hóa trong một không gian làm việc mà chủ sở hữu chịu trách nhiệm. Điều này áp dụng cho cả lượt chạy harness tích hợp lẫn lượt chạy Claude Code.
+- Lượt chạy của thành viên, tự động hóa gắn với thành viên, và mọi lượt chạy trên máy chủ không có chủ sở hữu được ghi nhận đều không nhận được chúng. Ở đó công cụ không được liệt kê, không thể gọi, và không xuất hiện trong tìm kiếm công cụ.
+- Cả máy chủ cá nhân lẫn máy chủ của không gian làm việc đều không được cung cấp cho token MCP hay thiết bị đã ghép nối, và tài nguyên cùng prompt của chúng không được chuyển tiếp.
+
+Đăng nhập vào máy chủ bằng OAuth không khả dụng từ biểu mẫu. Hãy dùng máy chủ chấp nhận token trong tiêu đề, hoặc cấu hình nó cho một trong các công cụ trên, nơi nó được phát hiện.
 
 ## Khắc phục sự cố
 

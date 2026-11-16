@@ -2,7 +2,7 @@
 title: Używaj serwera MCP
 description: Skieruj zewnętrznego klienta MCP na serwer narzędzi Control Center, wyślij jego token bearer i poznaj zakres udostępnianej powierzchni.
 slug: pl-PL/podrecznik/poradniki/serwer-mcp
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Ten poradnik pokazuje, jak połączyć zewnętrznego klienta MCP — Claude Code,
@@ -139,26 +139,35 @@ Pełny katalog jest ogłaszany w `tools/list` bez bramkowania wykrywania —
 zewnętrzny klient MCP odmawia wywołania narzędzia, którego nie ma na jego
 zbuforowanej liście, więc ukrywanie narzędzi je psuje, a nie porządkuje.
 
-## Osobiste serwery MCP należą do właściciela
+## Serwery MCP używane przez agentów
 
-Ten poradnik dotyczy własnego punktu końcowego Control Center. Drugi kierunek, czyli serwery MCP, które
-Control Center przekazuje agentom, jakie uruchamia, znajduje się w **Ustawienia → Serwer → Serwery MCP →
-Zewnętrzne serwery MCP**. Serwery skonfigurowane na maszynie serwera dla Claude, Codex, Cursor, Gemini,
-VS Code, Windsurf, OpenCode albo w `.mcp.json` są tam znajdowane automatycznie.
+Ten poradnik dotyczy własnego punktu końcowego Control Center. Drugi kierunek to serwery MCP, z którymi Control Center się łączy i które przekazuje agentom, jakie uruchamia. Konfiguruje się je w **Ustawienia → Serwer → Serwery MCP**, na dwóch poziomach. W obu przypadkach Control Center łączy się z samym serwerem i przekazuje jego narzędzia do uruchomienia, więc wbudowany harness i Claude Code dostają te same narzędzia oraz te same prośby o zatwierdzenie. Uruchomienie Claude Code widzi je w serwerze `control-center` jako `mcp__control-center__mcp__<server>__<tool>`.
 
-Te wykryte serwery pochodzą z konfiguracji narzędzi samego użytkownika serwera i działają z jego
-tożsamością oraz poświadczeniami, więc należą do właściciela serwera:
+### Serwery obszaru roboczego
 
-- Są dostępne tylko w wbudowanych uruchomieniach harnessu, które właściciel serwera uruchamia albo za które
-  odpowiada, łącznie z automatyzacją w obszarze roboczym, za który właściciel odpowiada.
-- Uruchomienie członka, automatyzacja przypisana do członka i każde uruchomienie na serwerze bez zapisanego
-  właściciela nie dostają żadnego z nich. Tam narzędzia nie są wyświetlane, nie można ich wywołać i nie
-  pojawiają się w wyszukiwaniu narzędzi.
-- Ten punkt końcowy nigdy nie wylicza, nie wywołuje ani nie przeszukuje ich, dla nikogo, także z tokenem
-  właściciela, i nie przekazuje dalej ich zasobów ani promptów. Klient agenta CLI, który łączy się z Control
-  Center przez MCP, jak Claude Code, nie dostaje ich więc przez Control Center; używa własnej konfiguracji.
+Administratorzy obszaru roboczego dodają je w **Serwery MCP obszaru roboczego**. Każde uruchomienie agenta w obszarze roboczym dostaje ich narzędzia, a uruchomienia w innych obszarach roboczych nie.
 
-Serwery MCP skonfigurowane dla obszaru roboczego nie są objęte żadną z tych zasad.
+1. Wybierz **Dodaj serwer** i nadaj mu krótką nazwę: litery, cyfry, `-` i `_`, do 24 znaków. Narzędzia pojawiają się jako `mcp__<name>__<tool>`.
+2. Wybierz sposób połączenia:
+   - **Polecenie (stdio):** plik wykonywalny i jego argumenty oraz zmienne środowiskowe, których potrzebuje.
+   - **URL (HTTP lub SSE):** adres punktu końcowego i potrzebne nagłówki, na przykład `Authorization: Bearer …`.
+3. Zapisz. Punkt kontrolny: serwer pokazuje **Połączono** i liczbę narzędzi.
+
+Wartości zmiennych środowiskowych i nagłówków są zapisywane w pliku z sekretami serwera i nie są pokazywane ponownie. Aby zmienić wartość, zastąp ją; aby ją usunąć, usuń nazwę.
+
+Polecenie działa na maszynie serwera jako własny użytkownik serwera, dlatego nie uruchomi się, dopóki właściciel serwera go nie zatwierdzi. Do tego czasu widnieje przy nim **Oczekuje na zatwierdzenie**. Serwer z URL działa od razu, ale do zatwierdzenia przez właściciela serwera może łączyć się tylko z publicznymi adresami; zatwierdzenie pozwala też na `localhost` i sieci prywatne. Gdy właściciel zapisze serwer, liczy się to jako zatwierdzenie. Jeśli ktokolwiek inny zmieni sposób uruchamiania serwera albo adres połączenia, potrzebne jest ponowne zatwierdzenie. Włączenie lub wyłączenie serwera nie zmienia zatwierdzenia.
+
+### Serwery osobiste
+
+Serwery osobiste należą do właściciela serwera i są wymienione pod **Zewnętrzne serwery MCP**. Serwery skonfigurowane na maszynie serwera dla Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode lub w `.mcp.json` są tam znajdowane automatycznie. Właściciel serwera może dodać własne, używając **Dodaj serwer** i tego samego formularza. Serwer dodany ręcznie ma pierwszeństwo przed wykrytym o tej samej nazwie.
+
+Działają z tożsamością i poświadczeniami właściciela serwera:
+
+- Są dostępne tylko w uruchomieniach, które właściciel serwera rozpoczyna lub za które odpowiada, w tym w automatyzacji w obszarze roboczym, za który właściciel odpowiada. Dotyczy to wbudowanych uruchomień harnessu i uruchomień Claude Code.
+- Uruchomienie członka, automatyzacja przypisana do członka i każde uruchomienie na serwerze bez zapisanego właściciela nie dostają żadnego z nich. Tam narzędzia nie są wyświetlane, nie można ich wywołać i nie pojawiają się w wyszukiwaniu narzędzi.
+- Ani serwery osobiste, ani serwery obszaru roboczego nie są udostępniane tokenowi MCP ani sparowanym urządzeniom, a ich zasoby i prompty nie są przekazywane dalej.
+
+Logowanie do serwera przez OAuth nie jest dostępne z formularza. Użyj serwera, który przyjmuje token w nagłówku, albo skonfiguruj go dla jednego z narzędzi powyżej, w którym zostanie wykryty.
 
 ## Rozwiązywanie problemów
 

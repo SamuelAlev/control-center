@@ -18984,4 +18984,207 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Ничего не предоставлено: тот, для кого оно было, или то, для чего оно было, больше не находится в этом рабочем пространстве.';
+
+  @override
+  String get mcpWorkspaceServers => 'MCP-серверы рабочего пространства';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Каждый запуск агента в этом рабочем пространстве получает инструменты этих серверов, и в Claude Code, и во встроенном раннере. Control Center подключается к каждому серверу и передаёт его инструменты дальше.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Только администраторы рабочего пространства могут видеть и менять его MCP-серверы.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'MCP-серверы рабочего пространства недоступны на подключённом сервере.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Пока нет MCP-серверов рабочего пространства';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Добавьте сервер, чтобы каждый запуск агента в этом рабочем пространстве получил его инструменты.';
+
+  @override
+  String get mcpAddServer => 'Добавить сервер';
+
+  @override
+  String get mcpHandAddedSource => 'Добавлено в Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Ждёт одобрения';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Только публичные адреса';
+
+  @override
+  String get mcpApproveServer => 'Одобрить';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Этот сервер запускает команду на хосте сервера от имени пользователя сервера. Он не запустится, пока вы его не одобрите.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Этот сервер запускает команду на хосте сервера, поэтому он не запустится, пока владелец сервера его не одобрит.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Этот сервер может обращаться только к публичным адресам. Одобрите его, чтобы он мог обращаться и к частной сети хоста, например localhost и локальной сети.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Этот сервер может обращаться только к публичным адресам, пока владелец сервера его не одобрит.';
+
+  @override
+  String get mcpRemoveServer => 'Удалить сервер';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Удалить $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Запуски агентов потеряют инструменты этого сервера, а сохранённые значения его секретов будут удалены.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Включить или выключить $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Добавить MCP-сервер';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Изменить $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Буквы, цифры, дефисы и подчёркивания. Агенты видят его инструменты под этим именем.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Используйте до 24 букв, цифр, дефисов или подчёркиваний, начиная с буквы или цифры.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'Здесь уже есть другой сервер с таким именем.';
+
+  @override
+  String get mcpServerTransportLabel => 'Транспорт';
+
+  @override
+  String get mcpServerTransportStdio => 'Команда';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Команда';
+
+  @override
+  String get mcpServerCommandRequired => 'Введите команду для запуска.';
+
+  @override
+  String get mcpServerArgsLabel => 'Аргументы';
+
+  @override
+  String get mcpServerArgsHelper => 'По одному аргументу в строке.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Введите URL с http или https, без имени пользователя, пароля и #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Переменные окружения';
+
+  @override
+  String get mcpServerHeadersLabel => 'Заголовки';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Значения сохраняются как секреты и больше не показываются.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Например, заголовок Authorization с bearer-токеном.';
+
+  @override
+  String get mcpServerEnvAdd => 'Добавить переменную';
+
+  @override
+  String get mcpServerHeaderAdd => 'Добавить заголовок';
+
+  @override
+  String get mcpServerSecretValueHint => 'Значение';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Новое значение';
+
+  @override
+  String get mcpServerSecretReplace => 'Заменить значение';
+
+  @override
+  String get mcpServerSecretUndo => 'Отменить';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Удалится при сохранении';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name — недопустимое имя переменной. Используйте буквы, цифры и подчёркивания, не начиная с цифры.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name нельзя задать. Используйте допустимое имя заголовка, которым соединение не управляет само.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Смена транспорта удалит сохранённые значения.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Когда выключено, сервер не запускается, и агенты не видят его инструменты.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Он запускается на хосте сервера, поэтому не начнёт работу, пока владелец сервера его не одобрит. Изменение способа запуска потребует одобрения заново.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Он может обращаться только к публичным адресам, пока владелец сервера его не одобрит. Изменение способа подключения потребует одобрения заново.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Он запускается на хосте сервера от имени пользователя сервера. Сохранение одобряет его.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Сохранение одобряет доступ и к частной сети хоста.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Используется только в запусках, которые вы начинаете или за которые отвечаете.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center не смог сохранить этот сервер. Проверьте его настройки и попробуйте снова.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Этого сервера больше нет. Возможно, его удалили.';
 }

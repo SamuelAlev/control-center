@@ -17,7 +17,16 @@ class DefaultMcpTransportFactory {
   /// OAuth servers at connect time; the interactive `authorize` flow is driven
   /// separately by the host (it needs a UI gesture). When absent, OAuth servers
   /// fall back to whatever static headers the config carries.
-  DefaultMcpTransportFactory({this.tokenStore, this.launchBrowser});
+  DefaultMcpTransportFactory({
+    this.tokenStore,
+    this.launchBrowser,
+    this.publicOnlyConnection,
+  });
+
+  /// How an http/sse server marked [McpServerConfig.publicOnly] is dialled:
+  /// resolved once, refused unless every address is public, and connected to
+  /// exactly that address. Null refuses such servers outright.
+  final McpConnectionFactory? publicOnlyConnection;
 
   /// Token store used to read/refresh OAuth tokens for the auth header.
   final McpOAuthTokenStore? tokenStore;
@@ -35,11 +44,13 @@ class DefaultMcpTransportFactory {
         return StreamableHttpTransport(
           config,
           authHeaderProvider: _authProviderFor(config),
+          publicOnlyConnection: publicOnlyConnection,
         );
       case McpTransportKind.sse:
         return SseTransport(
           config,
           authHeaderProvider: _authProviderFor(config),
+          publicOnlyConnection: publicOnlyConnection,
         );
     }
   }

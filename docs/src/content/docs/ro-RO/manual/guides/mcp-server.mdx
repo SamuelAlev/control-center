@@ -2,7 +2,7 @@
 title: Folosește serverul MCP
 description: Îndreaptă un client MCP extern către serverul de instrumente al Control Center, trimite tokenul bearer și află ce expune suprafața.
 slug: ro-RO/manual/ghiduri-practice/server-mcp
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Acest ghid îți arată cum să conectezi un client MCP extern — Claude Code, un
@@ -130,17 +130,35 @@ Catalogul complet este anunțat în `tools/list` fără filtrare la descoperire 
 client MCP extern refuză să apeleze un instrument care nu se află în lista lui din
 cache, așa că a ascunde instrumentele le strică, în loc să le facă mai ordonate.
 
-## Serverele MCP personale rămân ale proprietarului
+## Serverele MCP folosite de agenții tăi
 
-Acest ghid se referă la endpoint-ul propriu al Control Center. Cealaltă direcție, serverele MCP pe care Control Center le dă agenților pe care îi rulează, este listată în **Setări → Server → Servere MCP → Servere MCP externe**. Serverele configurate pe mașina serverului pentru Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode sau într-un `.mcp.json` sunt găsite acolo automat.
+Acest ghid se referă la endpoint-ul propriu al Control Center. Cealaltă direcție sunt serverele MCP la care Control Center se conectează și pe care le oferă agenților pe care îi rulează. Le configurezi la **Setări → Server → Servere MCP**, pe două niveluri. În ambele cazuri, Control Center se conectează la serverul însuși și transmite uneltele lui către rulare, astfel încât harness-ul încorporat și Claude Code primesc aceleași unelte și aceleași cereri de aprobare. O rulare Claude Code le vede sub serverul `control-center`, ca `mcp__control-center__mcp__<server>__<tool>`.
 
-Serverele descoperite vin din configurația de unelte a utilizatorului serverului și acționează cu identitatea și credențialele acelui utilizator, deci aparțin proprietarului serverului:
+### Servere din spațiul de lucru
 
-- Sunt disponibile doar în rulările harness-ului integrat pe care proprietarul serverului le pornește sau pentru care răspunde, inclusiv automatizarea dintr-un spațiu de lucru pentru care proprietarul răspunde.
-- Rularea unui membru, automatizarea legată de un membru și fiecare rulare pe un server fără proprietar înregistrat nu primesc niciunul. Acolo uneltele nu sunt listate, nu pot fi apelate și nu apar în căutarea de unelte.
-- Acest endpoint nu le listează, nu le apelează și nu le caută niciodată, pentru nimeni, nici cu tokenul proprietarului, și nu transmite nici resursele, nici prompturile lor. Așadar, un CLI de agent care ajunge la Control Center prin MCP, cum este Claude Code, nu le primește nici prin Control Center; folosește propria lui configurație.
+Administratorii spațiului de lucru le adaugă în **Servere MCP ale spațiului de lucru**. Fiecare rulare din spațiul de lucru primește uneltele lor, iar rulările din alte spații de lucru nu.
 
-Serverele MCP configurate pentru spațiul de lucru nu sunt afectate de nimic din toate acestea.
+1. Selectează **Adaugă server** și dă-i un nume scurt: litere, cifre, `-` și `_`, de până la 24 de caractere. Uneltele apar ca `mcp__<name>__<tool>`.
+2. Alege cum să ajungi la el:
+   - **Comandă (stdio):** un executabil și argumentele lui, plus variabilele de mediu de care are nevoie.
+   - **URL (HTTP sau SSE):** endpoint-ul, plus anteturile de care are nevoie, cum ar fi `Authorization: Bearer …`.
+3. Salvează. Verificare: serverul afișează **Conectat** și un număr de unelte.
+
+Valorile variabilelor de mediu și ale anteturilor sunt stocate în fișierul de secrete al serverului și nu mai sunt afișate. Ca să schimbi o valoare, înlocuiește-o; ca s-o ștergi, elimină numele.
+
+O comandă rulează pe mașina serverului, cu utilizatorul serverului, așa că nu pornește până când proprietarul serverului o aprobă. Până atunci apare **Se așteaptă aprobarea**. Un server URL funcționează imediat, dar poate ajunge doar la adrese publice până când proprietarul serverului îl aprobă, ceea ce permite și `localhost` și rețelele private. Când proprietarul serverului salvează un server, aceasta contează drept aprobare. Dacă altcineva schimbă modul în care pornește un server sau unde se conectează, este nevoie de o nouă aprobare. Activarea sau dezactivarea unui server păstrează aprobarea.
+
+### Servere personale
+
+Serverele personale aparțin proprietarului serverului și sunt listate sub **Servere MCP externe**. Serverele configurate pe mașina serverului pentru Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode sau într-un `.mcp.json` sunt găsite acolo automat. Proprietarul serverului poate adăuga și propriile servere cu **Adaugă server**, folosind același formular. Un server adăugat de tine are prioritate față de unul descoperit cu același nume.
+
+Acestea acționează cu identitatea și credențialele proprietarului serverului:
+
+- Sunt disponibile doar în rulările pe care proprietarul serverului le pornește sau pentru care răspunde, inclusiv automatizarea dintr-un spațiu de lucru pentru care proprietarul răspunde. Asta acoperă atât rulările de harness încorporat, cât și rulările Claude Code.
+- Rularea unui membru, automatizarea legată de un membru și orice rulare pe un server fără proprietar înregistrat nu primesc niciuna dintre ele. Acolo uneltele nu sunt listate, nu pot fi apelate și nu apar în căutarea de unelte.
+- Nici serverele personale, nici cele ale spațiului de lucru nu sunt servite tokenului MCP sau dispozitivelor asociate, iar resursele și prompturile lor nu sunt transmise mai departe.
+
+Autentificarea pe un server cu OAuth nu este disponibilă din formular. Folosește un server care acceptă un token într-un antet sau configurează-l pentru una dintre uneltele de mai sus, unde este descoperit.
 
 ## Depanare
 

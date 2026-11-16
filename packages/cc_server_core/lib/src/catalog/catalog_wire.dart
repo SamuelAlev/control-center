@@ -1133,7 +1133,8 @@ Map<String, dynamic> reactionToWire(MessageReactionsTableData r) => {
   'created_at': r.createdAt.toIso8601String(),
 };
 
-/// Maps [Message] to `MessageDto` wire shape (parent/space ids + compacted).
+/// Maps [Message] to `MessageDto` wire shape (parent/space ids + compacted,
+/// and the row's `revision` a list subscriber compares to reuse a decode).
 ///
 /// List `messaging.watch*` passes `includeSegments: false`: elides the fat
 /// `metadata['segments']` transcript (`segments_elided`); client pulls full
@@ -1163,6 +1164,7 @@ Map<String, dynamic> messageToWire(Message m, {bool includeSegments = true}) {
     'conversation_id': m.conversationId,
     'compacted': m.compacted,
     'created_at': m.createdAt.toIso8601String(),
+    'revision': m.revision,
   };
 }
 

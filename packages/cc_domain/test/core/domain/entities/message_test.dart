@@ -19,6 +19,45 @@ void main() {
     });
   });
 
+  group('Message.revision', () {
+    Message at(int revision) => Message(
+      id: 'm1',
+      spaceId: 's1',
+      conversationId: 'c1',
+      senderId: 'u1',
+      senderType: SenderType.user,
+      content: 'hello',
+      messageType: MessageType.text,
+      createdAt: DateTime(2025, 6, 1),
+      revision: revision,
+    );
+
+    test('defaults to 0 and survives copyWith', () {
+      final message = Message(
+        id: 'm1',
+        spaceId: 's1',
+        conversationId: 'c1',
+        senderId: 'u1',
+        senderType: SenderType.user,
+        content: 'hello',
+        messageType: MessageType.text,
+        createdAt: DateTime(2025, 6, 1),
+      );
+      expect(message.revision, 0);
+      expect(at(4).copyWith(content: 'edited').revision, 4);
+      expect(at(4).copyWith(revision: 5).revision, 5);
+    });
+
+    test('is not content: equality and hash ignore it', () {
+      expect(at(1), at(9));
+      expect(at(1).hashCode, at(9).hashCode);
+    });
+
+    test('a negative revision is refused', () {
+      expect(() => at(-1), throwsArgumentError);
+    });
+  });
+
   group('Message construction', () {
     test('a populated message round-trips every direct field', () {
       final createdAt = DateTime(2025, 6, 1, 12);

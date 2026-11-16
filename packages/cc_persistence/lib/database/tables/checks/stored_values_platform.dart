@@ -24,6 +24,8 @@ import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dar
     show EnforcementLevel;
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart'
     show ActionDecision;
+import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart'
+    show McpServerTransport;
 import 'package:cc_domain/features/pr_review/domain/entities/pr_generation.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/agent_pull_request_requester_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/services/lockfile_diff.dart'
@@ -158,6 +160,13 @@ abstract final class PlatformStoredValues {
   /// `space_environments.placement`.
   static final List<String> environmentPlacement = [
     for (final placement in EnvironmentPlacement.values) placement.name,
+  ];
+
+  // --- MCP servers ---
+
+  /// `mcp_servers.transport`.
+  static final List<String> mcpServerTransport = [
+    for (final transport in McpServerTransport.values) transport.wire,
   ];
 
   // --- files, caches and authority ---

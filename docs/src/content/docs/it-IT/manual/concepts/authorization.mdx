@@ -2,7 +2,7 @@
 title: Autorizzazione — chi può fare cosa e come lo dimostri
 description: Il catalogo dei permessi alla base dei ruoli di Control Center, il registro di controllo a prova di manomissione in cui finisce ogni decisione di autorizzazione e i controlli a livello di installazione che un operatore può fissare.
 slug: it-IT/manuale/concetti/autorizzazione
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center risponde a due domande di autorizzazione, e sono davvero
@@ -145,10 +145,8 @@ proprietario del server può:
   server quando si aggiunge un repository (vedi [Aggiungi repository](/it-IT/manuale/guide/aggiungi-repo/)).
 - Vedere e terminare ogni processo di agente in esecuzione sul server. Tutti gli altri vedono e
   terminano solo le esecuzioni dal vivo degli agenti negli spazi di lavoro di cui fanno parte.
-- Far usare agli agenti i server MCP configurati negli strumenti personali dell'utente del server
-  (Claude, Codex, Cursor e gli altri). Solo le esecuzioni dell'harness integrato di cui il proprietario
-  risponde li ottengono; vedi
-  [I server MCP personali restano del proprietario](/it-IT/manuale/guide/server-mcp/#i-server-mcp-personali-restano-del-proprietario).
+- Fai usare agli agenti i server MCP personali: quelli configurati negli strumenti propri dell'utente del server (Claude, Codex, Cursor e gli altri) e quelli che aggiunge il proprietario. Ne beneficiano solo le esecuzioni di cui il proprietario è responsabile; vedi [Server personali](/it-IT/manuale/guide/server-mcp/#server-personali).
+- Approva un server MCP dello spazio di lavoro che esegue un comando sulla macchina del server o che raggiunge la sua rete privata (vedi [Server dello spazio di lavoro](/it-IT/manuale/guide/server-mcp/#server-dello-spazio-di-lavoro)).
 - Confermare l'indirizzo e-mail di una persona, perché il single sign-on possa associarlo (vedi
   [Collega un provider OpenID Connect](/it-IT/manuale/guide/sso-oidc/#come-gli-accessi-associano-gli-account-esistenti)).
 - Modificare le impostazioni a livello di installazione: SSO, credenziali dei provider, endpoint MCP e

@@ -146,10 +146,13 @@ the server owner can:
   adding a repository (see [Add repositories](/manual/guides/add-repos/)).
 - See and stop every running agent process on the server. Everyone else sees
   and stops only live agent runs in workspaces they belong to.
-- Have agents use the MCP servers configured in the server user's own tools
-  (Claude, Codex, Cursor and the rest). Only built-in harness runs the owner
-  is accountable for get them; see
-  [Personal MCP servers stay the owner's](/manual/guides/mcp-server/#personal-mcp-servers-stay-the-owners).
+- Have agents use personal MCP servers: the ones configured in the server
+  user's own tools (Claude, Codex, Cursor and the rest) and the ones the owner
+  adds. Only runs the owner is accountable for get them; see
+  [Personal servers](/manual/guides/mcp-server/#personal-servers).
+- Approve a workspace MCP server that runs a command on the server's machine
+  or reaches its private network (see
+  [Workspace servers](/manual/guides/mcp-server/#workspace-servers)).
 - Confirm a person's email address, so single sign-on can match it (see
   [Connect an OpenID Connect provider](/manual/guides/sso-oidc/#how-sign-ins-match-existing-accounts)).
 - Change install-wide settings: SSO, provider credentials, the MCP endpoint

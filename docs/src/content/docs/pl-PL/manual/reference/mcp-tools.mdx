@@ -2,10 +2,10 @@
 title: Narzędzia MCP
 description: Kompletny katalog narzędzi MCP, które rejestruje cc_server, według rodzin.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` hostuje jeden rejestr narzędzi MCP (JSON-RPC 2.0), udostępniany na głównym porcie serwera (domyślnie `9030`) pod `POST /mcp` i `GET /sse`, w wersji protokołu `2024-11-05`. Każdy klient trafia do tego samego rejestru: aplikacja desktopowa, wersja webowa, zewnętrzni klienci MCP i wbudowany runtime agentów. Zewnętrzne serwery MCP można podłączyć do tego samego rejestru jako warstwę dynamiczną. Wyjątek stanowią serwery znalezione w osobistej konfiguracji narzędzi użytkownika serwera: ten endpoint nigdy ich nie wylicza, nie wywołuje ani nie przeszukuje, a korzystają z nich wyłącznie wbudowane uruchomienia harnessu, za które odpowiada właściciel serwera (zob. [Osobiste serwery MCP należą do właściciela](/pl-PL/podrecznik/poradniki/serwer-mcp/#osobiste-serwery-mcp-należą-do-właściciela)).
+`cc_server` hostuje jeden rejestr narzędzi MCP (JSON-RPC 2.0), udostępniany na głównym porcie serwera (domyślnie `9030`) pod `POST /mcp` i `GET /sse`, w wersji protokołu `2024-11-05`. Każdy klient trafia do tego samego rejestru: aplikacja desktopowa, wersja webowa, zewnętrzni klienci MCP i wbudowany runtime agentów. Zewnętrzne serwery MCP są podłączane do tego samego rejestru we własnych warstwach: jedna na każdy obszar roboczy dla serwerów, które konfigurują jego administratorzy, i jedna dla osobistych serwerów właściciela serwera. Ten endpoint wylicza je, wywołuje i przeszukuje tylko dla uruchomienia agenta: serwery własnego obszaru roboczego oraz osobiste, gdy za uruchomienie odpowiada właściciel serwera. Token MCP i sparowane urządzenia nigdy ich nie widzą (zob. [Serwery MCP używane przez agentów](/pl-PL/podrecznik/poradniki/serwer-mcp/#serwery-mcp-używane-przez-agentów)).
 
 ## Rozmiar rejestru
 

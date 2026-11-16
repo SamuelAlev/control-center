@@ -369,67 +369,114 @@ class _ColumnHeaderRow extends ConsumerWidget {
     void toggle(InboxSortColumn column) =>
         ref.read(inboxSortProvider.notifier).toggle(column);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: InboxRowMetrics.hPad,
-        vertical: 4,
-      ),
-      child: Row(
-        children: [
-          if (props.contains(PrRowProperty.author)) ...[
-            // Reserve the same width the rows give their avatar so the title
-            // column lines up; the person icon centers within that slot.
-            SizedBox(
-              width: InboxRowMetrics.avatar,
-              child: Icon(AppIcons.user, size: 13, color: tokens.idle),
-            ),
-            const SizedBox(width: AppSpacing.md),
-          ],
-          Expanded(
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: _SortHeader(
-                label: l10n.inboxColumnTitle,
-                column: InboxSortColumn.title,
-                sort: sort,
-                onTap: () => toggle(InboxSortColumn.title),
-              ),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Compact rows carry churn and age in their meta line, so the header
+        // keeps the sorts but drops the column grid they no longer align to.
+        final compact = constraints.maxWidth < InboxRowMetrics.compactBelow;
+        // Compact sorts trail at their natural width (the title absorbs the
+        // slack), each capped so the pair never crowds out the title.
+        final sortCap = constraints.maxWidth / 4;
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: InboxRowMetrics.hPad,
+            vertical: 4,
           ),
-          const SizedBox(width: AppSpacing.md),
-          const SizedBox(width: InboxRowMetrics.status),
-          if (props.contains(PrRowProperty.diff))
-            SizedBox(
-              width: InboxRowMetrics.changes,
-              child: Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: _SortHeader(
-                  label: l10n.inboxColumnChanges,
-                  column: InboxSortColumn.changes,
-                  sort: sort,
-                  onTap: () => toggle(InboxSortColumn.changes),
-                  rightAligned: true,
+          child: Row(
+            children: [
+              if (props.contains(PrRowProperty.author)) ...[
+                // Reserve the same width the rows give their avatar so the
+                // title column lines up; the person icon centers within it.
+                SizedBox(
+                  width: InboxRowMetrics.avatar,
+                  child: Icon(AppIcons.user, size: 13, color: tokens.idle),
+                ),
+                const SizedBox(width: AppSpacing.md),
+              ],
+              Expanded(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: _SortHeader(
+                    label: l10n.inboxColumnTitle,
+                    column: InboxSortColumn.title,
+                    sort: sort,
+                    onTap: () => toggle(InboxSortColumn.title),
+                  ),
                 ),
               ),
-            ),
-          if (props.contains(PrRowProperty.updated))
-            SizedBox(
-              width: InboxRowMetrics.updated,
-              child: Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: _SortHeader(
-                  label: l10n.inboxColumnUpdated,
-                  column: InboxSortColumn.updated,
-                  sort: sort,
-                  onTap: () => toggle(InboxSortColumn.updated),
-                  rightAligned: true,
-                ),
-              ),
-            ),
-        ],
-      ),
+              if (compact) ...[
+                if (props.contains(PrRowProperty.diff)) ...[
+                  const SizedBox(width: AppSpacing.md),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: sortCap),
+                    child: _SortHeader(
+                      label: l10n.inboxColumnChanges,
+                      column: InboxSortColumn.changes,
+                      sort: sort,
+                      onTap: () => toggle(InboxSortColumn.changes),
+                    ),
+                  ),
+                ],
+                if (props.contains(PrRowProperty.updated)) ...[
+                  const SizedBox(width: AppSpacing.md),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: sortCap),
+                    child: _SortHeader(
+                      label: l10n.inboxColumnUpdated,
+                      column: InboxSortColumn.updated,
+                      sort: sort,
+                      onTap: () => toggle(InboxSortColumn.updated),
+                    ),
+                  ),
+                ],
+              ] else
+                ..._columnSorts(l10n, sort, props, toggle),
+            ],
+          ),
+        );
+      },
     );
   }
+
+  /// The full layout's sort headers, sized to the row's status / changes /
+  /// updated columns so each label sits over its values.
+  List<Widget> _columnSorts(
+    AppLocalizations l10n,
+    InboxSort sort,
+    Set<PrRowProperty> props,
+    void Function(InboxSortColumn) toggle,
+  ) => [
+    const SizedBox(width: AppSpacing.md),
+    const SizedBox(width: InboxRowMetrics.status),
+    if (props.contains(PrRowProperty.diff))
+      SizedBox(
+        width: InboxRowMetrics.changes,
+        child: Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: _SortHeader(
+            label: l10n.inboxColumnChanges,
+            column: InboxSortColumn.changes,
+            sort: sort,
+            onTap: () => toggle(InboxSortColumn.changes),
+            rightAligned: true,
+          ),
+        ),
+      ),
+    if (props.contains(PrRowProperty.updated))
+      SizedBox(
+        width: InboxRowMetrics.updated,
+        child: Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: _SortHeader(
+            label: l10n.inboxColumnUpdated,
+            column: InboxSortColumn.updated,
+            sort: sort,
+            onTap: () => toggle(InboxSortColumn.updated),
+            rightAligned: true,
+          ),
+        ),
+      ),
+  ];
 }
 
 class _SortHeader extends StatelessWidget {

@@ -181,6 +181,7 @@ import 'package:cc_server_core/src/catalog/agent_run_log_write_ops.dart';
 import 'package:cc_server_core/src/catalog/agent_shell_ops.dart';
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 import 'package:cc_server_core/src/catalog/code_server_file_ops.dart';
+import 'package:cc_server_core/src/catalog/conversation_scope.dart';
 import 'package:cc_server_core/src/catalog/demo_review_ops.dart';
 import 'package:cc_server_core/src/catalog/editor_layout_cache_ops.dart';
 import 'package:cc_server_core/src/catalog/environment_ops.dart';
@@ -1487,34 +1488,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     return {'matches': matches, 'complete': complete};
   }
 
-  /// The conversation (stream) a caller means: the one it named, or the
-  /// space's standing conversation when it named none.
-  ///
-  /// There is no space-id aliasing left to fall back on. A conversation owns
-  /// its own uuid, so the retired `?? spaceId` shortcut named a row that does
-  /// not exist: a watch keyed on it streamed nothing and a write against it
-  /// violated `conversation_messages.conversation_id`'s foreign key.
+  // See [resolveSpaceConversation].
   Future<String> resolveConversationId(
     String workspaceId,
     String spaceId,
     Object? supplied,
-  ) async {
-    if (supplied is String && supplied.isNotEmpty) {
-      return supplied;
-    }
-    final repo = conversationRepository;
-    if (repo == null) {
-      throw StateError(
-        'No ConversationRepository is wired, so a caller that names no '
-        'conversation cannot be served',
-      );
-    }
-    final conversation = await repo.ensure(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-    );
-    return conversation.id;
-  }
+  ) => resolveSpaceConversation(
+    conversationRepository,
+    workspaceId: workspaceId,
+    spaceId: spaceId,
+    supplied: supplied,
+  );
 
   /// One run's recorded activity for replay, from whichever store holds it.
   ///

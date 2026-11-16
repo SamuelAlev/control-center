@@ -413,6 +413,10 @@ Future<int> _stripAuthority(
       'UPDATE environment_definitions SET host_approved_by = NULL '
       'WHERE host_approved_by IS NOT NULL',
     );
+    await db.customStatement(
+      'UPDATE mcp_servers SET host_approved_by = NULL '
+      'WHERE host_approved_by IS NOT NULL',
+    );
     // A deny only ever narrows what runs, so it stays. Everything else is
     // a rule somebody could have added to let something through.
     for (final row in await rows(

@@ -18817,4 +18817,206 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Semmi nem lett megadva: az, akinek vagy amire a jogosultság szólt, már nincs ebben a munkaterületen.';
+
+  @override
+  String get mcpWorkspaceServers => 'Munkaterület MCP-szerverei';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'A munkaterület minden ügynökfutása megkapja ezeknek a szervereknek az eszközeit, a Claude Code-ban és a beépített harnessben egyaránt. A Control Center minden szerverhez csatlakozik, és továbbadja az eszközeit.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Csak a munkaterület adminisztrátorai láthatják és módosíthatják ennek a munkaterületnek az MCP-szervereit.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'A munkaterület MCP-szerverei nem érhetők el a csatlakoztatott szerveren.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Még nincsenek munkaterületi MCP-szerverek';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Adjon hozzá egy szervert, hogy a munkaterület minden ügynökfutása megkapja az eszközeit.';
+
+  @override
+  String get mcpAddServer => 'Szerver hozzáadása';
+
+  @override
+  String get mcpHandAddedSource => 'Hozzáadva a Control Centerben';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Jóváhagyásra vár';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Csak nyilvános címek';
+
+  @override
+  String get mcpApproveServer => 'Jóváhagyás';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Ez a szerver egy parancsot futtat a szerver gépén, a szerver felhasználójaként. Nem indul el, amíg nem hagyja jóvá.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Ez a szerver egy parancsot futtat a szerver gépén, ezért nem indul el, amíg a szerver tulajdonosa nem hagyja jóvá.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Ez a szerver csak nyilvános címeket érhet el. Hagyja jóvá, hogy elérhesse a gép privát hálózatát is, például a localhostot és a helyi hálózatot.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Ez a szerver csak nyilvános címeket érhet el, amíg a szerver tulajdonosa jóvá nem hagyja.';
+
+  @override
+  String get mcpRemoveServer => 'Szerver eltávolítása';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Eltávolítja: $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Az ügynökfutások elveszítik ennek a szervernek az eszközeit, a tárolt titkos értékei pedig törlődnek.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '$name be- vagy kikapcsolása';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'MCP-szerver hozzáadása';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '$name szerkesztése';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Betűk, számjegyek, kötőjelek és alulvonások. Az ügynökök ezen a néven látják az eszközeit.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Legfeljebb 24 betűt, számjegyet, kötőjelet vagy alulvonást használjon, betűvel vagy számjeggyel kezdve.';
+
+  @override
+  String get mcpServerNameTaken => 'Itt másik szervernek már van ilyen neve.';
+
+  @override
+  String get mcpServerTransportLabel => 'Átvitel';
+
+  @override
+  String get mcpServerTransportStdio => 'Parancs';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Parancs';
+
+  @override
+  String get mcpServerCommandRequired => 'Adja meg a futtatandó parancsot.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumentumok';
+
+  @override
+  String get mcpServerArgsHelper => 'Soronként egy argumentum.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Adjon meg egy http vagy https URL-t felhasználónév, jelszó vagy #fragment nélkül.';
+
+  @override
+  String get mcpServerEnvLabel => 'Környezeti változók';
+
+  @override
+  String get mcpServerHeadersLabel => 'Fejlécek';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Az értékek titokként tárolódnak, és nem jelennek meg újra.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Például egy Authorization fejléc bearer tokennel.';
+
+  @override
+  String get mcpServerEnvAdd => 'Változó hozzáadása';
+
+  @override
+  String get mcpServerHeaderAdd => 'Fejléc hozzáadása';
+
+  @override
+  String get mcpServerSecretValueHint => 'Érték';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Új érték';
+
+  @override
+  String get mcpServerSecretReplace => 'Érték cseréje';
+
+  @override
+  String get mcpServerSecretUndo => 'Visszavonás';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Mentéskor eltávolítva';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return 'A(z) $name nem érvényes változónév. Használjon betűket, számjegyeket és alulvonásokat, számjeggyel ne kezdődjön.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return 'A(z) $name nem állítható be. Használjon érvényes fejlécnevet, amelyet a kapcsolat nem kezel önmagától.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Az átvitel módjának megváltoztatása eltávolítja a tárolt értékeket.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Kikapcsolt állapotban a szerver nem indul el, és az ügynökök nem látják az eszközeit.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'A szerver gépén fut, ezért nem indul el, amíg a szerver tulajdonosa jóvá nem hagyja. Az indítás módjának megváltoztatása újabb jóváhagyást kér.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Csak nyilvános címeket érhet el, amíg a szerver tulajdonosa jóvá nem hagyja. A csatlakozás módjának megváltoztatása újabb jóváhagyást kér.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'A szerver gépén fut a szerver felhasználójaként. A mentés jóváhagyja.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'A mentés jóváhagyja, hogy a gép privát hálózatát is elérhesse.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Csak az Ön által indított vagy érte felelős futtatásokban használatos.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'A Control Center nem tudta elmenteni ezt a szervert. Ellenőrizze a beállításait, és próbálja újra.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Ez a szerver már nem létezik. Lehet, hogy valaki eltávolította.';
 }

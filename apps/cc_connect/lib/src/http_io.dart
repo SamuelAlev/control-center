@@ -29,18 +29,33 @@ String? singleHeader(HttpRequest request, String name) {
   return values.single;
 }
 
+/// The client closed the connection before its request body arrived in full.
+/// Nobody is left to answer; logged at warn, never reported.
+final class ConnectClientAborted implements Exception {
+  /// Creates the exception.
+  const ConnectClientAborted();
+
+  @override
+  String toString() => 'ConnectClientAborted';
+}
+
 /// Reads the body up to [cap] bytes; null when it is larger (the rest is
-/// not read).
+/// not read). Throws [ConnectClientAborted] when the client hangs up first.
 Future<List<int>?> readCappedBody(HttpRequest request, int cap) async {
   if (request.contentLength > cap) {
     return null;
   }
   final out = BytesBuilder(copy: false);
-  await for (final chunk in request) {
-    if (out.length + chunk.length > cap) {
-      return null;
+  try {
+    await for (final chunk in request) {
+      if (out.length + chunk.length > cap) {
+        return null;
+      }
+      out.add(chunk);
     }
-    out.add(chunk);
+  } on HttpException {
+    // "Connection closed while receiving data": a truncated upload.
+    throw const ConnectClientAborted();
   }
   return out.takeBytes();
 }

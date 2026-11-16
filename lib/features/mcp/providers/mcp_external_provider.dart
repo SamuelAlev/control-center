@@ -1,6 +1,8 @@
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_client_control.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_server_draft.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,6 +49,18 @@ class RpcMcpClientControl implements McpClientControl {
   @override
   Future<void> reconnect(String serverName) =>
       _client.call('mcp.client.reconnect', {'name': serverName});
+
+  @override
+  Future<McpServerDefinition> saveServer(McpServerDraft draft) async {
+    final data = await _client.call('mcp.client.saveServer', draft.toJson());
+    return McpServerDefinition.fromJson(
+      (data['server'] as Map).cast<String, dynamic>(),
+    );
+  }
+
+  @override
+  Future<void> deleteServer(String id) =>
+      _client.call('mcp.client.deleteServer', {'id': id});
 }
 
 /// The control the settings section drives — RPC-backed, talking to the

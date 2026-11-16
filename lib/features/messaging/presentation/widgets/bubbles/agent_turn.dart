@@ -24,6 +24,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'agent_turn_badges.dart';
+part 'agent_turn_parts.dart';
 
 /// Renders an agent turn as a flat, full-column block: a small name-only
 /// header (no avatar, no bubble chrome), then a continuous body — the
@@ -137,11 +138,6 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     super.dispose();
   }
 
-  /// The turn ended cleanly but unfinished: the loop hit its turn ceiling.
-  /// Not an error (no retry affordance), but not a completion either — the
-  /// feedback bar makes no sense on a cut-short turn, so it is hidden too.
-  bool get _turnLimited => _shown.turnOutcome == TurnOutcome.maxTurns;
-
   /// Accessibility label for the whole turn, capped so a long answer doesn't
   /// force the semantics tree to re-diff a multi-KB string per update. While
   /// live, just the name — the feed already paces live announcements.
@@ -205,22 +201,6 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
         ? persisted
         : listed;
     _shownFont = widget.codeFont;
-    final tokens = resolveTokens(context);
-    // Only the name is painted. Watching the whole agent future rebuilt the
-    // transcript whenever any other field on the agent settled.
-    final agentName =
-        ref.watch(
-          agentDetailProvider(
-            message.senderId,
-          ).select((async) => async.asData?.value?.name),
-        ) ??
-        message.metadata?['agentName'] as String? ??
-        message.senderId.substring(0, 4);
-
-    // The in-reply-to caption attributes a wake/consult/delegation turn to the
-    // agent that triggered it, so multi-agent rooms read as a conversation.
-    final inReplyTo = message.metadata?['inReplyToAgentName'] as String?;
-
     // Flat turns breathe between turn boundaries; grouped (collapseHeader) and
     // thread replies stay tight. The bubble owns its spacing so the feed does
     // not need to.
@@ -229,7 +209,7 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     return Padding(
       padding: EdgeInsets.only(top: topPad),
       child: Semantics(
-        label: _semanticsLabel(agentName),
+        label: _semanticsLabel(agentTurnName(ref, message)),
         child: FocusableBubble(
           messageId: message.id,
           spaceId: message.spaceId,
@@ -246,71 +226,23 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!widget.collapseHeader) ...[
-                  Text(
-                    agentName,
-                    style: AppFonts.codeDynamic(
-                      widget.codeFont,
-                      textStyle: CcTypography.caption.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: agentNameColor(message.senderId, tokens),
-                      ),
-                    ),
-                  ),
-                  if (inReplyTo != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 1),
-                      child: Text(
-                        '↳ ${AppLocalizations.of(context).replyingTo(inReplyTo)}',
-                        style: CcTypography.caption.copyWith(
-                          color: tokens.textQuaternary,
-                        ),
-                      ),
-                    ),
-                ] else if (inReplyTo != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 1),
-                    child: Text(
-                      '↳ ${AppLocalizations.of(context).replyingTo(inReplyTo)}',
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.textQuaternary,
-                      ),
-                    ),
-                  ),
+                AgentTurnHeader(
+                  message: message,
+                  codeFont: widget.codeFont,
+                  collapseHeader: widget.collapseHeader,
+                ),
                 // Only the body area rebuilds on structural stream changes
                 // (and, per delta, only the open row inside TranscriptFlow) —
                 // the header, trailer and Semantics stay out of the live
                 // update path entirely. The slot itself is reused across list
                 // flushes; see [_structureSlotFor].
                 _structureSlotFor(),
-                _AgentTrailer(
-                  message: message,
+                AgentTurnFooter(
+                  listed: widget.message,
+                  shown: message,
                   codeFont: widget.codeFont,
-                  tokens: tokens,
+                  canRetry: widget.canRetry,
                 ),
-                if (!_failed && !_turnLimited && message.turnOutcome != null)
-                  AgentFeedbackBar(message: message),
-                if (_turnLimited) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  const _TurnLimitBadge(),
-                ],
-                if (_failed) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  _FailedBadge(
-                    turn: widget.message,
-                    errorFamily: _errorFamily,
-                    canRetry: widget.canRetry,
-                  ),
-                ] else if (_retried) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    AppLocalizations.of(context).retried,
-                    style: CcTypography.caption.copyWith(
-                      color: tokens.textQuaternary,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

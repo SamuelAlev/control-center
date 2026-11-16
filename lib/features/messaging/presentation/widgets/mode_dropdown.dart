@@ -65,33 +65,54 @@ class ModeDropdown extends StatelessWidget {
             onSelected: () => onChanged(mode),
           ),
       ],
-      target: Container(
-        height: _height,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: AppRadii.brLg,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_iconFor(currentMode), size: 16, color: foregroundColor),
-            const SizedBox(width: 6),
-            Text(
-              currentMode.displayName,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: foregroundColor,
-              ),
+      // A narrow composer squeezes the picker: the label ellipsizes first, and
+      // below the width the icon, chevron and padding need it collapses to a
+      // square chip with just the mode icon.
+      target: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < _minLabelledWidth;
+          return Container(
+            height: _height,
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? (_height - 16) / 2 : 10,
             ),
-            const SizedBox(width: 4),
-            Icon(AppIcons.chevronDown, size: 16, color: foregroundColor),
-          ],
-        ),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: AppRadii.brLg,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_iconFor(currentMode), size: 16, color: foregroundColor),
+                if (!compact) ...[
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      currentMode.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: foregroundColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(AppIcons.chevronDown, size: 16, color: foregroundColor),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
+
+  /// Padding, mode icon, gaps, chevron and a few characters of label: below
+  /// this the labelled chip would show an empty or overflowing label.
+  static const double _minLabelledWidth = 10 + 16 + 6 + 24 + 4 + 16 + 10;
 
   IconData _iconFor(Mode mode) => switch (mode) {
     Mode.chat => AppIcons.sparkles,

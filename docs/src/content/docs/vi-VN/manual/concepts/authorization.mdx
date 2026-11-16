@@ -2,7 +2,7 @@
 title: Ủy quyền — ai được phép làm gì và cách bạn chứng minh điều đó
 description: Danh mục quyền đằng sau các vai trò của Control Center, dấu vết kiểm toán chống sửa đổi mà mọi quyết định ủy quyền đều ghi vào, và những kiểm soát toàn bản cài đặt mà người vận hành có thể ấn định.
 slug: vi-VN/so-tay/khai-niem/uy-quyen
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center trả lời hai câu hỏi về ủy quyền, và chúng thực sự khác nhau.
@@ -146,10 +146,8 @@ chủ mới có thể:
   [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)).
 - Xem và dừng mọi tiến trình agent đang chạy trên máy chủ. Những người khác chỉ thấy và dừng
   các lượt chạy agent đang hoạt động trong các không gian làm việc mà họ thuộc về.
-- Để agent dùng các máy chủ MCP được cấu hình trong công cụ riêng của người dùng máy chủ
-  (Claude, Codex, Cursor và các công cụ khác). Chỉ các lượt chạy harness tích hợp mà chủ
-  sở hữu chịu trách nhiệm mới nhận được chúng; xem
-  [Máy chủ MCP cá nhân thuộc về chủ sở hữu](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-mcp-cá-nhân-thuộc-về-chủ-sở-hữu).
+- Để agent dùng máy chủ MCP cá nhân: các máy chủ được cấu hình trong công cụ riêng của người dùng máy chủ (Claude, Codex, Cursor và các công cụ khác) cùng các máy chủ do chủ sở hữu thêm vào. Chỉ các lượt chạy mà chủ sở hữu chịu trách nhiệm mới nhận được chúng; xem [Máy chủ cá nhân](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-cá-nhân).
+- Phê duyệt máy chủ MCP của không gian làm việc chạy một lệnh trên máy của máy chủ hoặc truy cập mạng riêng của nó (xem [Máy chủ của không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-của-không-gian-làm-việc)).
 - Xác nhận địa chỉ email của một người, để đăng nhập một lần có thể khớp nó (xem
   [Kết nối nhà cung cấp OpenID Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc/#cách-các-lần-đăng-nhập-khớp-với-tài-khoản-đã-có)).
 - Thay đổi cài đặt toàn bản cài đặt: SSO, thông tin xác thực nhà cung cấp, endpoint MCP và

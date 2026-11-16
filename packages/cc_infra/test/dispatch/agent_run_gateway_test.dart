@@ -480,6 +480,23 @@ void main() {
       expect(gateway.mcpScopeFor('guessed'), isNull);
     });
 
+    test('the owner\'s personal MCP servers come only from the grant',
+        () async {
+      expect(gateway.mcpScopeFor(lease.secret)?.personalMcp, isFalse);
+      final accountable = (await gateway.open(
+        const AgentRunGrant(
+          workspaceId: 'ws',
+          conversationId: 'c',
+          personalMcp: true,
+        ),
+      ))!;
+      addTearDown(() => gateway.close(accountable));
+      final scope = gateway.mcpScopeFor(accountable.secret)!;
+      expect(scope.personalMcp, isTrue);
+      expect(scope.toolView.includePersonal, isTrue);
+      expect(scope.toolView.workspaceId, 'ws');
+    });
+
     test('a closed run proves nothing', () async {
       final closing = (await gateway.open(
         const AgentRunGrant(workspaceId: 'ws', conversationId: 'c'),

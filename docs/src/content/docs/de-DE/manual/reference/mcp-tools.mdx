@@ -2,10 +2,10 @@
 title: MCP-Tools
 description: Vollständiger Katalog der MCP-Tools, die cc_server registriert, nach Familie.
 slug: de-DE/handbuch/referenz/mcp-tools
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` betreibt eine MCP-Registrierung (JSON-RPC 2.0) und stellt sie auf dem Hauptport des Servers (Standard `9030`) unter `POST /mcp` und `GET /sse` bereit, Protokollversion `2024-11-05`. Jeder Client erreicht dieselbe Registrierung: der Desktop, der Web-Build, externe MCP-Clients und die eingebaute Agentenlaufzeit. Externe MCP-Server lassen sich als dynamische Schicht in dieselbe Registrierung brücken. Server aus der eigenen Tool-Konfiguration des Server-Benutzers sind die Ausnahme: Dieser Endpunkt listet, ruft oder durchsucht sie nie, und nur eingebaute Harness-Läufe, für die der Serverinhaber verantwortlich ist, bekommen sie (siehe [Persönliche MCP-Server bleiben beim Eigentümer](/de-DE/handbuch/anleitungen/mcp-server/#persönliche-mcp-server-bleiben-beim-inhaber)).
+`cc_server` betreibt eine MCP-Registrierung (JSON-RPC 2.0) und stellt sie auf dem Hauptport des Servers (Standard `9030`) unter `POST /mcp` und `GET /sse` bereit, Protokollversion `2024-11-05`. Jeder Client erreicht dieselbe Registrierung: der Desktop, der Web-Build, externe MCP-Clients und die eingebaute Agentenlaufzeit. Externe MCP-Server werden in eigenen Schichten in dieselbe Registrierung eingebunden: eine pro Arbeitsbereich für die Server, die dessen Admins einrichten, und eine für die persönlichen Server des Serverinhabers. Dieser Endpunkt listet, ruft und durchsucht sie nur für einen Agentenlauf: die Server des eigenen Arbeitsbereichs sowie die persönlichen Server, wenn der Serverinhaber für den Lauf einsteht. MCP-Token und gekoppelte Geräte sehen sie nie (siehe [MCP-Server, die Agenten nutzen](/de-DE/handbuch/anleitungen/mcp-server/#mcp-server-die-agenten-nutzen)).
 
 ## Größe der Registrierung
 

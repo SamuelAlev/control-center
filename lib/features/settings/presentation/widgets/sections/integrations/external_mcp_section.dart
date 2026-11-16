@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/mcp/domain/ports/mcp_client_control.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/mcp/providers/mcp_external_provider.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/external_mcp_server_row.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_editor_dialog.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_servers/mcp_server_form.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
@@ -21,7 +26,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// The approval mode leads, because it is the one setting here that changes
 /// what an agent may do without asking; the servers below are the inventory it
-/// applies to.
+/// applies to. The owner can add personal servers by hand next to the
+/// discovered ones; only those can be edited or removed here, since a
+/// discovered one belongs to the tool whose config it was read from.
 class ExternalMcpSection extends ConsumerWidget {
   /// Creates an [ExternalMcpSection].
   const ExternalMcpSection({super.key});
@@ -42,6 +49,13 @@ class ExternalMcpSection extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.mcpExternalServers,
+      trailing: CcButton(
+        variant: CcButtonVariant.secondary,
+        size: CcButtonSize.sm,
+        icon: AppIcons.plus,
+        onPressed: () => unawaited(_add(context, ref)),
+        child: Text(l10n.mcpAddServer),
+      ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -145,7 +159,7 @@ class ExternalMcpSection extends ConsumerWidget {
                 children: [
                   for (final server in servers) ...[
                     const CcDivider(),
-                    _ServerRow(server: server),
+                    ExternalMcpServerRow(server: server),
                   ],
                   const CcDivider(),
                   Padding(
@@ -170,102 +184,16 @@ class ExternalMcpSection extends ConsumerWidget {
       ),
     );
   }
-}
 
-class _ServerRow extends ConsumerWidget {
-  const _ServerRow({required this.server});
-
-  final McpExternalServerInfo server;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final state = _lifecycleState(l10n);
-
-    return SettingsEntityRow(
-      title: server.name,
-      icon: server.transport == 'stdio' ? AppIcons.plug : AppIcons.globe,
-      tone: state.tone,
-      statusLabel: state.label,
-      subtitle: server.source,
-      meta: [
-        SettingsMetaFact(value: server.transport),
-        if (server.isConnected)
-          SettingsMetaFact(
-            label: l10n.mcpBridgedToolsLabel,
-            value: '${server.toolCount}',
-          ),
-      ],
-      trailing: server.usesOAuth && server.needsAuth
-          ? CcButton(
-              variant: CcButtonVariant.accent,
-              size: CcButtonSize.sm,
-              onPressed: () => _run(context, ref, _RowAction.authorize),
-              child: Text(l10n.mcpAuthorize),
-            )
-          : _canReconnect
-          ? CcButton(
-              variant: CcButtonVariant.secondary,
-              size: CcButtonSize.sm,
-              onPressed: () => _run(context, ref, _RowAction.reconnect),
-              child: Text(l10n.mcpReconnect),
-            )
-          : null,
+  Future<void> _add(BuildContext context, WidgetRef ref) async {
+    final control = ref.read(mcpClientControlProvider);
+    final saved = await showMcpServerEditor(
+      context,
+      scope: McpServerEditorScope.personal,
+      onSave: control.saveServer,
     );
-  }
-
-  /// Lifecycle → a design-system tone plus a word. Never colour alone.
-  ({String label, CcStatusTone tone}) _lifecycleState(AppLocalizations l10n) =>
-      switch (server.lifecycle) {
-        'connected' => (
-          label: l10n.mcpStatusConnected,
-          tone: CcStatusTone.positive,
-        ),
-        'connecting' => (
-          label: l10n.mcpStatusConnecting,
-          tone: CcStatusTone.neutral,
-        ),
-        'needs_auth' || 'needs_client_registration' => (
-          label: l10n.mcpStatusNeedsAuth,
-          tone: CcStatusTone.caution,
-        ),
-        'failed' => (label: l10n.mcpStatusFailed, tone: CcStatusTone.negative),
-        'circuit_open' => (
-          label: l10n.mcpStatusCircuitOpen,
-          tone: CcStatusTone.negative,
-        ),
-        _ => (label: l10n.mcpStatusDisabled, tone: CcStatusTone.neutral),
-      };
-
-  bool get _canReconnect =>
-      server.lifecycle == 'failed' || server.lifecycle == 'circuit_open';
-
-  Future<void> _run(
-    BuildContext context,
-    WidgetRef ref,
-    _RowAction action,
-  ) async {
-    final l10n = AppLocalizations.of(context);
-    try {
-      final control = ref.read(mcpClientControlProvider);
-      switch (action) {
-        case _RowAction.authorize:
-          await control.authorize(server.name);
-        case _RowAction.reconnect:
-          await control.reconnect(server.name);
-      }
+    if (saved) {
       ref.invalidate(mcpExternalServersProvider);
-      if (context.mounted) {
-        CcToastScope.of(
-          context,
-        ).show(l10n.success, variant: CcToastVariant.success);
-      }
-    } on Object catch (e) {
-      if (context.mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
-      }
     }
   }
 }
-
-enum _RowAction { authorize, reconnect }

@@ -2,10 +2,10 @@
 title: Ferramentas MCP
 description: Catálogo completo das ferramentas MCP que o cc_server registra, por família.
 slug: pt-BR/manual/referencia/ferramentas-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-O `cc_server` hospeda um único registro de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (padrão `9030`) em `POST /mcp` e `GET /sse`, com versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registro: o desktop, a build web, clientes MCP externos e o runtime de agentes integrado. Servidores MCP externos podem ser conectados ao mesmo registro como uma camada dinâmica. Servidores encontrados na configuração de ferramentas do próprio usuário do servidor são a exceção: este endpoint nunca os lista, chama ou pesquisa, e apenas as execuções do harness integrado, das quais o proprietário do servidor é responsável, os usam (veja [Servidores MCP pessoais continuam sendo do proprietário](/pt-BR/manual/guias/servidor-mcp/#servidores-mcp-pessoais-continuam-sendo-do-proprietário)).
+O `cc_server` hospeda um único registro de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (padrão `9030`) em `POST /mcp` e `GET /sse`, com versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registro: o desktop, a build web, clientes MCP externos e o runtime de agentes integrado. Servidores MCP externos são conectados ao mesmo registro em camadas próprias: uma por espaço de trabalho, para os servidores que os administradores dele configuram, e uma para os servidores pessoais do proprietário do servidor. Este endpoint os lista, chama e pesquisa somente em uma execução de agente: os servidores do próprio espaço de trabalho e, quando o proprietário do servidor é responsável pela execução, os pessoais. O token MCP e os dispositivos pareados nunca os veem (veja [Servidores MCP usados pelos seus agentes](/pt-BR/manual/guias/servidor-mcp/#servidores-mcp-usados-pelos-seus-agentes)).
 
 ## Tamanho do registro
 

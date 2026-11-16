@@ -405,25 +405,36 @@ Future<void> Function(String lane) _accountPoolCredentialsSweep({
   );
 };
 
-/// Auto-discovers MCP servers the user already configured for other tools
-/// (Claude/Codex/Cursor/Gemini/VS Code/Windsurf/OpenCode + standalone
-/// `.mcp.json`) and connects the enabled ones, bridging their tools into the
-/// registry's personal layer: they act as the server OS user, so only runs the
-/// server owner is accountable for are handed them. Run fire-and-forget after boot so a slow/dead server never blocks
-/// startup; best-effort — a discovery failure is logged, never fatal.
-Future<void> _discoverExternalMcpServers(McpClientService service) async {
+/// Connects the server owner's personal MCP servers (discovered in their own
+/// tool configs, plus the ones they added) and every workspace's configured
+/// servers. The personal ones act as the server OS user, so only runs the
+/// owner is accountable for are handed them. Run fire-and-forget after boot so
+/// a slow or dead server never blocks startup; best-effort, a failure is
+/// logged and never fatal.
+Future<void> _connectMcpServers({
+  required ServerMcpClientControl personal,
+  required WorkspaceMcpServers workspaces,
+  required DaoWorkspaceRepository workspaceRepository,
+}) async {
   try {
-    final home =
-        Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-    if (home == null || home.isEmpty) {
-      return;
-    }
-    final discovered = await service.discoverAndStart(homeDir: home);
-    CcHostLog.info(
-      'cc_server: discovered ${discovered.length} external MCP server(s)',
+    final count = await personal.refresh();
+    CcHostLog.info('cc_server: connecting $count personal MCP server(s)');
+  } on Object catch (e) {
+    CcHostLog.warning('cc_server: personal MCP servers failed: $e');
+  }
+  try {
+    final ids = [
+      for (final w in await workspaceRepository.getAll())
+        if (w.deletedAt == null) w.id,
+    ];
+    await workspaces.syncAll(
+      ids,
+      onError: (id, e) => CcHostLog.warning(
+        'cc_server: MCP servers of workspace $id failed: $e',
+      ),
     );
   } on Object catch (e) {
-    CcHostLog.warning('cc_server: external MCP discovery failed: $e');
+    CcHostLog.warning('cc_server: workspace MCP servers failed: $e');
   }
 }
 

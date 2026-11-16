@@ -109,7 +109,7 @@ class McpToolDispatcher implements RpcDispatcher {
       case 'notifications/initialized':
         return {}; // No response for notifications
       case 'tools/list':
-        return _handleToolsList(request);
+        return _handleToolsList(request, scope);
       case 'tools/call':
         return _handleToolsCall(request, scope, abandoned);
       case 'ping':
@@ -148,13 +148,16 @@ class McpToolDispatcher implements RpcDispatcher {
     };
   }
 
-  Map<String, dynamic> _handleToolsList(JsonRpcRequest request) {
-    // Never the registry's personal layer (the server OS user's own MCP
-    // servers): this surface serves agent runs, paired devices and the
-    // owner's token alike, and only an owner-accountable harness run may have
-    // them (`buildHarnessToolRegistry(includePersonalMcp:)`).
+  Map<String, dynamic> _handleToolsList(
+    JsonRpcRequest request,
+    McpCallScope? scope,
+  ) {
+    // External servers only for an attested run, and only its own: its
+    // workspace's configured servers, plus the owner's personal ones when its
+    // grant says the owner is accountable for it. The owner's token and paired
+    // devices see the shared tools alone (`McpCallScope.toolView`).
     final definitions = registry
-        .listDefinitions(includePersonal: false)
+        .listDefinitions(view: _viewOf(scope))
         .map((d) => d.toJson())
         .toList();
     return {
@@ -237,6 +240,10 @@ class McpToolDispatcher implements RpcDispatcher {
     return CallResult(content: kept, isError: result.isError);
   }
 
+  /// The external layers [scope]'s caller may see; none without a scope.
+  static McpToolView _viewOf(McpCallScope? scope) =>
+      scope?.toolView ?? McpToolView.shared;
+
   /// Whether [tool]'s input schema takes a `workspace_id`: the argument the
   /// dispatcher forces for an agent run.
   static bool declaresWorkspace(McpTool tool) {
@@ -254,15 +261,25 @@ class McpToolDispatcher implements RpcDispatcher {
       return _errorResponse(-32602, 'Missing tool name', request.id);
     }
 
-    final tool = registry.resolve(toolName, includePersonal: false);
+    final view = _viewOf(scope);
+    final tool = registry.resolve(toolName, view: view);
     if (tool == null) {
-      return _errorResponse(-32602, _unknownToolMessage(toolName), request.id);
+      return _errorResponse(
+        -32602,
+        _unknownToolMessage(toolName, view),
+        request.id,
+      );
     }
     // An agent run acts only in its grant's workspace. A tool that names no
     // workspace reads or changes something wider (every workspace, the server
     // owner's own data), so a run may not call it at all; every other tool
-    // has its `workspace_id` forced from the grant below.
-    if (scope != null && scope.attested && !declaresWorkspace(tool)) {
+    // has its `workspace_id` forced from the grant below. An external server's
+    // tool is confined by its layer instead: the run could only resolve it
+    // because the server is its workspace's, or its accountable owner's.
+    if (scope != null &&
+        scope.attested &&
+        !declaresWorkspace(tool) &&
+        !registry.isExternal(tool.name, view: view)) {
       return {
         'jsonrpc': '2.0',
         'id': request.id,
@@ -600,9 +617,9 @@ class McpToolDispatcher implements RpcDispatcher {
   /// Builds a rich "unknown tool" message: names the nearest catalogued tools,
   /// points at the discovery tools and explains the bare-name/prefix
   /// convention — so a wrong name is a one-shot correction, not a dead end.
-  String _unknownToolMessage(String requested) {
+  String _unknownToolMessage(String requested, McpToolView view) {
     final names = registry
-        .listDefinitions(includePersonal: false)
+        .listDefinitions(view: view)
         .map((d) => d.name)
         .toList();
     final wanted = _nameTokens(requested);

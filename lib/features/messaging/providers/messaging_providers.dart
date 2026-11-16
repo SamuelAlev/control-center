@@ -9,6 +9,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/services/prompt_history.dart';
 import 'package:cc_domain/features/messaging/domain/services/question_answer_submitter.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/thread_summary.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
@@ -287,14 +288,13 @@ List<String> userHistoryFromMessages(List<Message> messages, String? userId) {
   ]);
 }
 
-/// Initial number of messages shown in a space feed window.
-const int kSpaceFeedInitialWindow = 60;
+/// How many of the newest messages the feed keeps subscribed (the live
+/// window). Older messages come from the conversation outline and load in
+/// ranges around where the reader is (see [spaceFeedRangeProvider]).
+const int kSpaceFeedLiveWindow = 60;
 
-/// How many older messages each "load more" reveals.
-const int kSpaceFeedWindowStep = 60;
-
-/// Upper bound on the feed window so a very long space can't load unbounded.
-const int kSpaceFeedMaxWindow = 2000;
+/// Messages loaded on each side of a history range's anchor.
+const int kSpaceFeedRangeHalf = 60;
 
 /// Identifies one thread's anchor message inside a workspace.
 typedef ThreadAnchorKey = ({String workspaceId, String anchorMessageId});
@@ -312,42 +312,14 @@ final threadAnchorProvider = FutureProvider.autoDispose
 /// Identifies one conversation (stream) inside a space.
 typedef ConversationRef = ({String spaceId, String conversationId});
 
-/// Per-conversation feed window size (newest-N shown). `loadMore()` grows it by
-/// [kSpaceFeedWindowStep] up to [kSpaceFeedMaxWindow]. Keyed by
-/// conversation id.
-class SpaceFeedWindowNotifier extends Notifier<int> {
-  /// Creates a [SpaceFeedWindowNotifier] for [conversationId].
-  SpaceFeedWindowNotifier(this.conversationId);
-
-  /// The conversation this window belongs to.
-  final String conversationId;
-
-  @override
-  int build() => kSpaceFeedInitialWindow;
-
-  /// Reveals an older page of messages.
-  void loadMore() {
-    state = (state + kSpaceFeedWindowStep).clamp(
-      kSpaceFeedInitialWindow,
-      kSpaceFeedMaxWindow,
-    );
-  }
-}
-
-/// Provides the per-conversation feed window size (keyed by conversation id).
-final spaceFeedWindowProvider =
-    NotifierProvider.family<SpaceFeedWindowNotifier, int, String>(
-      SpaceFeedWindowNotifier.new,
-    );
-
-/// Windowed message feed for a conversation: the newest N messages (N = the
-/// conversation's window size) plus whether older messages exist beyond it.
+/// The live window of a conversation: its newest [kSpaceFeedLiveWindow]
+/// messages, plus whether older messages exist beyond it.
 final spaceFeedWindowedProvider = StreamProvider.autoDispose
     .family<({List<Message> messages, bool hasMore}), ConversationRef>((
       ref,
       ref2,
     ) {
-      final limit = ref.watch(spaceFeedWindowProvider(ref2.conversationId));
+      const limit = kSpaceFeedLiveWindow;
       // Every emission decodes fresh [Message] instances. Hand back the
       // previous instance for a message that did not change, so the dedupe
       // below and the feed's kept-row check hit `identical` instead of a deep
@@ -379,6 +351,73 @@ final spaceFeedWindowedProvider = StreamProvider.autoDispose
           .distinct(
             (a, b) =>
                 a.hasMore == b.hasMore && listEquals(a.messages, b.messages),
+          );
+    });
+
+/// A history range of a conversation: where the feed loads messages it is
+/// showing outside the live window.
+typedef FeedRangeKey = ({
+  String spaceId,
+  String conversationId,
+  String anchorId,
+});
+
+/// The messages around one anchor in a conversation's history: the anchor
+/// and up to [kSpaceFeedRangeHalf] on each side, kept current like the live
+/// window. The feed points it at whatever history the reader is looking at
+/// (a permalink target, a stretch of placeholders scrolled into view).
+final spaceFeedRangeProvider = StreamProvider.autoDispose
+    .family<
+      ({List<Message> messages, bool hasOlder, bool hasNewer}),
+      FeedRangeKey
+    >((ref, key) {
+      var previous = const <String, Message>{};
+      return ref
+          .watch(messagingRepositoryProvider)
+          .watchMessagesRange(
+            ref.requireWorkspaceId(),
+            key.spaceId,
+            key.conversationId,
+            anchorId: key.anchorId,
+            before: kSpaceFeedRangeHalf,
+            after: kSpaceFeedRangeHalf,
+          )
+          .map((range) {
+            final byId = <String, Message>{};
+            final messages = <Message>[
+              for (final m in range.messages)
+                byId[m.id] = switch (previous[m.id]) {
+                  final p? when p == m => p,
+                  _ => m,
+                },
+            ];
+            previous = byId;
+            return (
+              messages: messages,
+              hasOlder: range.hasOlder,
+              hasNewer: range.hasNewer,
+            );
+          })
+          .distinct(
+            (a, b) =>
+                a.hasOlder == b.hasOlder &&
+                a.hasNewer == b.hasNewer &&
+                listEquals(a.messages, b.messages),
+          );
+    });
+
+/// Every message of a conversation as a size outline (no content): what the
+/// feed lays out the history it has not loaded from, so the scrollbar covers
+/// the whole conversation. Refreshed by the feed when it falls out of step
+/// with the live window.
+final conversationOutlineProvider = FutureProvider.autoDispose
+    .family<List<ConversationOutlineEntry>, ConversationRef>((ref, key) {
+      return ref
+          .watch(messagingRepositoryProvider)
+          .getConversationOutline(
+            ref.requireWorkspaceId(),
+            key.spaceId,
+            key.conversationId,
           );
     });
 

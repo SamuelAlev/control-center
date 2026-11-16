@@ -93,6 +93,7 @@ class McpServerConfig {
     this.auth = McpAuthKind.none,
     this.oauthScopes = const [],
     this.source,
+    this.publicOnly = false,
   });
 
   /// Builds a stdio server config.
@@ -235,6 +236,12 @@ class McpServerConfig {
   /// so the user can tell why a server appeared.
   final String? source;
 
+  /// Whether an http/sse server may be reached at public addresses only:
+  /// set for a workspace's server its server owner has not approved, so a
+  /// workspace admin cannot point the host at its own loopback or private
+  /// network. Never read from a config file.
+  final bool publicOnly;
+
   /// True when this config carries everything a transport needs to dial it.
   bool get isValid {
     switch (transport) {
@@ -277,6 +284,7 @@ class McpServerConfig {
     McpAuthKind? auth,
     List<String>? oauthScopes,
     String? source,
+    bool? publicOnly,
   }) => McpServerConfig(
     name: name ?? this.name,
     transport: transport ?? this.transport,
@@ -291,6 +299,7 @@ class McpServerConfig {
     auth: auth ?? this.auth,
     oauthScopes: oauthScopes ?? this.oauthScopes,
     source: source ?? this.source,
+    publicOnly: publicOnly ?? this.publicOnly,
   );
 
   /// Serialises to the canonical JSON map (without the [name], which is the
@@ -329,6 +338,7 @@ class McpServerConfig {
       other.cwd == cwd &&
       other.enabled == enabled &&
       other.auth == auth &&
+      other.publicOnly == publicOnly &&
       _listEq(other.args, args) &&
       _mapEq(other.env, env) &&
       _mapEq(other.headers, headers);

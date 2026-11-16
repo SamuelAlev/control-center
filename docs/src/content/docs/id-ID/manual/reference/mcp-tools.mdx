@@ -2,10 +2,10 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan `cc_server`, per keluarga.
 slug: id-ID/panduan-pengguna/referensi/alat-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` menghosting satu registri alat MCP (JSON-RPC 2.0), yang dilayani pada port server utama (bawaan `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien menjangkau registri yang sama: desktop, build web, klien MCP eksternal, dan runtime agen bawaan. Server MCP eksternal dapat dijembatani ke registri yang sama sebagai lapisan dinamis. Server yang ditemukan dalam konfigurasi alat milik pengguna server adalah pengecualian: endpoint ini tidak pernah mendaftarkan, memanggil, atau mencarinya, dan hanya run harness bawaan yang menjadi tanggung jawab pemilik server yang mendapatkannya (lihat [Server MCP pribadi tetap milik pemilik](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-mcp-pribadi-tetap-milik-pemilik)).
+`cc_server` menghosting satu registri alat MCP (JSON-RPC 2.0), yang dilayani pada port server utama (bawaan `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien menjangkau registri yang sama: desktop, build web, klien MCP eksternal, dan runtime agen bawaan. Server MCP eksternal dijembatani ke dalam registri yang sama di lapisannya sendiri: satu per ruang kerja untuk server yang dikonfigurasi admin-nya, dan satu untuk server pribadi pemiliknya. Endpoint ini hanya mencantumkan, memanggil, dan mencarinya untuk run agen: server milik ruang kerja tersebut, ditambah server pribadi ketika pemilik server bertanggung jawab atas run itu. Token MCP dan perangkat yang dipasangkan tidak pernah melihatnya (lihat [Server MCP yang digunakan agen Anda](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-mcp-yang-digunakan-agen-anda)).
 
 ## Ukuran registri
 

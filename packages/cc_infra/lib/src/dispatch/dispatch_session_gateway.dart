@@ -38,6 +38,7 @@ extension _DispatchSessionGateway on DispatchSession {
         readOnlyWorktrees: _readOnlyWorktrees,
         runnerStateDirs: _runnerStateDirs,
         autonomy: _resolveAutonomy,
+        personalMcp: await _personalMcpAllowed(),
       ),
     );
     final github = lease?.repos.where((r) => r.forge == ForgeHost.github);

@@ -15,6 +15,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 part 'focusable_bubble_rail.dart';
+part 'focusable_bubble_reaction.dart';
 
 /// A bubble wrapper that shows a focus outline and a hover toolbar
 /// (copy / permalink / revert / react / edit / delete).
@@ -31,6 +32,7 @@ class FocusableBubble extends ConsumerStatefulWidget {
     this.onEdit,
     this.onDelete,
     this.onStartThread,
+    this.groupHover,
   });
 
   /// The wrapped child widget.
@@ -65,6 +67,11 @@ class FocusableBubble extends ConsumerStatefulWidget {
   /// (text messages only): opens a conversation anchored to this message.
   final VoidCallback? onStartThread;
 
+  /// Hover over the rest of the message, when the message is laid out as
+  /// several feed rows (a long agent turn) and this bubble wraps only its last
+  /// one: the rail reveals while any of those rows is hovered.
+  final ValueListenable<bool>? groupHover;
+
   @override
   ConsumerState<FocusableBubble> createState() => _FocusableBubbleState();
 }
@@ -94,7 +101,24 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
   /// cursor passed over while scrolling — the feed's scroll jank.
   final ValueNotifier<bool> _revealed = ValueNotifier<bool>(false);
 
-  void _sync() => _revealed.value = _hoverBubble || _popoverOpen;
+  void _sync() => _revealed.value =
+      _hoverBubble || _popoverOpen || (widget.groupHover?.value ?? false);
+
+  @override
+  void initState() {
+    super.initState();
+    widget.groupHover?.addListener(_sync);
+  }
+
+  @override
+  void didUpdateWidget(covariant FocusableBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupHover != widget.groupHover) {
+      oldWidget.groupHover?.removeListener(_sync);
+      widget.groupHover?.addListener(_sync);
+      _sync();
+    }
+  }
 
   void _setHoverBubble(bool value) {
     if (_hoverBubble == value) {
@@ -127,6 +151,7 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
 
   @override
   void dispose() {
+    widget.groupHover?.removeListener(_sync);
     _revealed.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -267,91 +292,6 @@ class _FocusableBubbleState extends ConsumerState<FocusableBubble> {
               ),
             if (actions.isNotEmpty)
               _Rail(revealed: _revealed, actions: actions),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Hover-toolbar "add reaction" affordance: a small icon that opens a
-/// [CcPopover] with the fixed emoji palette (PRD 16 §15). Tapping an emoji
-/// toggles it via `reactions.toggle` and closes the popover.
-class _AddReactionButton extends ConsumerStatefulWidget {
-  const _AddReactionButton({
-    required this.spaceId,
-    required this.messageId,
-    required this.tokens,
-    required this.onOpenChanged,
-  });
-
-  final String spaceId;
-  final String messageId;
-  final DesignSystemTokens tokens;
-
-  /// Reports overlay-open so the rail stays revealed while the pointer is off the message.
-  final ValueChanged<bool> onOpenChanged;
-
-  @override
-  ConsumerState<_AddReactionButton> createState() => _AddReactionButtonState();
-}
-
-class _AddReactionButtonState extends ConsumerState<_AddReactionButton> {
-  final CcOverlayController _controller = CcOverlayController();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(_onOverlayChanged);
-  }
-
-  void _onOverlayChanged() => widget.onOpenChanged(_controller.isOpen);
-
-  @override
-  void dispose() {
-    _controller.removeListener(_onOverlayChanged);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _pick(String emoji) {
-    toggleSpaceReaction(
-      ref.read(rpcClientProvider),
-      spaceId: widget.spaceId,
-      messageId: widget.messageId,
-      emoji: emoji,
-    );
-    _controller.hide();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return CcPopover(
-      controller: _controller,
-      // The target is a rail button, so it drives the controller itself: the
-      // popover's own trigger would compete for the tap and paint a second wash.
-      toggleOnTargetTap: false,
-      target: BubbleIconButton(
-        icon: AppIcons.smile,
-        tokens: widget.tokens,
-        tooltip: l10n.reactionAddTooltip,
-        onTap: _controller.toggle,
-      ),
-      overlayBuilder: (context, _) => Padding(
-        padding: const EdgeInsets.all(6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final emoji in kReactionPalette)
-              CcTappable(
-                onPressed: () => _pick(emoji),
-                semanticLabel: l10n.reactionToggleTooltip(emoji),
-                builder: (context, states) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(emoji, style: const TextStyle(fontSize: 18)),
-                ),
-              ),
           ],
         ),
       ),

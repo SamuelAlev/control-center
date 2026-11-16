@@ -20,6 +20,7 @@ export 'evals_dao.dart';
 export 'fleet_dao.dart';
 export 'goal_dao.dart';
 export 'isolated_repo_dao.dart';
+export 'mcp_server_dao.dart';
 export 'meeting_dao.dart';
 export 'memory_access_grant_dao.dart';
 export 'memory_belief_dao.dart';

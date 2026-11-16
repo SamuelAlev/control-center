@@ -2,10 +2,10 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan oleh cc_server, mengikut keluarga.
 slug: ms-MY/manual-pengguna/rujukan/alat-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` mengehoskan satu daftar alat MCP (JSON-RPC 2.0), disajikan pada port pelayan utama (lalai `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien mencapai daftar yang sama: desktop, binaan web, klien MCP luaran dan masa jalan ejen terbina. Pelayan MCP luaran boleh dijambatkan ke dalam daftar yang sama sebagai lapisan dinamik. Pelayan yang ditemui dalam konfigurasi alat pengguna pelayan sendiri ialah pengecualian: titik akhir ini tidak pernah menyenaraikan, memanggil atau mencarinya, dan hanya larian harness terbina yang pemilik pelayan bertanggungjawab untuknya yang mendapatkannya (lihat [Pelayan MCP peribadi kekal milik pemiliknya](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/#pelayan-mcp-peribadi-kekal-milik-pemilik)).
+`cc_server` mengehoskan satu daftar alat MCP (JSON-RPC 2.0), disajikan pada port pelayan utama (lalai `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien mencapai daftar yang sama: desktop, binaan web, klien MCP luaran dan masa jalan ejen terbina. Pelayan MCP luaran dijembatani ke dalam daftar yang sama dalam lapisannya sendiri: satu bagi setiap ruang kerja untuk pelayan yang dikonfigurasi oleh adminnya, dan satu untuk pelayan peribadi pemilik pelayan. Titik akhir ini hanya menyenaraikan, memanggil dan mencarinya untuk larian ejen: pelayan ruang kerja tersebut sendiri, serta pelayan peribadi apabila pemilik pelayan bertanggungjawab ke atas larian itu. Token MCP dan peranti yang dipasangkan tidak pernah melihatnya (lihat [Pelayan MCP yang digunakan oleh ejen anda](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/#pelayan-mcp-yang-digunakan-oleh-ejen-anda)).
 
 ## Saiz daftar
 

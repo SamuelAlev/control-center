@@ -1,6 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
+import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_plan.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_items.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_rows.dart';
 
 /// Estimated height of a day separator or the unread divider: 10px of padding
 /// either side of one caption line.
@@ -53,6 +59,7 @@ double estimateMessageRowExtent(
   Message message, {
   required bool collapseHeader,
   required double columnWidth,
+  ProseMeasure? prose,
 }) {
   final header = collapseHeader ? _collapsedHeaderExtent : _headerExtent;
 
@@ -65,7 +72,9 @@ double estimateMessageRowExtent(
   }
 
   var extent =
-      header + _bubbleChrome + _proseExtent(message.content, columnWidth);
+      header +
+      _bubbleChrome +
+      (prose ?? _proseExtent)(message.content, columnWidth);
   if (message.messageType == MessageType.agentTurn) {
     extent += _segmentCount(message) * _segmentExtent;
   }
@@ -88,6 +97,29 @@ double? _cardExtent(MessageType type) => switch (type) {
   MessageType.artifact => 220,
   MessageType.text || MessageType.agentTurn => null,
 };
+
+/// Estimated extent of a message known only by its outline [entry]: the same
+/// arithmetic as [estimateMessageRowExtent], from the stored character and
+/// segment counts instead of the content.
+double estimateOutlineExtent(
+  ConversationOutlineEntry entry, {
+  required double columnWidth,
+}) {
+  final card = _cardExtent(entry.messageType);
+  if (card != null) {
+    return _headerExtent + card;
+  }
+  final charsPerLine = math.max(24, columnWidth ~/ _charWidth);
+  final lines = math.min(
+    _maxProseLines,
+    math.max(1, (entry.contentChars + charsPerLine - 1) ~/ charsPerLine),
+  );
+  var extent = _headerExtent + _bubbleChrome + lines * _lineHeight;
+  if (entry.messageType == MessageType.agentTurn) {
+    extent += (entry.segmentCount ?? 0) * _segmentExtent;
+  }
+  return extent;
+}
 
 /// Wrapped height of [content] at [columnWidth], counting hard line breaks.
 double _proseExtent(String content, double columnWidth) {
@@ -122,3 +154,90 @@ int _segmentCount(Message message) {
   }
   return (metadata['segment_count'] as num?)?.toInt() ?? 0;
 }
+
+/// Height of markdown prose laid out at a width. The default is a character
+/// count heuristic; the feed's idle sweep passes real text measurement.
+typedef ProseMeasure = double Function(String text, double width);
+
+/// Estimated extent of a feed [row] [columnWidth] wide, before it has been
+/// laid out or measured. [prose] replaces the character-count heuristic for
+/// prose (the idle sweep's text measurement).
+double estimateFeedRowExtent(
+  FeedRow row, {
+  required double columnWidth,
+  ProseMeasure? prose,
+}) {
+  final measure = prose ?? _proseExtent;
+  return switch (row) {
+    ItemRow(:final item) => switch (item) {
+      MessageItem() => _messageItemExtent(item, columnWidth, measure),
+      DayItem() || UnreadItem() => kSeparatorRowExtent,
+    },
+    TurnHeadRow(:final item) =>
+      item.collapseHeader ? AppSpacing.xxs : AppSpacing.xl + _headerExtent,
+    TurnPartRow(:final plan, :final isFirst) =>
+      (isFirst ? AppSpacing.sm : plan.gapBefore) +
+          _planExtent(plan, columnWidth, measure),
+    TurnFootRow() => _footExtent,
+    PlaceholderRow(:final entry) => estimateOutlineExtent(
+      entry,
+      columnWidth: columnWidth,
+    ),
+  };
+}
+
+double _messageItemExtent(
+  MessageItem item,
+  double columnWidth,
+  ProseMeasure prose,
+) {
+  var extent = estimateMessageRowExtent(
+    item.message,
+    collapseHeader: item.collapseHeader,
+    columnWidth: columnWidth,
+    prose: prose,
+  );
+  for (final inline in item.inlineMessages) {
+    extent += estimateMessageRowExtent(
+      inline,
+      collapseHeader: false,
+      columnWidth: columnWidth,
+      prose: prose,
+    );
+  }
+  return extent;
+}
+
+/// Trailer line, feedback bar and the hover rail's reserved strip.
+const double _footExtent = 72;
+
+/// Collapsed tool call: a single summary line.
+const double _toolRowExtent = 32;
+
+/// Collapsed reasoning: one "thought for" line.
+const double _reasoningRowExtent = 24;
+
+/// Error or policy-violation notice.
+const double _noticeRowExtent = 44;
+
+/// Inline steering message or answered question.
+const double _inlineMessageExtent = 56;
+
+/// The live "still working" line.
+const double _liveStatusExtent = 22;
+
+double _planExtent(
+  TranscriptRowPlan plan,
+  double columnWidth,
+  ProseMeasure prose,
+) => switch (plan) {
+  SegmentRowPlan(:final segment, :final open) => switch (segment) {
+    TextSegment(:final text) => prose(text, columnWidth),
+    ReasoningSegment(:final text) =>
+      open ? prose(text, columnWidth) : _reasoningRowExtent,
+    ToolSegment() => _toolRowExtent,
+    ErrorSegment() || ViolationSegment() => _noticeRowExtent,
+  },
+  InlineMessageRowPlan() => _inlineMessageExtent,
+  LiveStatusRowPlan() => _liveStatusExtent,
+};

@@ -73,6 +73,46 @@ void main() {
     expect(find.text('−10'), findsOneWidget);
   });
 
+  testWidgets('a narrow card folds churn and age into the meta line', (
+    tester,
+  ) async {
+    // Narrower than InboxRowMetrics.compactBelow: the fixed changes/updated
+    // columns used to squeeze the title to zero width (one glyph per line)
+    // and overflow the row.
+    await tester.pumpWidget(
+      testWrap(
+        Align(
+          alignment: AlignmentDirectional.topStart,
+          child: SizedBox(
+            width: 500,
+            height: 600,
+            child: CustomScrollView(
+              slivers: [
+                InboxSectionCard(
+                  section: PrInboxSection.needsYourReview,
+                  items: [_item(1, additions: 42, deletions: 10)],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    // The title keeps a readable width: one line, not a glyph column.
+    expect(tester.getSize(find.text('PR 1')).height, lessThan(30));
+    expect(find.text('+42'), findsOneWidget);
+    // Churn sits on the meta line, beside the subtitle, not in a column.
+    expect(
+      tester.getCenter(find.text('+42')).dy,
+      closeTo(tester.getCenter(find.text('alice · o/r1 #1')).dy, 2),
+    );
+    // The sorts stay reachable.
+    expect(find.text('Changes'), findsOneWidget);
+    expect(find.text('Updated'), findsOneWidget);
+  });
+
   testWidgets('collapsing via the header hides the rows', (tester) async {
     await tester.pumpWidget(
       wrapSlivers([

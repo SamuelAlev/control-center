@@ -18956,4 +18956,206 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Nic nebylo uděleno: osoba nebo věc, pro kterou to bylo, už v tomto pracovním prostoru není.';
+
+  @override
+  String get mcpWorkspaceServers => 'Servery MCP pracovního prostoru';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Každý běh agenta v tomto pracovním prostoru získá nástroje těchto serverů, a to v Claude Code i ve vestavěném harnessu. Control Center se připojí ke každému serveru a jeho nástroje předá dál.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Servery MCP tohoto pracovního prostoru mohou vidět a měnit jen jeho správci.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Servery MCP pracovního prostoru nejsou na připojeném serveru k dispozici.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Zatím žádné servery MCP pracovního prostoru';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Přidejte server, aby každý běh agenta v tomto pracovním prostoru získal jeho nástroje.';
+
+  @override
+  String get mcpAddServer => 'Přidat server';
+
+  @override
+  String get mcpHandAddedSource => 'Přidáno v Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Čeká na schválení';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Pouze veřejné adresy';
+
+  @override
+  String get mcpApproveServer => 'Schválit';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Tento server spouští příkaz na hostiteli serveru jako uživatel serveru. Nespustí se, dokud jej neschválíte.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Tento server spouští příkaz na hostiteli serveru, takže se nespustí, dokud jej neschválí vlastník serveru.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Tento server může dosáhnout jen na veřejné adresy. Schválením mu umožníte přístup i do privátní sítě hostitele, například na localhost a do místní sítě.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Tento server může dosáhnout jen na veřejné adresy, dokud jej neschválí vlastník serveru.';
+
+  @override
+  String get mcpRemoveServer => 'Odebrat server';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Odebrat $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Běhy agentů ztratí nástroje tohoto serveru a jeho uložené tajné hodnoty budou smazány.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Zapnout nebo vypnout $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Přidat server MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Upravit $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Písmena, číslice, pomlčky a podtržítka. Agenti pod tímto názvem uvidí jeho nástroje.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Použijte až 24 písmen, číslic, pomlček nebo podtržítek, začínajících písmenem nebo číslicí.';
+
+  @override
+  String get mcpServerNameTaken => 'Zde už jiný server tento název má.';
+
+  @override
+  String get mcpServerTransportLabel => 'Přenos';
+
+  @override
+  String get mcpServerTransportStdio => 'Příkaz';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Příkaz';
+
+  @override
+  String get mcpServerCommandRequired => 'Zadejte příkaz ke spuštění.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumenty';
+
+  @override
+  String get mcpServerArgsHelper => 'Jeden argument na řádek.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Zadejte URL http nebo https bez uživatelského jména, hesla nebo #fragmentu.';
+
+  @override
+  String get mcpServerEnvLabel => 'Proměnné prostředí';
+
+  @override
+  String get mcpServerHeadersLabel => 'Hlavičky';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Hodnoty se ukládají jako tajné a už se nikdy nezobrazí.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Například hlavička Authorization s bearer tokenem.';
+
+  @override
+  String get mcpServerEnvAdd => 'Přidat proměnnou';
+
+  @override
+  String get mcpServerHeaderAdd => 'Přidat hlavičku';
+
+  @override
+  String get mcpServerSecretValueHint => 'Hodnota';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Nová hodnota';
+
+  @override
+  String get mcpServerSecretReplace => 'Nahradit hodnotu';
+
+  @override
+  String get mcpServerSecretUndo => 'Vrátit zpět';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Při uložení odstraněno';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name není platný název proměnné. Použijte písmena, číslice a podtržítka, nezačínejte číslicí.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name nelze nastavit. Použijte platný název hlavičky, kterou připojení nespravuje samo.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Změna přenosu odstraní uložené hodnoty.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Když je vypnuto, server se nespustí a agenti jeho nástroje neuvidí.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Běží na hostiteli serveru, takže se nespustí, dokud jej neschválí vlastník serveru. Změna způsobu spuštění vyžaduje nové schválení.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Dosáhne jen na veřejné adresy, dokud jej neschválí vlastník serveru. Změna způsobu připojení vyžaduje nové schválení.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Běží na hostiteli serveru jako uživatel serveru. Uložením se schválí.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Uložením jej schválíte i pro přístup do privátní sítě hostitele.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Používá se jen v bězích, které spouštíte nebo za které odpovídáte.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center tento server nemohl uložit. Zkontrolujte jeho nastavení a zkuste to znovu.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Tento server už neexistuje. Možná ho někdo odstranil.';
 }

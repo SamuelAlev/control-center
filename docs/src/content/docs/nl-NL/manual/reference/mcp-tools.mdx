@@ -2,10 +2,10 @@
 title: MCP-tools
 description: Volledige catalogus van de MCP-tools die cc_server registreert, per familie.
 slug: nl-NL/handleiding/referentie/mcp-tools
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` host één MCP-toolregister (JSON-RPC 2.0), aangeboden op de hoofdpoort van de server (standaard `9030`) via `POST /mcp` en `GET /sse`, met protocolversie `2024-11-05`. Elke client komt op hetzelfde register uit: de desktop, de webbuild, externe MCP-clients en de ingebouwde agentruntime. Externe MCP-servers kunnen als dynamische laag in hetzelfde register worden opgenomen. Servers die in de persoonlijke toolconfiguratie van de servergebruiker worden gevonden, vormen de uitzondering: dit eindpunt somt ze nooit op, roept ze nooit aan en doorzoekt ze nooit, en alleen de ingebouwde harness-runs waarvoor de servereigenaar verantwoordelijk is, krijgen ze (zie [Persoonlijke MCP-servers blijven van de eigenaar](/nl-NL/handleiding/gidsen/mcp-server/#persoonlijke-mcp-servers-blijven-van-de-eigenaar)).
+`cc_server` host één MCP-toolregister (JSON-RPC 2.0), aangeboden op de hoofdpoort van de server (standaard `9030`) via `POST /mcp` en `GET /sse`, met protocolversie `2024-11-05`. Elke client komt op hetzelfde register uit: de desktop, de webbuild, externe MCP-clients en de ingebouwde agentruntime. Externe MCP-servers worden in eigen lagen in hetzelfde register opgenomen: één per werkruimte voor de MCP-servers die de beheerders ervan instellen, en één voor de persoonlijke MCP-servers van de serverbeheerder. Dit eindpunt somt ze alleen op, roept ze alleen aan en doorzoekt ze alleen voor een agent-run: de MCP-servers van de eigen werkruimte, plus de persoonlijke wanneer de serverbeheerder verantwoordelijk is voor de run. Het MCP-token en gekoppelde apparaten zien ze nooit (zie [MCP-servers die agents gebruiken](/nl-NL/handleiding/gidsen/mcp-server/#mcp-servers-die-agents-gebruiken)).
 
 ## Omvang van het register
 

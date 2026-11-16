@@ -2,10 +2,10 @@
 title: MCP-verktyg
 description: Komplett katalog över de MCP-verktyg som cc_server registrerar, per familj.
 slug: sv-SE/handbok/referens/mcp-verktyg
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar kan bryggas in i samma register som ett dynamiskt lager. Servrar som hittas i serverns användares egna verktygskonfiguration är undantaget: den här endpointen listar, anropar eller söker aldrig i dem, och bara inbyggda harness-körningar som serverägaren ansvarar för får använda dem (se [Personliga MCP-servrar förblir ägarens](/sv-SE/handbok/how-to-guider/mcp-server/#personliga-mcp-servrar-förblir-ägarens)).
+`cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar bryggas in i samma register i egna lager: ett per arbetsyta för de MCP-servrar dess administratörer konfigurerar, och ett för serverägarens personliga MCP-servrar. Den här endpointen listar, anropar och söker i dem bara för en agentkörning: arbetsytans egna MCP-servrar, plus de personliga när serverägaren ansvarar för körningen. MCP-token och parkopplade enheter ser dem aldrig (se [MCP-servrar som agenterna använder](/sv-SE/handbok/how-to-guider/mcp-server/#mcp-servrar-som-agenterna-använder)).
 
 ## Registrets storlek
 

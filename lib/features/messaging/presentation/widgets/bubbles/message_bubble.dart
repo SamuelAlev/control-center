@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/thread_summary.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/agent_turn.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/artifact_bubble.dart';
@@ -105,43 +106,92 @@ class SpaceMessageBubble extends ConsumerWidget {
             onStartThread: onStartThread,
           );
 
-    // `#`-tagged entity references (tickets/PRs/meetings) render as live chips
-    // beneath the bubble, aligned with the bubble's side; a thread started
-    // from this message gets its "N replies" row directly under them, because
-    // the thread is otherwise invisible from the stream it branched off.
-    final refs = message.entityRefs;
     final open = onOpenThread;
-    // The space publishes one map of every thread. Selecting this message's
-    // rollup means a reply in some other thread does not rebuild this row
-    // (and the transcript under it).
-    final thread = open == null
-        ? null
-        : ref.watch(
-            spaceThreadSummariesProvider(
-              message.spaceId,
-            ).select((async) => async.asData?.value[message.id]),
-          );
-    if (refs.isEmpty && thread == null) {
+    final footnotes = messageFootnotes(
+      message: message,
+      thread: watchThreadSummary(ref, message, open),
+      onOpenThread: open,
+    );
+    if (footnotes.isEmpty) {
       return bubble;
     }
     return Column(
       crossAxisAlignment: message.isUser
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
-      children: [
-        bubble,
-        if (refs.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 2, 8, 4),
-            child: EntityRefChips(refs: refs, alignEnd: message.isUser),
-          ),
-        if (thread != null && open != null)
-          ThreadIndicator(
-            summary: thread,
-            onOpen: open,
-            alignEnd: message.isUser,
-          ),
-      ],
+      children: [bubble, ...footnotes],
+    );
+  }
+}
+
+/// The thread [message] started, when [onOpenThread] can open one.
+///
+/// The space publishes one map of every thread. Selecting this message's
+/// rollup means a reply in some other thread does not rebuild this row (and
+/// the transcript under it).
+ThreadSummary? watchThreadSummary(
+  WidgetRef ref,
+  Message message,
+  void Function(String threadId)? onOpenThread,
+) => onOpenThread == null
+    ? null
+    : ref.watch(
+        spaceThreadSummariesProvider(
+          message.spaceId,
+        ).select((async) => async.asData?.value[message.id]),
+      );
+
+/// What renders beneath a message: `#`-tagged entity references
+/// (tickets/PRs/meetings) as live chips aligned with the bubble's side, and
+/// the "N replies" row of a thread started from it, because the thread is
+/// otherwise invisible from the stream it branched off.
+List<Widget> messageFootnotes({
+  required Message message,
+  required ThreadSummary? thread,
+  required void Function(String threadId)? onOpenThread,
+}) {
+  final refs = message.entityRefs;
+  return [
+    if (refs.isNotEmpty)
+      Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(8, 2, 8, 4),
+        child: EntityRefChips(refs: refs, alignEnd: message.isUser),
+      ),
+    if (thread != null && onOpenThread != null)
+      ThreadIndicator(
+        summary: thread,
+        onOpen: onOpenThread,
+        alignEnd: message.isUser,
+      ),
+  ];
+}
+
+/// [messageFootnotes] for a message whose bubble is laid out elsewhere (the
+/// footer row of an agent turn the feed lays out row by row).
+class MessageFootnotes extends ConsumerWidget {
+  /// Creates the footnotes of [message].
+  const MessageFootnotes({super.key, required this.message, this.onOpenThread});
+
+  /// The message.
+  final Message message;
+
+  /// Opens the thread this message started; null hides the replies row.
+  final void Function(String threadId)? onOpenThread;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final footnotes = messageFootnotes(
+      message: message,
+      thread: watchThreadSummary(ref, message, onOpenThread),
+      onOpenThread: onOpenThread,
+    );
+    if (footnotes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: footnotes,
     );
   }
 }

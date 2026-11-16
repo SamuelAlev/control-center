@@ -63,16 +63,22 @@ class UnreadItem extends FeedItem {
 /// after the moment they arrived. Turns that land while the pane is hidden, or
 /// while the reader is reading history below the fold, never advance the
 /// frontier and so still get their divider.
+///
+/// [allowRetry] is false for a stretch of history that does not reach the
+/// newest message: the retry rule judges a turn against every turn after it.
 List<FeedItem> buildFeedItems(
   List<Message> messages, {
   required bool suppressOldestSeparator,
   DateTime? readFrontier,
+  bool allowRetry = true,
 }) {
   final out = <FeedItem>[];
   final inlineByRun = _inlineMessagesByRun(messages);
-  // The feed is the newest messages of one conversation, which is all the
-  // retry rule needs: a turn is judged against the turns after it.
-  final retryable = const AgentTurnRetryPolicy().retryableIn(messages);
+  // A span reaching the newest message is all the retry rule needs: a turn
+  // is judged against the turns after it.
+  final retryable = allowRetry
+      ? const AgentTurnRetryPolicy().retryableIn(messages)
+      : const <String>{};
   final inlineIds = inlineByRun.isEmpty
       ? const <String>{}
       : {

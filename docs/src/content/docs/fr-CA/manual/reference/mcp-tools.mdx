@@ -2,10 +2,10 @@
 title: Outils MCP
 description: Catalogue complet, par famille, des outils MCP que cc_server enregistre.
 slug: fr-CA/manuel/reference/outils-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` héberge un seul registre d’outils MCP (JSON-RPC 2.0), servi sur le port principal du serveur (`9030` par défaut) à `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l’application de bureau, la version web, les clients MCP externes et l’environnement d’exécution d’agents intégré. Les serveurs MCP externes peuvent être raccordés au même registre comme couche dynamique. Les serveurs découverts dans la configuration d’outils personnelle de l’utilisateur du serveur sont l’exception : ce point de terminaison ne les liste, ne les appelle ni ne les recherche jamais, et seuls les exécutions du harnais intégré, dont le propriétaire du serveur répond, peuvent les utiliser (voir [Les serveurs MCP personnels restent ceux du propriétaire](/fr-CA/manuel/guides/serveur-mcp/#les-serveurs-mcp-personnels-restent-ceux-du-propriétaire)).
+`cc_server` héberge un seul registre d’outils MCP (JSON-RPC 2.0), servi sur le port principal du serveur (`9030` par défaut) à `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l’application de bureau, la version web, les clients MCP externes et l’environnement d’exécution d’agents intégré. Les serveurs MCP externes sont raccordés au même registre dans leurs propres couches : une par espace de travail, pour les serveurs que configurent ses administrateurs, et une pour les serveurs personnels du propriétaire du serveur. Ce point de terminaison ne les liste, ne les appelle et ne les recherche que pour une exécution d’agent : les serveurs de son propre espace de travail et, lorsque le propriétaire du serveur est responsable de l’exécution, les serveurs personnels. Le jeton MCP et les appareils jumelés ne les voient jamais (voir [Serveurs MCP utilisés par vos agents](/fr-CA/manuel/guides/serveur-mcp/#serveurs-mcp-utilisés-par-vos-agents)).
 
 ## Taille du registre
 

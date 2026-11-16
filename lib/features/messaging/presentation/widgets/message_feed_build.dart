@@ -67,125 +67,148 @@ extension _BuildMethods on _SpaceMessageFeedState {
           });
         }
 
-        final items = buildFeedItems(
-          messages,
-          suppressOldestSeparator: window.hasMore,
-          readFrontier: _readFrontier,
+        // The whole conversation: the live window, the history range loaded
+        // around the reader, and stand-ins sized from the outline for the
+        // rest (see `composeFeedTimeline`).
+        final outline = window.hasMore ? _outline : null;
+        final timeline = composeFeedTimeline(
+          live: messages,
+          liveHasMore: window.hasMore,
+          outline: outline,
+          range: _range,
         );
-        final previousItems = _items;
-        _items = items;
-        _shiftExtentsForNewRows(previousItems, items);
+        if (timeline.outlineStale) {
+          _refreshOutline(messages.first.id);
+        }
+        // Until the outline arrives the history above the window is not
+        // known yet: a spinner holds its place.
+        final showMore = window.hasMore && outline == null && !_outlineFailed;
+        final unreadId = firstUnreadId(timeline.spans, _readFrontier);
+        final spanItems = [
+          for (final span in timeline.spans)
+            if (span is LoadedSpan)
+              buildFeedItems(
+                span.messages,
+                suppressOldestSeparator: span.afterGap,
+                readFrontier:
+                    unreadId != null &&
+                        span.messages.any((m) => m.id == unreadId)
+                    ? _readFrontier
+                    : null,
+                allowRetry: span.reachesNewest,
+              )
+            else
+              const <FeedItem>[],
+        ];
+        _codeFont = ref.watch(codeFontFamilyProvider);
+        _measurer = FeedTextMeasurer.of(context, codeFontFamily: _codeFont);
+        _syncTurns([for (final items in spanItems) ...items]);
+        final rows = <FeedRow>[];
+        for (var i = 0; i < timeline.spans.length; i++) {
+          switch (timeline.spans[i]) {
+            case StandInSpan(:final entries):
+              rows.addAll(entries.map(PlaceholderRow.new));
+            case LoadedSpan():
+              rows.addAll(
+                expandFeedRows(spanItems[i], transcriptOf: _transcriptOf),
+              );
+          }
+        }
+        _rows = rows;
+        final previousSlots = _slotKeysByIndex;
+        _mirrorRowKeys(rows, hasMore: showMore);
+        // The list caches extents by index; tell it which rows landed, left
+        // or were replaced so every other row keeps its own extent. Runs
+        // after [_rows] is updated: the list estimates the new rows through
+        // [_estimateRowExtent], which reads it.
+        syncListExtents(_listController, previousSlots, _slotKeysByIndex);
 
         if (isVisible) {
-          _maybeConsumePendingFocus();
+          _maybeConsumePendingFocus(historyPending: showMore);
         }
 
-        final keep = messages.map((m) => m.id).toSet();
+        final keep = {for (final row in rows) ?messageIdOfRowKey(row.key)};
         _rowKeys.removeWhere((k, _) => !keep.contains(k));
         _keptRows.removeWhere((k, _) => !keep.contains(k));
-
-        if (items.length != _lastItemCount) {
-          if (items.length > _lastItemCount && _follow.loadingOlder) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _follow.loadingOlder = false;
-            });
-          }
-          _lastItemCount = items.length;
+        if (outline != null) {
+          _scheduleRecenter();
         }
+
+        _armAnchorCapture();
 
         final platformPhysics = ScrollConfiguration.of(
           context,
         ).getScrollPhysics(context);
 
-        return NotificationListener<ScrollUpdateNotification>(
+        return NotificationListener<ScrollMetricsNotification>(
           onNotification: (n) {
-            if (n.depth == 0 && !_programmatic) {
-              _follow.noteUserScroll();
+            if (n.depth == 0) {
+              _armAnchorCapture();
             }
             return false;
           },
-          child: NotificationListener<UserScrollNotification>(
+          child: NotificationListener<ScrollUpdateNotification>(
             onNotification: (n) {
-              if (n.direction != ScrollDirection.idle) {
-                if (_follow.mode == FeedFollowMode.following) {
-                  _follow.mode = FeedFollowMode.free;
-                }
+              if (n.depth == 0 && !_programmatic) {
+                _follow.noteUserScroll();
               }
               return false;
             },
-            child: Listener(
-              onPointerDown: (_) {
-                if (_follow.mode == FeedFollowMode.following) {
-                  _follow.mode = FeedFollowMode.free;
+            child: NotificationListener<UserScrollNotification>(
+              onNotification: (n) {
+                if (n.direction != ScrollDirection.idle) {
+                  if (_follow.mode == FeedFollowMode.following) {
+                    _follow.mode = FeedFollowMode.free;
+                  }
                 }
+                return false;
               },
-              child: Stack(
-                children: [
-                  SelectionArea(
-                    child: CcSelectionScope(
-                      child: SuperListView.builder(
-                        controller: _scrollController,
-                        listController: _listController,
-                        extentPrecalculationPolicy: _precalcPolicy,
-                        extentEstimation: _estimateRowExtent,
-                        delayPopulatingCacheArea: true,
-                        reverse: true,
-                        physics: ReverseFollowPhysics(
-                          state: _follow,
-                        ).applyTo(platformPhysics),
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        itemCount: items.length + (window.hasMore ? 1 : 0),
-                        itemBuilder: (context, index) =>
-                            _buildItem(context, index, items, window, theme),
+              child: Listener(
+                onPointerDown: (_) {
+                  if (_follow.mode == FeedFollowMode.following) {
+                    _follow.mode = FeedFollowMode.free;
+                  }
+                },
+                child: Stack(
+                  children: [
+                    SelectionArea(
+                      child: CcSelectionScope(
+                        child: SuperListView.builder(
+                          controller: _scrollController,
+                          listController: _listController,
+                          extentPrecalculationPolicy: _precalcPolicy,
+                          extentEstimation: _estimateRowExtent,
+                          delayPopulatingCacheArea: true,
+                          reverse: true,
+                          physics: AnchorFollowPhysics(
+                            state: _follow,
+                          ).applyTo(platformPhysics),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                          itemCount: rows.length + (showMore ? 1 : 0),
+                          findChildIndexCallback: _findRowIndex,
+                          itemBuilder: (context, index) =>
+                              _buildRow(context, index, rows),
+                        ),
                       ),
                     ),
-                  ),
-                  if (_showJumpControl)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: JumpToLatest(
-                        onTap: _jumpToLatest,
-                        isStreaming: _isLiveBelow,
-                        newCount: _newWhileAway,
+                    if (_showJumpControl)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: JumpToLatest(
+                          onTap: _jumpToLatest,
+                          isStreaming: _isLiveBelow,
+                          newCount: _newWhileAway,
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         );
       },
     );
-  }
-
-  /// Tells the list about rows that landed at the newest end since the last
-  /// build.
-  ///
-  /// The list caches measured extents by index, and in a reverse list the
-  /// newest row is index 0 — so an arrival shifts every row up one index and,
-  /// unannounced, each inherits its neighbour's extent. The resulting layout
-  /// error is invisible on the live edge but nudges a reader browsing history
-  /// by the height difference on every turn that lands below the fold.
-  ///
-  /// Runs after [_items] is updated: the list estimates the new rows' extents
-  /// through [_estimateRowExtent], which reads it.
-  void _shiftExtentsForNewRows(List<FeedItem> before, List<FeedItem> items) {
-    final previous = before.isEmpty ? null : before.last;
-    if (previous is! MessageItem ||
-        !_listController.isAttached ||
-        _listController.isLocked) {
-      return;
-    }
-    final at = items.lastIndexWhere(
-      (it) => it is MessageItem && it.message.id == previous.message.id,
-    );
-    if (at < 0) {
-      return;
-    }
-    for (var i = at + 1; i < items.length; i++) {
-      _listController.addItem(0);
-    }
   }
 }

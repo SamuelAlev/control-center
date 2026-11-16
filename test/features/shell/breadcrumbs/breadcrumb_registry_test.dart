@@ -21,6 +21,7 @@ void main() {
         '${newsfeedRoute(workspaceIdParam)}/article/:articleId',
         memoryRoute(workspaceIdParam),
         apiKeysRoute(workspaceIdParam),
+        observabilityRoute(workspaceIdParam),
         // Every settings destination, derived from the IA rather than listed
         // by hand — the hand-written copy is exactly what used to drift.
         for (final entry in kSettingsNavItems) entry.route(workspaceIdParam),

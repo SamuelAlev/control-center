@@ -2,10 +2,10 @@
 title: Nástroje MCP
 description: Úplný katalog nástrojů MCP, které cc_server registruje, po rodinách.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se dají přemostit do stejného registru jako dynamická vrstva. Servery zjištěné v osobní konfiguraci nástrojů uživatele serveru jsou výjimka: tento endpoint je nikdy nevypisuje, nevolá ani neprohledává a dostanou je jen běhy vestavěného harnessu, za které odpovídá vlastník serveru (viz [Osobní servery MCP zůstávají vlastníkovi](/cs-CZ/prirucka/navody/mcp-server/#osobní-servery-mcp-zůstávají-vlastníkovi)).
+`cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se do stejného registru připojují ve vlastních vrstvách: jedna pro každý pracovní prostor pro servery, které nastavují jeho správci, a jedna pro osobní servery vlastníka serveru. Tento endpoint je vypisuje, volá a prohledává jen pro běh agenta: servery vlastního pracovního prostoru a osobní, pokud za běh odpovídá vlastník serveru. Token MCP a spárovaná zařízení je nikdy nevidí (viz [Servery MCP, které používají agenti](/cs-CZ/prirucka/navody/mcp-server/#servery-mcp-které-používají-agenti)).
 
 ## Velikost registru
 

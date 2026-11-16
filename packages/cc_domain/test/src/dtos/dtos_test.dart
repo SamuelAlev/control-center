@@ -350,6 +350,19 @@ void main() {
       expect(out['compacted'], isTrue);
     });
 
+    test('revision rides the wire and defaults to 0', () {
+      expect(MessageDto.fromJson({'id': 'm', 'revision': 7}).revision, 7);
+      expect(MessageDto.fromJson({'id': 'm'}).revision, 0);
+      expect(MessageDto.fromJson({'id': 'm', 'revision': 7}).toJson(), {
+        'id': 'm',
+        'content': '',
+        'sender_id': '',
+        'sender_type': '',
+        'message_type': '',
+        'revision': 7,
+      });
+    });
+
     test('compacted omitted when false; minimal defaults', () {
       final dto = MessageDto.fromJson({'id': 'm'});
       expect(dto.content, '');

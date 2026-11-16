@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/secret_store_port.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
 import 'package:cc_domain/core/domain/services/webhook_secret_vault.dart';
+import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/memory/domain/services/fact_extraction.dart';
 import 'package:cc_domain/features/memory/domain/services/memory_consolidation_service.dart';
 import 'package:cc_domain/features/memory/domain/usecases/extract_memory_use_case.dart';
@@ -191,7 +192,7 @@ void main() {
     // listed resolves and the catalogue view matches the list.
     for (final name in names) {
       expect(
-        registry.lookup(name as String, includePersonal: false),
+        registry.lookup(name as String, view: McpToolView.shared),
         isNotNull,
         reason: '$name listed but not resolvable',
       );

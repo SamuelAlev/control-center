@@ -18301,4 +18301,199 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       '何も付与されませんでした。対象のメンバーまたはリポジトリが、このワークスペースにもう存在しません。';
+
+  @override
+  String get mcpWorkspaceServers => 'ワークスペースのMCPサーバー';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'このワークスペースのすべてのエージェント実行で、これらのサーバーのツールが使えます。Claude Code と内蔵ハーネスの両方で有効です。Control Center は各サーバーに接続し、そのツールを受け渡します。';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'このワークスペースのMCPサーバーを表示・変更できるのは、ワークスペースの管理者だけです。';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      '接続中のサーバーでは、ワークスペースのMCPサーバーは利用できません。';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'ワークスペースのMCPサーバーはまだありません';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'サーバーを追加すると、このワークスペースのすべてのエージェント実行でそのツールが使えるようになります。';
+
+  @override
+  String get mcpAddServer => 'サーバーを追加';
+
+  @override
+  String get mcpHandAddedSource => 'Control Center で追加';
+
+  @override
+  String get mcpStatusAwaitingApproval => '承認待ち';
+
+  @override
+  String get mcpPublicAddressesOnly => '公開アドレスのみ';
+
+  @override
+  String get mcpApproveServer => '承認';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'このサーバーはサーバーホスト上で、サーバーのユーザーとしてコマンドを実行します。承認するまで起動しません。';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'このサーバーはサーバーホスト上でコマンドを実行するため、サーバーオーナーが承認するまで起動しません。';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'このサーバーは公開アドレスにしか接続できません。承認すると、localhost やローカルネットワークなど、ホストのプライベートネットワークにも接続できるようになります。';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'サーバーオーナーが承認するまで、このサーバーは公開アドレスにしか接続できません。';
+
+  @override
+  String get mcpRemoveServer => 'サーバーを削除';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '$name を削除しますか？';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'エージェント実行はこのサーバーのツールを使えなくなり、保存されているシークレットの値も削除されます。';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '$name のオン/オフを切り替え';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'MCPサーバーを追加';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '$name を編集';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      '英字、数字、ハイフン、アンダースコアが使えます。エージェントはこの名前でツールを認識します。';
+
+  @override
+  String get mcpServerNameInvalid =>
+      '英字、数字、ハイフン、アンダースコアを最大24文字まで使い、先頭は英字か数字にしてください。';
+
+  @override
+  String get mcpServerNameTaken => 'この場所には、既に同じ名前のサーバーがあります。';
+
+  @override
+  String get mcpServerTransportLabel => 'トランスポート';
+
+  @override
+  String get mcpServerTransportStdio => 'コマンド';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'コマンド';
+
+  @override
+  String get mcpServerCommandRequired => '実行するコマンドを入力してください。';
+
+  @override
+  String get mcpServerArgsLabel => '引数';
+
+  @override
+  String get mcpServerArgsHelper => '1行に1つの引数を入力します。';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'ユーザー名、パスワード、#fragment を含まない http または https の URL を入力してください。';
+
+  @override
+  String get mcpServerEnvLabel => '環境変数';
+
+  @override
+  String get mcpServerHeadersLabel => 'ヘッダー';
+
+  @override
+  String get mcpServerSecretsDescription => '値はシークレットとして保存され、再表示されません。';
+
+  @override
+  String get mcpServerHeadersExample => '例：ベアラートークンを含む Authorization ヘッダー。';
+
+  @override
+  String get mcpServerEnvAdd => '変数を追加';
+
+  @override
+  String get mcpServerHeaderAdd => 'ヘッダーを追加';
+
+  @override
+  String get mcpServerSecretValueHint => '値';
+
+  @override
+  String get mcpServerSecretNewValueHint => '新しい値';
+
+  @override
+  String get mcpServerSecretReplace => '値を置き換え';
+
+  @override
+  String get mcpServerSecretUndo => '元に戻す';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => '保存時に削除';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name は有効な変数名ではありません。英字、数字、アンダースコアを使い、数字で始めないでください。';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name は設定できません。接続が自身で管理していない有効なヘッダー名を使ってください。';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues => 'トランスポートを変更すると、保存されている値は削除されます。';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'オフにするとサーバーは起動せず、エージェントはそのツールを認識しません。';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'サーバーホスト上で動作するため、サーバーオーナーが承認するまで起動しません。起動方法を変更すると、再度承認が必要になります。';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'サーバーオーナーが承認するまで、公開アドレスにしか接続できません。接続方法を変更すると、再度承認が必要になります。';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'サーバーのユーザーとしてサーバーホスト上で動作します。保存すると承認されます。';
+
+  @override
+  String get mcpServerEditorRemoteOwner => '保存すると、ホストのプライベートネットワークへの接続も承認されます。';
+
+  @override
+  String get mcpServerEditorPersonal => 'ご自身が開始した、または責任を負う実行でのみ使われます。';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center はこのサーバーを保存できませんでした。設定を確認して、もう一度お試しください。';
+
+  @override
+  String get mcpServerNotFound => 'このサーバーは既に存在しません。削除された可能性があります。';
 }

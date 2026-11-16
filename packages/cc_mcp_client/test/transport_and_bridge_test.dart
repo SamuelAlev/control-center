@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
 import 'package:cc_mcp_client/cc_mcp_client.dart';
@@ -34,6 +35,70 @@ void main() {
     });
   });
 
+  group('a public-only server', () {
+    late HttpServer local;
+    var hits = 0;
+
+    setUp(() async {
+      hits = 0;
+      local = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      local.listen((request) {
+        hits++;
+        request.response
+          ..statusCode = 200
+          ..close();
+      });
+    });
+    tearDown(() => local.close(force: true));
+
+    McpServerConfig config({required bool publicOnly}) => McpServerConfig.http(
+      name: 'ws',
+      url: 'http://127.0.0.1:${local.port}/mcp',
+    ).copyWith(publicOnly: publicOnly);
+
+    test('is dialled through the injected factory, never directly', () async {
+      final asked = <String>[];
+      final transport = StreamableHttpTransport(
+        config(publicOnly: true),
+        publicOnlyConnection: (uri, _, _) {
+          asked.add(uri.host);
+          return Future.error(SocketException('refused ${uri.host}'));
+        },
+      );
+      await transport.start();
+      await expectLater(
+        transport.send({'jsonrpc': '2.0', 'id': 1, 'method': 'ping'}),
+        throwsA(isA<McpTransportException>()),
+      );
+      expect(asked, ['127.0.0.1']);
+      expect(hits, 0);
+      await transport.close();
+    });
+
+    test('with no factory refuses every connection', () async {
+      final transport = StreamableHttpTransport(config(publicOnly: true));
+      await transport.start();
+      await expectLater(
+        transport.send({'jsonrpc': '2.0', 'id': 1, 'method': 'ping'}),
+        throwsA(isA<McpTransportException>()),
+      );
+      expect(hits, 0);
+      await transport.close();
+    });
+
+    test('an approved one connects as configured', () async {
+      final transport = StreamableHttpTransport(config(publicOnly: false));
+      await transport.start();
+      try {
+        await transport.send({'jsonrpc': '2.0', 'id': 1, 'method': 'ping'});
+      } on Object {
+        // The stub answers with no body; reaching it is the point.
+      }
+      expect(hits, 1);
+      await transport.close();
+    });
+  });
+
   group('BridgedMcpTool', () {
     test('namespaces and sanitises the tool name', () {
       expect(
@@ -42,6 +107,24 @@ void main() {
       );
       expect(BridgedMcpTool.isBridgedName('mcp__x__y'), isTrue);
       expect(BridgedMcpTool.isBridgedName('list_workspaces'), isFalse);
+    });
+
+    test('a long name fits Claude Code\'s prefix and stays distinct', () {
+      final a = BridgedMcpTool.bridgedName(
+        'linear',
+        'create_issue_with_attachments_and_labels',
+      );
+      final b = BridgedMcpTool.bridgedName(
+        'linear',
+        'create_issue_with_attachments_and_labelz',
+      );
+      expect(a.length, BridgedMcpTool.maxBridgedNameLength);
+      expect(b.length, BridgedMcpTool.maxBridgedNameLength);
+      expect(a, isNot(b));
+      expect(a, startsWith('mcp__linear__create_issue'));
+      // `mcp__control-center__` plus the name stays within the model API's 64.
+      expect('mcp__control-center__$a'.length, lessThanOrEqualTo(64));
+      expect(a, matches(RegExp(r'^[a-zA-Z0-9_-]+$')));
     });
 
     test('converts a remote text result into a CallResult', () async {

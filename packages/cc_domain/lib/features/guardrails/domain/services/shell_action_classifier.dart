@@ -126,6 +126,12 @@ class ShellActionClassifier {
   static final RegExp _remoteName = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]*$');
   static final RegExp _refName = RegExp(r'^[A-Za-z0-9._][A-Za-z0-9._/-]*$');
 
+  /// A shell redirection token (`2>&1`, `>>`, `&>file`, `</dev/null`); group 1
+  /// is its target when written in the same token, empty when it is the next.
+  static final RegExp _redirection = RegExp(
+    r'^(?:\d+|&)?(?:>>|>\||>&|<&|<>|>|<)(.*)$',
+  );
+
   /// The refs [command] pushes to, as the push gateway names them (a branch
   /// without `refs/heads/`), or null when any `git push` in it does not name
   /// its destination outright.
@@ -150,7 +156,27 @@ class ShellActionClassifier {
         return null;
       }
       final positional = <String>[];
-      for (final arg in tokens.skip(push + 1)) {
+      final args = tokens.skip(push + 1).toList();
+      for (var i = 0; i < args.length; i++) {
+        final arg = args[i];
+        // A redirection (`2>&1`, `> log`, `&>/dev/null`) moves git's output,
+        // not what it pushes. Agents append one to nearly every push, and
+        // reading it as a refspec made every such push "undescribed", so its
+        // standing approval fell back to the exact command and never matched
+        // again. The push gateway still checks the refs it actually receives.
+        final redirect = _redirection.firstMatch(arg);
+        if (redirect != null) {
+          final target = redirect.group(1)!;
+          if (target.startsWith('<') || target.startsWith('(')) {
+            // A heredoc, here-string or process substitution: not a plain
+            // redirection, so the command is not read further.
+            return null;
+          }
+          if (target.isEmpty) {
+            i++;
+          }
+          continue;
+        }
         if (_plainPushFlags.contains(arg) ||
             arg.startsWith('--force-with-lease=')) {
           continue;

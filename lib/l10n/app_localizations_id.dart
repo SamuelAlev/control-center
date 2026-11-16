@@ -18753,4 +18753,207 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Tidak ada yang diberikan: pihak yang dituju, yaitu anggota atau repositori, sudah tidak ada di ruang kerja ini.';
+
+  @override
+  String get mcpWorkspaceServers => 'Server MCP ruang kerja';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Setiap proses agen di ruang kerja ini mendapat alat dari server ini, baik di Claude Code maupun harness bawaan. Control Center terhubung ke setiap server dan meneruskan alatnya.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Hanya admin ruang kerja yang dapat melihat dan mengubah server MCP ruang kerja ini.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Server MCP ruang kerja tidak tersedia di server yang terhubung.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'Belum ada server MCP ruang kerja';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Tambahkan server untuk memberi setiap proses agen di ruang kerja ini alatnya.';
+
+  @override
+  String get mcpAddServer => 'Tambah server';
+
+  @override
+  String get mcpHandAddedSource => 'Ditambahkan di Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Menunggu persetujuan';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Hanya alamat publik';
+
+  @override
+  String get mcpApproveServer => 'Setujui';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Server ini menjalankan perintah di host server, sebagai pengguna server. Server tidak akan dimulai sebelum Anda menyetujuinya.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Server ini menjalankan perintah di host server, jadi tidak akan dimulai sebelum pemilik server menyetujuinya.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Server ini hanya dapat menjangkau alamat publik. Setujui agar server juga dapat menjangkau jaringan privat host, seperti localhost dan jaringan lokal.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Server ini hanya dapat menjangkau alamat publik sampai pemilik server menyetujuinya.';
+
+  @override
+  String get mcpRemoveServer => 'Hapus server';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Hapus $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Proses agen kehilangan alat dari server ini, dan nilai rahasia yang tersimpan akan dihapus.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Aktifkan atau nonaktifkan $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Tambah server MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Sunting $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Huruf, angka, tanda hubung, dan garis bawah. Agen melihat alatnya dengan nama ini.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Gunakan hingga 24 huruf, angka, tanda hubung, atau garis bawah, dimulai dengan huruf atau angka.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'Server lain di sini sudah memakai nama ini.';
+
+  @override
+  String get mcpServerTransportLabel => 'Transpor';
+
+  @override
+  String get mcpServerTransportStdio => 'Perintah';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Perintah';
+
+  @override
+  String get mcpServerCommandRequired =>
+      'Masukkan perintah yang akan dijalankan.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumen';
+
+  @override
+  String get mcpServerArgsHelper => 'Satu argumen per baris.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Masukkan URL http atau https tanpa nama pengguna, kata sandi, atau #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Variabel lingkungan';
+
+  @override
+  String get mcpServerHeadersLabel => 'Header';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Nilai disimpan sebagai rahasia dan tidak akan ditampilkan lagi.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Misalnya, header Authorization dengan token bearer.';
+
+  @override
+  String get mcpServerEnvAdd => 'Tambah variabel';
+
+  @override
+  String get mcpServerHeaderAdd => 'Tambah header';
+
+  @override
+  String get mcpServerSecretValueHint => 'Nilai';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Nilai baru';
+
+  @override
+  String get mcpServerSecretReplace => 'Ganti nilai';
+
+  @override
+  String get mcpServerSecretUndo => 'Urungkan';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Dihapus saat disimpan';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name bukan nama variabel yang valid. Gunakan huruf, angka, dan garis bawah, tidak dimulai dengan angka.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name tidak dapat diatur. Gunakan nama header yang valid dan tidak dikelola sendiri oleh koneksi.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Mengubah transpor akan menghapus nilai yang tersimpan.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Saat nonaktif, server tidak dijalankan dan agen tidak melihat alatnya.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Server ini berjalan di host server, jadi tidak akan dimulai sebelum pemilik server menyetujuinya. Mengubah cara memulainya akan meminta persetujuan lagi.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Server ini hanya dapat menjangkau alamat publik sampai pemilik server menyetujuinya. Mengubah cara koneksinya akan meminta persetujuan lagi.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Server ini berjalan di host server sebagai pengguna server. Menyimpan akan menyetujuinya.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Menyimpan akan menyetujui server agar juga dapat menjangkau jaringan privat host.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Hanya digunakan dalam proses yang Anda mulai atau yang menjadi tanggung jawab Anda.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center tidak dapat menyimpan server ini. Periksa pengaturannya lalu coba lagi.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Server ini sudah tidak ada. Mungkin seseorang telah menghapusnya.';
 }

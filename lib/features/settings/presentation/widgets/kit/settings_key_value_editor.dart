@@ -49,7 +49,8 @@ class SettingsKeyValueEditor extends StatefulWidget {
   /// Label for the add button.
   final String? addLabel;
 
-  /// What to say when there are no pairs, and what adding one would do.
+  /// What to say when there are no pairs, and what adding one would do. An
+  /// empty string says nothing, for an editor with other rows above it.
   final String? emptyLabel;
 
   /// Masks the value field (env vars can hold secrets).
@@ -146,7 +147,7 @@ class _SettingsKeyValueEditorState extends State<SettingsKeyValueEditor> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (_rows.isEmpty)
+        if (_rows.isEmpty && widget.emptyLabel != '')
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: Text(

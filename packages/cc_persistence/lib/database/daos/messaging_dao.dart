@@ -20,6 +20,7 @@ part 'messaging_dao.g.dart';
 part 'messaging_dao_activity.dart';
 part 'messaging_dao_branches.dart';
 part 'messaging_dao_embeddings.dart';
+part 'messaging_dao_history.dart';
 part 'messaging_dao_spaces.dart';
 part 'messaging_dao_stamps.dart';
 

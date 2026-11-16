@@ -12,6 +12,34 @@ import 'package:cc_mcp_client/src/transports/sse_parser.dart';
 /// map when no auth is configured.
 typedef AuthHeaderProvider = Future<Map<String, String>> Function();
 
+/// An [HttpClient.connectionFactory]: how a transport dials a server it may
+/// only reach at a public address ([McpServerConfig.publicOnly]).
+typedef McpConnectionFactory =
+    Future<ConnectionTask<Socket>> Function(
+      Uri uri,
+      String? proxyHost,
+      int? proxyPort,
+    );
+
+/// Points [client] at [factory] when [config] may reach public addresses
+/// only. Such a config with no factory refuses every connection: it never
+/// falls back to dialling whatever the name resolves to.
+void _confine(
+  HttpClient client,
+  McpServerConfig config,
+  McpConnectionFactory? factory,
+) {
+  if (!config.publicOnly) {
+    return;
+  }
+  // A proxy would connect by name, past the pinned address.
+  client.findProxy = (_) => 'DIRECT';
+  client.connectionFactory =
+      factory ??
+      (uri, _, _) =>
+          Future.error(SocketException('refused to connect to ${uri.host}'));
+}
+
 /// The Streamable HTTP transport (MCP `2025-03-26`+).
 ///
 /// Each client→server message is a `POST` of a JSON-RPC frame. The server may
@@ -24,10 +52,15 @@ typedef AuthHeaderProvider = Future<Map<String, String>> Function();
 /// `needs_auth`.
 class StreamableHttpTransport implements McpTransport {
   /// Creates a [StreamableHttpTransport] for [config] (http config).
-  StreamableHttpTransport(this.config, {this._authHeaderProvider}) {
+  StreamableHttpTransport(
+    this.config, {
+    this._authHeaderProvider,
+    McpConnectionFactory? publicOnlyConnection,
+  }) {
     if (!(config.transport == McpTransportKind.http)) {
       throw ArgumentError('StreamableHttpTransport requires an http config');
     }
+    _confine(_httpClient, config, publicOnlyConnection);
   }
 
   /// The server config (url, headers, timeout).
@@ -234,10 +267,15 @@ class StreamableHttpTransport implements McpTransport {
 /// resolves once the `endpoint` event arrives.
 class SseTransport implements McpTransport {
   /// Creates an [SseTransport] for [config] (sse config).
-  SseTransport(this.config, {this._authHeaderProvider}) {
+  SseTransport(
+    this.config, {
+    this._authHeaderProvider,
+    McpConnectionFactory? publicOnlyConnection,
+  }) {
     if (!(config.transport == McpTransportKind.sse)) {
       throw ArgumentError('SseTransport requires an sse config');
     }
+    _confine(_httpClient, config, publicOnlyConnection);
   }
 
   /// The server config (url, headers, timeout).

@@ -2,7 +2,7 @@
 title: "Autorisation : qui peut faire quoi, et comment vous le prouvez"
 description: "Le catalogue de permissions derrière les rôles de Control Center, le journal d’audit à l’épreuve de la falsification dans lequel aboutit chaque décision d’autorisation, et les contrôles à l’échelle de l’installation qu’un opérateur peut épingler."
 slug: fr-CA/manuel/concepts/autorisation
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center répond à deux questions d’autorisation, et elles sont
@@ -170,10 +170,8 @@ l’hôte.** Concrètement, seul le propriétaire du serveur peut :
 - Voir et arrêter chaque processus d’agent en cours sur le serveur. Les autres
   voient et arrêtent seulement les exécutions d’agents en direct des espaces de
   travail auxquels ils appartiennent.
-- Faire utiliser aux agents les serveurs MCP configurés dans les outils propres à
-  l’utilisateur du serveur (Claude, Codex, Cursor et les autres). Seules les
-  exécutions du harnais intégré dont le propriétaire est responsable en
-  bénéficient ; voir [Les serveurs MCP personnels restent ceux du propriétaire](/fr-CA/manuel/guides/serveur-mcp/#les-serveurs-mcp-personnels-restent-ceux-du-propriétaire).
+- Faire utiliser aux agents des serveurs MCP personnels : ceux configurés dans les outils propres à l’utilisateur du serveur (Claude, Codex, Cursor et les autres) et ceux que le propriétaire ajoute. Seules les exécutions dont le propriétaire est responsable en bénéficient ; voir [Serveurs personnels](/fr-CA/manuel/guides/serveur-mcp/#serveurs-personnels).
+- Approuver un serveur MCP de l’espace de travail qui exécute une commande sur la machine du serveur ou qui joint son réseau privé (voir [Serveurs de l’espace de travail](/fr-CA/manuel/guides/serveur-mcp/#serveurs-de-lespace-de-travail)).
 - Confirmer l’adresse courriel d’une personne, pour que l’authentification unique
   puisse la reconnaître (voir [Comment les connexions retrouvent les comptes existants](/fr-CA/manuel/guides/sso-oidc/#comment-les-connexions-retrouvent-les-comptes-existants)).
 - Modifier les paramètres de toute l’installation : SSO, identifiants des

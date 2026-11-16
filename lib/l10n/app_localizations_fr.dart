@@ -18909,6 +18909,208 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Rien n\'a été accordé : la personne ou l\'élément concerné n\'existe plus dans cet espace de travail.';
+
+  @override
+  String get mcpWorkspaceServers => 'Serveurs MCP de l\'espace de travail';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Chaque exécution d\'agent de cet espace de travail reçoit les outils de ces serveurs, dans Claude Code comme dans le harnais intégré. Control Center se connecte à chaque serveur et transmet ses outils.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Seuls les administrateurs de l\'espace de travail peuvent voir et modifier les serveurs MCP de cet espace de travail.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Les serveurs MCP de l\'espace de travail ne sont pas disponibles sur le serveur connecté.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Aucun serveur MCP d\'espace de travail pour le moment';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Ajoutez un serveur pour donner ses outils à chaque exécution d\'agent de cet espace de travail.';
+
+  @override
+  String get mcpAddServer => 'Ajouter un serveur';
+
+  @override
+  String get mcpHandAddedSource => 'Ajouté dans Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'En attente d\'approbation';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Adresses publiques uniquement';
+
+  @override
+  String get mcpApproveServer => 'Approuver';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Ce serveur exécute une commande sur l\'hôte du serveur, avec l\'utilisateur du serveur. Il ne démarrera pas tant que vous ne l\'aurez pas approuvé.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Ce serveur exécute une commande sur l\'hôte du serveur. Il ne démarrera pas tant que le propriétaire du serveur ne l\'aura pas approuvé.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Ce serveur ne peut atteindre que des adresses publiques. Approuvez-le pour qu\'il puisse aussi atteindre le réseau privé de l\'hôte, comme localhost et le réseau local.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Ce serveur ne peut atteindre que des adresses publiques tant que le propriétaire du serveur ne l\'a pas approuvé.';
+
+  @override
+  String get mcpRemoveServer => 'Supprimer le serveur';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Supprimer $name ?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Les exécutions d\'agent perdent les outils de ce serveur, et ses valeurs secrètes enregistrées sont supprimées.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Activer ou désactiver $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Ajouter un serveur MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Modifier $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Lettres, chiffres, tirets et tirets bas. Les agents voient ses outils sous ce nom.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Utilisez jusqu\'à 24 lettres, chiffres, tirets ou tirets bas, en commençant par une lettre ou un chiffre.';
+
+  @override
+  String get mcpServerNameTaken => 'Un autre serveur ici porte déjà ce nom.';
+
+  @override
+  String get mcpServerTransportLabel => 'Type de transport';
+
+  @override
+  String get mcpServerTransportStdio => 'Commande';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Commande';
+
+  @override
+  String get mcpServerCommandRequired => 'Saisissez la commande à exécuter.';
+
+  @override
+  String get mcpServerArgsLabel => 'Paramètres';
+
+  @override
+  String get mcpServerArgsHelper => 'Un argument par ligne.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Saisissez une URL http ou https sans nom d\'utilisateur, mot de passe ni #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Variables d\'environnement';
+
+  @override
+  String get mcpServerHeadersLabel => 'En-têtes';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Les valeurs sont enregistrées comme secrets et ne sont plus jamais affichées.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Par exemple, un en-tête Authorization avec un jeton bearer.';
+
+  @override
+  String get mcpServerEnvAdd => 'Ajouter une variable';
+
+  @override
+  String get mcpServerHeaderAdd => 'Ajouter un en-tête';
+
+  @override
+  String get mcpServerSecretValueHint => 'Valeur';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Nouvelle valeur';
+
+  @override
+  String get mcpServerSecretReplace => 'Remplacer la valeur';
+
+  @override
+  String get mcpServerSecretUndo => 'Annuler';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Supprimée à l\'enregistrement';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name n\'est pas un nom de variable valide. Utilisez des lettres, des chiffres et des tirets bas, sans commencer par un chiffre.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name ne peut pas être défini. Utilisez un nom d\'en-tête valide que la connexion ne gère pas elle-même.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Changer le transport supprime les valeurs enregistrées.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Désactivé, le serveur n\'est pas démarré et les agents ne voient pas ses outils.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Il s\'exécute sur l\'hôte du serveur, il ne démarrera donc pas tant que le propriétaire du serveur ne l\'aura pas approuvé. Modifier son mode de démarrage demande à nouveau une approbation.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Il n\'atteint que des adresses publiques tant que le propriétaire du serveur ne l\'a pas approuvé. Modifier sa connexion demande à nouveau une approbation.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Il s\'exécute sur l\'hôte du serveur avec l\'utilisateur du serveur. L\'enregistrement l\'approuve.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'L\'enregistrement l\'approuve pour qu\'il puisse aussi atteindre le réseau privé de l\'hôte.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Utilisé uniquement dans les exécutions que vous lancez ou dont vous êtes responsable.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center n\'a pas pu enregistrer ce serveur. Vérifiez ses paramètres et réessayez.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Ce serveur n\'existe plus. Quelqu\'un l\'a peut-être supprimé.';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).

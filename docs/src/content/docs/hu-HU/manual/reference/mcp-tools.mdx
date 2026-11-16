@@ -2,10 +2,10 @@
 title: MCP-eszközök
 description: A cc_server által regisztrált MCP-eszközök teljes katalógusa, eszközcsaládonként.
 slug: hu-HU/kezikonyv/referencia/mcp-eszkozok
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a fő szerverporton (alapértelmezés szerint `9030`) érhető el a `POST /mcp` és a `GET /sse` végponton, `2024-11-05` protokollverzióval. Minden kliens ugyanezt a regisztert éri el: az asztali alkalmazás, a webes build, a külső MCP-kliensek és a beépített ügynökfuttató. A külső MCP-szerverek dinamikus rétegként hidazhatók be ugyanebbe a regiszterbe. A szerver tulajdonosának személyes eszközkonfigurációjában talált szerverek kivételt képeznek: ez a végpont soha nem listázza, nem hívja és nem keresi őket, és csak a beépített harness-futások kapják meg őket, amelyekért a szerver tulajdonosa felel (lásd: [Személyes MCP-szerverek a tulajdonosé maradnak](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/#a-személyes-mcp-szerverek-a-tulajdonosé-maradnak)).
+A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a fő szerverporton (alapértelmezés szerint `9030`) érhető el a `POST /mcp` és a `GET /sse` végponton, `2024-11-05` protokollverzióval. Minden kliens ugyanezt a regisztert éri el: az asztali alkalmazás, a webes build, a külső MCP-kliensek és a beépített ügynökfuttató. A külső MCP-szerverek saját rétegekben kapcsolódnak ugyanabba a regiszterbe: munkaterületenként egy réteg a munkaterület adminisztrátorai által beállított szervereknek, és egy réteg a szerver tulajdonosának személyes szerverei számára. Ez a végpont csak ügynökfuttatáshoz listázza, hívja és keresi őket: a saját munkaterület szervereit, valamint a személyes szervereket, ha a szerver tulajdonosa felel a futtatásért. Az MCP-token és a párosított eszközök soha nem látják őket (lásd: [Az ügynökök által használt MCP-szerverek](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/#az-ügynökök-által-használt-mcp-szerverek)).
 
 ## A regiszter mérete
 

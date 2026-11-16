@@ -1,3 +1,6 @@
+import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart'
+    show McpToolView;
+
 /// Trusted identity scope for an MCP `tools/call`, derived from the transport
 /// (dispatch-written `X-CC-*` headers on the loopback HTTP server), never from
 /// model-supplied arguments.
@@ -15,7 +18,11 @@ class McpCallScope {
     this.conversationId,
     this.spaceId,
     this.attested = false,
-  });
+    this.personalMcp = false,
+  }) : assert(
+         !personalMcp || attested,
+         'only a run grant can hand out the owner\'s personal MCP servers',
+       );
 
   /// Header carrying a run's own secret to the MCP transport.
   static const String runGrantHeader = 'X-CC-Agent-Run';
@@ -27,6 +34,18 @@ class McpCallScope {
   /// and the bearer token is server-wide, so a sandboxed process can send any
   /// values it likes. A per-run secret can only name its own run.
   final bool attested;
+
+  /// Whether the run this scope proves may use the server owner's personal
+  /// MCP servers: decided once per run, from whether the owner is accountable
+  /// for it. Only an [attested] scope can say so.
+  final bool personalMcp;
+
+  /// The external MCP layers this caller may see: an attested run gets its
+  /// own workspace's servers, and the owner's when [personalMcp]; any other
+  /// caller (the owner's token, a paired device) gets none.
+  McpToolView get toolView => attested
+      ? McpToolView(workspaceId: workspaceId, includePersonal: personalMcp)
+      : McpToolView.shared;
 
   /// The workspace the calling agent runs in. When set, tools that declare a
   /// `workspace_id` argument have it overridden to this value.
@@ -168,9 +187,16 @@ class McpCallScope {
           agentId == other.agentId &&
           conversationId == other.conversationId &&
           spaceId == other.spaceId &&
-          attested == other.attested;
+          attested == other.attested &&
+          personalMcp == other.personalMcp;
 
   @override
-  int get hashCode =>
-      Object.hash(workspaceId, agentId, conversationId, spaceId, attested);
+  int get hashCode => Object.hash(
+    workspaceId,
+    agentId,
+    conversationId,
+    spaceId,
+    attested,
+    personalMcp,
+  );
 }

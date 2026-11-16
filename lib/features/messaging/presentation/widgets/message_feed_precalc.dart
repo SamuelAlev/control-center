@@ -14,6 +14,7 @@ extension _PrecalcMethods on _SpaceMessageFeedState {
   /// after the last movement.
   void _deferPrecalculation() {
     _precalcPolicy.disarm();
+    _heightSweep.pause();
     if (_precalcTimer != null) {
       _precalcDeferredAgain = true;
       return;
@@ -32,5 +33,6 @@ extension _PrecalcMethods on _SpaceMessageFeedState {
       return;
     }
     _precalcPolicy.arm();
+    _scheduleHeightSweep();
   }
 }

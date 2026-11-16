@@ -18986,4 +18986,205 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'لم تُمنح أي صلاحية: الشخص أو الشيء الذي كانت من أجله لم يعد موجودًا في مساحة العمل.';
+
+  @override
+  String get mcpWorkspaceServers => 'خوادم MCP لمساحة العمل';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'تحصل كل عملية تشغيل للوكلاء في مساحة العمل هذه على أدوات هذه الخوادم، في Claude Code والأداة المدمجة على حد سواء. يتصل Control Center بكل خادم ويمرر أدواته.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'يمكن لمسؤولي مساحة العمل فقط رؤية خوادم MCP لهذه المساحة وتغييرها.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'خوادم MCP لمساحة العمل غير متاحة على الخادم المتصل.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'لا توجد خوادم MCP لمساحة العمل بعد';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'أضف خادماً لتمنح كل عملية تشغيل للوكلاء في مساحة العمل هذه أدواته.';
+
+  @override
+  String get mcpAddServer => 'إضافة خادم';
+
+  @override
+  String get mcpHandAddedSource => 'أُضيف في Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'بانتظار الموافقة';
+
+  @override
+  String get mcpPublicAddressesOnly => 'عناوين عامة فقط';
+
+  @override
+  String get mcpApproveServer => 'موافقة';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'يشغّل هذا الخادم أمراً على مضيف الخادم، بصلاحيات مستخدم الخادم. لن يبدأ قبل موافقتك.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'يشغّل هذا الخادم أمراً على مضيف الخادم، لذلك لن يبدأ قبل أن يوافق عليه مالك الخادم.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'يستطيع هذا الخادم الوصول إلى العناوين العامة فقط. وافق عليه ليتمكن من الوصول إلى الشبكة الخاصة للمضيف أيضاً، مثل localhost والشبكة المحلية.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'يستطيع هذا الخادم الوصول إلى العناوين العامة فقط إلى أن يوافق عليه مالك الخادم.';
+
+  @override
+  String get mcpRemoveServer => 'إزالة الخادم';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'هل تريد إزالة $name؟';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'تفقد عمليات تشغيل الوكلاء أدوات هذا الخادم، وتُحذف قيم أسراره المخزّنة.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'تشغيل $name أو إيقافه';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'إضافة خادم MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'تعديل $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'حروف وأرقام وشرطات وشرطات سفلية. يرى الوكلاء أدواته بهذا الاسم.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'استخدم حتى 24 حرفاً أو رقماً أو شرطة أو شرطة سفلية، تبدأ بحرف أو رقم.';
+
+  @override
+  String get mcpServerNameTaken => 'يوجد خادم آخر هنا بهذا الاسم بالفعل.';
+
+  @override
+  String get mcpServerTransportLabel => 'النقل';
+
+  @override
+  String get mcpServerTransportStdio => 'أمر';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'الأمر';
+
+  @override
+  String get mcpServerCommandRequired => 'أدخل الأمر المراد تشغيله.';
+
+  @override
+  String get mcpServerArgsLabel => 'الوسائط';
+
+  @override
+  String get mcpServerArgsHelper => 'وسيط واحد في كل سطر.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'أدخل عنوان http أو https بدون اسم مستخدم أو كلمة مرور أو #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'متغيرات البيئة';
+
+  @override
+  String get mcpServerHeadersLabel => 'الترويسات';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'تُخزَّن القيم كأسرار ولا تُعرض مرة أخرى.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'مثال: ترويسة Authorization برمز bearer.';
+
+  @override
+  String get mcpServerEnvAdd => 'إضافة متغير';
+
+  @override
+  String get mcpServerHeaderAdd => 'إضافة ترويسة';
+
+  @override
+  String get mcpServerSecretValueHint => 'القيمة';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'قيمة جديدة';
+
+  @override
+  String get mcpServerSecretReplace => 'استبدال القيمة';
+
+  @override
+  String get mcpServerSecretUndo => 'تراجع';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'سيُحذف عند الحفظ';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name ليس اسم متغير صالحاً. استخدم حروفاً وأرقاماً وشرطات سفلية، ولا يبدأ برقم.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return 'لا يمكن تعيين $name. استخدم اسم ترويسة صالحاً لا يديره الاتصال بنفسه.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'تغيير النقل يحذف القيم المخزّنة.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'عند الإيقاف، لا يبدأ الخادم ولا يرى الوكلاء أدواته.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'يعمل على مضيف الخادم، لذلك لن يبدأ قبل أن يوافق عليه مالك الخادم. تغيير طريقة تشغيله يطلب الموافقة مجدداً.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'يستطيع الوصول إلى العناوين العامة فقط إلى أن يوافق عليه مالك الخادم. تغيير طريقة اتصاله يطلب الموافقة مجدداً.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'يعمل على مضيف الخادم بصلاحيات مستخدم الخادم. الحفظ يوافق عليه.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'الحفظ يوافق على وصوله إلى الشبكة الخاصة للمضيف أيضاً.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'تُستخدم فقط في عمليات التشغيل التي تبدؤها أو تكون مسؤولاً عنها.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'تعذّر على Control Center حفظ هذا الخادم. تحقق من إعداداته وحاول مرة أخرى.';
+
+  @override
+  String get mcpServerNotFound =>
+      'لم يعد هذا الخادم موجوداً. ربما أزاله شخص ما.';
 }

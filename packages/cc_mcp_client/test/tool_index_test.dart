@@ -80,56 +80,56 @@ void main() {
       registry.register(SearchToolBm25(catalog: registry));
 
       final listed = registry
-          .listDefinitions(includePersonal: false)
+          .listDefinitions(view: McpToolView.shared)
           .map((d) => d.name)
           .toSet();
       expect(listed.length, 46);
       expect(listed, contains('tool_30'));
       expect(listed, contains('search_tool_bm25'));
-      expect(registry.lookup('tool_30', includePersonal: false), isNotNull);
+      expect(registry.lookup('tool_30', view: McpToolView.shared), isNotNull);
       expect(registry.allToolDefinitions().length, 46);
     });
 
     test('dynamic bridged tools are personal: listed and resolvable only '
         'when asked for', () {
       final registry = McpToolRegistry([_TestTool('native')]);
-      registry.setDynamicTools([_TestTool('mcp__srv__x')]);
+      registry.setPersonalTools([_TestTool('mcp__srv__x')]);
       expect(
-        registry.toolNames(includePersonal: true),
+        registry.toolNames(view: const McpToolView(includePersonal: true)),
         containsAll(['native', 'mcp__srv__x']),
       );
-      expect(registry.lookup('mcp__srv__x', includePersonal: true), isNotNull);
+      expect(registry.lookup('mcp__srv__x', view: const McpToolView(includePersonal: true)), isNotNull);
       expect(
-        registry.listDefinitions(includePersonal: true).map((d) => d.name),
+        registry.listDefinitions(view: const McpToolView(includePersonal: true)).map((d) => d.name),
         containsAll(['native', 'mcp__srv__x']),
       );
-      expect(registry.toolNames(includePersonal: false), ['native']);
-      expect(registry.lookup('mcp__srv__x', includePersonal: false), isNull);
-      expect(registry.resolve('mcp__srv__x', includePersonal: false), isNull);
+      expect(registry.toolNames(view: McpToolView.shared), ['native']);
+      expect(registry.lookup('mcp__srv__x', view: McpToolView.shared), isNull);
+      expect(registry.resolve('mcp__srv__x', view: McpToolView.shared), isNull);
       expect(registry.allToolDefinitions().map((d) => d.name), ['native']);
     });
 
     test('a personal tool never stands in for a shared one', () {
       final shared = _TestTool('same');
       final registry = McpToolRegistry([shared]);
-      registry.setDynamicTools([_TestTool('same')]);
-      expect(registry.lookup('same', includePersonal: false), same(shared));
+      registry.setPersonalTools([_TestTool('same')]);
+      expect(registry.lookup('same', view: McpToolView.shared), same(shared));
     });
 
     test('personal tools do not change the shared revision', () {
       final registry = McpToolRegistry([_TestTool('native')]);
       final before = registry.toolsetRevision;
-      registry.setDynamicTools([_TestTool('mcp__srv__x')]);
+      registry.setPersonalTools([_TestTool('mcp__srv__x')]);
       expect(registry.toolsetRevision, before);
     });
 
-    test('onToolsChanged fires on register and setDynamicTools', () {
+    test('onToolsChanged fires on register and setPersonalTools', () {
       final registry = McpToolRegistry([_TestTool('native')]);
       var fired = 0;
       registry.onToolsChanged = () => fired++;
       registry.register(_TestTool('extra'));
       expect(fired, 1);
-      registry.setDynamicTools([_TestTool('bridged')]);
+      registry.setPersonalTools([_TestTool('bridged')]);
       expect(fired, 2);
     });
 

@@ -10,7 +10,10 @@ import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
 import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
+import 'package:cc_domain/features/mcp/domain/ports/mcp_client_control.dart';
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart'
     show TelemetryConfigRepository;
@@ -35,6 +38,7 @@ import 'package:cc_server_core/src/catalog/changelog_ops.dart';
 import 'package:cc_server_core/src/catalog/claude_session_settings_ops.dart';
 import 'package:cc_server_core/src/catalog/claude_sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/commit_signing_ops.dart';
+import 'package:cc_server_core/src/catalog/conversation_outline_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
 import 'package:cc_server_core/src/catalog/forge_automation_token_ops.dart';
 import 'package:cc_server_core/src/catalog/forge_compose_ops.dart';
@@ -45,6 +49,7 @@ import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/catalog/server_notice_ops.dart';
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/user_profile_ops.dart';
+import 'package:cc_server_core/src/catalog/workspace_mcp_server_ops.dart';
 import 'package:cc_server_core/src/catalog/workspace_provider_app_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
@@ -66,6 +71,7 @@ import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_github_rpc.dart';
 import 'package:cc_server_core/src/identity/workspace_profile_rpc.dart';
 import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
+import 'package:cc_server_core/src/mcp_servers/workspace_mcp_servers.dart';
 import 'package:cc_server_core/src/model_routing/models_dev_rpc.dart';
 import 'package:cc_server_core/src/newsfeed/filter_list_rpc.dart';
 import 'package:cc_server_core/src/pr_review/pr_merge_conflict_service.dart';
@@ -122,6 +128,9 @@ ExtraOpsResult buildServerExtraOps({
   CommitSigningKeys? commitSigningKeys,
   required DatabaseBackupPort? databaseBackup,
   required ConversationTitlePort? conversationTitles,
+  // The conversation feed's outline and anchored range reads.
+  required MessagingRepository messagingRepository,
+  required ConversationRepository conversationRepository,
   // The read gate of a conversation's space (derived from the conversation).
   required Future<void> Function(
     String workspaceId,
@@ -136,9 +145,17 @@ ExtraOpsResult buildServerExtraOps({
   required Future<bool> Function(String userId) isServerOwner,
   required PrDataGate prData,
   McpServerControl? mcpServer,
+  WorkspaceMcpServers? workspaceMcpServers,
+  McpClientControl? mcpClientControl,
   ServerNoticeRepository? serverNotices,
 }) {
+  final conversationOutline = buildConversationOutlineOps(
+    messaging: messagingRepository,
+    conversations: conversationRepository,
+    prData: prData,
+  );
   final ops = <RepoOp>[
+    ...conversationOutline.ops,
     ...fleetOps,
     ...buildAgentCreateOps(
       agentRepository: agentRepository,
@@ -222,6 +239,10 @@ ExtraOpsResult buildServerExtraOps({
     ...buildAccountPoolOps(workspaceSettings),
     ...buildTelemetryOps(config: telemetryConfig),
     ...buildMcpServerOps(mcp: mcpServer),
+    ...buildConfiguredMcpServerOps(
+      workspaceServers: workspaceMcpServers,
+      personal: mcpClientControl,
+    ),
   ];
 
   final watches = <WatchQuery>[
@@ -230,6 +251,7 @@ ExtraOpsResult buildServerExtraOps({
     ...buildSoundscapeWatchQueries(soundscapeHub),
     ...buildChatWatchQueries(connector: chatConnector, users: userRepository),
     ...buildTelemetryWatchQueries(telemetryConfig),
+    ...conversationOutline.watches,
     ...buildAuditLogWatchQueries(
       serverAudit: serverAudit,
       activity: userActivity,

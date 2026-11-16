@@ -55,20 +55,20 @@ void main() {
 
       for (final name in RemoteToolPolicy.readOnly) {
         expect(
-          registry.resolve(name, includePersonal: false)?.isMutating,
+          registry.resolve(name, view: McpToolView.shared)?.isMutating,
           isFalse,
           reason: name,
         );
       }
       for (final name in RemoteToolPolicy.mutating) {
         expect(
-          registry.resolve(name, includePersonal: false)?.isMutating,
+          registry.resolve(name, view: McpToolView.shared)?.isMutating,
           isTrue,
           reason: name,
         );
       }
       expect(
-        registry.resolve('nonexistent', includePersonal: false)?.isMutating,
+        registry.resolve('nonexistent', view: McpToolView.shared)?.isMutating,
         isNull,
       );
     },

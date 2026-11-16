@@ -2,7 +2,7 @@
 title: Otorisasi — siapa yang boleh melakukan apa, dan bagaimana Anda membuktikannya
 description: Katalog izin di balik peran Control Center, jejak audit yang dapat mendeteksi manipulasi tempat setiap keputusan otorisasi bermuara, dan kontrol tingkat instalasi yang dapat ditetapkan operator.
 slug: id-ID/panduan-pengguna/konsep/otorisasi
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center menjawab dua pertanyaan otorisasi, dan keduanya sungguh
@@ -110,7 +110,8 @@ Orang yang menyiapkan server adalah **pemiliknya**. Server mencatatnya sekali, p
 - Menjalankan agen di server yang mesinnya tidak memiliki sandbox. Run milik orang lain ditolak di sana, kecuali pemilik memulai server dengan `--sandbox off`, yang menjalankan agen setiap anggota tanpa pembatasan (lihat [Agen di host tanpa sandbox](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/#agen-di-host-tanpa-sandbox)).
 - Menautkan checkout repositori yang berada di luar penyimpanan ruang kerja, mengonfirmasi tautan yang sudah ada sebelum aturan itu, dan menelusuri folder server saat menambahkan repositori (lihat [Tambahkan repositori](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)).
 - Melihat dan menghentikan setiap proses agen yang berjalan di server. Orang lain hanya melihat dan menghentikan run agen langsung di ruang kerja yang mereka ikuti.
-- Membuat agen menggunakan server MCP yang dikonfigurasi di alat pengguna server itu sendiri (Claude, Codex, Cursor, dan lainnya). Hanya run harness bawaan yang dipertanggungjawabkan pemilik yang mendapatkannya; lihat [Server MCP pribadi tetap milik pemilik](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-mcp-pribadi-tetap-milik-pemilik).
+- Membuat agen menggunakan server MCP pribadi: yang dikonfigurasi di alat milik pengguna server (Claude, Codex, Cursor, dan lainnya) serta yang ditambahkan pemiliknya. Hanya run yang dipertanggungjawabkan kepada pemiliknya yang mendapatkannya; lihat [Server pribadi](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-pribadi).
+- Menyetujui server MCP ruang kerja yang menjalankan perintah di mesin server atau menjangkau jaringan privatnya (lihat [Server ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-ruang-kerja)).
 - Mengonfirmasi alamat email seseorang, agar single sign-on dapat mencocokkannya (lihat [Hubungkan penyedia OpenID Connect](/id-ID/panduan-pengguna/panduan-praktis/sso-oidc/#bagaimana-login-mencocokkan-akun-yang-sudah-ada)).
 - Mengubah pengaturan seluruh instalasi: SSO, kredensial penyedia, endpoint MCP dan tokennya, pengelolaan model, Connect, dan cadangan seluruh instalasi. Operasi ini mendeklarasikan **kewenangan server** dan ditolak untuk semua orang selain pemilik.
 

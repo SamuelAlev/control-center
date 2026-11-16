@@ -18684,4 +18684,206 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'کچھ بھی نہیں دیا گیا: جس شخص یا چیز کے لیے یہ تھی وہ اب اس ورک اسپیس میں نہیں ہے۔';
+
+  @override
+  String get mcpWorkspaceServers => 'ورک اسپیس کے MCP سرورز';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'اس ورک اسپیس میں ہر ایجنٹ رن کو ان سرورز کے ٹولز ملتے ہیں، Claude Code میں بھی اور بلٹ اِن ہارنس میں بھی۔ Control Center ہر سرور سے منسلک ہوتا ہے اور اس کے ٹولز آگے پہنچاتا ہے۔';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'صرف ورک اسپیس کے ایڈمن اس ورک اسپیس کے MCP سرورز دیکھ اور بدل سکتے ہیں۔';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'ورک اسپیس کے MCP سرورز منسلک سرور پر دستیاب نہیں ہیں۔';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'ابھی تک کوئی ورک اسپیس MCP سرور نہیں';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'ایک سرور شامل کریں تاکہ اس ورک اسپیس میں ہر ایجنٹ رن کو اس کے ٹولز ملیں۔';
+
+  @override
+  String get mcpAddServer => 'سرور شامل کریں';
+
+  @override
+  String get mcpHandAddedSource => 'Control Center میں شامل کیا گیا';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'منظوری کا انتظار';
+
+  @override
+  String get mcpPublicAddressesOnly => 'صرف عوامی پتے';
+
+  @override
+  String get mcpApproveServer => 'منظور کریں';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'یہ سرور سرور کے ہوسٹ پر، سرور کے صارف کے طور پر ایک کمانڈ چلاتا ہے۔ آپ کی منظوری تک یہ شروع نہیں ہوگا۔';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'یہ سرور سرور کے ہوسٹ پر کمانڈ چلاتا ہے، اس لیے سرور کا مالک منظوری نہ دے تو یہ شروع نہیں ہوگا۔';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'یہ سرور صرف عوامی پتوں تک رسائی رکھ سکتا ہے۔ منظور کریں تو یہ ہوسٹ کے نجی نیٹ ورک تک بھی پہنچ سکے گا، جیسے localhost اور مقامی نیٹ ورک۔';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'سرور کا مالک منظوری نہ دے تو یہ سرور صرف عوامی پتوں تک رسائی رکھ سکتا ہے۔';
+
+  @override
+  String get mcpRemoveServer => 'سرور ہٹائیں';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '$name ہٹائیں؟';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'ایجنٹ رنز اس سرور کے ٹولز کھو دیں گے، اور اس کی محفوظ شدہ سیکرٹ ویلیوز حذف ہو جائیں گی۔';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '$name آن یا آف کریں';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'MCP سرور شامل کریں';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '$name میں ترمیم کریں';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'حروف، ہندسے، ہائفن اور انڈر اسکور۔ ایجنٹس اس کے ٹولز اسی نام سے دیکھتے ہیں۔';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'زیادہ سے زیادہ 24 حروف، ہندسے، ہائفن یا انڈر اسکور استعمال کریں، جو حرف یا ہندسے سے شروع ہوں۔';
+
+  @override
+  String get mcpServerNameTaken =>
+      'یہاں پہلے ہی ایک اور سرور اس نام کے ساتھ موجود ہے۔';
+
+  @override
+  String get mcpServerTransportLabel => 'ٹرانسپورٹ';
+
+  @override
+  String get mcpServerTransportStdio => 'کمانڈ';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'کمانڈ';
+
+  @override
+  String get mcpServerCommandRequired => 'چلانے والی کمانڈ درج کریں۔';
+
+  @override
+  String get mcpServerArgsLabel => 'آرگومنٹس';
+
+  @override
+  String get mcpServerArgsHelper => 'ہر لائن میں ایک آرگومنٹ۔';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'http یا https URL درج کریں، جس میں صارف نام، پاس ورڈ یا #fragment نہ ہو۔';
+
+  @override
+  String get mcpServerEnvLabel => 'ماحولیاتی متغیرات';
+
+  @override
+  String get mcpServerHeadersLabel => 'ہیڈرز';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'ویلیوز سیکرٹ کے طور پر محفوظ ہوتی ہیں اور دوبارہ کبھی نہیں دکھائی جاتیں۔';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'مثال کے طور پر، بیئرر ٹوکن کے ساتھ ایک Authorization ہیڈر۔';
+
+  @override
+  String get mcpServerEnvAdd => 'متغیر شامل کریں';
+
+  @override
+  String get mcpServerHeaderAdd => 'ہیڈر شامل کریں';
+
+  @override
+  String get mcpServerSecretValueHint => 'ویلیو';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'نئی ویلیو';
+
+  @override
+  String get mcpServerSecretReplace => 'ویلیو بدلیں';
+
+  @override
+  String get mcpServerSecretUndo => 'واپس کریں';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'محفوظ کرتے وقت ہٹ جائے گا';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name ایک درست متغیر نام نہیں ہے۔ حروف، ہندسے اور انڈر اسکور استعمال کریں، ہندسے سے شروع نہ کریں۔';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name سیٹ نہیں کیا جا سکتا۔ ایک درست ہیڈر نام استعمال کریں جسے کنکشن خود نہیں سنبھالتا۔';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'ٹرانسپورٹ بدلنے سے محفوظ شدہ ویلیوز ہٹ جاتی ہیں۔';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'آف ہونے پر سرور شروع نہیں ہوتا اور ایجنٹس اس کے ٹولز نہیں دیکھتے۔';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'یہ سرور ہوسٹ پر چلتا ہے، اس لیے سرور کا مالک منظوری نہ دے تو یہ شروع نہیں ہوگا۔ شروع ہونے کا طریقہ بدلنے پر دوبارہ منظوری درکار ہوگی۔';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'سرور کا مالک منظوری نہ دے تو یہ صرف عوامی پتوں تک رسائی رکھتا ہے۔ کنکشن کا طریقہ بدلنے پر دوبارہ منظوری درکار ہوگی۔';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'یہ سرور ہوسٹ پر، سرور کے صارف کے طور پر چلتا ہے۔ محفوظ کرنے سے یہ منظور ہو جاتا ہے۔';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'محفوظ کرنے سے یہ ہوسٹ کے نجی نیٹ ورک تک بھی رسائی کے لیے منظور ہو جاتا ہے۔';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'صرف ان رنز میں استعمال ہوتا ہے جو آپ شروع کرتے ہیں یا جن کے آپ ذمہ دار ہیں۔';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center یہ سرور محفوظ نہیں کر سکا۔ اس کی ترتیبات دیکھیں اور دوبارہ کوشش کریں۔';
+
+  @override
+  String get mcpServerNotFound =>
+      'یہ سرور اب موجود نہیں ہے۔ شاید کسی نے اسے ہٹا دیا ہے۔';
 }

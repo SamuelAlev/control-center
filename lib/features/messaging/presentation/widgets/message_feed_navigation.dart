@@ -3,49 +3,25 @@ part of 'message_feed.dart';
 /// Scroll-to-message, anchoring, permalink consumption and related helpers
 /// for [SpaceMessageFeed].
 extension _NavigationMethods on _SpaceMessageFeedState {
-  /// Estimated extent of the row at reverse [index], for rows the list has not
-  /// laid out yet. See [estimateMessageRowExtent].
-  double _estimateRowExtent(int? index, double crossAxisExtent) {
-    if (index == null) {
-      return kUnknownRowExtent;
-    }
-    final i = _items.length - 1 - index;
-    if (i < 0 || i >= _items.length) {
-      return kUnknownRowExtent;
-    }
-    final item = _items[i];
-    if (item is! MessageItem) {
-      return kSeparatorRowExtent;
-    }
-    final columnWidth = math.min(
-      conversationColumnWidth,
-      math.max(160.0, crossAxisExtent - 32),
-    );
-    var extent = estimateMessageRowExtent(
-      item.message,
-      collapseHeader: item.collapseHeader,
-      columnWidth: columnWidth,
-    );
-    for (final steering in item.inlineMessages) {
-      extent += estimateMessageRowExtent(
-        steering,
-        collapseHeader: false,
-        columnWidth: columnWidth,
-      );
-    }
-    return extent;
-  }
-
-  /// The reverse [SuperListView] index of [messageId] in the current window, or
-  /// null if it isn't a rendered row. Mirrors the itemBuilder's reverse mapping
-  /// (`items[items.length - 1 - index]`).
+  /// The reverse [SuperListView] index of [messageId]'s top row (a steering
+  /// message or answered question resolves to its turn; a message not loaded
+  /// resolves to its stand-in), or null if the feed does not list it. Mirrors
+  /// the itemBuilder's reverse mapping (`rows[rows.length - 1 - index]`).
   int? _superIndexOf(String messageId) {
-    for (var i = 0; i < _items.length; i++) {
-      final it = _items[i];
-      if (it is MessageItem &&
-          (it.message.id == messageId ||
-              it.inlineMessages.any((m) => m.id == messageId))) {
-        return _items.length - 1 - i;
+    for (var i = 0; i < _rows.length; i++) {
+      final row = _rows[i];
+      if (row is PlaceholderRow && row.entry.id == messageId) {
+        return _rows.length - 1 - i;
+      }
+      final item = switch (row) {
+        ItemRow(:final item) => item is MessageItem ? item : null,
+        TurnHeadRow(:final item) => item,
+        _ => null,
+      };
+      if (item != null &&
+          (item.message.id == messageId ||
+              item.inlineMessages.any((m) => m.id == messageId))) {
+        return _rows.length - 1 - i;
       }
     }
     return null;
@@ -67,11 +43,14 @@ extension _NavigationMethods on _SpaceMessageFeedState {
   }
 
   /// Consumes a pending permalink target (`?m=<id>`) matching this space:
-  /// scrolls to and anchors the message, then clears the one-shot. Reuses the
-  /// [scrollToMessage] reach loop, so a target beyond the window is loaded.
-  void _maybeConsumePendingFocus() {
+  /// scrolls to and anchors the message, then clears the one-shot. A target
+  /// in history is reached through its stand-in, so with history beyond the
+  /// live window this waits for the outline ([historyPending]).
+  void _maybeConsumePendingFocus({required bool historyPending}) {
     final pending = ref.read(pendingFocusMessageProvider);
-    if (pending == null || pending.spaceId != widget.spaceId) {
+    if (pending == null ||
+        pending.spaceId != widget.spaceId ||
+        historyPending) {
       return;
     }
     if (_consumedFocusMessageId == pending.messageId) {
@@ -104,10 +83,10 @@ extension _NavigationMethods on _SpaceMessageFeedState {
     bool withPeek = true,
   }) async {
     final index = _superIndexOf(messageId);
-    final item = index == null ? null : _items[_items.length - 1 - index];
-    final rowId = item is MessageItem ? item.message.id : messageId;
+    final rowId = index == null
+        ? messageId
+        : messageIdOfRowKey(_rows[_rows.length - 1 - index].key) ?? messageId;
     _follow.mode = FeedFollowMode.anchored;
-    _follow.anchorMessageId = rowId;
 
     double alignment = 0.0;
     if (withPeek && _scrollController.hasClients) {
@@ -155,58 +134,57 @@ extension _NavigationMethods on _SpaceMessageFeedState {
   /// Shared scroll-to-message primitive (permalinks, open-at-first-unread,
   /// badge anchoring). Returns false if the message can't be reached.
   ///
-  /// 1. If the target is in the current window, anchor it + highlight pulse.
-  /// 2. Otherwise grow the window (with `loadingOlder` set so physics doesn't
-  ///    fight the growth) until the id appears, then anchor. Caps at
-  ///    [kSpaceFeedMaxWindow].
+  /// 1. A loaded message: anchor it + highlight pulse.
+  /// 2. A stand-in (history not loaded): jump to it, load the range around
+  ///    it, then anchor + highlight.
+  /// 3. Not listed at all: the outline may predate the message; confirm it
+  ///    belongs here, refresh the outline once, and try again.
   Future<bool> scrollToMessage(String messageId) async {
-    if (_superIndexOf(messageId) != null) {
-      await _anchorTo(messageId, animate: true);
-      _highlight(messageId);
-      return true;
+    var index = _superIndexOf(messageId);
+    if (index == null) {
+      final Message? found;
+      try {
+        found = await ref
+            .read(messagingRepositoryProvider)
+            .getMessageById(ref.requireWorkspaceId(), messageId);
+      } on Object {
+        return false;
+      }
+      if (!mounted ||
+          found == null ||
+          found.spaceId != widget.spaceId ||
+          found.conversationId != widget.conversationId) {
+        return false;
+      }
+      ref.invalidate(conversationOutlineProvider(_feedRef));
+      try {
+        await ref.read(conversationOutlineProvider(_feedRef).future);
+      } on Object {
+        return false;
+      }
+      if (!mounted) {
+        return false;
+      }
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return false;
+      }
+      index = _superIndexOf(messageId);
+      if (index == null) {
+        return false;
+      }
     }
-
-    final repo = ref.read(messagingRepositoryProvider);
-    final found = await repo.getMessageById(
-      ref.requireWorkspaceId(),
-      messageId,
-    );
+    if (_rows[_rows.length - 1 - index] is PlaceholderRow) {
+      if (!await _revealStandIn(messageId)) {
+        return false;
+      }
+    } else {
+      await _anchorTo(messageId, animate: true);
+    }
     if (!mounted) {
       return false;
     }
-    if (found == null || found.spaceId != widget.spaceId) {
-      return false;
-    }
-
-    _follow.loadingOlder = true;
-    try {
-      final windowProvider = spaceFeedWindowProvider(widget.conversationId);
-      while (ref.read(windowProvider) < kSpaceFeedMaxWindow) {
-        ref.read(windowProvider.notifier).loadMore();
-        final next = await ref.read(
-          spaceFeedWindowedProvider((
-            spaceId: widget.spaceId,
-            conversationId: widget.conversationId,
-          )).future,
-        );
-        if (!mounted) {
-          return false;
-        }
-        if (next.messages.any((m) => m.id == messageId)) {
-          await WidgetsBinding.instance.endOfFrame;
-          if (!mounted) {
-            return false;
-          }
-          await _anchorTo(messageId, animate: true);
-          _highlight(messageId);
-          return true;
-        }
-      }
-    } finally {
-      if (mounted) {
-        _follow.loadingOlder = false;
-      }
-    }
-    return false;
+    _highlight(messageId);
+    return true;
   }
 }

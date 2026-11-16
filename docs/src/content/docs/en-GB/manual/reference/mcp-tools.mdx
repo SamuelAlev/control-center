@@ -2,10 +2,10 @@
 title: MCP tools
 description: Complete catalogue of the MCP tools cc_server registers, by family.
 slug: en-GB/manual/reference/mcp-tools
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer. Servers discovered in the server user's own tool configuration are the exception: this endpoint never lists, calls or searches them, and only built-in harness runs the server owner is accountable for get them (see [Personal MCP servers stay the owner's](/en-GB/manual/guides/mcp-server/#personal-mcp-servers-stay-the-owners)).
+`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers are bridged into the same registry in their own layers: one per workspace for the servers its admins configure, and one for the server owner's personal servers. This endpoint lists, calls and searches them only for an agent run: the servers of its own workspace, plus the personal servers when the server owner is accountable for the run. The MCP token and paired devices never see them (see [MCP servers your agents use](/en-GB/manual/guides/mcp-server/#mcp-servers-your-agents-use)).
 
 ## Registry size
 

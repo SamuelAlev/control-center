@@ -2,18 +2,22 @@ part of 'agent_turn.dart';
 
 /// How a turn failed, read from both copies of its row.
 ///
-/// The listed row is live. [_AgentTurnState._shown] can be the detail read,
-/// which is one snapshot: taken before a retry, it never learns the turn was
-/// retried, and a Retry action keyed on it alone stays up for good. Both flags
-/// only ever turn on, so whichever copy has seen one is right.
-extension _TurnFailure on _AgentTurnState {
+/// [listed] is the live list row. [shown] can be the detail read, which is one
+/// snapshot: taken before a retry, it never learns the turn was retried, and a
+/// Retry action keyed on it alone stays up for good. Both flags only ever turn
+/// on, so whichever copy has seen one is right.
+class _TurnFailure {
+  const _TurnFailure(this.listed, this.shown);
+
+  final Message listed;
+  final Message shown;
+
   bool _flag(String key) =>
-      widget.message.metadata?[key] == true || _shown.metadata?[key] == true;
-  bool get _failed => _flag('error') && !_retried;
-  bool get _retried => _flag('retried');
-  String? get _errorFamily =>
-      (_shown.metadata?['errorFamily'] ??
-              widget.message.metadata?['errorFamily'])
+      listed.metadata?[key] == true || shown.metadata?[key] == true;
+  bool get failed => _flag('error') && !retried;
+  bool get retried => _flag('retried');
+  String? get errorFamily =>
+      (shown.metadata?['errorFamily'] ?? listed.metadata?['errorFamily'])
           as String?;
 }
 

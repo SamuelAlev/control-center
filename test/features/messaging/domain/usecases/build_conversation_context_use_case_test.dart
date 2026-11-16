@@ -12,6 +12,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_context_history.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -106,6 +107,28 @@ class _FakeMessagingRepository implements MessagingRepository {
     String conversationId, {
     required int limit,
   }) => Stream.value((messages: const <Message>[], hasMore: false));
+
+  @override
+  Stream<({List<Message> messages, bool hasOlder, bool hasNewer})>
+  watchMessagesRange(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required String anchorId,
+    required int before,
+    required int after,
+  }) => Stream.value((
+    messages: const <Message>[],
+    hasOlder: false,
+    hasNewer: false,
+  ));
+
+  @override
+  Future<List<ConversationOutlineEntry>> getConversationOutline(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) async => const [];
 
   @override
   Stream<List<Space>> watchSpacesByWorkspace(String workspaceId) =>

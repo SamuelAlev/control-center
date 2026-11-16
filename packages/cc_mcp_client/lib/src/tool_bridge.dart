@@ -185,16 +185,34 @@ class BridgedMcpTool extends McpTool {
     return out;
   }
 
+  /// The longest bridged name. Claude Code shows every Control Center tool as
+  /// `mcp__control-center__<name>` and the model API refuses a tool name over
+  /// 64 characters, which fails the whole turn, so a bridged name leaves room
+  /// for that 21-character prefix.
+  static const int maxBridgedNameLength = 43;
+
   /// The `mcp__<server>__<tool>` namespaced name a remote tool is exposed under.
+  ///
+  /// A name over [maxBridgedNameLength] keeps its head and ends in a hash of
+  /// the full name, so two long tools of one server stay distinct.
   static String bridgedName(String server, String tool) {
     final s = _sanitize(server);
     final t = _sanitize(tool);
-    var combined = 'mcp__${s}__$t';
-    if (combined.length > 64) {
-      // Keep the head and tail so the name stays legible + unique.
-      combined = combined.substring(0, 64);
+    final combined = 'mcp__${s}__$t';
+    if (combined.length <= maxBridgedNameLength) {
+      return combined;
     }
-    return combined;
+    final hash = _fnv1a32(combined).toRadixString(16).padLeft(8, '0');
+    return '${combined.substring(0, maxBridgedNameLength - 9)}_$hash';
+  }
+
+  static int _fnv1a32(String value) {
+    var hash = 0x811c9dc5;
+    for (final unit in value.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x01000193) & 0xffffffff;
+    }
+    return hash;
   }
 
   /// Whether [name] looks like a bridged external tool.

@@ -18735,4 +18735,206 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Hiçbir izin verilmedi: bunun kime ya da neye ait olduğu artık bu çalışma alanında değil.';
+
+  @override
+  String get mcpWorkspaceServers => 'Çalışma alanı MCP sunucuları';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Bu çalışma alanındaki her ajan çalıştırması, bu sunucuların araçlarını alır; Claude Code\'da da yerleşik harness\'te de. Control Center her sunucuya bağlanır ve araçlarını iletir.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Bu çalışma alanının MCP sunucularını yalnızca çalışma alanı yöneticileri görebilir ve değiştirebilir.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Çalışma alanı MCP sunucuları, bağlı olunan sunucuda kullanılamıyor.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'Henüz çalışma alanı MCP sunucusu yok';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Bu çalışma alanındaki her ajan çalıştırmasına araçlarını vermek için bir sunucu ekleyin.';
+
+  @override
+  String get mcpAddServer => 'Sunucu ekle';
+
+  @override
+  String get mcpHandAddedSource => 'Control Center\'a eklendi';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Onay bekleniyor';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Yalnızca genel adresler';
+
+  @override
+  String get mcpApproveServer => 'Onayla';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Bu sunucu, sunucu kullanıcısı olarak sunucu ana makinesinde bir komut çalıştırır. Siz onaylamadan başlamaz.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Bu sunucu sunucu ana makinesinde bir komut çalıştırır, bu yüzden sunucu sahibi onaylamadan başlamaz.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Bu sunucu yalnızca genel adreslere erişebilir. Ana makinenin localhost ve yerel ağ gibi özel ağına da erişmesine izin vermek için onaylayın.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Bu sunucu, sunucu sahibi onaylayana kadar yalnızca genel adreslere erişebilir.';
+
+  @override
+  String get mcpRemoveServer => 'Sunucuyu kaldır';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '$name kaldırılsın mı?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Ajan çalıştırmaları bu sunucunun araçlarını kaybeder ve sunucunun kayıtlı gizli değerleri silinir.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '$name sunucusunu aç veya kapat';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'MCP sunucusu ekle';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '$name düzenle';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Harfler, rakamlar, kısa çizgiler ve alt çizgiler. Ajanlar araçlarını bu adla görür.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'En fazla 24 harf, rakam, kısa çizgi veya alt çizgi kullanın; harf ya da rakamla başlayın.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'Burada bu adı zaten kullanan başka bir sunucu var.';
+
+  @override
+  String get mcpServerTransportLabel => 'Taşıma';
+
+  @override
+  String get mcpServerTransportStdio => 'Komut';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Komut';
+
+  @override
+  String get mcpServerCommandRequired => 'Çalıştırılacak komutu girin.';
+
+  @override
+  String get mcpServerArgsLabel => 'Bağımsız değişkenler';
+
+  @override
+  String get mcpServerArgsHelper => 'Satır başına bir bağımsız değişken.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Kullanıcı adı, parola veya #fragment içermeyen bir http veya https URL girin.';
+
+  @override
+  String get mcpServerEnvLabel => 'Ortam değişkenleri';
+
+  @override
+  String get mcpServerHeadersLabel => 'Üstbilgiler';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Değerler gizli olarak saklanır ve bir daha gösterilmez.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Örneğin, bearer belirteci içeren bir Authorization üstbilgisi.';
+
+  @override
+  String get mcpServerEnvAdd => 'Değişken ekle';
+
+  @override
+  String get mcpServerHeaderAdd => 'Üstbilgi ekle';
+
+  @override
+  String get mcpServerSecretValueHint => 'Değer';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Yeni değer';
+
+  @override
+  String get mcpServerSecretReplace => 'Değeri değiştir';
+
+  @override
+  String get mcpServerSecretUndo => 'Geri al';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Kaydedince kaldırılır';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name geçerli bir değişken adı değil. Harf, rakam ve alt çizgi kullanın; rakamla başlamayın.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name ayarlanamaz. Bağlantının kendisinin yönetmediği geçerli bir üstbilgi adı kullanın.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Taşıma yöntemini değiştirmek, kayıtlı değerleri siler.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Kapalıyken sunucu başlatılmaz ve ajanlar araçlarını görmez.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Sunucu ana makinesinde çalışır, bu yüzden sunucu sahibi onaylamadan başlamaz. Başlatma biçimini değiştirmek yeniden onay ister.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Sunucu sahibi onaylayana kadar yalnızca genel adreslere erişir. Bağlantı biçimini değiştirmek yeniden onay ister.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Sunucu ana makinesinde, sunucu kullanıcısı olarak çalışır. Kaydetmek onu onaylar.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Kaydetmek, ana makinenin özel ağına da erişmesini onaylar.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Yalnızca sizin başlattığınız veya sorumlu olduğunuz çalıştırmalarda kullanılır.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center bu sunucuyu kaydedemedi. Ayarlarını kontrol edip yeniden deneyin.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Bu sunucu artık yok. Biri kaldırmış olabilir.';
 }

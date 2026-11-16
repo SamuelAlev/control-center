@@ -27,7 +27,8 @@ class ComposerToolbar extends StatelessWidget {
     required this.onToggleExpanded,
   });
 
-  /// Host widgets before the spacer (mode picker, enforcement badge).
+  /// Host widgets at the start (mode picker, enforcement badge). They get the
+  /// width the built-in actions leave, so they must tolerate shrinking.
   final Widget? leading;
 
   /// Host widget just before the built-in actions.
@@ -91,8 +92,15 @@ class ComposerToolbar extends StatelessWidget {
     final toggle = onToggleExpanded;
     return Row(
       children: [
-        ?leading,
-        const Spacer(),
+        // The built-in actions keep their size; host widgets get what is left,
+        // so a narrow pane squeezes them (the mode label ellipsizes) instead of
+        // overflowing the row.
+        Expanded(
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: leading,
+          ),
+        ),
         if (trailing != null) ...[trailing!, const SizedBox(width: 6)],
         if (toggle != null)
           CcIconButton(

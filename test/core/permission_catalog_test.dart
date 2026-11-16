@@ -39,6 +39,8 @@ void main() {
     'fonts', 'forge', 'fs', 'gif',
     'github', 'goals', 'ide', 'identity',
     'invites', 'isolated_repo', 'kimi', 'mcp',
+    // Each workspace's own configured MCP servers.
+    'mcpServers',
     'meeting', 'members', 'memory_access_grant', 'memory_domain',
     'memory_fact', 'memory_policy', 'messaging', 'models',
     'newsfeed', 'notes', 'notifications', 'oauth',

@@ -45,6 +45,18 @@ class TranscriptLruCache {
   final LinkedHashMap<String, List<TranscriptSegment>> _entries =
       LinkedHashMap();
 
+  final Set<void Function(String messageId)> _listeners = {};
+
+  /// Calls [listener] with the message id after every [put]. The conversation
+  /// feed lays a turn out row by row once its transcript is known, so it needs
+  /// to hear when a read lands one.
+  void addPutListener(void Function(String messageId) listener) =>
+      _listeners.add(listener);
+
+  /// Stops calling [listener].
+  void removePutListener(void Function(String messageId) listener) =>
+      _listeners.remove(listener);
+
   /// The cached transcript for [messageId], or null. Refreshes LRU order.
   List<TranscriptSegment>? get(String messageId) {
     final hit = _entries.remove(messageId);
@@ -71,6 +83,9 @@ class TranscriptLruCache {
       if (removed != null) {
         _chars -= _transcriptChars(removed);
       }
+    }
+    for (final listener in List.of(_listeners)) {
+      listener(messageId);
     }
   }
 }

@@ -18,7 +18,11 @@ can call them alongside the native tools.
   it.
 - **Tool bridging** (`tool_bridge.dart`) — wraps each remote tool as a
   `BridgedMcpTool` namespaced `mcp__<server>__<tool>`, so two servers can't
-  collide.
+  collide. Names are capped at 43 characters (a hash keeps long ones distinct)
+  so Claude Code's `mcp__control-center__` prefix stays within 64.
+- **Audiences** — an `McpClientService` publishes to an `McpToolSink`; the host
+  runs one for the owner's personal servers and one per workspace for its
+  configured servers, each feeding its own registry layer.
 
 ## Invariants (security)
 
@@ -28,6 +32,10 @@ can call them alongside the native tools.
   context: `BridgedMcpTool.sanitizeExternalText` strips ANSI/OSC/control chars
   and caps length (desc 2 KB, result 256 KB) so a malicious server can't inject
   terminal escapes or flood the context window.
+
+- A config marked `publicOnly` (a workspace's http/sse server its server owner
+  has not approved) is dialled only through the injected
+  `publicOnlyConnection` factory; with none, every connection is refused.
 
 ## Extending
 

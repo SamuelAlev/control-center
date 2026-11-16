@@ -33,7 +33,7 @@ final agentWaitReminderProvider = Provider<AgentWaitReminder>((ref) {
   );
   ref
     ..listen(notificationFeedProvider, (_, next) {
-      final items = next.value;
+      final items = next.value?.items;
       if (items != null) {
         reminder.update(items);
       }

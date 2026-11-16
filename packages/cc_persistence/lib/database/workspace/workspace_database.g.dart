@@ -16111,6 +16111,18 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _contentMeta = const VerificationMeta(
     'content',
   );
@@ -16304,6 +16316,7 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
     conversationId,
     senderId,
     senderType,
+    revision,
     content,
     contentChars,
     messageType,
@@ -16371,6 +16384,12 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
       );
     } else if (isInserting) {
       context.missing(_senderTypeMeta);
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
     }
     if (data.containsKey('content')) {
       context.handle(
@@ -16514,6 +16533,10 @@ class $ConversationMessagesTableTable extends ConversationMessagesTable
         DriftSqlType.string,
         data['${effectivePrefix}sender_type'],
       )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
       content: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}content'],
@@ -16601,6 +16624,15 @@ class ConversationMessagesTableData extends DataClass
 
   /// Sender type (`SenderType.wireName`).
   final String senderType;
+
+  /// The row's change counter: 0 on insert, one more on every `UPDATE`.
+  ///
+  /// Kept by the `conversation_messages_revision_au` trigger
+  /// (`WorkspaceDatabase`), never written by a query: a list subscriber
+  /// compares it to reuse the message it decoded last time when the row has
+  /// not changed. Declared ahead of [content] so reading it never walks a
+  /// long body's overflow pages.
+  final int revision;
 
   /// Content.
   final String content;
@@ -16710,6 +16742,7 @@ class ConversationMessagesTableData extends DataClass
     required this.conversationId,
     required this.senderId,
     required this.senderType,
+    required this.revision,
     required this.content,
     required this.contentChars,
     required this.messageType,
@@ -16734,6 +16767,7 @@ class ConversationMessagesTableData extends DataClass
     map['conversation_id'] = Variable<String>(conversationId);
     map['sender_id'] = Variable<String>(senderId);
     map['sender_type'] = Variable<String>(senderType);
+    map['revision'] = Variable<int>(revision);
     map['content'] = Variable<String>(content);
     map['content_chars'] = Variable<int>(contentChars);
     map['message_type'] = Variable<String>(messageType);
@@ -16773,6 +16807,7 @@ class ConversationMessagesTableData extends DataClass
       conversationId: Value(conversationId),
       senderId: Value(senderId),
       senderType: Value(senderType),
+      revision: Value(revision),
       content: Value(content),
       contentChars: Value(contentChars),
       messageType: Value(messageType),
@@ -16816,6 +16851,7 @@ class ConversationMessagesTableData extends DataClass
       conversationId: serializer.fromJson<String>(json['conversationId']),
       senderId: serializer.fromJson<String>(json['senderId']),
       senderType: serializer.fromJson<String>(json['senderType']),
+      revision: serializer.fromJson<int>(json['revision']),
       content: serializer.fromJson<String>(json['content']),
       contentChars: serializer.fromJson<int>(json['contentChars']),
       messageType: serializer.fromJson<String>(json['messageType']),
@@ -16844,6 +16880,7 @@ class ConversationMessagesTableData extends DataClass
       'conversationId': serializer.toJson<String>(conversationId),
       'senderId': serializer.toJson<String>(senderId),
       'senderType': serializer.toJson<String>(senderType),
+      'revision': serializer.toJson<int>(revision),
       'content': serializer.toJson<String>(content),
       'contentChars': serializer.toJson<int>(contentChars),
       'messageType': serializer.toJson<String>(messageType),
@@ -16868,6 +16905,7 @@ class ConversationMessagesTableData extends DataClass
     String? conversationId,
     String? senderId,
     String? senderType,
+    int? revision,
     String? content,
     int? contentChars,
     String? messageType,
@@ -16889,6 +16927,7 @@ class ConversationMessagesTableData extends DataClass
     conversationId: conversationId ?? this.conversationId,
     senderId: senderId ?? this.senderId,
     senderType: senderType ?? this.senderType,
+    revision: revision ?? this.revision,
     content: content ?? this.content,
     contentChars: contentChars ?? this.contentChars,
     messageType: messageType ?? this.messageType,
@@ -16924,6 +16963,7 @@ class ConversationMessagesTableData extends DataClass
       senderType: data.senderType.present
           ? data.senderType.value
           : this.senderType,
+      revision: data.revision.present ? data.revision.value : this.revision,
       content: data.content.present ? data.content.value : this.content,
       contentChars: data.contentChars.present
           ? data.contentChars.value
@@ -16968,6 +17008,7 @@ class ConversationMessagesTableData extends DataClass
           ..write('conversationId: $conversationId, ')
           ..write('senderId: $senderId, ')
           ..write('senderType: $senderType, ')
+          ..write('revision: $revision, ')
           ..write('content: $content, ')
           ..write('contentChars: $contentChars, ')
           ..write('messageType: $messageType, ')
@@ -16988,12 +17029,13 @@ class ConversationMessagesTableData extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     spaceId,
     conversationId,
     senderId,
     senderType,
+    revision,
     content,
     contentChars,
     messageType,
@@ -17009,7 +17051,7 @@ class ConversationMessagesTableData extends DataClass
     reverted,
     revertedAt,
     createdAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -17019,6 +17061,7 @@ class ConversationMessagesTableData extends DataClass
           other.conversationId == this.conversationId &&
           other.senderId == this.senderId &&
           other.senderType == this.senderType &&
+          other.revision == this.revision &&
           other.content == this.content &&
           other.contentChars == this.contentChars &&
           other.messageType == this.messageType &&
@@ -17043,6 +17086,7 @@ class ConversationMessagesTableCompanion
   final Value<String> conversationId;
   final Value<String> senderId;
   final Value<String> senderType;
+  final Value<int> revision;
   final Value<String> content;
   final Value<int> contentChars;
   final Value<String> messageType;
@@ -17065,6 +17109,7 @@ class ConversationMessagesTableCompanion
     this.conversationId = const Value.absent(),
     this.senderId = const Value.absent(),
     this.senderType = const Value.absent(),
+    this.revision = const Value.absent(),
     this.content = const Value.absent(),
     this.contentChars = const Value.absent(),
     this.messageType = const Value.absent(),
@@ -17088,6 +17133,7 @@ class ConversationMessagesTableCompanion
     required String conversationId,
     required String senderId,
     required String senderType,
+    this.revision = const Value.absent(),
     required String content,
     this.contentChars = const Value.absent(),
     this.messageType = const Value.absent(),
@@ -17116,6 +17162,7 @@ class ConversationMessagesTableCompanion
     Expression<String>? conversationId,
     Expression<String>? senderId,
     Expression<String>? senderType,
+    Expression<int>? revision,
     Expression<String>? content,
     Expression<int>? contentChars,
     Expression<String>? messageType,
@@ -17139,6 +17186,7 @@ class ConversationMessagesTableCompanion
       if (conversationId != null) 'conversation_id': conversationId,
       if (senderId != null) 'sender_id': senderId,
       if (senderType != null) 'sender_type': senderType,
+      if (revision != null) 'revision': revision,
       if (content != null) 'content': content,
       if (contentChars != null) 'content_chars': contentChars,
       if (messageType != null) 'message_type': messageType,
@@ -17165,6 +17213,7 @@ class ConversationMessagesTableCompanion
     Value<String>? conversationId,
     Value<String>? senderId,
     Value<String>? senderType,
+    Value<int>? revision,
     Value<String>? content,
     Value<int>? contentChars,
     Value<String>? messageType,
@@ -17188,6 +17237,7 @@ class ConversationMessagesTableCompanion
       conversationId: conversationId ?? this.conversationId,
       senderId: senderId ?? this.senderId,
       senderType: senderType ?? this.senderType,
+      revision: revision ?? this.revision,
       content: content ?? this.content,
       contentChars: contentChars ?? this.contentChars,
       messageType: messageType ?? this.messageType,
@@ -17224,6 +17274,9 @@ class ConversationMessagesTableCompanion
     }
     if (senderType.present) {
       map['sender_type'] = Variable<String>(senderType.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
     }
     if (content.present) {
       map['content'] = Variable<String>(content.value);
@@ -17284,6 +17337,7 @@ class ConversationMessagesTableCompanion
           ..write('conversationId: $conversationId, ')
           ..write('senderId: $senderId, ')
           ..write('senderType: $senderType, ')
+          ..write('revision: $revision, ')
           ..write('content: $content, ')
           ..write('contentChars: $contentChars, ')
           ..write('messageType: $messageType, ')
@@ -83841,6 +83895,807 @@ class PlanDivergencesTableCompanion
   }
 }
 
+class $McpServersTableTable extends McpServersTable
+    with TableInfo<$McpServersTableTable, McpServersTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $McpServersTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _transportMeta = const VerificationMeta(
+    'transport',
+  );
+  @override
+  late final GeneratedColumn<String> transport = GeneratedColumn<String>(
+    'transport',
+    aliasedName,
+    false,
+    check: () => transport.isIn(PlatformStoredValues.mcpServerTransport),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _commandMeta = const VerificationMeta(
+    'command',
+  );
+  @override
+  late final GeneratedColumn<String> command = GeneratedColumn<String>(
+    'command',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _argsJsonMeta = const VerificationMeta(
+    'argsJson',
+  );
+  @override
+  late final GeneratedColumn<String> argsJson = GeneratedColumn<String>(
+    'args_json',
+    aliasedName,
+    false,
+    check: () => isJsonArray(argsJson),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _envNamesJsonMeta = const VerificationMeta(
+    'envNamesJson',
+  );
+  @override
+  late final GeneratedColumn<String> envNamesJson = GeneratedColumn<String>(
+    'env_names_json',
+    aliasedName,
+    false,
+    check: () => isJsonArray(envNamesJson),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _headerNamesJsonMeta = const VerificationMeta(
+    'headerNamesJson',
+  );
+  @override
+  late final GeneratedColumn<String> headerNamesJson = GeneratedColumn<String>(
+    'header_names_json',
+    aliasedName,
+    false,
+    check: () => isJsonArray(headerNamesJson),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _enabledMeta = const VerificationMeta(
+    'enabled',
+  );
+  @override
+  late final GeneratedColumn<bool> enabled = GeneratedColumn<bool>(
+    'enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdByMeta = const VerificationMeta(
+    'createdBy',
+  );
+  @override
+  late final GeneratedColumn<String> createdBy = GeneratedColumn<String>(
+    'created_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _hostApprovedByMeta = const VerificationMeta(
+    'hostApprovedBy',
+  );
+  @override
+  late final GeneratedColumn<String> hostApprovedBy = GeneratedColumn<String>(
+    'host_approved_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    transport,
+    command,
+    argsJson,
+    url,
+    envNamesJson,
+    headerNamesJson,
+    enabled,
+    createdBy,
+    hostApprovedBy,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'mcp_servers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<McpServersTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('transport')) {
+      context.handle(
+        _transportMeta,
+        transport.isAcceptableOrUnknown(data['transport']!, _transportMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_transportMeta);
+    }
+    if (data.containsKey('command')) {
+      context.handle(
+        _commandMeta,
+        command.isAcceptableOrUnknown(data['command']!, _commandMeta),
+      );
+    }
+    if (data.containsKey('args_json')) {
+      context.handle(
+        _argsJsonMeta,
+        argsJson.isAcceptableOrUnknown(data['args_json']!, _argsJsonMeta),
+      );
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('env_names_json')) {
+      context.handle(
+        _envNamesJsonMeta,
+        envNamesJson.isAcceptableOrUnknown(
+          data['env_names_json']!,
+          _envNamesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('header_names_json')) {
+      context.handle(
+        _headerNamesJsonMeta,
+        headerNamesJson.isAcceptableOrUnknown(
+          data['header_names_json']!,
+          _headerNamesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('enabled')) {
+      context.handle(
+        _enabledMeta,
+        enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
+      );
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(
+        _createdByMeta,
+        createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
+      );
+    }
+    if (data.containsKey('host_approved_by')) {
+      context.handle(
+        _hostApprovedByMeta,
+        hostApprovedBy.isAcceptableOrUnknown(
+          data['host_approved_by']!,
+          _hostApprovedByMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {name},
+  ];
+  @override
+  McpServersTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return McpServersTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      transport: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transport'],
+      )!,
+      command: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}command'],
+      ),
+      argsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}args_json'],
+      )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      envNamesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}env_names_json'],
+      )!,
+      headerNamesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}header_names_json'],
+      )!,
+      enabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}enabled'],
+      )!,
+      createdBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_by'],
+      ),
+      hostApprovedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}host_approved_by'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $McpServersTableTable createAlias(String alias) {
+    return $McpServersTableTable(attachedDatabase, alias);
+  }
+}
+
+class McpServersTableData extends DataClass
+    implements Insertable<McpServersTableData> {
+  /// Server id.
+  final String id;
+
+  /// Unique within the workspace; namespaces the server's tools
+  /// (`mcp__<name>__<tool>`).
+  final String name;
+
+  /// How it is reached: `stdio`, `http` or `sse`.
+  final String transport;
+
+  /// The executable (stdio only).
+  final String? command;
+
+  /// The executable's arguments, as a JSON array of strings (stdio only).
+  final String argsJson;
+
+  /// The endpoint (http and sse only).
+  final String? url;
+
+  /// The names of the environment variables set for the process, as a JSON
+  /// array of strings. Their values are secrets and are not stored here.
+  final String envNamesJson;
+
+  /// The names of the headers sent with every request, as a JSON array of
+  /// strings. Their values are secrets and are not stored here.
+  final String headerNamesJson;
+
+  /// Whether it is dialled at all.
+  final bool enabled;
+
+  /// Who added it. No foreign key: users live in the global database.
+  final String? createdBy;
+
+  /// The server owner who approved it as it stands, or null. Written only by
+  /// the server, never from a client's copy. No foreign key: users live in
+  /// the global database.
+  final String? hostApprovedBy;
+
+  /// When it was added.
+  final DateTime createdAt;
+
+  /// When it last changed.
+  final DateTime updatedAt;
+  const McpServersTableData({
+    required this.id,
+    required this.name,
+    required this.transport,
+    this.command,
+    required this.argsJson,
+    this.url,
+    required this.envNamesJson,
+    required this.headerNamesJson,
+    required this.enabled,
+    this.createdBy,
+    this.hostApprovedBy,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['transport'] = Variable<String>(transport);
+    if (!nullToAbsent || command != null) {
+      map['command'] = Variable<String>(command);
+    }
+    map['args_json'] = Variable<String>(argsJson);
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    map['env_names_json'] = Variable<String>(envNamesJson);
+    map['header_names_json'] = Variable<String>(headerNamesJson);
+    map['enabled'] = Variable<bool>(enabled);
+    if (!nullToAbsent || createdBy != null) {
+      map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || hostApprovedBy != null) {
+      map['host_approved_by'] = Variable<String>(hostApprovedBy);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  McpServersTableCompanion toCompanion(bool nullToAbsent) {
+    return McpServersTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      transport: Value(transport),
+      command: command == null && nullToAbsent
+          ? const Value.absent()
+          : Value(command),
+      argsJson: Value(argsJson),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      envNamesJson: Value(envNamesJson),
+      headerNamesJson: Value(headerNamesJson),
+      enabled: Value(enabled),
+      createdBy: createdBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdBy),
+      hostApprovedBy: hostApprovedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hostApprovedBy),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory McpServersTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return McpServersTableData(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      transport: serializer.fromJson<String>(json['transport']),
+      command: serializer.fromJson<String?>(json['command']),
+      argsJson: serializer.fromJson<String>(json['argsJson']),
+      url: serializer.fromJson<String?>(json['url']),
+      envNamesJson: serializer.fromJson<String>(json['envNamesJson']),
+      headerNamesJson: serializer.fromJson<String>(json['headerNamesJson']),
+      enabled: serializer.fromJson<bool>(json['enabled']),
+      createdBy: serializer.fromJson<String?>(json['createdBy']),
+      hostApprovedBy: serializer.fromJson<String?>(json['hostApprovedBy']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'transport': serializer.toJson<String>(transport),
+      'command': serializer.toJson<String?>(command),
+      'argsJson': serializer.toJson<String>(argsJson),
+      'url': serializer.toJson<String?>(url),
+      'envNamesJson': serializer.toJson<String>(envNamesJson),
+      'headerNamesJson': serializer.toJson<String>(headerNamesJson),
+      'enabled': serializer.toJson<bool>(enabled),
+      'createdBy': serializer.toJson<String?>(createdBy),
+      'hostApprovedBy': serializer.toJson<String?>(hostApprovedBy),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  McpServersTableData copyWith({
+    String? id,
+    String? name,
+    String? transport,
+    Value<String?> command = const Value.absent(),
+    String? argsJson,
+    Value<String?> url = const Value.absent(),
+    String? envNamesJson,
+    String? headerNamesJson,
+    bool? enabled,
+    Value<String?> createdBy = const Value.absent(),
+    Value<String?> hostApprovedBy = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => McpServersTableData(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    transport: transport ?? this.transport,
+    command: command.present ? command.value : this.command,
+    argsJson: argsJson ?? this.argsJson,
+    url: url.present ? url.value : this.url,
+    envNamesJson: envNamesJson ?? this.envNamesJson,
+    headerNamesJson: headerNamesJson ?? this.headerNamesJson,
+    enabled: enabled ?? this.enabled,
+    createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    hostApprovedBy: hostApprovedBy.present
+        ? hostApprovedBy.value
+        : this.hostApprovedBy,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  McpServersTableData copyWithCompanion(McpServersTableCompanion data) {
+    return McpServersTableData(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      transport: data.transport.present ? data.transport.value : this.transport,
+      command: data.command.present ? data.command.value : this.command,
+      argsJson: data.argsJson.present ? data.argsJson.value : this.argsJson,
+      url: data.url.present ? data.url.value : this.url,
+      envNamesJson: data.envNamesJson.present
+          ? data.envNamesJson.value
+          : this.envNamesJson,
+      headerNamesJson: data.headerNamesJson.present
+          ? data.headerNamesJson.value
+          : this.headerNamesJson,
+      enabled: data.enabled.present ? data.enabled.value : this.enabled,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      hostApprovedBy: data.hostApprovedBy.present
+          ? data.hostApprovedBy.value
+          : this.hostApprovedBy,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('McpServersTableData(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('transport: $transport, ')
+          ..write('command: $command, ')
+          ..write('argsJson: $argsJson, ')
+          ..write('url: $url, ')
+          ..write('envNamesJson: $envNamesJson, ')
+          ..write('headerNamesJson: $headerNamesJson, ')
+          ..write('enabled: $enabled, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('hostApprovedBy: $hostApprovedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    transport,
+    command,
+    argsJson,
+    url,
+    envNamesJson,
+    headerNamesJson,
+    enabled,
+    createdBy,
+    hostApprovedBy,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is McpServersTableData &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.transport == this.transport &&
+          other.command == this.command &&
+          other.argsJson == this.argsJson &&
+          other.url == this.url &&
+          other.envNamesJson == this.envNamesJson &&
+          other.headerNamesJson == this.headerNamesJson &&
+          other.enabled == this.enabled &&
+          other.createdBy == this.createdBy &&
+          other.hostApprovedBy == this.hostApprovedBy &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class McpServersTableCompanion extends UpdateCompanion<McpServersTableData> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> transport;
+  final Value<String?> command;
+  final Value<String> argsJson;
+  final Value<String?> url;
+  final Value<String> envNamesJson;
+  final Value<String> headerNamesJson;
+  final Value<bool> enabled;
+  final Value<String?> createdBy;
+  final Value<String?> hostApprovedBy;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const McpServersTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.transport = const Value.absent(),
+    this.command = const Value.absent(),
+    this.argsJson = const Value.absent(),
+    this.url = const Value.absent(),
+    this.envNamesJson = const Value.absent(),
+    this.headerNamesJson = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.hostApprovedBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  McpServersTableCompanion.insert({
+    required String id,
+    required String name,
+    required String transport,
+    this.command = const Value.absent(),
+    this.argsJson = const Value.absent(),
+    this.url = const Value.absent(),
+    this.envNamesJson = const Value.absent(),
+    this.headerNamesJson = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.createdBy = const Value.absent(),
+    this.hostApprovedBy = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       transport = Value(transport),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<McpServersTableData> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? transport,
+    Expression<String>? command,
+    Expression<String>? argsJson,
+    Expression<String>? url,
+    Expression<String>? envNamesJson,
+    Expression<String>? headerNamesJson,
+    Expression<bool>? enabled,
+    Expression<String>? createdBy,
+    Expression<String>? hostApprovedBy,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (transport != null) 'transport': transport,
+      if (command != null) 'command': command,
+      if (argsJson != null) 'args_json': argsJson,
+      if (url != null) 'url': url,
+      if (envNamesJson != null) 'env_names_json': envNamesJson,
+      if (headerNamesJson != null) 'header_names_json': headerNamesJson,
+      if (enabled != null) 'enabled': enabled,
+      if (createdBy != null) 'created_by': createdBy,
+      if (hostApprovedBy != null) 'host_approved_by': hostApprovedBy,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  McpServersTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? transport,
+    Value<String?>? command,
+    Value<String>? argsJson,
+    Value<String?>? url,
+    Value<String>? envNamesJson,
+    Value<String>? headerNamesJson,
+    Value<bool>? enabled,
+    Value<String?>? createdBy,
+    Value<String?>? hostApprovedBy,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return McpServersTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      transport: transport ?? this.transport,
+      command: command ?? this.command,
+      argsJson: argsJson ?? this.argsJson,
+      url: url ?? this.url,
+      envNamesJson: envNamesJson ?? this.envNamesJson,
+      headerNamesJson: headerNamesJson ?? this.headerNamesJson,
+      enabled: enabled ?? this.enabled,
+      createdBy: createdBy ?? this.createdBy,
+      hostApprovedBy: hostApprovedBy ?? this.hostApprovedBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (transport.present) {
+      map['transport'] = Variable<String>(transport.value);
+    }
+    if (command.present) {
+      map['command'] = Variable<String>(command.value);
+    }
+    if (argsJson.present) {
+      map['args_json'] = Variable<String>(argsJson.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (envNamesJson.present) {
+      map['env_names_json'] = Variable<String>(envNamesJson.value);
+    }
+    if (headerNamesJson.present) {
+      map['header_names_json'] = Variable<String>(headerNamesJson.value);
+    }
+    if (enabled.present) {
+      map['enabled'] = Variable<bool>(enabled.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<String>(createdBy.value);
+    }
+    if (hostApprovedBy.present) {
+      map['host_approved_by'] = Variable<String>(hostApprovedBy.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('McpServersTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('transport: $transport, ')
+          ..write('command: $command, ')
+          ..write('argsJson: $argsJson, ')
+          ..write('url: $url, ')
+          ..write('envNamesJson: $envNamesJson, ')
+          ..write('headerNamesJson: $headerNamesJson, ')
+          ..write('enabled: $enabled, ')
+          ..write('createdBy: $createdBy, ')
+          ..write('hostApprovedBy: $hostApprovedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   _$WorkspaceDatabase(QueryExecutor e) : super(e);
   $WorkspaceDatabaseManager get managers => $WorkspaceDatabaseManager(this);
@@ -84096,6 +84951,9 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
       $ApprovalEscalationsTableTable(this);
   late final $PlanDivergencesTableTable planDivergencesTable =
       $PlanDivergencesTableTable(this);
+  late final $McpServersTableTable mcpServersTable = $McpServersTableTable(
+    this,
+  );
   late final Index uqReposPath = Index(
     'uq_repos_path',
     'CREATE UNIQUE INDEX uq_repos_path ON repos (path)',
@@ -84263,6 +85121,10 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final Index idxConversationMessagesOpenQuestions = Index(
     'idx_conversation_messages_open_questions',
     'CREATE INDEX idx_conversation_messages_open_questions ON conversation_messages (conversation_id) WHERE message_type = \'user_question\' AND answered = 0 AND reverted = 0',
+  );
+  late final Index idxConversationMessagesOutline = Index(
+    'idx_conversation_messages_outline',
+    'CREATE INDEX idx_conversation_messages_outline ON conversation_messages (conversation_id, created_at, space_id, id, sender_id, sender_type, message_type, content_chars, answered, steer_state, revision) WHERE reverted = 0 AND revision >= 0',
   );
   late final Index idxConversationMessagesQueuedSteering = Index(
     'idx_conversation_messages_queued_steering',
@@ -85090,6 +85952,9 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
   late final EnvironmentDao environmentDao = EnvironmentDao(
     this as WorkspaceDatabase,
   );
+  late final McpServerDao mcpServerDao = McpServerDao(
+    this as WorkspaceDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -85222,6 +86087,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     pendingPrRepliesTable,
     approvalEscalationsTable,
     planDivergencesTable,
+    mcpServersTable,
     uqReposPath,
     uqAgentsName,
     idxAgentsReportsTo,
@@ -85264,6 +86130,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxConversationMessagesLiveChars,
     idxConversationMessagesContextReading,
     idxConversationMessagesOpenQuestions,
+    idxConversationMessagesOutline,
     idxConversationMessagesQueuedSteering,
     idxConversationActivitySpaceId,
     idxReviewSpacesPrExternalId,
@@ -103730,6 +104597,7 @@ typedef $$ConversationMessagesTableTableCreateCompanionBuilder =
       required String conversationId,
       required String senderId,
       required String senderType,
+      Value<int> revision,
       required String content,
       Value<int> contentChars,
       Value<String> messageType,
@@ -103754,6 +104622,7 @@ typedef $$ConversationMessagesTableTableUpdateCompanionBuilder =
       Value<String> conversationId,
       Value<String> senderId,
       Value<String> senderType,
+      Value<int> revision,
       Value<String> content,
       Value<int> contentChars,
       Value<String> messageType,
@@ -103938,6 +104807,11 @@ class $$ConversationMessagesTableTableFilterComposer
 
   ColumnFilters<String> get senderType => $composableBuilder(
     column: $table.senderType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -104175,6 +105049,11 @@ class $$ConversationMessagesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get content => $composableBuilder(
     column: $table.content,
     builder: (column) => ColumnOrderings(column),
@@ -104297,6 +105176,9 @@ class $$ConversationMessagesTableTableAnnotationComposer
     column: $table.senderType,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
@@ -104540,6 +105422,7 @@ class $$ConversationMessagesTableTableTableManager
                 Value<String> conversationId = const Value.absent(),
                 Value<String> senderId = const Value.absent(),
                 Value<String> senderType = const Value.absent(),
+                Value<int> revision = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<int> contentChars = const Value.absent(),
                 Value<String> messageType = const Value.absent(),
@@ -104562,6 +105445,7 @@ class $$ConversationMessagesTableTableTableManager
                 conversationId: conversationId,
                 senderId: senderId,
                 senderType: senderType,
+                revision: revision,
                 content: content,
                 contentChars: contentChars,
                 messageType: messageType,
@@ -104586,6 +105470,7 @@ class $$ConversationMessagesTableTableTableManager
                 required String conversationId,
                 required String senderId,
                 required String senderType,
+                Value<int> revision = const Value.absent(),
                 required String content,
                 Value<int> contentChars = const Value.absent(),
                 Value<String> messageType = const Value.absent(),
@@ -104608,6 +105493,7 @@ class $$ConversationMessagesTableTableTableManager
                 conversationId: conversationId,
                 senderId: senderId,
                 senderType: senderType,
+                revision: revision,
                 content: content,
                 contentChars: contentChars,
                 messageType: messageType,
@@ -152911,6 +153797,385 @@ typedef $$PlanDivergencesTableTableProcessedTableManager =
       PlanDivergencesTableData,
       PrefetchHooks Function({bool orchestrationId})
     >;
+typedef $$McpServersTableTableCreateCompanionBuilder =
+    McpServersTableCompanion Function({
+      required String id,
+      required String name,
+      required String transport,
+      Value<String?> command,
+      Value<String> argsJson,
+      Value<String?> url,
+      Value<String> envNamesJson,
+      Value<String> headerNamesJson,
+      Value<bool> enabled,
+      Value<String?> createdBy,
+      Value<String?> hostApprovedBy,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$McpServersTableTableUpdateCompanionBuilder =
+    McpServersTableCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> transport,
+      Value<String?> command,
+      Value<String> argsJson,
+      Value<String?> url,
+      Value<String> envNamesJson,
+      Value<String> headerNamesJson,
+      Value<bool> enabled,
+      Value<String?> createdBy,
+      Value<String?> hostApprovedBy,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$McpServersTableTableFilterComposer
+    extends Composer<_$WorkspaceDatabase, $McpServersTableTable> {
+  $$McpServersTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transport => $composableBuilder(
+    column: $table.transport,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get command => $composableBuilder(
+    column: $table.command,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get argsJson => $composableBuilder(
+    column: $table.argsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get envNamesJson => $composableBuilder(
+    column: $table.envNamesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get headerNamesJson => $composableBuilder(
+    column: $table.headerNamesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hostApprovedBy => $composableBuilder(
+    column: $table.hostApprovedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$McpServersTableTableOrderingComposer
+    extends Composer<_$WorkspaceDatabase, $McpServersTableTable> {
+  $$McpServersTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get transport => $composableBuilder(
+    column: $table.transport,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get command => $composableBuilder(
+    column: $table.command,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get argsJson => $composableBuilder(
+    column: $table.argsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get envNamesJson => $composableBuilder(
+    column: $table.envNamesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get headerNamesJson => $composableBuilder(
+    column: $table.headerNamesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdBy => $composableBuilder(
+    column: $table.createdBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hostApprovedBy => $composableBuilder(
+    column: $table.hostApprovedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$McpServersTableTableAnnotationComposer
+    extends Composer<_$WorkspaceDatabase, $McpServersTableTable> {
+  $$McpServersTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get transport =>
+      $composableBuilder(column: $table.transport, builder: (column) => column);
+
+  GeneratedColumn<String> get command =>
+      $composableBuilder(column: $table.command, builder: (column) => column);
+
+  GeneratedColumn<String> get argsJson =>
+      $composableBuilder(column: $table.argsJson, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get envNamesJson => $composableBuilder(
+    column: $table.envNamesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get headerNamesJson => $composableBuilder(
+    column: $table.headerNamesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get enabled =>
+      $composableBuilder(column: $table.enabled, builder: (column) => column);
+
+  GeneratedColumn<String> get createdBy =>
+      $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hostApprovedBy => $composableBuilder(
+    column: $table.hostApprovedBy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$McpServersTableTableTableManager
+    extends
+        RootTableManager<
+          _$WorkspaceDatabase,
+          $McpServersTableTable,
+          McpServersTableData,
+          $$McpServersTableTableFilterComposer,
+          $$McpServersTableTableOrderingComposer,
+          $$McpServersTableTableAnnotationComposer,
+          $$McpServersTableTableCreateCompanionBuilder,
+          $$McpServersTableTableUpdateCompanionBuilder,
+          (
+            McpServersTableData,
+            BaseReferences<
+              _$WorkspaceDatabase,
+              $McpServersTableTable,
+              McpServersTableData
+            >,
+          ),
+          McpServersTableData,
+          PrefetchHooks Function()
+        > {
+  $$McpServersTableTableTableManager(
+    _$WorkspaceDatabase db,
+    $McpServersTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$McpServersTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$McpServersTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$McpServersTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> transport = const Value.absent(),
+                Value<String?> command = const Value.absent(),
+                Value<String> argsJson = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String> envNamesJson = const Value.absent(),
+                Value<String> headerNamesJson = const Value.absent(),
+                Value<bool> enabled = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> hostApprovedBy = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => McpServersTableCompanion(
+                id: id,
+                name: name,
+                transport: transport,
+                command: command,
+                argsJson: argsJson,
+                url: url,
+                envNamesJson: envNamesJson,
+                headerNamesJson: headerNamesJson,
+                enabled: enabled,
+                createdBy: createdBy,
+                hostApprovedBy: hostApprovedBy,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String transport,
+                Value<String?> command = const Value.absent(),
+                Value<String> argsJson = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String> envNamesJson = const Value.absent(),
+                Value<String> headerNamesJson = const Value.absent(),
+                Value<bool> enabled = const Value.absent(),
+                Value<String?> createdBy = const Value.absent(),
+                Value<String?> hostApprovedBy = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => McpServersTableCompanion.insert(
+                id: id,
+                name: name,
+                transport: transport,
+                command: command,
+                argsJson: argsJson,
+                url: url,
+                envNamesJson: envNamesJson,
+                headerNamesJson: headerNamesJson,
+                enabled: enabled,
+                createdBy: createdBy,
+                hostApprovedBy: hostApprovedBy,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$McpServersTableTable, McpServersTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$WorkspaceDatabase,
+                    $McpServersTableTable,
+                    McpServersTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$McpServersTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WorkspaceDatabase,
+      $McpServersTableTable,
+      McpServersTableData,
+      $$McpServersTableTableFilterComposer,
+      $$McpServersTableTableOrderingComposer,
+      $$McpServersTableTableAnnotationComposer,
+      $$McpServersTableTableCreateCompanionBuilder,
+      $$McpServersTableTableUpdateCompanionBuilder,
+      (
+        McpServersTableData,
+        BaseReferences<
+          _$WorkspaceDatabase,
+          $McpServersTableTable,
+          McpServersTableData
+        >,
+      ),
+      McpServersTableData,
+      PrefetchHooks Function()
+    >;
 
 class $WorkspaceDatabaseManager {
   final _$WorkspaceDatabase _db;
@@ -153315,4 +154580,6 @@ class $WorkspaceDatabaseManager {
       );
   $$PlanDivergencesTableTableTableManager get planDivergencesTable =>
       $$PlanDivergencesTableTableTableManager(_db, _db.planDivergencesTable);
+  $$McpServersTableTableTableManager get mcpServersTable =>
+      $$McpServersTableTableTableManager(_db, _db.mcpServersTable);
 }

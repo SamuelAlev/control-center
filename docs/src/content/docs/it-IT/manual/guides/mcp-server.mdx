@@ -2,7 +2,7 @@
 title: Usa il server MCP
 description: Collega un client MCP esterno al server di strumenti di Control Center, invia il suo token bearer e scopri cosa espone la superficie.
 slug: it-IT/manuale/guide/server-mcp
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Questa guida mostra come collegare un client MCP esterno — Claude Code, un
@@ -140,29 +140,35 @@ di scoperta: un client MCP esterno rifiuta di chiamare uno strumento che non è
 nella sua lista memorizzata nella cache, quindi nascondere gli strumenti li rompe
 invece di rimetterli in ordine.
 
-## I server MCP personali restano del proprietario
+## Server MCP usati dai tuoi agenti
 
-Questa guida riguarda l'endpoint proprio di Control Center. L'altra direzione, i server MCP che
-Control Center consegna agli agenti che esegue, si trova in **Impostazioni → Server → Server MCP →
-Server MCP esterni**. I server configurati sulla macchina del server per Claude, Codex, Cursor,
-Gemini, VS Code, Windsurf, OpenCode o in un `.mcp.json` vengono trovati lì automaticamente.
+Questa guida riguarda l'endpoint proprio di Control Center. L'altra direzione sono i server MCP a cui Control Center si collega e che consegna agli agenti che esegue. Li configuri in **Impostazioni → Server → Server MCP**, su due livelli. In entrambi i casi Control Center si collega al server stesso e passa i suoi strumenti all'esecuzione, quindi l'harness integrato e Claude Code ricevono gli stessi strumenti e le stesse richieste di approvazione. Un'esecuzione di Claude Code li vede sotto il server `control-center`, come `mcp__control-center__mcp__<server>__<tool>`.
 
-Questi server rilevati provengono dalla configurazione degli strumenti dell'utente del server e
-agiscono con l'identità e le credenziali di quell'utente, quindi appartengono al proprietario del
-server:
+### Server dello spazio di lavoro
 
-- Sono disponibili solo all'interno delle esecuzioni dell'harness integrato che il proprietario del
-  server avvia o di cui risponde, inclusa l'automazione in uno spazio di lavoro di cui il proprietario
-  risponde.
-- L'esecuzione di un membro, l'automazione legata a un membro e ogni esecuzione su un server senza
-  proprietario registrato non ne ottengono nessuno. Lì gli strumenti non sono elencati, non possono
-  essere chiamati e non compaiono nella ricerca degli strumenti.
-- Questo endpoint non li elenca, non li chiama né li cerca mai, per chiunque, token del proprietario
-  incluso, e non ne inoltra risorse o prompt. Quindi un CLI di agente che raggiunge Control Center
-  tramite MCP, come Claude Code, non li ottiene nemmeno tramite Control Center; usa la propria
-  configurazione.
+Gli amministratori dello spazio di lavoro li aggiungono in **Server MCP dello spazio di lavoro**. Ogni esecuzione nello spazio di lavoro riceve i loro strumenti, mentre le esecuzioni negli altri spazi di lavoro no.
 
-I server MCP configurati per lo spazio di lavoro non sono toccati da nulla di tutto questo.
+1. Seleziona **Aggiungi server** e dai un nome breve: lettere, cifre, `-` e `_`, fino a 24 caratteri. Gli strumenti compaiono come `mcp__<name>__<tool>`.
+2. Scegli come raggiungerlo:
+   - **Comando (stdio):** un eseguibile e i suoi argomenti, più le variabili d'ambiente di cui ha bisogno.
+   - **URL (HTTP o SSE):** l'endpoint, più le intestazioni di cui ha bisogno, come `Authorization: Bearer …`.
+3. Salva. Verifica: il server mostra **Connesso** con il numero di strumenti.
+
+I valori delle variabili d'ambiente e delle intestazioni sono salvati nel file dei segreti del server e non vengono più mostrati. Per cambiare un valore, sostituiscilo; per eliminarlo, rimuovi il nome.
+
+Un comando viene eseguito sulla macchina del server, con l'utente del server stesso, quindi non si avvia finché il proprietario del server non lo approva. Fino ad allora compare **In attesa di approvazione**. Un server raggiunto tramite URL funziona subito, ma può raggiungere solo indirizzi pubblici finché il proprietario del server non lo approva, approvazione che consente anche `localhost` e le reti private. Quando il proprietario del server salva un server, ciò vale come approvazione. Se qualcun altro cambia il modo in cui un server si avvia o dove si collega, serve una nuova approvazione. Attivare o disattivare un server mantiene la sua approvazione.
+
+### Server personali
+
+I server personali appartengono al proprietario del server e sono elencati sotto **Server MCP esterni**. I server configurati sulla macchina del server per Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode o in un `.mcp.json` vengono trovati lì automaticamente. Il proprietario del server può aggiungere i propri con **Aggiungi server**, usando lo stesso modulo. Un server che aggiungi ha la precedenza su uno rilevato con lo stesso nome.
+
+Agiscono con l'identità e le credenziali del proprietario del server:
+
+- Sono disponibili solo nelle esecuzioni che il proprietario del server avvia o di cui è responsabile, inclusa l'automazione in uno spazio di lavoro di cui il proprietario è responsabile. Questo vale sia per le esecuzioni dell'harness integrato sia per quelle di Claude Code.
+- L'esecuzione di un membro, l'automazione legata a un membro e qualunque esecuzione su un server senza proprietario registrato non ne ricevono nessuno. Lì gli strumenti non vengono elencati, non possono essere chiamati e non compaiono nella ricerca degli strumenti.
+- Né i server personali né quelli dello spazio di lavoro vengono forniti al token MCP o ai dispositivi associati, e le loro risorse e i loro prompt non vengono inoltrati.
+
+L'accesso a un server con OAuth non è disponibile dal modulo. Usa un server che accetta un token in un'intestazione, oppure configuralo per uno degli strumenti sopra, dove viene rilevato.
 
 ## Risoluzione dei problemi
 

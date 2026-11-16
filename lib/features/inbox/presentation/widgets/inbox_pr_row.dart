@@ -40,10 +40,19 @@ abstract final class InboxRowMetrics {
 
   /// Horizontal row padding.
   static const double hPad = 16;
+
+  /// The table width below which the fixed changes / updated columns would
+  /// squeeze the title out (they and the status cluster take ~340px): rows
+  /// switch to the compact layout, where churn and age join the meta line,
+  /// and the column header keeps its sort controls without the column grid.
+  /// Rows and their header measure the same card width, so they always agree.
+  static const double compactBelow = 560;
 }
 
 /// One table-like inbox row: avatar, title over `author · repo #number · labels`, then
 /// aligned status / diff-churn / age columns. Clicking opens the PR detail.
+/// Narrower than [InboxRowMetrics.compactBelow], churn and age move into the
+/// meta line and only the status cluster stays a column.
 /// The shared display properties gate what renders: `author` (avatar +
 /// subtitle prefix), `id`, `checks`, `diff` and `updated`. The repo name is
 /// always shown (the inbox has no repo sections, so the row meta is the only
@@ -85,12 +94,32 @@ class InboxPrRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final pr = item.pr;
     final props = ref.watch(
       prListDisplayPrefsProvider.select((p) => p.properties),
     );
     final selectable = onToggleSelect != null;
 
+    return LayoutBuilder(
+      builder: (context, constraints) => _buildRow(
+        context,
+        ref,
+        tokens: tokens,
+        props: props,
+        selectable: selectable,
+        compact: constraints.maxWidth < InboxRowMetrics.compactBelow,
+      ),
+    );
+  }
+
+  Widget _buildRow(
+    BuildContext context,
+    WidgetRef ref, {
+    required DesignSystemTokens tokens,
+    required Set<PrRowProperty> props,
+    required bool selectable,
+    required bool compact,
+  }) {
+    final pr = item.pr;
     return CcTappable(
       onPressed: (selectable && selecting)
           ? onToggleSelect
@@ -136,6 +165,7 @@ class InboxPrRow extends ConsumerWidget {
                     item: item,
                     props: props,
                     showRepo: showRepo,
+                    compact: compact,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -152,15 +182,18 @@ class InboxPrRow extends ConsumerWidget {
                     ],
                   ),
                 ),
-                if (props.contains(PrRowProperty.diff))
+                if (!compact && props.contains(PrRowProperty.diff))
                   SizedBox(
                     width: InboxRowMetrics.changes,
-                    child: _ChangesCell(
-                      additions: pr.additions,
-                      deletions: pr.deletions,
+                    child: Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: _ChangesCell(
+                        additions: pr.additions,
+                        deletions: pr.deletions,
+                      ),
                     ),
                   ),
-                if (props.contains(PrRowProperty.updated))
+                if (!compact && props.contains(PrRowProperty.updated))
                   SizedBox(
                     width: InboxRowMetrics.updated,
                     child: _UpdatedCell(pr: pr),
@@ -179,10 +212,15 @@ class _TitleCell extends StatelessWidget {
     required this.item,
     required this.props,
     this.showRepo = true,
+    this.compact = false,
   });
 
   final PrInboxItem item;
   final Set<PrRowProperty> props;
+
+  /// Whether the row is in its compact layout: the diff churn and age the
+  /// enabled properties ask for join the meta line instead of their columns.
+  final bool compact;
 
   PullRequest get pr => item.pr;
 
@@ -211,6 +249,18 @@ class _TitleCell extends StatelessWidget {
 
     final caption = CcTypography.caption.copyWith(color: tokens.muted);
     final hasLabels = pr.labels.isNotEmpty;
+    final ageDate = pr.isMerged ? (pr.mergedAt ?? pr.updatedAt) : pr.updatedAt;
+    // The meta segments, joined with `·`: the subtitle, then (compact only)
+    // the churn and age that have no column to sit in.
+    final segments = <Widget>[
+      if (subtitle.isNotEmpty) Text(subtitle, style: caption),
+      if (compact &&
+          props.contains(PrRowProperty.diff) &&
+          (pr.additions != 0 || pr.deletions != 0))
+        _ChangesCell(additions: pr.additions, deletions: pr.deletions),
+      if (compact && props.contains(PrRowProperty.updated) && ageDate != null)
+        _UpdatedCell(pr: pr, inline: true),
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -235,15 +285,18 @@ class _TitleCell extends StatelessWidget {
             _StackChip(item: item),
           ],
         ),
-        if (subtitle.isNotEmpty || hasLabels) ...[
+        if (segments.isNotEmpty || hasLabels) ...[
           const SizedBox(height: 1),
           Wrap(
             spacing: 6,
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (subtitle.isNotEmpty) Text(subtitle, style: caption),
-              if (subtitle.isNotEmpty && hasLabels) Text('·', style: caption),
+              for (var i = 0; i < segments.length; i++) ...[
+                if (i > 0) Text('·', style: caption),
+                segments[i],
+              ],
+              if (segments.isNotEmpty && hasLabels) Text('·', style: caption),
               for (final label in pr.labels)
                 CcColorTag(
                   label: label.name,
@@ -396,7 +449,7 @@ class _ChangesCell extends StatelessWidget {
       );
     }
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text('+$additions', style: base.copyWith(color: tokens.success)),
         const SizedBox(width: 4),
@@ -407,9 +460,13 @@ class _ChangesCell extends StatelessWidget {
 }
 
 class _UpdatedCell extends StatelessWidget {
-  const _UpdatedCell({required this.pr});
+  const _UpdatedCell({required this.pr, this.inline = false});
 
   final PullRequest pr;
+
+  /// Whether the age sits inline in the compact meta line (sized to its
+  /// text) rather than end-aligned in its column.
+  final bool inline;
 
   @override
   Widget build(BuildContext context) {
@@ -422,6 +479,9 @@ class _UpdatedCell extends StatelessWidget {
       neutral: tokens.muted,
       style: style,
     );
+    if (inline) {
+      return date == null ? age : AppTimestamp(dateTime: date, child: age);
+    }
     final aligned = Align(
       alignment: AlignmentDirectional.centerEnd,
       child: age,

@@ -1,4 +1,6 @@
+import 'package:cc_domain/features/mcp/domain/entities/mcp_server_definition.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_server_draft.dart';
 
 /// An immutable, platform-neutral snapshot of ONE external MCP server the host
 /// connects to as a *client* (PRD 01).
@@ -21,6 +23,7 @@ class McpExternalServerInfo {
     this.promptCount = 0,
     this.source,
     this.lastError,
+    this.definition,
   });
 
   /// Reconstructs the snapshot from the `mcp.client.servers` wire map.
@@ -35,6 +38,11 @@ class McpExternalServerInfo {
         promptCount: (json['prompt_count'] as num?)?.toInt() ?? 0,
         source: json['source'] as String?,
         lastError: json['last_error'] as String?,
+        definition: json['definition'] is Map
+            ? McpServerDefinition.fromJson(
+                (json['definition'] as Map).cast<String, dynamic>(),
+              )
+            : null,
       );
 
   /// The server's configured name (its stable identifier in `mcp.client.*` ops).
@@ -60,9 +68,17 @@ class McpExternalServerInfo {
   /// Number of bridged prompts.
   final int promptCount;
 
-  /// Where the config came from (discovery source: `claude`, `cursor`, …), or
-  /// null for a hand-added server.
+  /// Where the config came from (discovery source: `claude`, `cursor`, …, or
+  /// [handAddedSource] for one added in Control Center).
   final String? source;
+
+  /// The [source] of a personal server added in Control Center.
+  static const String handAddedSource = 'control-center';
+
+  /// The stored configuration of a server added in Control Center, which can
+  /// be edited and removed; null for a discovered one, which belongs to the
+  /// tool whose config it was read from.
+  final McpServerDefinition? definition;
 
   /// Last error message when [lifecycle] is `failed` / `needs_auth`.
   final String? lastError;
@@ -88,6 +104,7 @@ class McpExternalServerInfo {
     'prompt_count': promptCount,
     if (source != null) 'source': source,
     if (lastError != null) 'last_error': lastError,
+    if (definition != null) 'definition': definition!.toJson(),
   };
 
   @override
@@ -101,7 +118,8 @@ class McpExternalServerInfo {
       other.resourceCount == resourceCount &&
       other.promptCount == promptCount &&
       other.source == source &&
-      other.lastError == lastError;
+      other.lastError == lastError &&
+      other.definition == definition;
 
   @override
   int get hashCode => Object.hash(
@@ -114,6 +132,7 @@ class McpExternalServerInfo {
     promptCount,
     source,
     lastError,
+    definition,
   );
 }
 
@@ -128,8 +147,8 @@ class McpExternalServerInfo {
 /// exposes no client control (the ops are absent), the UI degrades to "external
 /// MCP not available on this server".
 abstract interface class McpClientControl {
-  /// The external servers the host knows about (discovered + hand-added),
-  /// with their live connection state.
+  /// The owner's personal servers (discovered + hand-added), with their live
+  /// connection state.
   Future<List<McpExternalServerInfo>> servers();
 
   /// The host's standing tool-approval posture (governs the tier gate that
@@ -149,4 +168,11 @@ abstract interface class McpClientControl {
   /// Reconnects [serverName] (resets the crash-storm circuit breaker), e.g.
   /// after a `failed` / `circuit_open` server is fixed.
   Future<void> reconnect(String serverName);
+
+  /// Adds or changes one of the owner's personal servers and returns it as
+  /// stored. A hand-added server wins over a discovered one of the same name.
+  Future<McpServerDefinition> saveServer(McpServerDraft draft);
+
+  /// Removes the hand-added personal server [id] and its stored values.
+  Future<void> deleteServer(String id);
 }

@@ -2,7 +2,7 @@
 title: MCP-verktøy
 description: Fullstendig katalog over MCP-verktøyene cc_server registrerer, gruppert etter familie.
 slug: nb-NO/handbok/referanse/mcp-verktoy
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
 `cc_server` er vert for ett MCP-verktøyregister (JSON-RPC 2.0), betjent på
@@ -10,7 +10,7 @@ serverens hovedport (standard `9030`) på `POST /mcp` og `GET /sse`, med
 protokollversjon `2024-11-05`. Alle klienter når det samme registeret:
 skrivebordsappen, nettappen, eksterne MCP-klienter og den innebygde
 agentkjøretiden. Eksterne MCP-servere kan broes inn i det samme registeret som
-et dynamisk lag. Servere som oppdages i serverbrukerens egen verktøykonfigurasjon er unntaket: dette endepunktet lister aldri opp, kaller aldri og søker aldri i dem, og bare kjøringer av det innebygde harnesset som serverens eier har ansvaret for, får bruke dem (se [Personlige MCP-servere forblir eierens](/nb-NO/handbok/slik-gjor-du/mcp-server/#personlige-mcp-servere-forblir-eierens)).
+Eksterne MCP-servere kobles inn i samme register i egne lag: ett per arbeidsområde for MCP-serverne arbeidsområdets administratorer konfigurerer, og ett for eierens personlige MCP-servere. Dette endepunktet lister, kaller og søker i dem bare for en agentkjøring: MCP-serverne i eget arbeidsområde, pluss de personlige når eieren av serveren står ansvarlig for kjøringen. MCP-tokenet og parede enheter ser dem aldri (se [MCP-servere som agentene bruker](/nb-NO/handbok/slik-gjor-du/mcp-server/#mcp-servere-som-agentene-bruker)).
 
 ## Registerets størrelse
 

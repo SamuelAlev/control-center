@@ -1,4 +1,4 @@
-import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_mcp_client/src/config/mcp_client_models.dart';
 import 'package:cc_mcp_client/src/config/mcp_server_config.dart';
 import 'package:cc_mcp_client/src/connection_manager.dart';
@@ -7,28 +7,40 @@ import 'package:cc_mcp_client/src/oauth/oauth_provider.dart';
 import 'package:cc_mcp_client/src/oauth/oauth_token_store.dart';
 import 'package:cc_mcp_client/src/tool_list_cache.dart';
 import 'package:cc_mcp_client/src/transport_factory.dart';
+import 'package:cc_mcp_client/src/transports/http_transport.dart'
+    show McpConnectionFactory;
+
+/// Receives the bridged tools of every connected server, whenever the set
+/// changes. The host points it at one layer of its tool registry.
+typedef McpToolSink = void Function(List<McpTool> tools);
 
 /// The host-facing facade for the MCP client subsystem.
 ///
-/// Wires the [ConnectionManager] to a [McpToolRegistry] (bridged tools are
-/// pushed into the registry's dynamic layer whenever servers connect or
-/// hot-reload), drives multi-format config discovery and owns OAuth
-/// authorization. One service instance per workspace — every config it is handed is already
-/// workspace-scoped by the caller.
+/// Wires the [ConnectionManager] to a [McpToolSink] (bridged tools are pushed
+/// whenever servers connect or hot-reload), drives multi-format config
+/// discovery and owns OAuth authorization. One instance per set of servers
+/// that share an audience: the server owner's personal servers, or one
+/// workspace's configured servers. Every config it is handed is already scoped
+/// by the caller.
 class McpClientService {
-  /// Creates an [McpClientService].
+  /// Creates an [McpClientService] that publishes to `publishTools`.
+  ///
+  /// [publicOnlyConnection] dials the http/sse servers marked
+  /// [McpServerConfig.publicOnly]; without it they are refused.
   McpClientService({
-    required this._registry,
+    required this._publishTools,
     McpOAuthTokenStore? tokenStore,
     BrowserLauncher? launchBrowser,
     McpClientLogSink? log,
     NeedsAuthCallback? onNeedsAuth,
     String? toolCachePath,
+    McpConnectionFactory? publicOnlyConnection,
   }) : _tokenStore = tokenStore ?? InMemoryOAuthTokenStore(),
        _launchBrowser = launchBrowser {
     final factory = DefaultMcpTransportFactory(
       tokenStore: _tokenStore,
       launchBrowser: launchBrowser,
+      publicOnlyConnection: publicOnlyConnection,
     );
     _manager = ConnectionManager(
       transportFactory: factory.create,
@@ -44,7 +56,7 @@ class McpClientService {
     );
   }
 
-  final McpToolRegistry _registry;
+  final McpToolSink _publishTools;
   final McpOAuthTokenStore _tokenStore;
   final BrowserLauncher? _launchBrowser;
   late final ConnectionManager _manager;
@@ -56,20 +68,13 @@ class McpClientService {
   Future<void> start(List<McpServerConfig> configs) =>
       _manager.connectAll(configs);
 
-  /// Auto-discovers IDE/tool MCP configs under [homeDir] (and [workspaceDir])
-  /// and connects them, returning the discovered configs.
-  Future<List<McpServerConfig>> discoverAndStart({
+  /// The MCP servers already configured for other tools (IDEs, agents) under
+  /// [homeDir] (and [workspaceDir]). Reads only; [start] connects.
+  Future<List<McpServerConfig>> discover({
     required String homeDir,
     String? workspaceDir,
-  }) async {
-    final discovery = McpConfigDiscovery(
-      homeDir: homeDir,
-      workspaceDir: workspaceDir,
-    );
-    final configs = await discovery.discover();
-    await _manager.connectAll(configs);
-    return configs;
-  }
+  }) => McpConfigDiscovery(homeDir: homeDir, workspaceDir: workspaceDir)
+      .discover();
 
   /// Runs the interactive OAuth authorization for the server named [name]
   /// (resolved from the known connections), then reconnects it. Throws a
@@ -109,12 +114,12 @@ class McpClientService {
   /// Disconnects [name].
   Future<void> disconnect(String name) => _manager.disconnect(name);
 
-  void _syncRegistry() => _registry.setDynamicTools(_manager.tools);
+  void _syncRegistry() => _publishTools(_manager.tools);
 
-  /// Shuts down all connections (SIGTERMs stdio child trees) and clears the
-  /// registry's dynamic layer.
+  /// Shuts down all connections (SIGTERMs stdio child trees) and publishes
+  /// an empty tool set.
   Future<void> shutdown() async {
     await _manager.shutdown();
-    _registry.setDynamicTools(const []);
+    _publishTools(const []);
   }
 }

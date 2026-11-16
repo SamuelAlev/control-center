@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 
@@ -77,6 +78,35 @@ abstract class MessagingRepository {
     String conversationId, {
     required int limit,
   });
+
+  /// Watches the messages around [anchorId] in a conversation: the anchor,
+  /// up to [before] messages older than it and up to [after] newer, ascending,
+  /// reverted ones hidden.
+  ///
+  /// Ordered by `(created_at, rowid)`, so messages written in the same second
+  /// are neither dropped nor repeated at either edge. `hasOlder` and
+  /// `hasNewer` say whether the conversation continues past each edge.
+  ///
+  /// The anchor must be a live message of [conversationId] in [spaceId]; a
+  /// missing, reverted or foreign one fails the stream with a
+  /// `NotFoundException` before any rows.
+  Stream<({List<Message> messages, bool hasOlder, bool hasNewer})>
+  watchMessagesRange(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required String anchorId,
+    required int before,
+    required int after,
+  });
+
+  /// The outline of a whole conversation: one entry per live (non-reverted)
+  /// message, ascending by `(created_at, rowid)`, from stored values only.
+  Future<List<ConversationOutlineEntry>> getConversationOutline(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  );
 
   /// Loads one cursor-based page of a conversation's history (oldest-first for
   /// display). Pass a prior page's [MessagePage.nextCursor] as [cursor] to load

@@ -18811,4 +18811,207 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Er is niets verleend: wie of wat het was bedoeld voor, staat niet meer in deze werkruimte.';
+
+  @override
+  String get mcpWorkspaceServers => 'MCP-servers van de workspace';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Elke agentrun in deze workspace krijgt de tools van deze servers, in Claude Code en in de ingebouwde harness. Control Center verbindt met elke server en geeft de tools door.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Alleen workspacebeheerders kunnen de MCP-servers van deze workspace zien en wijzigen.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'MCP-servers van de workspace zijn niet beschikbaar op de verbonden server.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Nog geen MCP-servers voor de workspace';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Voeg een server toe zodat elke agentrun in deze workspace zijn tools krijgt.';
+
+  @override
+  String get mcpAddServer => 'Server toevoegen';
+
+  @override
+  String get mcpHandAddedSource => 'Toegevoegd in Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Wacht op goedkeuring';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Alleen publieke adressen';
+
+  @override
+  String get mcpApproveServer => 'Goedkeuren';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Deze server voert een opdracht uit op de serverhost, als gebruiker van de server. Hij start pas als je hem goedkeurt.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Deze server voert een opdracht uit op de serverhost, dus hij start pas als de serverbeheerder hem goedkeurt.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Deze server kan alleen publieke adressen bereiken. Keur hem goed om hem ook het privénetwerk van de host te laten bereiken, zoals localhost en het lokale netwerk.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Deze server kan alleen publieke adressen bereiken totdat de serverbeheerder hem goedkeurt.';
+
+  @override
+  String get mcpRemoveServer => 'Server verwijderen';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '$name verwijderen?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Agentruns verliezen de tools van deze server, en de opgeslagen geheime waarden worden verwijderd.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '$name aan- of uitzetten';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'MCP-server toevoegen';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '$name bewerken';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Letters, cijfers, koppeltekens en underscores. Agents zien de tools onder deze naam.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Gebruik maximaal 24 letters, cijfers, koppeltekens of underscores, beginnend met een letter of cijfer.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'Er is hier al een andere server met deze naam.';
+
+  @override
+  String get mcpServerTransportLabel => 'Transporttype';
+
+  @override
+  String get mcpServerTransportStdio => 'Opdracht';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Opdracht';
+
+  @override
+  String get mcpServerCommandRequired => 'Voer de op te starten opdracht in.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumenten';
+
+  @override
+  String get mcpServerArgsHelper => 'Eén argument per regel.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Voer een http- of https-URL in zonder gebruikersnaam, wachtwoord of #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Omgevingsvariabelen';
+
+  @override
+  String get mcpServerHeadersLabel => 'Headers';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Waarden worden als geheim opgeslagen en nooit opnieuw getoond.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Bijvoorbeeld een Authorization-header met een bearertoken.';
+
+  @override
+  String get mcpServerEnvAdd => 'Variabele toevoegen';
+
+  @override
+  String get mcpServerHeaderAdd => 'Header toevoegen';
+
+  @override
+  String get mcpServerSecretValueHint => 'Waarde';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Nieuwe waarde';
+
+  @override
+  String get mcpServerSecretReplace => 'Waarde vervangen';
+
+  @override
+  String get mcpServerSecretUndo => 'Ongedaan maken';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Verwijderd bij opslaan';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name is geen geldige variabelenaam. Gebruik letters, cijfers en underscores, en begin niet met een cijfer.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name kan niet worden ingesteld. Gebruik een geldige headernaam die de verbinding niet zelf beheert.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Het wijzigen van het transport verwijdert de opgeslagen waarden.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Als dit uit staat, wordt de server niet gestart en zien agents zijn tools niet.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Hij draait op de serverhost, dus hij start pas als de serverbeheerder hem goedkeurt. Een wijziging in de manier van starten vraagt opnieuw om goedkeuring.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Hij bereikt alleen publieke adressen totdat de serverbeheerder hem goedkeurt. Een wijziging in de manier van verbinden vraagt opnieuw om goedkeuring.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Hij draait op de serverhost als gebruiker van de server. Opslaan keurt hem goed.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Opslaan keurt hem goed om ook het privénetwerk van de host te bereiken.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Alleen gebruikt in runs die je zelf start of waarvoor je verantwoordelijk bent.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center kon deze server niet opslaan. Controleer de instellingen en probeer het opnieuw.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Deze server bestaat niet meer. Mogelijk is hij verwijderd.';
 }

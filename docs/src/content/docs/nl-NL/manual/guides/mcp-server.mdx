@@ -2,7 +2,7 @@
 title: De MCP-server gebruiken
 description: Wijs een externe MCP-client naar de toolserver van Control Center, stuur het bearer-token mee en weet wat het oppervlak aanbiedt.
 slug: nl-NL/handleiding/gidsen/mcp-server
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Deze gids laat je zien hoe je een externe MCP-client — Claude Code, een editor,
@@ -144,30 +144,35 @@ ontdekking — een externe MCP-client weigert een tool aan te roepen die niet in
 zijn gecachte lijst staat, dus tools verbergen maakt ze stuk in plaats van dat
 het de lijst opruimt.
 
-## Persoonlijke MCP-servers blijven van de eigenaar
+## MCP-servers die agents gebruiken
 
-Deze gids gaat over het eigen endpoint van Control Center. De andere richting,
-MCP-servers die Control Center meegeeft aan de agents die het draait, staat onder
-**Instellingen → Server → MCP-servers → Externe MCP-servers**. MCP-servers die op de
-machine van de server zijn ingesteld voor Claude, Codex, Cursor, Gemini, VS Code,
-Windsurf, OpenCode of in een `.mcp.json`, worden daar automatisch gevonden.
+Deze gids gaat over het eigen endpoint van Control Center. De andere richting zijn MCP-servers waarmee Control Center verbinding maakt en die het meegeeft aan de agents die het draait. Die worden ingesteld onder **Instellingen → Server → MCP-servers**, op twee niveaus. In beide gevallen maakt Control Center verbinding met de MCP-server zelf en geeft het de tools ervan door aan de run, zodat het ingebouwde harness en Claude Code dezelfde tools en dezelfde goedkeuringsvragen krijgen. Een Claude Code-run ziet ze onder de MCP-server `control-center` als `mcp__control-center__mcp__<server>__<tool>`.
 
-Die gevonden servers komen uit de eigen toolconfiguratie van de servergebruiker en
-handelen met de identiteit en inloggegevens van die gebruiker, dus ze horen bij de
-serverbeheerder:
+### Servers van de werkruimte
 
-- Ze zijn alleen beschikbaar binnen ingebouwde harness-runs die de serverbeheerder
-  start of waarvoor hij verantwoordelijk is, inclusief automatisering in een
-  werkruimte waarvoor de beheerder verantwoordelijk is.
-- Een run van een lid, automatisering die aan een lid is gebonden, en elke run op een
-  server zonder vastgelegde eigenaar krijgen er geen van. Daar worden de tools niet
-  getoond, kunnen ze niet worden aangeroepen en verschijnen ze niet in de toolzoekopdracht.
-- Dit endpoint toont, roept aan of doorzoekt ze nooit, voor niemand, ook niet met het
-  token van de eigenaar, en het geeft hun resources of prompts niet door. Dus een
-  agent-CLI die via MCP met Control Center verbindt, zoals Claude Code, krijgt ze via
-  Control Center ook niet; die gebruikt zijn eigen configuratie.
+Beheerders van de werkruimte voegen deze toe onder **MCP-servers van de workspace**. Elke agent-run in de werkruimte krijgt hun tools; runs in andere werkruimten niet.
 
-MCP-servers die voor de werkruimte zijn ingesteld, worden door dit alles niet geraakt.
+1. **Server toevoegen** kiezen en een korte naam geven: letters, cijfers, `-` en `_`, maximaal 24 tekens. Tools verschijnen als `mcp__<name>__<tool>`.
+2. Kies hoe de MCP-server wordt bereikt:
+   - **Opdracht (stdio):** een uitvoerbaar bestand met de argumenten ervan, plus de omgevingsvariabelen die het nodig heeft.
+   - **URL (HTTP of SSE):** het endpoint, plus de headers die nodig zijn, zoals `Authorization: Bearer …`.
+3. Opslaan. Controlepunt: de MCP-server toont **Verbonden** met een aantal tools.
+
+Waarden van omgevingsvariabelen en headers worden opgeslagen in het geheimenbestand van de MCP-server en nooit opnieuw getoond. Om een waarde te wijzigen, vervang je die; om een waarde te verwijderen, haal je de naam weg.
+
+Een opdracht draait op de machine van de MCP-server onder de eigen gebruiker van de server, dus start hij pas als de serverbeheerder hem goedkeurt. Tot die tijd staat er **Wacht op goedkeuring**. Een URL-server werkt meteen, maar kan alleen publieke adressen bereiken totdat de serverbeheerder hem goedkeurt; daarna zijn ook `localhost` en privénetwerken toegestaan. Wanneer de serverbeheerder een MCP-server opslaat, telt dat als goedkeuring. Als iemand anders wijzigt hoe een MCP-server start of waarmee hij verbinding maakt, is opnieuw goedkeuring nodig. Een MCP-server aan- of uitzetten behoudt de goedkeuring.
+
+### Persoonlijke servers
+
+Persoonlijke servers horen bij de serverbeheerder en staan onder **Externe MCP-servers**. MCP-servers die op de machine van de MCP-server zijn ingesteld voor Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode of in een `.mcp.json`, worden daar automatisch gevonden. De serverbeheerder kan zelf ook MCP-servers toevoegen, met hetzelfde formulier via **Server toevoegen**. Een MCP-server die wordt toegevoegd, gaat voor op een gevonden MCP-server met dezelfde naam.
+
+Ze handelen met de identiteit en inloggegevens van de serverbeheerder:
+
+- Ze zijn alleen beschikbaar in runs die de serverbeheerder start of waarvoor hij verantwoordelijk is, inclusief automatisering in een werkruimte waarvoor de beheerder verantwoordelijk is. Dat geldt voor ingebouwde harness-runs en Claude Code-runs gelijk.
+- De run van een lid, automatisering die aan een lid is gebonden, en elke run op een MCP-server zonder vastgelegde eigenaar krijgen er geen van. Daar worden de tools niet getoond, kunnen ze niet worden aangeroepen en verschijnen ze niet in de toolzoekopdracht.
+- Noch persoonlijke noch servers van de werkruimte worden aan de MCP-token of aan gekoppelde apparaten geleverd, en hun resources en prompts worden niet doorgegeven.
+
+Inloggen bij een MCP-server met OAuth is niet beschikbaar via het formulier. Gebruik een MCP-server die een token in een header accepteert, of configureer hem voor een van de tools hierboven, waar hij wordt gevonden.
 
 ## Problemen oplossen
 

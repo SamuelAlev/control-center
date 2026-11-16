@@ -118,9 +118,14 @@
 # shutdown, before the databases close (+1).
 # Raised 2026-11-15 by 9: cc_server_runtime.dart starts the "meeting starting
 # soon" alert sweep (meeting_alert_sweep.dart holds the sweep itself).
+# Raised 2026-11-16 by 8 (message revision): MessageDto carries the row's
+# revision (dtos.dart +6) and messageToWire sends it (catalog_wire.dart +2),
+# so a feed subscriber can reuse an unchanged message's decode. The outline and
+# range queries went to messaging_dao_history.dart and the conversation scope
+# check to catalog/conversation_scope.dart instead of entering the list.
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
-packages/cc_domain/lib/src/dtos/dtos.dart  3680
+packages/cc_domain/lib/src/dtos/dtos.dart  3686
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2355
 packages/cc_infra/lib/src/messaging/messaging_service.dart  1763
@@ -134,7 +139,7 @@ packages/cc_infra/lib/src/rigs/rig_service.dart  2298
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1660
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2803
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3116
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3118
 packages/cc_server_core/lib/src/cc_server_runtime.dart  8364
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
 packages/cc_server_core/lib/src/local_rpc_server.dart  2503

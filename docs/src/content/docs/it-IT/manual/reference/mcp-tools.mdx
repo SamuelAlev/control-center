@@ -2,10 +2,10 @@
 title: Strumenti MCP
 description: Catalogo completo degli strumenti MCP che cc_server registra, per famiglia.
 slug: it-IT/manuale/riferimento/strumenti-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` ospita un unico registro di strumenti MCP (JSON-RPC 2.0), servito sulla porta principale del server (predefinita `9030`) su `POST /mcp` e `GET /sse`, versione del protocollo `2024-11-05`. Ogni client raggiunge lo stesso registro: il desktop, la build web, i client MCP esterni e il runtime integrato degli agenti. I server MCP esterni possono essere collegati allo stesso registro come livello dinamico. I server rilevati nella configurazione degli strumenti personale dell'utente del server sono l'eccezione: questo endpoint non li elenca, non li chiama e non li cerca mai, e solo le esecuzioni dell'harness integrato, di cui il proprietario del server è responsabile, li ottengono (vedi [I server MCP personali restano del proprietario](/it-IT/manuale/guide/server-mcp/#i-server-mcp-personali-restano-del-proprietario)).
+`cc_server` ospita un unico registro di strumenti MCP (JSON-RPC 2.0), servito sulla porta principale del server (predefinita `9030`) su `POST /mcp` e `GET /sse`, versione del protocollo `2024-11-05`. Ogni client raggiunge lo stesso registro: il desktop, la build web, i client MCP esterni e il runtime integrato degli agenti. I server MCP esterni sono collegati allo stesso registro, ciascuno nel proprio livello: uno per spazio di lavoro, per i server configurati dai suoi amministratori, e uno per i server personali del proprietario del server. Questo endpoint li elenca, li chiama e li cerca solo per un'esecuzione di agente: quelli del proprio spazio di lavoro e, in più, quelli personali quando il proprietario del server è responsabile dell'esecuzione. Il token MCP e i dispositivi associati non li vedono mai (vedi [Server MCP usati dai tuoi agenti](/it-IT/manuale/guide/server-mcp/#server-mcp-usati-dai-tuoi-agenti)).
 
 ## Dimensione del registro
 

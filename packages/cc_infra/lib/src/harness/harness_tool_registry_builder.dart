@@ -36,10 +36,11 @@ import 'package:cc_natives/cc_natives.dart';
 /// advertise. There must be one builder only: a second, inspection-specific
 /// assembly would drift from the surface a run actually gets.
 ///
-/// [includePersonalMcp] hands the run the MCP servers discovered in the server
-/// OS user's own tool configs (the registry's personal layer). Only a run the
-/// server owner is accountable for may have them; absent, the run gets none of
-/// them, not even their names.
+/// The run always gets the MCP servers configured for its own [workspaceId]
+/// (the registry's workspace layer). [includePersonalMcp] also hands it the
+/// server owner's personal servers, discovered in or added to their own tool
+/// configs. Only a run the server owner is accountable for may have those;
+/// absent, the run gets none of them, not even their names.
 ///
 /// The caller adds the `task` tool afterwards when the run may spawn
 /// subagents — nesting depth is a per-run property, so it is deliberately not
@@ -295,13 +296,14 @@ HarnessToolRegistry buildHarnessToolRegistry({
         'delegated_by_agent_id',
       },
     };
-    for (final toolName in mcpRegistry.toolNames(
+    // The run's own workspace's configured servers, and the owner's personal
+    // ones only when the owner is accountable for it.
+    final view = McpToolView(
+      workspaceId: workspaceId,
       includePersonal: includePersonalMcp,
-    )) {
-      final mcpTool = mcpRegistry.lookup(
-        toolName,
-        includePersonal: includePersonalMcp,
-      );
+    );
+    for (final toolName in mcpRegistry.toolNames(view: view)) {
+      final mcpTool = mcpRegistry.lookup(toolName, view: view);
       if (mcpTool != null) {
         registry.register(
           McpToolBridge(

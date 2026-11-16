@@ -43,8 +43,8 @@ void main() {
       final tool = _MockTool('test_tool');
       final registry = McpToolRegistry([tool]);
 
-      expect(registry.lookup('test_tool', includePersonal: false), tool);
-      expect(registry.lookup('nonexistent', includePersonal: false), isNull);
+      expect(registry.lookup('test_tool', view: McpToolView.shared), tool);
+      expect(registry.lookup('nonexistent', view: McpToolView.shared), isNull);
     });
 
     test('lists tool definitions', () {
@@ -52,7 +52,7 @@ void main() {
       final tool2 = _MockTool('tool_b');
       final registry = McpToolRegistry([tool1, tool2]);
 
-      final definitions = registry.listDefinitions(includePersonal: false);
+      final definitions = registry.listDefinitions(view: McpToolView.shared);
       expect(definitions, hasLength(2));
       expect(definitions[0].name, 'tool_a');
       expect(definitions[1].name, 'tool_b');
@@ -67,7 +67,7 @@ void main() {
         _MockTool('c'),
       ]);
 
-      expect(registry.toolNames(includePersonal: false).toList(), [
+      expect(registry.toolNames(view: McpToolView.shared).toList(), [
         'a',
         'b',
         'c',
@@ -76,8 +76,8 @@ void main() {
 
     test('empty registry has no tools', () {
       final registry = McpToolRegistry([]);
-      expect(registry.listDefinitions(includePersonal: false), isEmpty);
-      expect(registry.lookup('any', includePersonal: false), isNull);
+      expect(registry.listDefinitions(view: McpToolView.shared), isEmpty);
+      expect(registry.lookup('any', view: McpToolView.shared), isNull);
     });
 
     group('resolve (client-prefix tolerant)', () {
@@ -85,21 +85,21 @@ void main() {
       final registry = McpToolRegistry([tool]);
 
       test('resolves the exact bare name', () {
-        expect(registry.resolve('todo_write', includePersonal: false), tool);
+        expect(registry.resolve('todo_write', view: McpToolView.shared), tool);
       });
 
       test('resolves an mcp__server__tool prefixed name', () {
         expect(
           registry.resolve(
             'mcp__control-center__todo_write',
-            includePersonal: false,
+            view: McpToolView.shared,
           ),
           tool,
         );
         expect(
           registry.resolve(
             'mcp__control_center__todo_write',
-            includePersonal: false,
+            view: McpToolView.shared,
           ),
           tool,
         );
@@ -107,17 +107,17 @@ void main() {
 
       test('resolves a control_center_ / control-center_ prefixed name', () {
         expect(
-          registry.resolve('control_center_todo_write', includePersonal: false),
+          registry.resolve('control_center_todo_write', view: McpToolView.shared),
           tool,
         );
         expect(
-          registry.resolve('control-center_todo_write', includePersonal: false),
+          registry.resolve('control-center_todo_write', view: McpToolView.shared),
           tool,
         );
         expect(
           registry.resolve(
             'control_center__todo_write',
-            includePersonal: false,
+            view: McpToolView.shared,
           ),
           tool,
         );
@@ -128,14 +128,14 @@ void main() {
         final r = McpToolRegistry([tool])..register(bridged);
         // The bridged tool resolves as itself, not stripped down to todo_write.
         expect(
-          r.resolve('mcp__other__todo_write', includePersonal: false),
+          r.resolve('mcp__other__todo_write', view: McpToolView.shared),
           bridged,
         );
       });
 
       test('returns null for a genuinely unknown name', () {
         expect(
-          registry.resolve('definitely_not_a_tool', includePersonal: false),
+          registry.resolve('definitely_not_a_tool', view: McpToolView.shared),
           isNull,
         );
       });

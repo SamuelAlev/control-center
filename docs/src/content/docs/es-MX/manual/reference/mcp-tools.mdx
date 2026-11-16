@@ -2,10 +2,10 @@
 title: Herramientas MCP
 description: Catálogo completo de las herramientas MCP que registra cc_server, por familia.
 slug: es-MX/manual/referencia/herramientas-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` aloja un único registro de herramientas MCP (JSON-RPC 2.0), servido en el puerto principal del servidor (`9030` de forma predeterminada) en `POST /mcp` y `GET /sse`, con la versión de protocolo `2024-11-05`. Todos los clientes llegan al mismo registro: el escritorio, la versión web, los clientes MCP externos y el entorno de ejecución de agentes integrado. Los servidores MCP externos se pueden puentear hacia el mismo registro como una capa dinámica. Los servidores descubiertos en la configuración de herramientas del usuario del servidor son la excepción: este endpoint nunca los lista, llama ni busca, y solo las ejecuciones del arnés integrado, de las que responde el propietario del servidor, los obtienen (consulta [Los servidores MCP personales siguen siendo del propietario](/es-MX/manual/guias/servidor-mcp/#los-servidores-mcp-personales-siguen-siendo-del-propietario)).
+`cc_server` aloja un único registro de herramientas MCP (JSON-RPC 2.0), servido en el puerto principal del servidor (`9030` de forma predeterminada) en `POST /mcp` y `GET /sse`, con la versión de protocolo `2024-11-05`. Todos los clientes llegan al mismo registro: el escritorio, la versión web, los clientes MCP externos y el entorno de ejecución de agentes integrado. Los servidores MCP externos se conectan al mismo registro, cada uno en su propio nivel: uno por espacio de trabajo, para los servidores que configuran sus administradores, y otro para los servidores personales del propietario del servidor. Este endpoint los lista, llama y busca solo para una ejecución de agente: los del propio espacio de trabajo y, además, los personales cuando el propietario del servidor responde de la ejecución. El token de MCP y los dispositivos emparejados nunca los ven (consulta [Los servidores MCP que usan tus agentes](/es-MX/manual/guias/servidor-mcp/#los-servidores-mcp-que-usan-tus-agentes)).
 
 ## Tamaño del registro
 

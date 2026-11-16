@@ -18943,4 +18943,206 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Nimic nu a fost acordat: cel pentru care era nu mai există în acest spațiu de lucru.';
+
+  @override
+  String get mcpWorkspaceServers => 'Servere MCP ale spațiului de lucru';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Fiecare rulare de agent din acest spațiu de lucru primește uneltele acestor servere, atât în Claude Code, cât și în harness-ul integrat. Control Center se conectează la fiecare server și trimite mai departe uneltele sale.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Doar administratorii spațiului de lucru pot vedea și modifica serverele MCP ale acestui spațiu de lucru.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Serverele MCP ale spațiului de lucru nu sunt disponibile pe serverul conectat.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Încă nu există servere MCP ale spațiului de lucru';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Adaugă un server ca fiecare rulare de agent din acest spațiu de lucru să primească uneltele sale.';
+
+  @override
+  String get mcpAddServer => 'Adaugă server';
+
+  @override
+  String get mcpHandAddedSource => 'Adăugat în Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Se așteaptă aprobarea';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Doar adrese publice';
+
+  @override
+  String get mcpApproveServer => 'Aprobă';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Acest server rulează o comandă pe gazda serverului, ca utilizatorul serverului. Nu pornește până nu îl aprobi.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Acest server rulează o comandă pe gazda serverului, așa că nu pornește până nu o aprobă proprietarul serverului.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Acest server poate ajunge doar la adrese publice. Aprobă-l ca să poată ajunge și în rețeaua privată a gazdei, cum ar fi localhost și rețeaua locală.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Acest server poate ajunge doar la adrese publice până când îl aprobă proprietarul serverului.';
+
+  @override
+  String get mcpRemoveServer => 'Elimină serverul';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Ștergi $name?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Rulările agenților pierd uneltele acestui server, iar valorile lui secrete salvate se șterg.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Activează sau dezactivează $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Adaugă server MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Editează $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Litere, cifre, cratime și liniuțe de subliniere. Agenții văd uneltele lui sub acest nume.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Folosește până la 24 de litere, cifre, cratime sau liniuțe de subliniere, începând cu o literă sau o cifră.';
+
+  @override
+  String get mcpServerNameTaken => 'Un alt server de aici are deja acest nume.';
+
+  @override
+  String get mcpServerTransportLabel => 'Tip de conexiune';
+
+  @override
+  String get mcpServerTransportStdio => 'Comandă';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Comandă';
+
+  @override
+  String get mcpServerCommandRequired => 'Introdu comanda de rulat.';
+
+  @override
+  String get mcpServerArgsLabel => 'Argumente';
+
+  @override
+  String get mcpServerArgsHelper => 'Un argument pe linie.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Introdu un URL http sau https fără nume de utilizator, parolă sau #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Variabile de mediu';
+
+  @override
+  String get mcpServerHeadersLabel => 'Anteturi';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Valorile sunt salvate ca secrete și nu mai sunt afișate.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'De exemplu, un antet Authorization cu un token bearer.';
+
+  @override
+  String get mcpServerEnvAdd => 'Adaugă variabilă';
+
+  @override
+  String get mcpServerHeaderAdd => 'Adaugă antet';
+
+  @override
+  String get mcpServerSecretValueHint => 'Valoare';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Valoare nouă';
+
+  @override
+  String get mcpServerSecretReplace => 'Înlocuiește valoarea';
+
+  @override
+  String get mcpServerSecretUndo => 'Anulează';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Se elimină la salvare';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name nu este un nume de variabilă valid. Folosește litere, cifre și liniuțe de subliniere, fără să începi cu o cifră.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name nu poate fi setat. Folosește un nume de antet valid pe care conexiunea nu îl gestionează singură.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Schimbarea transportului elimină valorile salvate.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Când este oprit, serverul nu pornește și agenții nu îi văd uneltele.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Rulează pe gazda serverului, așa că nu pornește până nu îl aprobă proprietarul serverului. Schimbarea modului de pornire cere din nou aprobare.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Poate ajunge doar la adrese publice până îl aprobă proprietarul serverului. Schimbarea modului de conectare cere din nou aprobare.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Rulează pe gazda serverului ca utilizatorul serverului. Salvarea îl aprobă.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Salvarea îl aprobă ca să poată ajunge și în rețeaua privată a gazdei.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Folosit doar în rulările pe care le pornești sau pentru care ești responsabil.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center nu a putut salva acest server. Verifică setările lui și încearcă din nou.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Acest server nu mai există. Poate l-a eliminat cineva.';
 }

@@ -19,6 +19,7 @@ import 'package:cc_persistence/database/daos/evals_dao.dart';
 import 'package:cc_persistence/database/daos/goal_dao.dart';
 import 'package:cc_persistence/database/daos/guard_decision_dao.dart';
 import 'package:cc_persistence/database/daos/isolated_repo_dao.dart';
+import 'package:cc_persistence/database/daos/mcp_server_dao.dart';
 import 'package:cc_persistence/database/daos/meeting_dao.dart';
 import 'package:cc_persistence/database/daos/memory_access_grant_dao.dart';
 import 'package:cc_persistence/database/daos/memory_belief_dao.dart';
@@ -108,6 +109,7 @@ import 'package:cc_persistence/database/tables/goals_table.dart';
 import 'package:cc_persistence/database/tables/guard_decisions_table.dart';
 import 'package:cc_persistence/database/tables/imported_authority_holds_table.dart';
 import 'package:cc_persistence/database/tables/isolated_repos.dart';
+import 'package:cc_persistence/database/tables/mcp_servers.dart';
 import 'package:cc_persistence/database/tables/meeting_action_items.dart';
 import 'package:cc_persistence/database/tables/meeting_calendar_links.dart';
 import 'package:cc_persistence/database/tables/meeting_decisions.dart';
@@ -326,6 +328,7 @@ part 'workspace_database.g.dart';
     PendingPrRepliesTable,
     ApprovalEscalationsTable,
     PlanDivergencesTable,
+    McpServersTable,
   ],
   daos: [
     WorkspaceSettingDao,
@@ -397,6 +400,7 @@ part 'workspace_database.g.dart';
     GuardDecisionDao,
     WorkspaceRoleDao,
     EnvironmentDao,
+    McpServerDao,
   ],
 )
 class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
@@ -479,7 +483,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
   /// Bump it whenever the declared schema changes (a table class, an index,
   /// a constraint): the version differing is what makes an existing file
   /// converge on its next open. There are no migration steps to write.
-  static const int currentSchemaVersion = 31;
+  static const int currentSchemaVersion = 33;
 
   /// `PRAGMA application_id` of a workspace database: "CCWS".
   static const int fileApplicationId = 0x43435753;
@@ -595,6 +599,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
       // just returns less and less.
       final createdFts = await _createFts5Tables();
       await _rebuildStaleFtsIndexes(createdFts);
+      await _createMessageRevisionTrigger();
       await optimize(onOpen: true);
     },
   );
@@ -745,6 +750,23 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
       END
     ''');
   }
+
+  /// Installs the trigger that keeps `conversation_messages.revision`: one
+  /// more on every `UPDATE` of a row, whatever the statement wrote.
+  ///
+  /// Installed on every open like the FTS triggers, because schema
+  /// convergence drops every trigger. The trigger's own `UPDATE` sets a
+  /// revision above the old one, so its `WHEN` stops it from firing itself
+  /// (with or without `recursive_triggers`). A statement that writes a stale
+  /// revision back gets a bump on top of the stored one, never a step back.
+  Future<void> _createMessageRevisionTrigger() => customStatement('''
+      CREATE TRIGGER IF NOT EXISTS conversation_messages_revision_au
+      AFTER UPDATE ON conversation_messages
+      WHEN new.revision <= old.revision BEGIN
+        UPDATE conversation_messages SET revision = old.revision + 1
+        WHERE rowid = new.rowid;
+      END
+    ''');
 
   /// Rebuilds the FTS indexes whose content may no longer match them.
   ///

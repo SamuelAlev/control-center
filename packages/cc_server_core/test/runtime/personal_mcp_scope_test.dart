@@ -15,6 +15,7 @@ import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
@@ -43,6 +44,9 @@ const _workspaceOwners = {'ws-owner': _owner, 'ws-member': _member};
 const _members = {_owner, _member};
 
 const _personalTool = 'mcp__home__notes_search';
+
+/// A server configured for `ws-owner` (the registry's workspace layer).
+const _workspaceTool = 'mcp__linear__create_issue';
 const _sharedTool = 'list_things';
 
 class _Tool extends McpTool {
@@ -167,9 +171,9 @@ class _RecordingLoop implements AgentLoop {
   }
 }
 
-McpToolRegistry _registry() =>
-    McpToolRegistry([_Tool(_sharedTool)])
-      ..setDynamicTools([_Tool(_personalTool)]);
+McpToolRegistry _registry() => McpToolRegistry([_Tool(_sharedTool)])
+  ..setPersonalTools([_Tool(_personalTool)])
+  ..setWorkspaceTools('ws-owner', [_Tool(_workspaceTool)]);
 
 /// The server's gate, owned by [serverOwner], answering membership the way the
 /// agent run gateway does: the acting user while a member, else the
@@ -360,6 +364,116 @@ void main() {
       final names = _registry().allToolDefinitions().map((d) => d.name);
       expect(names, contains(_sharedTool));
       expect(names, isNot(contains(_personalTool)));
+      expect(names, isNot(contains(_workspaceTool)));
+    });
+  });
+
+  group('a workspace\'s configured MCP servers', () {
+    test('reach every harness run in that workspace', () async {
+      final tools = await handedToHarness(
+        gate: _gate(serverOwner: _owner),
+        workspaceId: 'ws-owner',
+        requestedBy: _member,
+      );
+      expect(tools, contains(_workspaceTool));
+      expect(tools, isNot(contains(_personalTool)));
+    });
+
+    test('never reach a run in another workspace', () async {
+      final tools = await handedToHarness(
+        gate: _gate(serverOwner: _owner),
+        workspaceId: 'ws-member',
+        requestedBy: _owner,
+      );
+      expect(tools, isNot(contains(_workspaceTool)));
+    });
+
+    Future<Set<Object?>> listed(McpCallScope? scope) async {
+      final dispatcher = McpToolDispatcher(registry: _registry());
+      final response = await dispatcher.handleScopedRequest(
+        JsonRpcRequest(method: 'tools/list', params: const {}, id: 1),
+        scope: scope,
+      );
+      final tools =
+          (response['result'] as Map<String, dynamic>)['tools'] as List;
+      return {for (final t in tools) (t as Map<String, dynamic>)['name']};
+    }
+
+    Future<Map<String, dynamic>> called(
+      String tool,
+      McpCallScope? scope,
+    ) => McpToolDispatcher(registry: _registry()).handleScopedRequest(
+      JsonRpcRequest(
+        method: 'tools/call',
+        params: {'name': tool, 'arguments': <String, dynamic>{}},
+        id: 2,
+      ),
+      scope: scope,
+    );
+
+    const ownerRun = McpCallScope(
+      workspaceId: 'ws-owner',
+      agentId: 'agent-1',
+      conversationId: 'conv-1',
+      attested: true,
+    );
+
+    test('reach a Claude Code run of that workspace through the MCP '
+        'endpoint, callable though they name no workspace', () async {
+      expect(await listed(ownerRun), contains(_workspaceTool));
+      final response = await called(_workspaceTool, ownerRun);
+      expect('$response', contains('ran $_workspaceTool'));
+    });
+
+    test('are neither listed nor callable for a run of another '
+        'workspace', () async {
+      const other = McpCallScope(workspaceId: 'ws-member', attested: true);
+      expect(await listed(other), isNot(contains(_workspaceTool)));
+      final response = await called(_workspaceTool, other);
+      expect(
+        (response['error'] as Map<String, dynamic>)['message'],
+        contains('Unknown tool'),
+      );
+    });
+
+    test('are never served to the owner\'s token or a paired device, '
+        'whatever workspace their headers name', () async {
+      const unattested = McpCallScope(workspaceId: 'ws-owner');
+      expect(await listed(null), isNot(contains(_workspaceTool)));
+      expect(await listed(unattested), isNot(contains(_workspaceTool)));
+      final response = await called(_workspaceTool, unattested);
+      expect('$response', isNot(contains('ran $_workspaceTool')));
+    });
+
+    test('personal servers reach a Claude Code run only when its grant '
+        'says the owner is accountable', () async {
+      expect(await listed(ownerRun), isNot(contains(_personalTool)));
+      const accountable = McpCallScope(
+        workspaceId: 'ws-owner',
+        attested: true,
+        personalMcp: true,
+      );
+      expect(await listed(accountable), contains(_personalTool));
+      final response = await called(_personalTool, accountable);
+      expect('$response', contains('ran $_personalTool'));
+    });
+
+    test('a workspace server never shadows a personal one of the same name '
+        'in the owner\'s run', () async {
+      final registry = McpToolRegistry(const [])
+        ..setPersonalTools([_Tool('mcp__x__t')])
+        ..setWorkspaceTools('ws-owner', [_Tool('mcp__x__t')]);
+      const view = McpToolView(workspaceId: 'ws-owner', includePersonal: true);
+      final personal = registry.lookup('mcp__x__t', view: view);
+      expect(
+        personal,
+        same(
+          registry.lookup(
+            'mcp__x__t',
+            view: const McpToolView(includePersonal: true),
+          ),
+        ),
+      );
     });
   });
 }

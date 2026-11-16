@@ -18579,4 +18579,205 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'ยังไม่ได้ให้สิทธิ์ เพราะผู้รับหรือสิ่งที่เกี่ยวข้องไม่อยู่ในเวิร์กสเปซนี้แล้ว';
+
+  @override
+  String get mcpWorkspaceServers => 'เซิร์ฟเวอร์ MCP ของเวิร์กสเปซ';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'การรันเอเจนต์ทุกครั้งในเวิร์กสเปซนี้จะได้ใช้เครื่องมือจากเซิร์ฟเวอร์เหล่านี้ ทั้งใน Claude Code และฮาร์เนสในตัว Control Center จะเชื่อมต่อกับแต่ละเซิร์ฟเวอร์และส่งต่อเครื่องมือของเซิร์ฟเวอร์นั้น';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'เฉพาะผู้ดูแลเวิร์กสเปซเท่านั้นที่ดูและเปลี่ยนแปลงเซิร์ฟเวอร์ MCP ของเวิร์กสเปซนี้ได้';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'เซิร์ฟเวอร์ที่เชื่อมต่ออยู่ไม่รองรับเซิร์ฟเวอร์ MCP ของเวิร์กสเปซ';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'ยังไม่มีเซิร์ฟเวอร์ MCP ของเวิร์กสเปซ';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'เพิ่มเซิร์ฟเวอร์เพื่อให้การรันเอเจนต์ทุกครั้งในเวิร์กสเปซนี้ได้เครื่องมือของเซิร์ฟเวอร์นั้น';
+
+  @override
+  String get mcpAddServer => 'เพิ่มเซิร์ฟเวอร์';
+
+  @override
+  String get mcpHandAddedSource => 'เพิ่มใน Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'รอการอนุมัติ';
+
+  @override
+  String get mcpPublicAddressesOnly => 'เข้าถึงได้เฉพาะที่อยู่สาธารณะ';
+
+  @override
+  String get mcpApproveServer => 'อนุมัติ';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'เซิร์ฟเวอร์นี้รันคำสั่งบนโฮสต์ของเซิร์ฟเวอร์ในฐานะผู้ใช้ของเซิร์ฟเวอร์ จะไม่เริ่มทำงานจนกว่าคุณจะอนุมัติ';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'เซิร์ฟเวอร์นี้รันคำสั่งบนโฮสต์ของเซิร์ฟเวอร์ จึงจะไม่เริ่มทำงานจนกว่าเจ้าของเซิร์ฟเวอร์จะอนุมัติ';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'เซิร์ฟเวอร์นี้เข้าถึงได้เฉพาะที่อยู่สาธารณะ อนุมัติเพื่อให้เข้าถึงเครือข่ายส่วนตัวของโฮสต์ได้ด้วย เช่น localhost และเครือข่ายภายในเครื่อง';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'เซิร์ฟเวอร์นี้จะเข้าถึงได้เฉพาะที่อยู่สาธารณะจนกว่าเจ้าของเซิร์ฟเวอร์จะอนุมัติ';
+
+  @override
+  String get mcpRemoveServer => 'ลบเซิร์ฟเวอร์';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'ลบ $name หรือไม่';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'การรันเอเจนต์จะไม่มีเครื่องมือจากเซิร์ฟเวอร์นี้อีก และค่าลับที่บันทึกไว้จะถูกลบ';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'เปิดหรือปิด $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'เพิ่มเซิร์ฟเวอร์ MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'แก้ไข $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'ใช้ตัวอักษร ตัวเลข ขีดกลาง และขีดล่างได้ เอเจนต์จะเห็นเครื่องมือของเซิร์ฟเวอร์นี้ภายใต้ชื่อนี้';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'ใช้ตัวอักษร ตัวเลข ขีดกลาง หรือขีดล่างได้ไม่เกิน 24 ตัว และต้องขึ้นต้นด้วยตัวอักษรหรือตัวเลข';
+
+  @override
+  String get mcpServerNameTaken => 'มีเซิร์ฟเวอร์ที่ใช้ชื่อนี้อยู่แล้วในที่นี้';
+
+  @override
+  String get mcpServerTransportLabel => 'วิธีการเชื่อมต่อ';
+
+  @override
+  String get mcpServerTransportStdio => 'คำสั่ง';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'คำสั่ง';
+
+  @override
+  String get mcpServerCommandRequired => 'กรอกคำสั่งที่จะรัน';
+
+  @override
+  String get mcpServerArgsLabel => 'อาร์กิวเมนต์';
+
+  @override
+  String get mcpServerArgsHelper => 'หนึ่งอาร์กิวเมนต์ต่อหนึ่งบรรทัด';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'กรอก URL แบบ http หรือ https ที่ไม่มีชื่อผู้ใช้ รหัสผ่าน หรือ #fragment';
+
+  @override
+  String get mcpServerEnvLabel => 'ตัวแปรสภาพแวดล้อม';
+
+  @override
+  String get mcpServerHeadersLabel => 'เฮดเดอร์';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'ค่าจะถูกเก็บเป็นความลับและจะไม่แสดงอีก';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'ตัวอย่างเช่น เฮดเดอร์ Authorization ที่มีโทเคน bearer';
+
+  @override
+  String get mcpServerEnvAdd => 'เพิ่มตัวแปร';
+
+  @override
+  String get mcpServerHeaderAdd => 'เพิ่มเฮดเดอร์';
+
+  @override
+  String get mcpServerSecretValueHint => 'ค่า';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'ค่าใหม่';
+
+  @override
+  String get mcpServerSecretReplace => 'แทนที่ค่า';
+
+  @override
+  String get mcpServerSecretUndo => 'เลิกทำ';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'จะลบเมื่อบันทึก';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name ไม่ใช่ชื่อตัวแปรที่ถูกต้อง ใช้ได้เฉพาะตัวอักษร ตัวเลข และขีดล่าง และต้องไม่ขึ้นต้นด้วยตัวเลข';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return 'ตั้งค่า $name ไม่ได้ ใช้ชื่อเฮดเดอร์ที่ถูกต้องซึ่งการเชื่อมต่อไม่ได้จัดการเอง';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'การเปลี่ยนวิธีการเชื่อมต่อจะลบค่าที่บันทึกไว้';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'เมื่อปิด เซิร์ฟเวอร์จะไม่เริ่มทำงาน และเอเจนต์จะไม่เห็นเครื่องมือของเซิร์ฟเวอร์';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'เซิร์ฟเวอร์นี้รันบนโฮสต์ของเซิร์ฟเวอร์ จึงจะไม่เริ่มทำงานจนกว่าเจ้าของเซิร์ฟเวอร์จะอนุมัติ การเปลี่ยนวิธีเริ่มทำงานจะขอให้อนุมัติอีกครั้ง';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'เซิร์ฟเวอร์นี้จะเข้าถึงได้เฉพาะที่อยู่สาธารณะจนกว่าเจ้าของเซิร์ฟเวอร์จะอนุมัติ การเปลี่ยนวิธีเชื่อมต่อจะขอให้อนุมัติอีกครั้ง';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'เซิร์ฟเวอร์นี้รันบนโฮสต์ของเซิร์ฟเวอร์ในฐานะผู้ใช้ของเซิร์ฟเวอร์ การบันทึกจะเป็นการอนุมัติ';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'การบันทึกจะอนุมัติให้เซิร์ฟเวอร์เข้าถึงเครือข่ายส่วนตัวของโฮสต์ได้ด้วย';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'ใช้เฉพาะในการรันที่คุณเริ่มเองหรือรับผิดชอบอยู่';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center บันทึกเซิร์ฟเวอร์นี้ไม่ได้ ลองตรวจสอบการตั้งค่าแล้วลองอีกครั้ง';
+
+  @override
+  String get mcpServerNotFound => 'เซิร์ฟเวอร์นี้ไม่มีอยู่แล้ว อาจถูกลบไปแล้ว';
 }

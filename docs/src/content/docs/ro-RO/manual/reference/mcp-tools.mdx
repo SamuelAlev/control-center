@@ -2,10 +2,10 @@
 title: Instrumente MCP
 description: Catalog complet al instrumentelor MCP pe care le înregistrează cc_server, pe familii.
 slug: ro-RO/manual/referinta/instrumente-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` găzduiește un singur registru de instrumente MCP (JSON-RPC 2.0), servit pe portul principal al serverului (implicit `9030`) la `POST /mcp` și `GET /sse`, versiunea de protocol `2024-11-05`. Fiecare client ajunge la același registru: aplicația desktop, versiunea web, clienții MCP externi și runtime-ul de agenți încorporat. Serverele MCP externe pot fi conectate în același registru ca un strat dinamic. Serverele descoperite în configurația personală de unelte a utilizatorului serverului fac excepție: acest endpoint nu le listează, nu le apelează și nu le caută niciodată, iar pe ele le folosesc doar rulările de harness integrat pentru care răspunde proprietarul serverului (vezi [Serverele MCP personale rămân ale proprietarului](/ro-RO/manual/ghiduri-practice/server-mcp/#serverele-mcp-personale-rămân-ale-proprietarului)).
+`cc_server` găzduiește un singur registru de instrumente MCP (JSON-RPC 2.0), servit pe portul principal al serverului (implicit `9030`) la `POST /mcp` și `GET /sse`, versiunea de protocol `2024-11-05`. Fiecare client ajunge la același registru: aplicația desktop, versiunea web, clienții MCP externi și runtime-ul de agenți încorporat. Serverele MCP externe sunt conectate la același registru, fiecare pe propriul strat: unul pentru fiecare spațiu de lucru, pentru serverele configurate de administratorii lui, și unul pentru serverele personale ale proprietarului serverului. Acest endpoint le listează, le apelează și le caută doar pentru o rulare de agent: cele ale propriului spațiu de lucru și, în plus, cele personale când proprietarul serverului răspunde de rulare. Tokenul MCP și dispozitivele asociate nu le văd niciodată (vezi [Serverele MCP folosite de agenții tăi](/ro-RO/manual/ghiduri-practice/server-mcp/#serverele-mcp-folosite-de-agenții-tăi)).
 
 ## Dimensiunea registrului
 

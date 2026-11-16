@@ -185,33 +185,54 @@ class _MetaRow extends StatelessWidget {
         ? null
         : relativeTimeShort(article.publishedAt!);
 
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+
     return Row(
       children: [
-        if (feed != null) ...[
-          FeedFavicon(feed: feed, size: 14),
-          const SizedBox(width: AppSpacing.xs + 2),
-        ],
-        if (feed != null)
-          Flexible(
-            child: Text(
-              feed!.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: CcTypography.caption.copyWith(color: muted),
-            ),
+        // The source group takes all the slack so the bookmark always sits
+        // flush with the trailing edge. A loose Flexible beside a Spacer
+        // splits the free width between them and strands the bookmark short
+        // of the edge.
+        Expanded(
+          child: Row(
+            children: [
+              if (feed != null) ...[
+                FeedFavicon(feed: feed!, size: 14),
+                const SizedBox(width: AppSpacing.xs + 2),
+                Flexible(
+                  child: Text(
+                    feed!.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: CcTypography.caption.copyWith(color: muted),
+                  ),
+                ),
+              ],
+              if (feed != null && time != null)
+                Text(
+                  '  ·  ',
+                  style: CcTypography.caption.copyWith(color: muted),
+                ),
+              if (time != null)
+                AppTimestamp(
+                  dateTime: article.publishedAt!,
+                  child: Text(
+                    time,
+                    style: CcTypography.caption.copyWith(color: muted),
+                  ),
+                ),
+            ],
           ),
-        if (feed != null && time != null)
-          Text('  ·  ', style: CcTypography.caption.copyWith(color: muted)),
-        if (time != null)
-          AppTimestamp(
-            dateTime: article.publishedAt!,
-            child: Text(
-              time,
-              style: CcTypography.caption.copyWith(color: muted),
-            ),
+        ),
+        // Shift by the button's own padding so the glyph lines up with the
+        // card's content edge while keeping the full hit target.
+        Transform.translate(
+          offset: Offset(rtl ? -AppSpacing.xs : AppSpacing.xs, 0),
+          child: SaveToggleButton(
+            saved: article.saved,
+            onToggle: onToggleSaved,
           ),
-        const Spacer(),
-        SaveToggleButton(saved: article.saved, onToggle: onToggleSaved),
+        ),
       ],
     );
   }

@@ -2,7 +2,7 @@
 title: Yetkilendirme — kimin neyi yapabileceği ve bunu nasıl kanıtladığınız
 description: Control Center rollerinin arkasındaki izin kataloğu, her yetkilendirme kararının düştüğü kurcalamayı açığa çıkaran denetim kaydı ve bir operatörün sabitleyebileceği kurulum geneli kontroller.
 slug: tr-TR/kilavuz/kavramlar/yetkilendirme
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center iki yetkilendirme sorusunu yanıtlar ve bu ikisi gerçekten
@@ -149,10 +149,11 @@ yalnızca sunucu sahibi şunları yapabilir:
   klasörlerine göz atmak (bkz. [Depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)).
 - Sunucudaki her çalışan ajan sürecini görmek ve durdurmak. Diğerleri yalnızca
   üyesi oldukları çalışma alanlarındaki canlı ajan çalıştırmalarını görür ve durdurur.
-- Ajanların sunucu kullanıcısının kendi araçlarında yapılandırılmış MCP sunucularını
-  kullanmasını sağlamak (Claude, Codex, Cursor ve diğerleri). Yalnızca sahibin sorumlu
-  olduğu yerleşik harness çalıştırmaları bunları alır; bkz.
-  [Kişisel MCP sunucuları sahibinde kalır](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/#kişisel-mcp-sunucuları-sahibinde-kalır).
+- Ajanların kişisel MCP sunucularını kullanmasını sağlar: sunucu kullanıcısının kendi araç
+  yapılandırmasında tanımlananları (Claude, Codex, Cursor ve diğerleri) ve sahibin eklediklerini.
+  Bunları yalnızca sahibin sorumlu olduğu çalıştırmalar alır; bkz. [Kişisel sunucular](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/#kişisel-sunucular).
+- Sunucu makinesinde bir komut çalıştıran ya da özel ağına erişen bir çalışma alanı MCP sunucusunu
+  onaylar (bkz. [Çalışma alanı sunucuları](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/#çalışma-alanı-sunucuları)).
 - Bir kişinin e-posta adresini onaylamak, böylece tek oturum açma onu eşleştirebilsin
   (bkz. [Bir OpenID Connect sağlayıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/sso-oidc/#oturum-açmaların-mevcut-hesaplarla-nasıl-eşleştiği)).
 - Kurulum genelindeki ayarları değiştirmek: SSO, sağlayıcı kimlik bilgileri, MCP

@@ -2,17 +2,31 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionScope;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/day_separator.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/message_bubble.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_plan.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/anchor_follow_physics.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_height_cache.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_height_sweep.dart';
 import 'package:control_center/features/messaging/presentation/widgets/feed/feed_helpers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/feed/feed_items.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_placeholder_row.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_row_geometry.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_rows.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_text_measure.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_timeline.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_turn_row_views.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/feed_turn_state.dart';
 import 'package:control_center/features/messaging/presentation/widgets/feed/jump_to_latest.dart';
-import 'package:control_center/features/messaging/presentation/widgets/feed/reverse_follow_physics.dart';
+import 'package:control_center/features/messaging/presentation/widgets/feed/list_extent_sync.dart';
 import 'package:control_center/features/messaging/presentation/widgets/feed/row_extent_estimate.dart';
 import 'package:control_center/features/messaging/presentation/widgets/feed/unread_divider.dart';
 import 'package:control_center/features/messaging/providers/live_turn_providers.dart';
@@ -28,17 +42,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:super_sliver_list/super_sliver_list.dart';
 
+part 'message_feed_anchor.dart';
 part 'message_feed_build.dart';
+part 'message_feed_heights.dart';
+part 'message_feed_history.dart';
 part 'message_feed_navigation.dart';
 part 'message_feed_precalc.dart';
 part 'message_feed_rows.dart';
 part 'message_feed_scrolling.dart';
+part 'message_feed_turns.dart';
+part 'message_feed_window.dart';
 
 /// How far below the viewport top a freshly anchored turn lands, leaving the
 /// previous turn peeking into view so the reader keeps the prior context.
 const double kPreviousTurnPeek = 64;
 const double _bottomThreshold = kFollowPinThreshold;
-const double _loadMoreThreshold = 400;
 
 /// How long the feed must be still — no window emission, no scroll — before it
 /// starts measuring row extents.
@@ -104,6 +122,22 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   /// List extent queries and offscreen-row reveals for deep anchors.
   final _listController = ListController();
 
+  /// Reads where rows are laid out, for the scroll anchor.
+  late final _geometry = FeedRowGeometry(_listController);
+
+  /// Row key per list index (reverse order: index 0 is the newest row),
+  /// mirrored from the last build. The scroll anchor names a row by key, so it
+  /// survives rows landing or leaving around it.
+  List<String> _rowKeysByIndex = const [];
+  Map<String, int> _indexByRowKey = const {};
+
+  /// [_rowKeysByIndex] with stand-ins marked: the keys list extents are
+  /// synced by (see `_mirrorRowKeys`).
+  List<String> _slotKeysByIndex = const [];
+
+  /// Whether a post-frame anchor capture is already scheduled.
+  bool _anchorCaptureArmed = false;
+
   /// Refines row extents once the feed is idle, bounded to
   /// [kFeedPrecalcRowBudget] rows. Armed by [_deferPrecalculation].
   final _precalcPolicy = IdlePrecalculationPolicy();
@@ -117,10 +151,35 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   /// every scroll tick.
   bool _precalcDeferredAgain = false;
 
-  /// The current display rows (ascending, oldest→newest), mirrored from the
-  /// last build so the anchor path can map a message id to its reverse
-  /// [SuperListView] index without the build closure in scope.
-  List<FeedItem> _items = const [];
+  /// The list rows of the window (ascending, oldest→newest): an agent
+  /// turn whose transcript is known spans several rows.
+  List<FeedRow> _rows = const [];
+
+  /// Per-turn state for every agent turn in the window, shared by the rows a
+  /// turn spans.
+  final _turns = <String, FeedTurnState>{};
+
+  /// The transcript memo this feed listens to for turns becoming known.
+  TranscriptLruCache? _transcriptCache;
+
+  /// Mono font the turn rows render with, read in build.
+  String _codeFont = '';
+
+  /// Row heights by row key: what the list is told about rows it has not
+  /// laid out.
+  late final FeedHeightCache _heights = ref.read(feedHeightCacheProvider);
+
+  /// Text-layout measurement of unmeasured rows while the feed is idle.
+  late final FeedHeightSweep _heightSweep = FeedHeightSweep(
+    measure: _measureSweepJob,
+    onMeasured: _onSweepMeasured,
+  );
+
+  /// The chat prose styles, for the sweep. Resolved in build.
+  FeedTextMeasurer? _measurer;
+
+  /// What each row's height depends on (see `_rowRevision`), by row key.
+  Map<String, int> _revisionByRowKey = const {};
 
   bool _didInitialLanding = false;
   bool _cursorSnapshotTaken = false;
@@ -128,7 +187,6 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   /// Newest rendered message, including completion state: an agent turn keeps
   /// its id and creation time when its final answer arrives.
   Message? _lastNewest;
-  int _lastItemCount = 0;
 
   /// Snapshot of the last window emission, rendered while the pane is hidden
   /// (all live watches dropped) and, on reveal, until the first fresh
@@ -177,6 +235,10 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _follow.probe = _probeAnchor;
+    final transcripts = ref.read(transcriptCacheProvider);
+    _transcriptCache = transcripts;
+    transcripts.addPutListener(_onTranscriptPut);
     _deferPrecalculation();
   }
 
@@ -185,6 +247,14 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
     _cursorDebounce?.cancel();
     _highlightTimer?.cancel();
     _precalcTimer?.cancel();
+    _recenterTimer?.cancel();
+    _transcriptCache?.removePutListener(_onTranscriptPut);
+    _heightSweep.dispose();
+    for (final turn in _turns.values) {
+      turn.live.structure.removeListener(_onTurnStructure);
+      turn.dispose();
+    }
+    _turns.clear();
     _listController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -207,108 +277,31 @@ class _SpaceMessageFeedState extends ConsumerState<SpaceMessageFeed> {
       _scrollController.hasClients &&
       _scrollController.position.pixels <= _bottomThreshold;
 
-  /// Whether older history exists beyond the current window — mirrored from
-  /// the latest window emission so [_onScroll] can consult it.
-  bool _hasMore = false;
+  /// The conversation's outline: every message's size, so the feed lays out
+  /// history it has not loaded. Null until it first loads.
+  List<ConversationOutlineEntry>? _outline;
+
+  /// Whether the outline could not be read (and none was read before): the
+  /// feed then shows the live window alone, with no spinner waiting for it.
+  bool _outlineFailed = false;
+
+  /// The message the history range is loaded around, or null when only the
+  /// live window is loaded.
+  String? _rangeAnchorId;
+
+  /// The loaded history range's messages (ascending). Kept while a new range
+  /// loads, so moving the range never flashes stand-ins.
+  List<Message>? _range;
+
+  /// The live window's oldest message the outline was last refreshed for, so
+  /// an outline that stays out of step is refetched once, not every build.
+  String? _outlineRefreshedFor;
+
+  /// Coalesces re-centering the history range while the reader scrolls.
+  Timer? _recenterTimer;
 
   bool _showJumpControl = false;
 
-  /// Whether a live agent turn is streaming below the fold — drives the
-  /// jump-to-latest "streaming" indicator.
-  bool get _isLiveBelow {
-    final newestId = _lastNewest?.id;
-    if (newestId == null) {
-      return false;
-    }
-    final registry = ref.read(activeStreamRegistryProvider);
-    return registry.isActive(newestId) &&
-        _scrollController.hasClients &&
-        _scrollController.position.pixels > kFollowPinThreshold;
-  }
-
   @override
-  Widget build(BuildContext context) {
-    // Hidden-pane freeze. When this feed sits in a hidden IndexedStack tab,
-    // Visibility.of reports false (and registers a dependency, so build
-    // re-runs when the tab flips). While hidden we drop every live
-    // watch/listen — Riverpod recomputes the dependency set per build, the
-    // autoDispose providers lose their last listener, the RPC subscriptions
-    // unsubscribe and server work for this space stops — and render the
-    // frozen snapshots instead. The tree stays mounted with identical
-    // content, so the ScrollController offset, FollowState, _didInitialLanding,
-    // and _rowKeys all survive the nap.
-    final isVisible = Visibility.of(context);
-    if (isVisible && !_wasVisible) {
-      // Reveal: navigating back to this chat lands on the live edge, so the
-      // surviving offset from before the nap is reset — instantly, next frame,
-      // no animation. Done here rather than off a window emission because a
-      // short nap may not produce one (the provider is still warm) and the
-      // reader must land at the bottom either way. Landing there is reading
-      // it, so acknowledge again even if the newest message kept its id: its
-      // completion notification may have arrived while this pane was hidden.
-      _pendingRevealReconcile = true;
-      _lastStampedNewestId = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _wasVisible) {
-          _landOnLiveEdge();
-          _stampCursor();
-        }
-      });
-    } else if (!isVisible && _wasVisible) {
-      _cursorDebounce?.cancel();
-    }
-    _wasVisible = isVisible;
-
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-
-    final ({List<Message> messages, bool hasMore}) window;
-    final feedRef = (
-      spaceId: widget.spaceId,
-      conversationId: widget.conversationId,
-    );
-    if (isVisible) {
-      // Live turn relay: folds `messaging.watchSpaceTurns` into the
-      // active-stream registry the agent bubbles render from. Watched here so
-      // the subscription lives exactly as long as the feed is on screen.
-      ref.watch(spaceTurnRelayProvider(widget.spaceId));
-      final windowAsync = ref.watch(spaceFeedWindowedProvider(feedRef));
-      ref.listen(spaceFeedWindowedProvider(feedRef), (_, next) {
-        _onWindowChanged(next.value);
-      });
-
-      // Read the last value rather than `.when` so a reload (window growth
-      // from loadMore, a streaming DB flush, or the re-subscribe after a
-      // hidden spell) never replaces the list with a spinner — which would
-      // destroy the ScrollController and snap the reverse list back to the
-      // bottom. Until the first fresh emission after a reveal, the frozen
-      // snapshot keeps rendering.
-      final fresh = windowAsync.value ?? _frozenWindow;
-      if (fresh == null) {
-        if (windowAsync.hasError) {
-          return Center(child: Text(failureMessage(l10n, windowAsync.error!)));
-        }
-        return const Center(child: CcSpinner());
-      }
-      window = fresh;
-      _frozenWindow = fresh;
-    } else {
-      final frozen = _frozenWindow;
-      if (frozen == null) {
-        // Hidden before anything ever emitted: nothing to freeze. The live
-        // watches (and the spinner-to-content transition) resume on reveal.
-        return const Center(child: CcSpinner());
-      }
-      window = frozen;
-    }
-    _hasMore = window.hasMore;
-
-    return _buildFeedBody(
-      context,
-      window: window,
-      isVisible: isVisible,
-      theme: theme,
-      l10n: l10n,
-    );
-  }
+  Widget build(BuildContext context) => _buildFeed(context);
 }

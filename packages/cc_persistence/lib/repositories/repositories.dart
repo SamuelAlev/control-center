@@ -61,6 +61,7 @@ export 'dao_todo_repository.dart';
 export 'dao_voice_profile_repository.dart';
 export 'dao_work_product_repository.dart';
 export 'dao_working_memory_item_repository.dart';
+export 'dao_workspace_mcp_server_repository.dart';
 export 'dao_workspace_repository.dart';
 export 'dao_workspace_role_repository.dart';
 export 'dao_workspace_settings_repository.dart';

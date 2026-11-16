@@ -77,6 +77,9 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
   }
 
   void _onScroll() {
+    // Any movement, the reader's or ours, changes which row is under the top
+    // edge.
+    _armAnchorCapture();
     if (!_scrollController.hasClients || _programmatic) {
       return;
     }
@@ -95,20 +98,8 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
       _set(() => _showJumpControl = showControl);
     }
 
-    // Load older messages as the user nears the top (high-offset end in a
-    // reverse list). Flag the load so the follow physics does NOT compensate
-    // for that top-end growth. Only when a load can actually happen —
-    // otherwise `loadingOlder` sticks (nothing grows the item count to reset
-    // it) and silently disables streaming compensation.
-    if (_hasMore &&
-        ref.read(spaceFeedWindowProvider(widget.conversationId)) <
-            kSpaceFeedMaxWindow &&
-        pos.maxScrollExtent - pos.pixels < _loadMoreThreshold) {
-      _follow.loadingOlder = true;
-      ref
-          .read(spaceFeedWindowProvider(widget.conversationId).notifier)
-          .loadMore();
-    }
+    // History scrolling into view loads around where the reader is.
+    _scheduleRecenter();
   }
 
   void _jumpToLatest() {
@@ -230,7 +221,7 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
   /// had just read.
   void _reengageFollowing() {
     _follow.mode = FeedFollowMode.following;
-    _follow.anchorMessageId = null;
+    _releaseRange();
     if (_newWhileAway != 0) {
       _set(() => _newWhileAway = 0);
     }
@@ -252,7 +243,6 @@ extension _ScrollingMethods on _SpaceMessageFeedState {
   /// where the reader left off, up in the scrollback.
   void _landOnLiveEdge() {
     _follow.mode = FeedFollowMode.following;
-    _follow.anchorMessageId = null;
     if (_scrollController.hasClients &&
         _scrollController.position.pixels != 0) {
       // Guarded so the scroll listener doesn't read the reset as reader intent.

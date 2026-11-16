@@ -9,6 +9,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/b
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/question_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_plan.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/turn_auth_failure_notice.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/turn_sandbox_unavailable_notice.dart';
@@ -26,9 +27,12 @@ part 'transcript_flow_status.dart';
 
 /// Agent turn as chronological inline flow (reasoning, tools, answer).
 ///
-/// Persisted ordered segments; tools as [TranscriptSegmentRow]. Parent rebuilds
-/// only on structure changes: closed rows memoized + [RepaintBoundary]; open
-/// rows listen to [LiveTranscriptController.tail] only. No master collapse.
+/// Persisted ordered segments; tools as [TranscriptSegmentRow]. The rows come
+/// from [planTranscriptRows] and are built by a [TranscriptRowRenderer], the
+/// same pair the conversation feed uses when it gives each row its own list
+/// slot. Parent rebuilds only on structure changes: closed rows memoized +
+/// [RepaintBoundary]; open rows listen to [LiveTranscriptController.tail]
+/// only. No master collapse.
 class TranscriptFlow extends StatefulWidget {
   /// Creates a [TranscriptFlow].
   const TranscriptFlow({
@@ -64,108 +68,118 @@ class TranscriptFlow extends StatefulWidget {
 }
 
 class _TranscriptFlowState extends State<TranscriptFlow> {
-  /// Closed-row widget memo: index → (segment it was built from, row widget).
-  /// Reusing the identical instance for a value-equal segment lets
-  /// `Element.update` skip the row's subtree entirely.
-  final Map<int, (TranscriptSegment, Widget)> _memo = {};
-  String? _memoFont;
-
-  /// Per-index keys for the prose and reasoning rows. A row that closes moves
-  /// from under its delta listener to the plain closed slot; the key carries
-  /// its element (and the streaming renderer's sealed-block memo) along, so
-  /// closing finalizes the text in place instead of re-parsing and relaying
-  /// out the whole answer in one frame. Separate maps per row type: a key is
-  /// only ever attached to one widget type. Only allocated once this flow has
-  /// been live: a persisted transcript never closes a row.
-  final Map<int, GlobalKey> _proseKeys = {};
-  final Map<int, GlobalKey> _reasoningKeys = {};
-  bool _everLive = false;
+  final TranscriptRowRenderer _rows = TranscriptRowRenderer();
 
   @override
   Widget build(BuildContext context) {
-    if (_memoFont != widget.codeFont) {
-      _memo.clear();
-      _memoFont = widget.codeFont;
-    }
-    _everLive = _everLive || widget.isLive;
     final segments = widget.segments;
-    // A revert/re-seed can shrink the list; drop stale trailing entries.
-    _memo.removeWhere((i, _) => i >= segments.length);
-    _proseKeys.removeWhere((i, _) => i >= segments.length);
-    _reasoningKeys.removeWhere((i, _) => i >= segments.length);
-
-    final children = <Widget>[];
-    TranscriptSegment? prev;
-    final inlineMessages = widget.inlineMessages;
-    var nextInline = 0;
-    void insertMessage(Message message) {
-      if (children.isNotEmpty) {
-        children.add(const SizedBox(height: AppSpacing.md));
-      }
-      children.add(
-        message.isUserQuestion
-            ? QuestionBubble(key: ValueKey(message.id), message: message)
-            : SteeringBubble(
-                key: ValueKey(message.id),
-                message: message,
-                codeFont: widget.codeFont,
-              ),
-      );
-      prev = null;
-    }
-
-    for (var i = 0; i < segments.length; i++) {
-      final seg = segments[i];
-      while (nextInline < inlineMessages.length &&
-          (inlineMessages[nextInline].steerInjectedAt ??
-                  inlineMessages[nextInline]
-                      .createdAt
-                      .millisecondsSinceEpoch) <=
-              seg.startedAt.millisecondsSinceEpoch) {
-        insertMessage(inlineMessages[nextInline++]);
-      }
-      final rendered = _row(i, seg);
-      if (rendered == null) {
-        continue;
-      }
-      if (children.isNotEmpty) {
-        children.add(
-          SizedBox(
-            height: prev == null ? AppSpacing.md : _gapBefore(prev, seg),
-          ),
-        );
-      }
-      children.add(rendered);
-      prev = seg;
-    }
-    while (nextInline < inlineMessages.length) {
-      insertMessage(inlineMessages[nextInline++]);
-    }
-
-    if (widget.isLive && _showTail(segments)) {
-      if (children.isNotEmpty) {
-        children.add(const SizedBox(height: AppSpacing.sm));
-      }
-      children.add(_LiveStatusLine(segments: segments));
-    }
-
-    if (children.isEmpty) {
+    _rows.prepare(
+      codeFont: widget.codeFont,
+      isLive: widget.isLive,
+      segmentCount: segments.length,
+    );
+    final plan = planTranscriptRows(
+      segments: segments,
+      inlineMessages: widget.inlineMessages,
+      isLive: widget.isLive,
+    );
+    if (plan.isEmpty) {
       return const SizedBox.shrink();
     }
-
+    final children = <Widget>[];
+    for (final row in plan) {
+      if (children.isNotEmpty) {
+        children.add(SizedBox(height: row.gapBefore));
+      }
+      children.add(
+        _rows.build(
+          row,
+          segments: segments,
+          codeFont: widget.codeFont,
+          live: widget.live,
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,
     );
   }
+}
+
+/// Builds the rows of one transcript, keeping the per-row state that makes a
+/// long or live transcript cheap to rebuild.
+///
+/// * Closed rows are memoized by index: a value-equal segment hands back the
+///   identical widget, so `Element.update` skips its subtree.
+/// * Open rows listen to [LiveTranscriptController.tail] and re-read only their
+///   own segment per delta.
+/// * Prose and reasoning rows carry a [GlobalKey] per index once the turn has
+///   been live, so a row that closes keeps its element (and the streaming
+///   renderer's sealed-block memo) instead of re-parsing the whole answer in
+///   one frame.
+///
+/// One instance per transcript, owned by whatever renders it: a
+/// [TranscriptFlow], or the conversation feed for a turn it lays out row by
+/// row.
+class TranscriptRowRenderer {
+  final Map<int, (TranscriptSegment, Widget)> _memo = {};
+  String? _memoFont;
+  final Map<int, GlobalKey> _proseKeys = {};
+  final Map<int, GlobalKey> _reasoningKeys = {};
+  bool _everLive = false;
+
+  /// Call before building the rows of a pass: drops memo entries a font
+  /// change or a shrunk transcript (revert/re-seed) made stale.
+  void prepare({
+    required String codeFont,
+    required bool isLive,
+    required int segmentCount,
+  }) {
+    if (_memoFont != codeFont) {
+      _memo.clear();
+      _memoFont = codeFont;
+    }
+    _everLive = _everLive || isLive;
+    _memo.removeWhere((i, _) => i >= segmentCount);
+    _proseKeys.removeWhere((i, _) => i >= segmentCount);
+    _reasoningKeys.removeWhere((i, _) => i >= segmentCount);
+  }
+
+  /// The widget for [row]. [segments] is the transcript the plan was made
+  /// from (the live status line reads it).
+  Widget build(
+    TranscriptRowPlan row, {
+    required List<TranscriptSegment> segments,
+    required String codeFont,
+    LiveTranscriptController? live,
+  }) => switch (row) {
+    SegmentRowPlan() =>
+      _segmentRow(row, codeFont: codeFont, live: live) ??
+          const SizedBox.shrink(),
+    InlineMessageRowPlan(:final message) =>
+      message.isUserQuestion
+          ? QuestionBubble(key: ValueKey(message.id), message: message)
+          : SteeringBubble(
+              key: ValueKey(message.id),
+              message: message,
+              codeFont: codeFont,
+            ),
+    LiveStatusRowPlan() => _LiveStatusLine(segments: segments),
+  };
 
   /// One transcript row: memoized when closed, delta-live when open.
-  Widget? _row(int index, TranscriptSegment seg) {
-    final live = widget.live;
-    if (widget.isLive && _isOpen(seg)) {
+  Widget? _segmentRow(
+    SegmentRowPlan plan, {
+    required String codeFont,
+    LiveTranscriptController? live,
+  }) {
+    final index = plan.index;
+    final seg = plan.segment;
+    if (plan.open) {
       _memo.remove(index);
       if (live == null) {
-        return _renderSegment(index, seg, open: true);
+        return _renderSegment(index, seg, codeFont: codeFont, open: true);
       }
       // The open row re-reads its own segment per delta pulse; the registry
       // materializes only that index and Flutter coalesces pulses into one
@@ -179,7 +193,12 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
           valueListenable: live.tail,
           builder: (context, _, _) {
             final current = live.segmentAt(index) ?? seg;
-            return _renderSegment(index, current, open: true) ??
+            return _renderSegment(
+                  index,
+                  current,
+                  codeFont: codeFont,
+                  open: true,
+                ) ??
                 const SizedBox.shrink();
           },
         ),
@@ -190,7 +209,12 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
     if (memoed != null && memoed.$1 == seg) {
       return memoed.$2;
     }
-    final rendered = _renderSegment(index, seg, open: false);
+    final rendered = _renderSegment(
+      index,
+      seg,
+      codeFont: codeFont,
+      open: false,
+    );
     if (rendered == null) {
       _memo.remove(index);
       return null;
@@ -200,17 +224,10 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
     return row;
   }
 
-  /// Whether a segment is still receiving content while the turn is live.
-  static bool _isOpen(TranscriptSegment seg) => switch (seg) {
-    TextSegment(:final durationMs) => durationMs == null,
-    ReasoningSegment(:final durationMs) => durationMs == null,
-    ToolSegment(:final status) => status == ToolSegmentStatus.running,
-    ErrorSegment() || ViolationSegment() => false,
-  };
-
   Widget? _renderSegment(
     int index,
     TranscriptSegment seg, {
+    required String codeFont,
     required bool open,
   }) {
     switch (seg) {
@@ -225,14 +242,14 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
           return TurnProse(
             key: key,
             content: text,
-            codeFont: widget.codeFont,
+            codeFont: codeFont,
             streaming: true,
           );
         }
         if (text.trim().isEmpty) {
           return null;
         }
-        return TurnProse(key: key, content: text, codeFont: widget.codeFont);
+        return TurnProse(key: key, content: text, codeFont: codeFont);
       case ReasoningSegment(:final text):
         if (!open && text.trim().isEmpty) {
           return null;
@@ -242,7 +259,7 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
               ? _reasoningKeys.putIfAbsent(index, GlobalKey.new)
               : null,
           segment: seg,
-          codeFont: widget.codeFont,
+          codeFont: codeFont,
           streaming: open,
         );
       case ErrorSegment(isAuthentication: true):
@@ -254,39 +271,12 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
       case ViolationSegment():
         return TranscriptSegmentRow(
           segment: seg,
-          codeFont: widget.codeFont,
+          codeFont: codeFont,
           pending:
               open &&
               seg is ToolSegment &&
               seg.status == ToolSegmentStatus.running,
         );
     }
-  }
-
-  /// Vertical rhythm: prose breathes, consecutive tool rows stack tightly.
-  static double _gapBefore(TranscriptSegment? prev, TranscriptSegment cur) {
-    if (prev is TextSegment || cur is TextSegment) {
-      return AppSpacing.md;
-    }
-    if (prev is ReasoningSegment || cur is ReasoningSegment) {
-      return AppSpacing.sm;
-    }
-    return AppSpacing.xs;
-  }
-
-  /// The tail is the turn-level "still working" pulse. Suppress it only while
-  /// the answer or a thought is itself streaming — a status line under
-  /// live-rendering prose would just echo what the user already sees. Show it
-  /// while a tool runs (the tail names the activity class, the row names the
-  /// target) and between steps (where it reports the thinking gap).
-  static bool _showTail(List<TranscriptSegment> segments) {
-    if (segments.isEmpty) {
-      return true;
-    }
-    return switch (segments.last) {
-      TextSegment(:final durationMs) => durationMs != null,
-      ReasoningSegment(:final durationMs) => durationMs != null,
-      _ => true,
-    };
   }
 }

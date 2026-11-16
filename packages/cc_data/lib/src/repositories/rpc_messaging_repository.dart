@@ -16,7 +16,9 @@ import 'package:cc_domain/features/messaging/domain/entities/space_participant.d
 import 'package:cc_domain/features/messaging/domain/ports/messaging_summaries_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_turn_relay_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/message_lifecycle_states.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
@@ -84,6 +86,7 @@ class RpcMessagingRepository
       conversationId: d.conversationId ?? d.spaceId ?? fallbackSpaceId ?? '',
       compacted: d.compacted,
       createdAt: d.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+      revision: d.revision,
     );
   }
 
@@ -183,25 +186,90 @@ class RpcMessagingRepository
     String spaceId,
     String conversationId, {
     required int limit,
-  }) =>
-      // Windowed SERVER-side (`messaging.watchMessagesWindow`): the wire
-      // carries only the newest `limit` rows (lite shape, no segments), so
-      // emission cost is O(window), not O(conversation).
-      _remote
-          .watchMessagesWindow(
-            workspaceId,
-            spaceId,
-            conversationId,
-            limit: limit,
-          )
-          .map(
-            (w) => (
-              messages: w.messages
-                  .map((d) => _messageFromDto(d, fallbackSpaceId: spaceId))
-                  .toList(),
-              hasMore: w.hasMore,
-            ),
-          );
+  }) {
+    // Windowed SERVER-side (`messaging.watchMessagesWindow`): the wire
+    // carries only the newest `limit` rows (lite shape, no segments), so
+    // emission cost is O(window), not O(conversation). Rows the previous
+    // emission already held are reused, not decoded again.
+    final decoder = ListedMessageDecoder(fallbackSpaceId: spaceId);
+    return _remote
+        .watchMessagesWindowRows(
+          workspaceId,
+          spaceId,
+          conversationId,
+          limit: limit,
+        )
+        .map((w) => (messages: decoder.decode(w.rows), hasMore: w.hasMore));
+  }
+
+  @override
+  Stream<({List<Message> messages, bool hasOlder, bool hasNewer})>
+  watchMessagesRange(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required String anchorId,
+    required int before,
+    required int after,
+  }) {
+    final decoder = ListedMessageDecoder(fallbackSpaceId: spaceId);
+    return _remote
+        .watchMessagesRangeRows(
+          workspaceId,
+          spaceId,
+          conversationId,
+          anchorId: anchorId,
+          before: before,
+          after: after,
+        )
+        .map(
+          (r) => (
+            messages: decoder.decode(r.rows),
+            hasOlder: r.hasOlder,
+            hasNewer: r.hasNewer,
+          ),
+        );
+  }
+
+  @override
+  Future<List<ConversationOutlineEntry>> getConversationOutline(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) async => [
+    for (final entry in await _remote.getConversationOutline(
+      workspaceId,
+      spaceId,
+      conversationId,
+    ))
+      outlineEntryFromWire(entry),
+  ];
+
+  /// One `messaging.getConversationOutline` entry: `[id, created_at_ms,
+  /// sender_id, sender_type, message_type, content_chars, segment_count?,
+  /// steer_state?, answered (0/1), revision]`. Sender and message type are
+  /// in the message wire's form (`.name`), the steer state in its stored
+  /// form.
+  static ConversationOutlineEntry outlineEntryFromWire(List<Object?> entry) {
+    if (entry.length < 10) {
+      throw FormatException('outline entry has ${entry.length} fields', entry);
+    }
+    return ConversationOutlineEntry(
+      id: entry[0]! as String,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        (entry[1]! as num).toInt(),
+      ),
+      senderId: entry[2]! as String,
+      senderType: SenderType.fromWire(entry[3] as String?),
+      messageType:
+          _spaceMessageTypeByName[entry[4] as String?] ?? MessageType.text,
+      contentChars: (entry[5]! as num).toInt(),
+      segmentCount: (entry[6] as num?)?.toInt(),
+      steerState: SteeringState.tryFromWire(entry[7] as String?),
+      answered: entry[8] == 1 || entry[8] == true,
+      revision: (entry[9]! as num).toInt(),
+    );
+  }
 
   /// [MessagingSummariesPort.watchUserPromptHistory] — the caller's recent
   /// prompts, so the composer does not subscribe to the whole conversation.
@@ -592,7 +660,6 @@ class RpcMessagingRepository
     String workspaceId,
     String spaceId,
   ) => throw UnsupportedError('getMessagesWithEmbedding is host-side only');
-
 }
 
 // Enum name→value lookups, built ONCE.
@@ -601,5 +668,73 @@ class RpcMessagingRepository
 // these run per field per row per emission — the delta path re-maps a whole
 // table on every frame, so a single ticket change built four fresh maps per
 // ticket in the workspace.
+/// Decodes one list subscription's emissions, reusing the [Message] the
+/// previous emission produced for every row that has not changed.
+///
+/// A row is unchanged when its `id` and `revision` (the server's per-row
+/// change counter) match, and so do the facts the lite wire adds from the
+/// message's transcript (`metadata.segments_elided`,
+/// `metadata.segment_count`), which change without touching the row. The
+/// check reads the raw map, so an unchanged row costs a few lookups instead
+/// of a DTO, a metadata copy and a [Message]; and the reused instance is
+/// `identical` to the one the feed already laid out.
+///
+/// A row without a `revision` is always decoded. Hold one decoder per
+/// subscription.
+final class ListedMessageDecoder {
+  /// Creates a decoder whose rows default to [fallbackSpaceId].
+  ListedMessageDecoder({required this.fallbackSpaceId});
+
+  /// The space a row that omits `space_id` belongs to.
+  final String fallbackSpaceId;
+
+  var _previous = <String, _DecodedRow>{};
+
+  /// The messages of [rows], in order.
+  List<Message> decode(List<Map<String, dynamic>> rows) {
+    final next = <String, _DecodedRow>{};
+    final messages = <Message>[];
+    for (final row in rows) {
+      final id = row['id'];
+      final revision = row['revision'];
+      final metadata = row['metadata'];
+      final elided = metadata is Map ? metadata['segments_elided'] : null;
+      final count = metadata is Map ? metadata['segment_count'] : null;
+      final previous = id is String ? _previous[id] : null;
+      final Message message;
+      if (previous != null &&
+          revision is num &&
+          previous.revision == revision &&
+          previous.segmentsElided == elided &&
+          previous.segmentCount == count) {
+        message = previous.message;
+      } else {
+        message = RpcMessagingRepository._messageFromDto(
+          MessageDto.fromJson(row),
+          fallbackSpaceId: fallbackSpaceId,
+        );
+      }
+      if (id is String && revision is num) {
+        next[id] = (
+          revision: revision,
+          segmentsElided: elided,
+          segmentCount: count,
+          message: message,
+        );
+      }
+      messages.add(message);
+    }
+    _previous = next;
+    return messages;
+  }
+}
+
+typedef _DecodedRow = ({
+  num revision,
+  Object? segmentsElided,
+  Object? segmentCount,
+  Message message,
+});
+
 final Map<String, MessageType> _spaceMessageTypeByName = MessageType.values
     .asNameMap();

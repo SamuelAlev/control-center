@@ -2,7 +2,7 @@
 title: Utiliser le serveur MCP
 description: Pointez un client MCP externe vers le serveur d’outils de Control Center, définissez un jeton porteur et sachez ce que la surface expose.
 slug: fr-CA/manuel/guides/serveur-mcp
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Ce guide montre comment connecter un client MCP externe — Claude Code, un
@@ -134,17 +134,35 @@ Le catalogue complet est annoncé dans `tools/list` sans filtrage de découverte
 un client MCP externe refuse d’appeler un outil qui n’est pas dans sa liste en
 cache, donc masquer des outils les casse plutôt que de faire du rangement.
 
-## Les serveurs MCP personnels restent ceux du propriétaire
+## Serveurs MCP utilisés par vos agents
 
-Ce guide traite du point de terminaison propre à Control Center. L’autre sens, les serveurs MCP que Control Center remet aux agents qu’il exécute, est listé sous **Paramètres → Serveur → Serveurs MCP → Serveurs MCP externes**. Les serveurs configurés sur la machine du serveur pour Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode ou dans un `.mcp.json` y sont trouvés automatiquement.
+Ce guide traite du point de terminaison propre à Control Center. L’autre sens, soit les serveurs MCP que Control Center se connecte et remet aux agents qu’il exécute, se configure sous **Paramètres → Serveur → Serveurs MCP**, à deux niveaux. Dans les deux cas, Control Center se connecte au serveur lui-même et transmet ses outils à l’exécution ; le harnais intégré et Claude Code reçoivent donc les mêmes outils et les mêmes demandes d’approbation. Une exécution de Claude Code les voit sous le serveur `control-center`, sous la forme `mcp__control-center__mcp__<server>__<tool>`.
 
-Ces serveurs découverts proviennent de la configuration d’outils de l’utilisateur du serveur et agissent avec l’identité et les identifiants de cet utilisateur ; ils appartiennent donc au propriétaire du serveur :
+### Serveurs de l’espace de travail
 
-- Ils ne sont disponibles qu’à l’intérieur des exécutions du harnais intégré que le propriétaire du serveur démarre ou dont il est responsable, y compris l’automatisation d’un espace de travail dont le propriétaire est responsable.
-- L’exécution d’un membre, l’automatisation liée à un membre, et chaque exécution sur un serveur sans propriétaire enregistré n’en reçoivent aucun. Là, les outils ne sont pas listés, ne peuvent pas être appelés et n’apparaissent pas dans la recherche d’outils.
-- Ce point de terminaison ne les liste, ne les appelle ni ne les recherche jamais, pour personne, y compris avec le jeton du propriétaire, et il ne transmet ni leurs ressources ni leurs invites. Ainsi, un CLI d’agent qui atteint Control Center par MCP, comme Claude Code, ne les obtient pas non plus par Control Center ; il utilise sa propre configuration.
+Les administrateurs de l’espace de travail les ajoutent sous **Serveurs MCP de l'espace de travail**. Chaque exécution d’agent de l’espace de travail reçoit leurs outils; celles des autres espaces de travail n’en reçoivent pas.
 
-Les serveurs MCP configurés pour l’espace de travail ne sont touchés par rien de cela.
+1. Sélectionnez **Ajouter un serveur** et donnez-lui un nom court : lettres, chiffres, `-` et `_`, jusqu’à 24 caractères. Les outils apparaissent sous la forme `mcp__<name>__<tool>`.
+2. Choisissez comment le joindre :
+   - **Commande (stdio) :** un exécutable et ses arguments, ainsi que les variables d’environnement dont il a besoin.
+   - **URL (HTTP ou SSE) :** le point de terminaison, ainsi que les en-têtes requis, comme `Authorization: Bearer …`.
+3. Enregistrez. Point de contrôle : le serveur affiche **Connecté** avec un nombre d’outils.
+
+Les valeurs des variables d’environnement et des en-têtes sont conservées dans le fichier de secrets du serveur et ne sont jamais réaffichées. Pour modifier une valeur, remplacez-la; pour la supprimer, retirez son nom.
+
+Une commande s’exécute sur la machine du serveur, sous l’utilisateur du serveur; elle ne démarre donc qu’après l’approbation du propriétaire du serveur. D’ici là, elle affiche **En attente d'approbation**. Un serveur défini par URL fonctionne tout de suite, mais il ne peut joindre que des adresses publiques tant que le propriétaire du serveur ne l’a pas approuvé, ce qui permet aussi `localhost` et les réseaux privés. Lorsque le propriétaire du serveur enregistre un serveur, cela vaut approbation. Si quelqu’un d’autre modifie la façon dont un serveur démarre ou l’adresse à laquelle il se connecte, une nouvelle approbation est requise. Activer ou désactiver un serveur conserve son approbation.
+
+### Serveurs personnels
+
+Les serveurs personnels appartiennent au propriétaire du serveur et sont listés sous **Serveurs MCP externes**. Les serveurs configurés sur la machine du serveur pour Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode ou dans un `.mcp.json` y sont trouvés automatiquement. Le propriétaire du serveur peut aussi en ajouter avec **Ajouter un serveur**, à l’aide du même formulaire. Un serveur que vous ajoutez l’emporte sur un serveur découvert portant le même nom.
+
+Ils agissent avec l’identité et les identifiants du propriétaire du serveur :
+
+- Ils ne sont disponibles que dans les exécutions que le propriétaire du serveur démarre ou dont il est responsable, y compris l’automatisation d’un espace de travail dont le propriétaire est responsable. Cela couvre les exécutions du harnais intégré comme celles de Claude Code.
+- L’exécution d’un membre, l’automatisation liée à un membre et toute exécution sur un serveur sans propriétaire enregistré n’en reçoivent aucun. Là, les outils ne sont pas listés, ne peuvent pas être appelés et n’apparaissent pas dans la recherche d’outils.
+- Ni les serveurs personnels ni ceux de l’espace de travail ne sont servis au jeton MCP ni aux appareils jumelés, et leurs ressources et invites ne sont pas transmises.
+
+La connexion à un serveur avec OAuth n’est pas offerte dans le formulaire. Utilisez un serveur qui accepte un jeton dans un en-tête, ou configurez-le pour l’un des outils ci-dessus, où il est découvert.
 
 ## Dépannage
 

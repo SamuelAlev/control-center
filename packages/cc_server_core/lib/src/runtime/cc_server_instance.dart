@@ -203,6 +203,10 @@ class CcServer {
   /// process trees) are torn down on [shutdown].
   McpClientService? _mcpClientService;
 
+  /// Every workspace's configured MCP servers; their connections (stdio
+  /// children included) are torn down on [shutdown].
+  WorkspaceMcpServers? _workspaceMcpServers;
+
   /// The host's language-server pool; every server is shut down on [shutdown].
   LspSupervisor? _lspSupervisor;
   NetworkRuntime? _networkRuntime;
@@ -419,6 +423,10 @@ class CcServer {
     await step('deviceRelay', () async => _relayHost?.stop());
     await step('chat', () async => _chatConnector?.stop());
     await step('mcpConnections', () async => _mcpClientService?.shutdown());
+    await step(
+      'workspaceMcpConnections',
+      () async => _workspaceMcpServers?.shutdown(),
+    );
     // Language servers are long-lived child processes that index a whole
     // project; an orphaned analyzer outlives this process holding hundreds of
     // megabytes and answering to nobody.

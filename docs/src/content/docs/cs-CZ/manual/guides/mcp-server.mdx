@@ -2,7 +2,7 @@
 title: Používejte MCP server
 description: Namiř externího klienta MCP na server nástrojů Control Center, pošli jeho bearer token a zjisti, co plocha vystavuje.
 slug: cs-CZ/prirucka/navody/mcp-server
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Tenhle návod ukazuje, jak připojit externího klienta MCP — Claude Code, editor
@@ -135,22 +135,35 @@ Celý katalog se hlásí v `tools/list` a nic se z něj neschovává. Externí k
 MCP odmítne zavolat nástroj, který v jeho uloženém seznamu není, takže
 schovávání nástrojů je rozbije, místo aby seznam uklidilo.
 
-## Osobní servery MCP zůstávají vlastníkovi
+## Servery MCP, které používají agenti
 
-Tahle příručka je o vlastním endpointu Control Center. Opačný směr, servery MCP,
-které Control Center předává agentům, které spouští, najdeš v **Nastavení →
-Server → Servery MCP → Externí servery MCP**. Servery nastavené na stroji serveru
-pro Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode nebo v `.mcp.json`
-se tam najdou automaticky.
+Tato příručka se týká vlastního endpointu Control Center. Opačným směrem jsou servery MCP, ke kterým se Control Center připojuje a které předává agentům, jež spouští. Nastavuješ je v **Nastavení → Server → Servery MCP** na dvou úrovních. V obou případech se Control Center připojí k samotnému serveru a jeho nástroje předá běhu, takže vestavěný harness i Claude Code dostanou stejné nástroje a stejné výzvy ke schválení. Běh Claude Code je vidí pod serverem `control-center` jako `mcp__control-center__mcp__<server>__<tool>`.
 
-Tyto nalezené servery pocházejí z vlastní konfigurace nástrojů uživatele serveru
-a jednají s jeho identitou a přihlašovacími údaji, takže patří vlastníkovi serveru:
+### Servery pracovního prostoru
 
-- Jsou dostupné jen uvnitř vestavěných běhů harnessu, které vlastník serveru spouští nebo za které odpovídá, včetně automatizace v pracovním prostoru, za který vlastník odpovídá.
-- Běh člena, automatizace navázaná na člena a každý běh na serveru bez zaznamenaného vlastníka žádný z nich nedostane. Tam nástroje nejsou vypsány, nelze je volat a neobjeví se ve vyhledávání nástrojů.
-- Tenhle endpoint je nikdy nevypisuje, nevolá ani nehledá, pro nikoho, ani s tokenem vlastníka, a nepředává jejich zdroje ani prompty. Agentní CLI, které se k Control Center dostává přes MCP, například Claude Code, je tedy přes Control Center nezíská; používá vlastní konfiguraci.
+Správci pracovního prostoru je přidávají v **Servery MCP pracovního prostoru**. Každý běh agenta v pracovním prostoru dostane jejich nástroje a běhy v jiných pracovních prostorech ne.
 
-Servery MCP nastavené pro pracovní prostor tím nejsou dotčeny.
+1. Vyber **Přidat server** a dej mu krátký název: písmena, číslice, `-` a `_`, nejvýše 24 znaků. Nástroje se zobrazí jako `mcp__<name>__<tool>`.
+2. Zvol, jak se k němu připojit:
+   - **Příkaz (stdio):** spustitelný soubor a jeho argumenty, plus všechny proměnné prostředí, které potřebuje.
+   - **URL (HTTP nebo SSE):** koncový bod a případné hlavičky, například `Authorization: Bearer …`.
+3. Ulož. Kontrolní bod: u záznamu je vidět **Připojeno** a počet nástrojů.
+
+Hodnoty proměnných prostředí a hlaviček se ukládají do souboru s tajemstvími serveru a už se nikdy nezobrazí. Chceš-li hodnotu změnit, nahraď ji; chceš-li ji odstranit, odeber název.
+
+Příkaz běží na stroji serveru pod vlastním uživatelem serveru, takže se nespustí, dokud ho vlastník serveru neschválí. Do té doby je u něj **Čeká na schválení**. Server s URL funguje hned, ale dokud ho vlastník serveru neschválí, dosáhne jen na veřejné adresy; schválení pak povolí i `localhost` a privátní sítě. Když ho vlastník uloží, počítá se to jako schválení. Pokud kdokoli jiný změní způsob spuštění nebo cíl připojení, je potřeba schválení znovu. Zapnutí nebo vypnutí serveru schválení zachovává.
+
+### Osobní servery
+
+Osobní servery patří vlastníkovi serveru a jsou vypsány pod **Externí servery MCP**. Servery nastavené na stroji serveru pro Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode nebo v `.mcp.json` se tam najdou automaticky. Vlastník serveru může přidat vlastní pomocí **Přidat server** stejným formulářem. Server, který přidáš, má přednost před nalezeným serverem se stejným názvem.
+
+Jednají s identitou a přihlašovacími údaji vlastníka serveru:
+
+- Jsou dostupné jen v bězích, které vlastník serveru spouští nebo za které odpovídá, včetně automatizace v pracovním prostoru, za který vlastník odpovídá. Platí to pro vestavěné běhy harnessu i pro běhy Claude Code.
+- Běh člena, automatizace navázaná na člena a každý běh na serveru bez zaznamenaného vlastníka žádný z nich nedostanou. Tam nástroje nejsou vypsány, nelze je volat a neobjeví se ve vyhledávání nástrojů.
+- Ani osobní, ani pracovní servery se nepředávají tokenu MCP ani spárovaným zařízením a jejich zdroje a prompty se nepředávají dál.
+
+Přihlášení k serveru přes OAuth z formuláře není k dispozici. Použij server, který přijímá token v hlavičce, nebo ho nastav pro některý z nástrojů výše, kde se najde automaticky.
 
 ## Řešení problémů
 

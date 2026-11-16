@@ -320,6 +320,8 @@ const List<SettingsNavGroup> kSettingsNav = [
       SettingsNavItem(
         id: 'server.mcp',
         ownerOnly: true,
+        // Workspace admins manage their workspace's MCP servers here.
+        workspaceAdminsToo: true,
         icon: AppIcons.puzzle,
         label: _mcpLabel,
         route: settingsMcpRoute,

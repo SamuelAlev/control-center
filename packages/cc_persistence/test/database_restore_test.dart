@@ -277,6 +277,13 @@ void main() {
           'updated_at) '
           "VALUES ('env', 'Env', '{}', 'someone-else', $at, $at)",
     );
+    await sql(
+      'ws1',
+      'INSERT INTO mcp_servers '
+          '(id, name, transport, command, host_approved_by, created_at, '
+          'updated_at) '
+          "VALUES ('mcp', 'files', 'stdio', 'npx', 'someone-else', $at, $at)",
+    );
     for (final (id, decision) in [('p-allow', 'allow'), ('p-deny', 'deny')]) {
       await sql(
         'ws1',
@@ -408,6 +415,9 @@ void main() {
           {'host_approved_by': null},
         ],
       );
+      expect(await select('ws1', 'SELECT host_approved_by FROM mcp_servers'), [
+        {'host_approved_by': null},
+      ]);
       expect(await select('ws1', 'SELECT id FROM action_policies'), [
         {'id': 'p-deny'},
       ], reason: 'a deny only narrows what runs');

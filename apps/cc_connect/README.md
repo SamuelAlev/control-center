@@ -437,6 +437,7 @@ Audit and security events:
 | --- | --- | --- |
 | `http.request` | info | Every request: `method`, `status`, `ms`. |
 | `http.refused` | warn | A request refused with a wire code (`error`, `reason`), or a store or provider outage (`backend`, `reason`). |
+| `http.client_aborted` | warn | The client closed the connection before its request body arrived in full. Never reported to Sentry. |
 | `http.error` | error | Anything unexpected. `exception` is the runtime type only, never the message. Reported to Sentry. |
 | `auth.refused` | warn | A signed request refused: `reason` is `malformed`, `digest`, `stale`, `signature`, `replay`, `blocked` or `retired`, with `ip`. |
 | `ratelimit.hit` | warn | A bucket ran dry: `bucket` (`ip`, `global`, `hook_ip`, `hook_global`, `install`, `verify`, or one of [Budgets](#budgets)), with `ip`, `install` or `github_user_id`. |

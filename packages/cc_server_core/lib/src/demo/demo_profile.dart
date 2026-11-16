@@ -128,6 +128,8 @@ class DemoProfile {
     'invites.',
     'isolated_repo.',
     'mcp.',
+    // A workspace's configured MCP servers: commands, URLs, header names.
+    'mcpServers.',
     'members.',
     'models.',
     'oauth.',
@@ -765,6 +767,7 @@ class DemoProfile {
     'messaging.watchUserPromptHistory',
     'messaging.watchMessages',
     'messaging.watchMessagesWindow',
+    'messaging.watchMessagesRange',
     'messaging.watchParticipants',
     'messaging.watchSpaceActivity',
     'messaging.watchSpaceMessages',

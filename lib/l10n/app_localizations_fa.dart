@@ -18679,4 +18679,206 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'چیزی اعطا نشد: کسی یا چیزی که این اجازه برایش بود دیگر در این فضای کاری نیست.';
+
+  @override
+  String get mcpWorkspaceServers => 'سرورهای MCP فضای کاری';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'هر اجرای عامل در این فضای کاری ابزارهای این سرورها را دریافت می‌کند، هم در Claude Code و هم در هارنس داخلی. Control Center به هر سرور متصل می‌شود و ابزارهایش را عبور می‌دهد.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'فقط مدیران فضای کاری می‌توانند سرورهای MCP این فضای کاری را ببینند و تغییر دهند.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'سرورهای MCP فضای کاری روی سرور متصل در دسترس نیستند.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => 'هنوز سرور MCP فضای کاری وجود ندارد';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'یک سرور اضافه کنید تا هر اجرای عامل در این فضای کاری ابزارهایش را داشته باشد.';
+
+  @override
+  String get mcpAddServer => 'افزودن سرور';
+
+  @override
+  String get mcpHandAddedSource => 'در Control Center اضافه شد';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'در انتظار تأیید';
+
+  @override
+  String get mcpPublicAddressesOnly => 'فقط نشانی‌های عمومی';
+
+  @override
+  String get mcpApproveServer => 'تأیید';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'این سرور یک فرمان را روی میزبان سرور و با دسترسی کاربر سرور اجرا می‌کند. تا وقتی تأیید نکنید شروع نمی‌شود.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'این سرور یک فرمان را روی میزبان سرور اجرا می‌کند، پس تا وقتی مالک سرور تأیید نکند شروع نمی‌شود.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'این سرور فقط به نشانی‌های عمومی دسترسی دارد. اگر تأیید کنید، به شبکه خصوصی میزبان هم دسترسی می‌یابد، مانند localhost و شبکه محلی.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'این سرور تا وقتی مالک سرور تأیید نکند فقط به نشانی‌های عمومی دسترسی دارد.';
+
+  @override
+  String get mcpRemoveServer => 'حذف سرور';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '$name حذف شود؟';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'اجرای عامل‌ها ابزارهای این سرور را از دست می‌دهند و مقادیر محرمانه ذخیره‌شده‌اش حذف می‌شوند.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'روشن یا خاموش کردن $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'افزودن سرور MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'ویرایش $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'حروف، ارقام، خط تیره و زیرخط. عامل‌ها ابزارهایش را با این نام می‌بینند.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'حداکثر ۲۴ حرف، رقم، خط تیره یا زیرخط استفاده کنید، با یک حرف یا رقم شروع شود.';
+
+  @override
+  String get mcpServerNameTaken => 'سرور دیگری اینجا از قبل این نام را دارد.';
+
+  @override
+  String get mcpServerTransportLabel => 'انتقال';
+
+  @override
+  String get mcpServerTransportStdio => 'فرمان';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'فرمان';
+
+  @override
+  String get mcpServerCommandRequired =>
+      'فرمانی را که باید اجرا شود وارد کنید.';
+
+  @override
+  String get mcpServerArgsLabel => 'آرگومان‌ها';
+
+  @override
+  String get mcpServerArgsHelper => 'هر آرگومان در یک خط.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'یک نشانی http یا https بدون نام کاربری، گذرواژه یا #fragment وارد کنید.';
+
+  @override
+  String get mcpServerEnvLabel => 'متغیرهای محیطی';
+
+  @override
+  String get mcpServerHeadersLabel => 'سرایندها';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'مقادیر به‌عنوان محرمانه ذخیره می‌شوند و دوباره نمایش داده نمی‌شوند.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'برای نمونه، سرایند Authorization با توکن bearer.';
+
+  @override
+  String get mcpServerEnvAdd => 'افزودن متغیر';
+
+  @override
+  String get mcpServerHeaderAdd => 'افزودن سرایند';
+
+  @override
+  String get mcpServerSecretValueHint => 'مقدار';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'مقدار جدید';
+
+  @override
+  String get mcpServerSecretReplace => 'جایگزینی مقدار';
+
+  @override
+  String get mcpServerSecretUndo => 'واگرد';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'در ذخیره حذف می‌شود';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name نام متغیر معتبری نیست. از حروف، ارقام و زیرخط استفاده کنید و با رقم شروع نشود.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name را نمی‌توان تنظیم کرد. یک نام سرایند معتبر وارد کنید که اتصال خودش مدیریتش نکند.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'تغییر انتقال، مقادیر ذخیره‌شده را حذف می‌کند.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'وقتی خاموش باشد، سرور اجرا نمی‌شود و عامل‌ها ابزارهایش را نمی‌بینند.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'روی میزبان سرور اجرا می‌شود، پس تا وقتی مالک سرور تأیید نکند شروع نمی‌شود. تغییر نحوه اجرایش دوباره تأیید می‌خواهد.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'تا وقتی مالک سرور تأیید نکند فقط به نشانی‌های عمومی دسترسی دارد. تغییر نحوه اتصالش دوباره تأیید می‌خواهد.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'روی میزبان سرور و با دسترسی کاربر سرور اجرا می‌شود. ذخیره کردن آن را تأیید می‌کند.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'ذخیره کردن، دسترسی آن به شبکه خصوصی میزبان را هم تأیید می‌کند.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'فقط در اجراهایی استفاده می‌شود که خودتان شروع می‌کنید یا مسئولشان هستید.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center نتوانست این سرور را ذخیره کند. تنظیماتش را بررسی کنید و دوباره تلاش کنید.';
+
+  @override
+  String get mcpServerNotFound =>
+      'این سرور دیگر وجود ندارد. ممکن است کسی آن را حذف کرده باشد.';
 }

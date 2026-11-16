@@ -287,6 +287,41 @@ void main() {
       expect(harness.upstream.callsTo('POST', _envelopeUrl), isEmpty);
     });
 
+    test(
+      'a client that hangs up mid-body is a warn line, never reported',
+      () async {
+        final harness = await Harness.start(
+          allowed: [a],
+          env: {'CONNECT_SENTRY_DSN': _dsn},
+        );
+        addTearDown(harness.close);
+        final socket = await Socket.connect('127.0.0.1', harness.handle.port);
+        socket.write(
+          'POST ${harness.mount}/v1/github/scope HTTP/1.1\r\n'
+          'host: 127.0.0.1\r\n'
+          'content-type: application/json\r\n'
+          'content-length: 100\r\n'
+          '\r\n'
+          '{"workspace',
+        );
+        await socket.flush();
+        await socket.close();
+        socket.destroy();
+        await _eventually(
+          () => harness.logs.any((l) => l.contains('http.client_aborted')),
+        );
+        final lines = _lines(harness.logs);
+        final aborted = lines.singleWhere(
+          (l) => l['event'] == 'http.client_aborted',
+        );
+        expect(aborted['level'], 'warn');
+        expect(aborted['route'], '/v1/github/scope');
+        expect(lines.where((l) => l['event'] == 'http.error'), isEmpty);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(harness.upstream.callsTo('POST', _envelopeUrl), isEmpty);
+      },
+    );
+
     test('the reporter, alone: a thrown StateError', () async {
       final upstream = FakeUpstream()
         ..json('POST', _envelopeUrl, 200, {'id': 'x'});

@@ -2,7 +2,7 @@
 title: Autorisierung — wer was darf und wie du es nachweist
 description: Der Berechtigungskatalog hinter den Rollen von Control Center, das manipulationserkennbare Audit-Protokoll, in dem jede Autorisierungsentscheidung landet, und die installationsweiten Vorgaben, die ein Betreiber festlegen kann.
 slug: de-DE/handbuch/konzepte/autorisierung
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center beantwortet zwei Autorisierungsfragen, und die beiden meinen
@@ -112,7 +112,13 @@ Die Person, die den Server eingerichtet hat, ist sein **Inhaber**. Der Server h�
 - Agenten auf einem Server ausführen, dessen Maschine keine Sandbox hat. Alle anderen Läufe werden dort abgewiesen, außer der Inhaber hat den Server mit `--sandbox off` gestartet; dann laufen die Agenten jedes Mitglieds ohne Einschränkung (siehe [Agenten auf einem Host ohne Sandbox](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/#agenten-auf-einem-host-ohne-sandbox)).
 - Einen Repository-Checkout verknüpfen, der außerhalb des eigenen Speichers des Arbeitsbereichs liegt, einen schon verknüpften vor dieser Regel bestätigen und beim Hinzufügen eines Repositorys die Ordner des Servers durchsuchen (siehe [Repositorys hinzufügen](/de-DE/handbuch/anleitungen/repos-hinzufuegen/)).
 - Jeden laufenden Agentenprozess auf dem Server sehen und stoppen. Alle anderen sehen und stoppen nur laufende Agentenläufe in Arbeitsbereichen, denen sie angehören.
-- Agenten die MCP-Server nutzen lassen, die in den eigenen Werkzeugen des Serverbenutzers eingerichtet sind (Claude, Codex, Cursor und die übrigen). Nur die eingebauten Harness-Läufe, für die der Inhaber einsteht, bekommen sie; siehe [Persönliche MCP-Server bleiben beim Inhaber](/de-DE/handbuch/anleitungen/mcp-server/#persönliche-mcp-server-bleiben-beim-inhaber).
+- Agenten persönliche MCP-Server nutzen lassen: die in den eigenen Werkzeugen
+  des Serverbenutzers eingerichteten (Claude, Codex, Cursor und die übrigen)
+  und die, die der Inhaber hinzufügt. Nur Läufe, für die der Inhaber einsteht,
+  bekommen sie; siehe [Persönliche Server](/de-DE/handbuch/anleitungen/mcp-server/#persönliche-server).
+- Einen Arbeitsbereich-MCP-Server freigeben, der einen Befehl auf der Maschine
+  des Servers ausführt oder dessen privates Netzwerk erreicht (siehe
+  [Arbeitsbereich-Server](/de-DE/handbuch/anleitungen/mcp-server/#arbeitsbereich-server)).
 - Die E-Mail-Adresse einer Person bestätigen, damit Single Sign-on sie zuordnen kann (siehe [Mit einem OpenID-Connect-Provider verbinden](/de-DE/handbuch/anleitungen/sso-oidc/#wie-anmeldungen-zu-bestehenden-konten-passen)).
 - Installationsweite Einstellungen ändern: SSO, Anbieter-Zugangsdaten, den MCP-Endpunkt und sein Token, die Modellverwaltung, Connect und Sicherungen der ganzen Installation. Diese Operationen deklarieren **Serverautorität** und werden für alle anderen abgelehnt.
 

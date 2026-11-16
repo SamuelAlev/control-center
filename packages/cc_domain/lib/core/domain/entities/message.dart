@@ -234,12 +234,16 @@ class Message {
     this.reverted = false,
     this.revertedAt,
     required this.createdAt,
+    this.revision = 0,
   }) {
     if (spaceId.isEmpty) {
       throw ArgumentError('Message spaceId must not be empty');
     }
     if (conversationId.isEmpty) {
       throw ArgumentError('Message conversationId must not be empty');
+    }
+    if (revision < 0) {
+      throw ArgumentError.value(revision, 'revision', 'must not be negative');
     }
   }
 
@@ -283,6 +287,15 @@ class Message {
 
   /// Creation timestamp.
   final DateTime createdAt;
+
+  /// The server's change counter for this row: 0 when written, one more on
+  /// every update of it (a database trigger keeps it).
+  ///
+  /// A list subscription compares it to tell an unchanged row from a changed
+  /// one without decoding the row again. It is not content, so it takes no
+  /// part in [operator ==] or [hashCode]: two reads of the same message are
+  /// equal whatever revision each was taken at.
+  final int revision;
 
   /// Whether the sender is a human user.
   bool get isUser => senderType == SenderType.user;
@@ -573,6 +586,7 @@ class Message {
     int? revertedAt,
     bool removeRevertedAt = false,
     DateTime? createdAt,
+    int? revision,
   }) {
     return Message(
       id: id ?? this.id,
@@ -587,6 +601,7 @@ class Message {
       reverted: reverted ?? this.reverted,
       revertedAt: removeRevertedAt ? null : (revertedAt ?? this.revertedAt),
       createdAt: createdAt ?? this.createdAt,
+      revision: revision ?? this.revision,
     );
   }
 }

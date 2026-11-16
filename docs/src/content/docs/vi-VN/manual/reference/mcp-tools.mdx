@@ -2,10 +2,10 @@
 title: Công cụ MCP
 description: Danh mục đầy đủ các công cụ MCP mà cc_server đăng ký, theo từng nhóm.
 slug: vi-VN/so-tay/tham-chieu/cong-cu-mcp
-sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
+sourceHash: d64f9fe8e1239904fbc4864a0155c037d2827b30
 ---
 
-`cc_server` vận hành một sổ đăng ký công cụ MCP (JSON-RPC 2.0), được phục vụ trên cổng chính của máy chủ (mặc định `9030`) tại `POST /mcp` và `GET /sse`, phiên bản giao thức `2024-11-05`. Mọi máy khách đều tiếp cận cùng một sổ đăng ký: ứng dụng desktop, bản web, các máy khách MCP bên ngoài và runtime agent tích hợp. Các máy chủ MCP bên ngoài có thể được bắc cầu vào cùng sổ đăng ký như một lớp động. Các máy chủ được phát hiện trong cấu hình công cụ cá nhân của người dùng máy chủ là ngoại lệ: endpoint này không bao giờ liệt kê, gọi hay tìm kiếm chúng, và chỉ harness tích hợp sẵn — thứ mà chủ sở hữu máy chủ chịu trách nhiệm — mới dùng được chúng (xem [MCP server cá nhân thuộc về chủ sở hữu](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-mcp-cá-nhân-thuộc-về-chủ-sở-hữu)).
+`cc_server` vận hành một sổ đăng ký công cụ MCP (JSON-RPC 2.0), được phục vụ trên cổng chính của máy chủ (mặc định `9030`) tại `POST /mcp` và `GET /sse`, phiên bản giao thức `2024-11-05`. Mọi máy khách đều tiếp cận cùng một sổ đăng ký: ứng dụng desktop, bản web, các máy khách MCP bên ngoài và runtime agent tích hợp. Máy chủ MCP bên ngoài được kết nối vào cùng sổ đăng ký trong các lớp riêng của chúng: mỗi không gian làm việc một lớp cho các máy chủ do quản trị viên của không gian đó cấu hình, và một lớp cho máy chủ cá nhân của chủ sở hữu máy chủ. Endpoint này chỉ liệt kê, gọi và tìm kiếm chúng cho một lượt chạy agent: các máy chủ của chính không gian làm việc đó, cộng với máy chủ cá nhân khi chủ sở hữu máy chủ chịu trách nhiệm cho lượt chạy. Token MCP và thiết bị đã ghép nối không bao giờ thấy chúng (xem [Máy chủ MCP mà các agent của bạn sử dụng](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-mcp-mà-các-agent-của-bạn-sử-dụng)).
 
 ## Quy mô sổ đăng ký
 

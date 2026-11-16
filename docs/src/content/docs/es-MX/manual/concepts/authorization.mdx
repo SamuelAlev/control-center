@@ -2,7 +2,7 @@
 title: "Autorización: quién puede hacer qué y cómo lo demuestras"
 description: "El catálogo de permisos detrás de los roles de Control Center, el registro de auditoría a prueba de manipulaciones en el que aterriza cada decisión de autorización y los controles de toda la instalación que un operador puede fijar."
 slug: es-MX/manual/conceptos/autorizacion
-sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
+sourceHash: 9b6ab5ffb27be5a061ebfd9d020992ec83236ad7
 ---
 
 Control Center responde a dos preguntas de autorización, y son realmente
@@ -169,11 +169,8 @@ en el host.** Concretamente, solo el propietario del servidor puede:
 - Ver y detener cada proceso de agente en ejecución del servidor. Los demás ven y
   detienen solo las ejecuciones de agentes en vivo de los espacios de trabajo a
   los que pertenecen.
-- Hacer que los agentes usen los servidores MCP configurados en las herramientas
-  propias del usuario del servidor (Claude, Codex, Cursor y demás). Solo las
-  ejecuciones del harness integrado de las que responde el propietario los
-  reciben; consulta
-  [Los servidores MCP personales siguen siendo del propietario](/es-MX/manual/guias/servidor-mcp/#los-servidores-mcp-personales-siguen-siendo-del-propietario).
+- Hacer que los agentes usen servidores MCP personales: los configurados en las herramientas propias del usuario del servidor (Claude, Codex, Cursor y el resto) y los que añada el propietario. Solo las ejecuciones de las que responde el propietario los reciben; consulta [Servidores personales](/es-MX/manual/guias/servidor-mcp/#servidores-personales).
+- Aprobar un servidor MCP del espacio de trabajo que ejecute un comando en la máquina del servidor o que llegue a su red privada (consulta [Servidores del espacio de trabajo](/es-MX/manual/guias/servidor-mcp/#servidores-del-espacio-de-trabajo)).
 - Confirmar la dirección de correo de una persona, para que el inicio de sesión
   único pueda reconocerla (consulta
   [Conectar un proveedor OpenID Connect](/es-MX/manual/guias/sso-oidc/#cómo-coinciden-los-inicios-de-sesión-con-cuentas-existentes)).

@@ -120,6 +120,7 @@ class MessagingMapper {
       reverted: row.reverted,
       revertedAt: row.revertedAt,
       createdAt: row.createdAt,
+      revision: row.revision,
     );
   }
 

@@ -31161,6 +31161,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing was granted: who or what it was for is no longer in this workspace.'**
   String get importHoldNotApplied;
+
+  /// Title of the section listing the MCP servers a workspace admin configured for every agent run in the workspace (Settings → Server → MCP servers)
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace MCP servers'**
+  String get mcpWorkspaceServers;
+
+  /// Description under the Workspace MCP servers title
+  ///
+  /// In en, this message translates to:
+  /// **'Every agent run in this workspace gets these servers\' tools, in Claude Code and the built-in harness alike. Control Center connects to each server and passes its tools through.'**
+  String get mcpWorkspaceServersDescription;
+
+  /// Shown instead of the workspace MCP server list to someone who is not an admin of the current workspace
+  ///
+  /// In en, this message translates to:
+  /// **'Only workspace admins can see and change this workspace\'s MCP servers.'**
+  String get mcpWorkspaceServersAdminsOnly;
+
+  /// Shown when the connected server is too old to offer workspace MCP servers
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace MCP servers aren\'t available on the connected server.'**
+  String get mcpWorkspaceServersUnavailable;
+
+  /// Empty state title of the workspace MCP server list
+  ///
+  /// In en, this message translates to:
+  /// **'No workspace MCP servers yet'**
+  String get mcpWorkspaceServersEmpty;
+
+  /// Empty state description of the workspace MCP server list
+  ///
+  /// In en, this message translates to:
+  /// **'Add a server to give every agent run in this workspace its tools.'**
+  String get mcpWorkspaceServersEmptyDescription;
+
+  /// Button that opens the editor to add an MCP server (workspace or personal)
+  ///
+  /// In en, this message translates to:
+  /// **'Add server'**
+  String get mcpAddServer;
+
+  /// Identity line of a personal MCP server the owner added by hand, in place of the tool it was discovered from (Claude, Cursor, …)
+  ///
+  /// In en, this message translates to:
+  /// **'Added in Control Center'**
+  String get mcpHandAddedSource;
+
+  /// Status tag of a workspace MCP server that runs a command on the server host and waits for the server owner's approval before it starts
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting approval'**
+  String get mcpStatusAwaitingApproval;
+
+  /// Small fact on a remote workspace MCP server the server owner has not approved: it may reach only public internet addresses, not the host's private network
+  ///
+  /// In en, this message translates to:
+  /// **'Public addresses only'**
+  String get mcpPublicAddressesOnly;
+
+  /// Button for the server owner to approve a workspace MCP server as it stands
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get mcpApproveServer;
+
+  /// Note under an unapproved command (stdio) workspace MCP server, shown to the server owner next to the Approve button
+  ///
+  /// In en, this message translates to:
+  /// **'This server runs a command on the server host, as the server\'s user. It won\'t start until you approve it.'**
+  String get mcpApprovalStdioOwner;
+
+  /// Note under an unapproved command (stdio) workspace MCP server, shown to a workspace admin who is not the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'This server runs a command on the server host, so it won\'t start until the server owner approves it.'**
+  String get mcpApprovalStdioMember;
+
+  /// Note under an unapproved remote (HTTP/SSE) workspace MCP server, shown to the server owner next to the Approve button
+  ///
+  /// In en, this message translates to:
+  /// **'This server can reach only public addresses. Approve it to let it reach the host\'s private network too, such as localhost and the local network.'**
+  String get mcpApprovalRemoteOwner;
+
+  /// Note under an unapproved remote (HTTP/SSE) workspace MCP server, shown to a workspace admin who is not the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'This server can reach only public addresses until the server owner approves it.'**
+  String get mcpApprovalRemoteMember;
+
+  /// Tooltip of the remove action on an MCP server row, and the confirm button of the remove dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Remove server'**
+  String get mcpRemoveServer;
+
+  /// Title of the dialog confirming an MCP server's removal
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String mcpRemoveServerTitle(String name);
+
+  /// Body of the dialog confirming an MCP server's removal
+  ///
+  /// In en, this message translates to:
+  /// **'Agent runs lose this server\'s tools, and its stored secret values are deleted.'**
+  String get mcpRemoveServerBody;
+
+  /// Accessibility label of the on/off switch on an MCP server row
+  ///
+  /// In en, this message translates to:
+  /// **'Turn {name} on or off'**
+  String mcpServerEnabledToggle(String name);
+
+  /// Title of the MCP server editor dialog when adding
+  ///
+  /// In en, this message translates to:
+  /// **'Add MCP server'**
+  String get mcpServerEditorAddTitle;
+
+  /// Title of the MCP server editor dialog when changing an existing server
+  ///
+  /// In en, this message translates to:
+  /// **'Edit {name}'**
+  String mcpServerEditorEditTitle(String name);
+
+  /// Helper text under the name field of the MCP server editor
+  ///
+  /// In en, this message translates to:
+  /// **'Letters, digits, hyphens and underscores. Agents see its tools under this name.'**
+  String get mcpServerNameHelper;
+
+  /// Error under the name field of the MCP server editor
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 24 letters, digits, hyphens or underscores, starting with a letter or digit.'**
+  String get mcpServerNameInvalid;
+
+  /// Error under the name field when the name is already used in the same scope
+  ///
+  /// In en, this message translates to:
+  /// **'Another server here already has this name.'**
+  String get mcpServerNameTaken;
+
+  /// Label of the picker choosing how an MCP server is reached
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get mcpServerTransportLabel;
+
+  /// Transport option: a local process speaking MCP on stdio
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get mcpServerTransportStdio;
+
+  /// Transport option: Streamable HTTP
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP'**
+  String get mcpServerTransportHttp;
+
+  /// Transport option: the legacy Server-Sent Events transport
+  ///
+  /// In en, this message translates to:
+  /// **'SSE'**
+  String get mcpServerTransportSse;
+
+  /// Label of the executable field of a command (stdio) MCP server
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get mcpServerCommandLabel;
+
+  /// Error under an empty command field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the command to run.'**
+  String get mcpServerCommandRequired;
+
+  /// Label of the arguments field of a command (stdio) MCP server
+  ///
+  /// In en, this message translates to:
+  /// **'Arguments'**
+  String get mcpServerArgsLabel;
+
+  /// Helper text under the arguments field
+  ///
+  /// In en, this message translates to:
+  /// **'One argument per line.'**
+  String get mcpServerArgsHelper;
+
+  /// Label of the endpoint field of a remote MCP server
+  ///
+  /// In en, this message translates to:
+  /// **'URL'**
+  String get mcpServerUrlLabel;
+
+  /// Error under the URL field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an http or https URL with no user name, password or #fragment.'**
+  String get mcpServerUrlInvalid;
+
+  /// Heading of the environment variables of a command MCP server
+  ///
+  /// In en, this message translates to:
+  /// **'Environment variables'**
+  String get mcpServerEnvLabel;
+
+  /// Heading of the HTTP headers sent to a remote MCP server
+  ///
+  /// In en, this message translates to:
+  /// **'Headers'**
+  String get mcpServerHeadersLabel;
+
+  /// Note under the environment variables / headers heading: values are write-only
+  ///
+  /// In en, this message translates to:
+  /// **'Values are stored as secrets and never shown again.'**
+  String get mcpServerSecretsDescription;
+
+  /// Hint under the headers heading of a remote MCP server
+  ///
+  /// In en, this message translates to:
+  /// **'For example, an Authorization header with a bearer token.'**
+  String get mcpServerHeadersExample;
+
+  /// Button adding an environment variable row
+  ///
+  /// In en, this message translates to:
+  /// **'Add variable'**
+  String get mcpServerEnvAdd;
+
+  /// Button adding a header row
+  ///
+  /// In en, this message translates to:
+  /// **'Add header'**
+  String get mcpServerHeaderAdd;
+
+  /// Placeholder of a secret value field
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get mcpServerSecretValueHint;
+
+  /// Placeholder of the field holding a stored secret's replacement value
+  ///
+  /// In en, this message translates to:
+  /// **'New value'**
+  String get mcpServerSecretNewValueHint;
+
+  /// Action on a stored environment variable or header: type a new value for it
+  ///
+  /// In en, this message translates to:
+  /// **'Replace value'**
+  String get mcpServerSecretReplace;
+
+  /// Action on a stored environment variable or header being replaced or removed: keep it as stored
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get mcpServerSecretUndo;
+
+  /// Tag on a stored environment variable or header marked for removal
+  ///
+  /// In en, this message translates to:
+  /// **'Removed on save'**
+  String get mcpServerSecretRemovedOnSave;
+
+  /// Error under the environment variables of the MCP server editor
+  ///
+  /// In en, this message translates to:
+  /// **'{name} isn\'t a valid variable name. Use letters, digits and underscores, not starting with a digit.'**
+  String mcpServerEnvNameInvalid(String name);
+
+  /// Error under the headers of the MCP server editor; reserved headers include Host and Content-Type
+  ///
+  /// In en, this message translates to:
+  /// **'{name} can\'t be set. Use a valid header name the connection doesn\'t manage itself.'**
+  String mcpServerHeaderNameInvalid(String name);
+
+  /// Note in the MCP server editor when the transport differs from the stored one, which had secret values
+  ///
+  /// In en, this message translates to:
+  /// **'Changing the transport removes the stored values.'**
+  String get mcpServerTransportDropsValues;
+
+  /// Description of the Enabled switch in the MCP server editor
+  ///
+  /// In en, this message translates to:
+  /// **'When off, the server isn\'t started and agents don\'t see its tools.'**
+  String get mcpServerEnabledDescription;
+
+  /// Note in the workspace MCP server editor (command transport) for a workspace admin who is not the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'It runs on the server host, so it won\'t start until the server owner approves it. Changing how it starts asks for approval again.'**
+  String get mcpServerEditorStdioMember;
+
+  /// Note in the workspace MCP server editor (HTTP/SSE transport) for a workspace admin who is not the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'It reaches only public addresses until the server owner approves it. Changing how it connects asks for approval again.'**
+  String get mcpServerEditorRemoteMember;
+
+  /// Note in the workspace MCP server editor (command transport) for the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'It runs on the server host as the server\'s user. Saving approves it.'**
+  String get mcpServerEditorStdioOwner;
+
+  /// Note in the workspace MCP server editor (HTTP/SSE transport) for the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'Saving approves it to reach the host\'s private network too.'**
+  String get mcpServerEditorRemoteOwner;
+
+  /// Note in the personal MCP server editor (the server owner's own servers)
+  ///
+  /// In en, this message translates to:
+  /// **'Used only in runs you start or are accountable for.'**
+  String get mcpServerEditorPersonal;
+
+  /// Shown when the server refuses an MCP server configuration for a field the editor has no message for
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center couldn\'t save this server. Check its settings and try again.'**
+  String get mcpServerRefusedInvalid;
+
+  /// Shown when an MCP server action targets a server that was removed
+  ///
+  /// In en, this message translates to:
+  /// **'This server no longer exists. Someone may have removed it.'**
+  String get mcpServerNotFound;
 }
 
 class _AppLocalizationsDelegate

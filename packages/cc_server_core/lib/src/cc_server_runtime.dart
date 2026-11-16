@@ -64,6 +64,8 @@ import 'package:cc_domain/features/governance/domain/services/runtime_state_gc_s
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart'
+    show McpToolView;
 import 'package:cc_domain/features/mcp/domain/services/mode_tool_guard.dart';
 import 'package:cc_domain/features/meetings/domain/value_objects/voice_model_paths.dart';
 import 'package:cc_domain/features/memory/domain/services/fact_extraction.dart';
@@ -273,6 +275,11 @@ import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
 import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 import 'package:cc_server_core/src/local_rpc_server.dart';
+import 'package:cc_server_core/src/mcp_servers/file_personal_mcp_server_repository.dart';
+import 'package:cc_server_core/src/mcp_servers/mcp_server_secrets.dart';
+import 'package:cc_server_core/src/mcp_servers/workspace_mcp_servers.dart';
+import 'package:cc_server_core/src/media_proxy_guard.dart'
+    show pinnedPermittedConnection;
 import 'package:cc_server_core/src/meeting_alert_sweep.dart';
 import 'package:cc_server_core/src/models/managed_model_control.dart';
 import 'package:cc_server_core/src/models/selectable_voice_model_control.dart';
@@ -1579,7 +1586,7 @@ Future<CcServer> runCcServer({
   // work; first-time interactive OAuth is desktop-driven. Discovery + connect
   // runs fire-and-forget after boot (see below).
   final mcpClientService = McpClientService(
-    registry: mcpRegistry,
+    publishTools: mcpRegistry.setPersonalTools,
     tokenStore: FileOAuthTokenStore('${config.dataDir}/mcp_oauth_tokens.json'),
     // Remembering each server's tool list means a run that starts while a slow
     // server is still dialling still sees that server's tools; the first CALL
@@ -1770,7 +1777,7 @@ Future<CcServer> runCcServer({
     dataDir: config.dataDir,
   );
   // Make the advertised `tools.listChanged: true` capability real: every
-  // registry mutation (external MCP servers bridged in via setDynamicTools,
+  // registry mutation (external MCP servers bridged in via setPersonalTools,
   // post-boot register() calls like the skill tools below) fans
   // `notifications/tools/list_changed` out to connected SSE clients so they
   // re-list instead of serving a stale cache forever.
@@ -1782,11 +1789,38 @@ Future<CcServer> runCcServer({
   // this dispatcher's tier gate). Persisted approval posture is loaded at boot
   // (below). This is a HEADLESS host: it has no browser launcher, so
   // `mcp.client.authorize` rejects — interactive OAuth is desktop-driven.
+  final mcpServerSecrets = McpServerSecrets(secrets);
   final mcpClientControl = ServerMcpClientControl(
     service: mcpClientService,
     dispatcher: mcpDispatcher,
     dataDir: config.dataDir,
+    repository: FilePersonalMcpServerRepository(dataDir: config.dataDir),
+    secrets: mcpServerSecrets,
+    homeDir:
+        Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'],
   );
+
+  // The MCP servers each workspace configured, bridged into that workspace's
+  // registry layer so every run there gets them (harness directly, Claude Code
+  // through this server's MCP endpoint). A stdio server needs the current
+  // server owner's approval to start; until then a remote one connects only
+  // to public addresses (`pinnedPermittedConnection`, the same rule as every
+  // other server-side fetch of a URL someone else chose).
+  final workspaceMcpServers = WorkspaceMcpServers(
+    repository: DaoWorkspaceMcpServerRepository(workspaceDbs),
+    secrets: mcpServerSecrets,
+    registry: mcpRegistry,
+    serverOwnerUserId: ownerUserId,
+    clientFactory: (workspaceId, publishTools) => McpClientService(
+      publishTools: publishTools,
+      publicOnlyConnection: pinnedPermittedConnection,
+      log: (level, message, {Object? error}) => CcHostLog.info(
+        'mcp-client[$workspaceId][$level]: $message',
+      ),
+    ),
+  );
+  // Gone with its workspace: connections, tools and stored values.
+  workspaceGitHub.addDeletionListener(workspaceMcpServers.forgetWorkspace);
 
   // The headless server owns a real filesystem, so it hosts the workspace
   // on-disk layout (agents / skills / conversation dirs) rooted at its data dir
@@ -5592,6 +5626,8 @@ Future<CcServer> runCcServer({
     // read or rotate its token. demo: no MCP server control, so /mcp and /sse
     // are never mounted.
     mcpServer: demo != null ? null : mcpControl,
+    workspaceMcpServers: demo != null ? null : workspaceMcpServers,
+    mcpClientControl: demo != null ? null : mcpClientControl,
     // demo: no owner to notify.
     serverNotices: demo != null ? null : DaoServerNoticeRepository(globalDb),
     agentRepository: agentRepository,
@@ -5695,6 +5731,8 @@ Future<CcServer> runCcServer({
         unawaited(openPrPoller.refreshNow(workspaceId)),
     databaseBackup: databaseBackupService,
     conversationTitles: conversationTitleService,
+    messagingRepository: messagingRepository,
+    conversationRepository: conversationRepository,
     requireConversationSpace: (workspaceId, conversationId, userId) async {
       final conversation = await conversationRepository.getById(
         workspaceId: workspaceId,
@@ -7094,7 +7132,7 @@ Future<CcServer> runCcServer({
     resolveRole: resolveRole,
     canViewNotification: canViewNotification,
     toolIsMutating: (name) =>
-        mcpRegistry.resolve(name, includePersonal: false)?.isMutating,
+        mcpRegistry.resolve(name, view: McpToolView.shared)?.isMutating,
     eventBus: eventBus,
     workspaceResolver: listWorkspaces,
     repoOps: repoOps,
@@ -7565,7 +7603,7 @@ Future<CcServer> runCcServer({
     resolveRole: resolveRole,
     canViewNotification: canViewNotification,
     toolIsMutating: (name) =>
-        mcpRegistry.resolve(name, includePersonal: false)?.isMutating,
+        mcpRegistry.resolve(name, view: McpToolView.shared)?.isMutating,
     devicesDao: globalDb.pairedDeviceDao,
     secrets: secrets,
     sessionPolicy: ssoSettings.sessionPolicy,
@@ -8048,6 +8086,7 @@ Future<CcServer> runCcServer({
     .._codeGraphWatch = codeGraphWatch
     .._lspSupervisor = lspSupervisor
     .._mcpClientService = mcpClientService
+    .._workspaceMcpServers = workspaceMcpServers
     .._codeServer = codeServerSessions
     .._rigs = rigService
     .._agentDispatch = agentDispatch
@@ -8081,8 +8120,15 @@ Future<CcServer> runCcServer({
     .._forgeHttpClients = forgeHttpClients;
 
   telemetry.analytics?.reportStarted(workspaceRepository);
-  // Bridge MCP servers configured for other tools; never blocks boot.
-  unawaited(_discoverExternalMcpServers(mcpClientService));
+  // Connect the owner's personal MCP servers and every workspace's
+  // configured ones; never blocks boot.
+  unawaited(
+    _connectMcpServers(
+      personal: mcpClientControl,
+      workspaces: workspaceMcpServers,
+      workspaceRepository: workspaceRepository,
+    ),
+  );
 
   // The open-PR poller sweeps every workspace's linked repos: cheap conditional
   // (ETag) probes on a fast cadence for watched workspaces, a slow baseline for

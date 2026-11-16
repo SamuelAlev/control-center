@@ -619,6 +619,9 @@ final class ConnectService {
           },
           'reason': _slug(reason),
         }, ConnectLogLevel.warn);
+      case ConnectClientAborted():
+        // The socket is gone: the answer below reaches no one.
+        log.event('http.client_aborted', const {}, ConnectLogLevel.warn);
       default:
         log.exception('http.error', error, stack, {
           'error': ConnectErrorCode.providerUnavailable.wire,

@@ -64,16 +64,28 @@ class _MergedSpaceArchivePromptState
         choice.requireValue != null) {
       return const SizedBox.shrink();
     }
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      child: MergedSpaceArchiveNotice(
-        onArchive: _busy
-            ? null
-            : () => unawaited(_respond(SpaceMergeArchiveChoice.archive)),
-        onKeep: _busy
-            ? null
-            : () => unawaited(_respond(SpaceMergeArchiveChoice.keep)),
-        error: _error,
+    // The IDE tab bar draws only its bottom edge; this band sits between it
+    // and the page header, so it supplies the tab bar's top line.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: (context.designSystem ?? DesignSystemTokens.light())
+                .borderPrimary,
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: MergedSpaceArchiveNotice(
+          onArchive: _busy
+              ? null
+              : () => unawaited(_respond(SpaceMergeArchiveChoice.archive)),
+          onKeep: _busy
+              ? null
+              : () => unawaited(_respond(SpaceMergeArchiveChoice.keep)),
+          error: _error,
+        ),
       ),
     );
   }

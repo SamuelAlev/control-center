@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:cc_domain/cc_domain.dart' show ValidationException;
+import 'package:cc_domain/cc_domain.dart'
+    show NotFoundException, ValidationException;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
@@ -14,9 +15,11 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/services/prompt_history.dart';
 import 'package:cc_domain/features/messaging/domain/services/side_channel_render.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_context_history.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/conversation_outline_entry.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/dispatch_reply_hints.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_cursor.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/message_lifecycle_states.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
@@ -145,6 +148,91 @@ class DaoMessagingRepository implements MessagingRepository {
             (a, b) =>
                 a.hasMore == b.hasMore && _sameMessages(a.messages, b.messages),
           );
+
+  /// The anchor is resolved once, before any row streams: a missing,
+  /// reverted or foreign anchor fails the subscription with a
+  /// [NotFoundException], and a live one pins the keyset the watch runs on.
+  @override
+  Stream<({List<Message> messages, bool hasOlder, bool hasNewer})>
+  watchMessagesRange(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required String anchorId,
+    required int before,
+    required int after,
+  }) async* {
+    if (before < 0 || after < 0) {
+      throw ArgumentError('before and after must not be negative');
+    }
+    final dao = _dao(workspaceId);
+    final anchor = await dao.messagePosition(spaceId, conversationId, anchorId);
+    if (anchor == null) {
+      throw const NotFoundException('Message not found in this conversation');
+    }
+    yield* dao
+        .watchMessagesRange(
+          spaceId,
+          conversationId,
+          anchor: anchor,
+          before: before,
+          after: after,
+        )
+        .distinct(
+          (a, b) =>
+              a.hasOlder == b.hasOlder &&
+              a.hasNewer == b.hasNewer &&
+              _sameRows(a.rows, b.rows),
+        )
+        .map(
+          (range) => (
+            messages: _mapper.listedMessagesToDomain(range.rows),
+            hasOlder: range.hasOlder,
+            hasNewer: range.hasNewer,
+          ),
+        )
+        .distinct(
+          (a, b) =>
+              a.hasOlder == b.hasOlder &&
+              a.hasNewer == b.hasNewer &&
+              _sameMessages(a.messages, b.messages),
+        );
+  }
+
+  static bool _sameRows(List<ListedMessageRow> a, List<ListedMessageRow> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @override
+  Future<List<ConversationOutlineEntry>> getConversationOutline(
+    String workspaceId,
+    String spaceId,
+    String conversationId,
+  ) async => [
+    for (final row in await _dao(
+      workspaceId,
+    ).conversationOutline(spaceId, conversationId))
+      ConversationOutlineEntry(
+        id: row.id,
+        createdAt: row.createdAt,
+        senderId: row.senderId,
+        senderType: SenderType.fromWire(row.senderType),
+        messageType: MessageType.fromWire(row.messageType),
+        contentChars: row.contentChars,
+        segmentCount: row.segmentCount,
+        steerState: SteeringState.tryFromWire(row.steerState),
+        answered: row.answered,
+        revision: row.revision,
+      ),
+  ];
 
   /// The size of a conversation's live region, computed in SQL. NOT part of
   /// [MessagingRepository] — like [watchSpaceActivity] it is a server-only

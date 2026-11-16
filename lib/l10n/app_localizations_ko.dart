@@ -18302,4 +18302,199 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       '아무것도 부여되지 않았습니다. 대상이 된 구성원이나 리포지토리가 더 이상 이 워크스페이스에 없습니다.';
+
+  @override
+  String get mcpWorkspaceServers => '워크스페이스 MCP 서버';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      '이 워크스페이스의 모든 에이전트 실행은 이 서버들의 도구를 사용합니다. Claude Code와 내장 하네스 모두 해당됩니다. Control Center가 각 서버에 연결해 도구를 그대로 전달합니다.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      '워크스페이스 관리자만 이 워크스페이스의 MCP 서버를 보고 변경할 수 있습니다.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      '연결된 서버에서는 워크스페이스 MCP 서버를 사용할 수 없습니다.';
+
+  @override
+  String get mcpWorkspaceServersEmpty => '아직 워크스페이스 MCP 서버가 없습니다';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      '서버를 추가하면 이 워크스페이스의 모든 에이전트 실행에 해당 도구가 제공됩니다.';
+
+  @override
+  String get mcpAddServer => '서버 추가';
+
+  @override
+  String get mcpHandAddedSource => 'Control Center에서 추가됨';
+
+  @override
+  String get mcpStatusAwaitingApproval => '승인 대기 중';
+
+  @override
+  String get mcpPublicAddressesOnly => '공용 주소만 허용';
+
+  @override
+  String get mcpApproveServer => '승인';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      '이 서버는 서버 호스트에서 서버 사용자 권한으로 명령을 실행합니다. 승인하기 전까지 시작되지 않습니다.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      '이 서버는 서버 호스트에서 명령을 실행하므로 서버 소유자가 승인하기 전까지 시작되지 않습니다.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      '이 서버는 공용 주소에만 접근할 수 있습니다. 승인하면 localhost나 로컬 네트워크 등 호스트의 사설 네트워크에도 접근할 수 있습니다.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      '서버 소유자가 승인하기 전까지 이 서버는 공용 주소에만 접근할 수 있습니다.';
+
+  @override
+  String get mcpRemoveServer => '서버 제거';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return '$name을(를) 제거할까요?';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      '에이전트 실행에서 이 서버의 도구를 더 이상 사용할 수 없게 되며, 저장된 비밀 값도 삭제됩니다.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return '$name 켜기 또는 끄기';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'MCP 서버 추가';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return '$name 편집';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      '영문자, 숫자, 하이픈, 밑줄을 사용할 수 있습니다. 에이전트는 이 이름으로 도구를 인식합니다.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      '영문자, 숫자, 하이픈, 밑줄을 최대 24자까지 사용하고, 영문자 또는 숫자로 시작하세요.';
+
+  @override
+  String get mcpServerNameTaken => '이 위치에 이미 같은 이름의 서버가 있습니다.';
+
+  @override
+  String get mcpServerTransportLabel => '전송 방식';
+
+  @override
+  String get mcpServerTransportStdio => '명령';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => '명령';
+
+  @override
+  String get mcpServerCommandRequired => '실행할 명령을 입력하세요.';
+
+  @override
+  String get mcpServerArgsLabel => '인수';
+
+  @override
+  String get mcpServerArgsHelper => '한 줄에 인수 하나씩 입력하세요.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      '사용자 이름, 비밀번호, #fragment가 없는 http 또는 https URL을 입력하세요.';
+
+  @override
+  String get mcpServerEnvLabel => '환경 변수';
+
+  @override
+  String get mcpServerHeadersLabel => '헤더';
+
+  @override
+  String get mcpServerSecretsDescription => '값은 비밀 값으로 저장되며 다시 표시되지 않습니다.';
+
+  @override
+  String get mcpServerHeadersExample => '예: 베어러 토큰이 담긴 Authorization 헤더.';
+
+  @override
+  String get mcpServerEnvAdd => '변수 추가';
+
+  @override
+  String get mcpServerHeaderAdd => '헤더 추가';
+
+  @override
+  String get mcpServerSecretValueHint => '값';
+
+  @override
+  String get mcpServerSecretNewValueHint => '새 값';
+
+  @override
+  String get mcpServerSecretReplace => '값 바꾸기';
+
+  @override
+  String get mcpServerSecretUndo => '실행 취소';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => '저장 시 제거됨';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return '$name은(는) 올바른 변수 이름이 아닙니다. 영문자, 숫자, 밑줄만 사용하고 숫자로 시작하지 마세요.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return '$name은(는) 설정할 수 없습니다. 연결이 직접 관리하지 않는 올바른 헤더 이름을 사용하세요.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues => '전송 방식을 바꾸면 저장된 값이 삭제됩니다.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      '끄면 서버가 시작되지 않고 에이전트에 이 서버의 도구가 표시되지 않습니다.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      '서버 호스트에서 실행되므로 서버 소유자가 승인하기 전까지 시작되지 않습니다. 시작 방식을 바꾸면 다시 승인이 필요합니다.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      '서버 소유자가 승인하기 전까지 공용 주소에만 접근할 수 있습니다. 연결 방식을 바꾸면 다시 승인이 필요합니다.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      '서버 호스트에서 서버 사용자 권한으로 실행됩니다. 저장하면 승인됩니다.';
+
+  @override
+  String get mcpServerEditorRemoteOwner => '저장하면 호스트의 사설 네트워크에 접근하는 것도 승인됩니다.';
+
+  @override
+  String get mcpServerEditorPersonal => '직접 시작했거나 책임지는 실행에서만 사용됩니다.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Control Center가 이 서버를 저장하지 못했습니다. 설정을 확인하고 다시 시도하세요.';
+
+  @override
+  String get mcpServerNotFound => '이 서버는 더 이상 존재하지 않습니다. 누군가 제거했을 수 있습니다.';
 }

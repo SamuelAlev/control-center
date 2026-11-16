@@ -252,6 +252,66 @@ void main() {
       expect(args['limit'], 5);
     });
 
+    test(
+      'watchMessagesRange sends the anchor + counts, maps both edges',
+      () async {
+        host.snapshotFor('messaging.watchMessagesRange', {
+          'messages': [
+            {
+              'id': 'm1',
+              'space_id': 'c1',
+              'sender_id': 'a',
+              'sender_type': 'user',
+              'content': 'x',
+              'revision': 2,
+            },
+          ],
+          'has_older': true,
+          'has_newer': false,
+        });
+        final r = await RpcMessagingRepository(client)
+            .watchMessagesRange(
+              _ws,
+              'c1',
+              'conv-1',
+              anchorId: 'm1',
+              before: 30,
+              after: 10,
+            )
+            .first;
+        expect(r.messages.single.id, 'm1');
+        expect(r.messages.single.revision, 2);
+        expect(r.hasOlder, isTrue);
+        expect(r.hasNewer, isFalse);
+        expect(host.lastSubscribe!.args, {
+          'workspace_id': _ws,
+          'space_id': 'c1',
+          'conversation_id': 'conv-1',
+          'anchor_id': 'm1',
+          'before': 30,
+          'after': 10,
+        });
+      },
+    );
+
+    test('getConversationOutline decodes the compact entries', () async {
+      host.callResults['messaging.getConversationOutline'] = {
+        'entries': [
+          ['m1', 1000, 'u1', 'user', 'text', 5, null, null, 0, 1],
+          'junk',
+        ],
+      };
+      final outline = await RpcMessagingRepository(
+        client,
+      ).getConversationOutline(_ws, 'c1', 'conv-1');
+      expect(outline.single.id, 'm1');
+      expect(outline.single.revision, 1);
+      final args = host.lastCall('messaging.getConversationOutline')!.args;
+      expect(args['workspace_id'], _ws);
+      expect(args['space_id'], 'c1');
+      expect(args['conversation_id'], 'conv-1');
+    });
+
     test('watchSpaceActivity skips non-Map rows', () async {
       host.snapshotFor('messaging.watchSpaceActivity', {
         'spaces': [

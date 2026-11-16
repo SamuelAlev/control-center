@@ -2,7 +2,7 @@
 title: Använd MCP-servern
 description: Peka en extern MCP-klient mot Control Centers verktygsserver, skicka dess bearer-token och förstå vad ytan exponerar.
 slug: sv-SE/handbok/how-to-guider/mcp-server
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Den här guiden visar hur du ansluter en extern MCP-klient – Claude Code, en
@@ -138,29 +138,35 @@ Hela katalogen annonseras i `tools/list` utan upptäcktsstyrning – en extern
 MCP-klient vägrar anropa ett verktyg som inte finns i dess cachade lista, så att
 dölja verktyg förstör dem i stället för att snygga till dem.
 
-## Personliga MCP-servrar förblir ägarens
+## MCP-servrar som agenterna använder
 
-Den här guiden handlar om Control Centers egen slutpunkt. Den andra riktningen,
-MCP-servrar som Control Center ger till de agenter den kör, finns under
-**Inställningar → Server → MCP-servrar → Externa MCP-servrar**. Servrar som
-konfigurerats på serverns maskin för Claude, Codex, Cursor, Gemini, VS Code,
-Windsurf, OpenCode eller i en `.mcp.json` hittas där automatiskt.
+Den här guiden handlar om Control Centers egen slutpunkt. Den andra riktningen är MCP-servrar som Control Center ansluter till och ger till de agenter det kör. De ställs in under **Inställningar → Server → MCP-servrar**, på två nivåer. Oavsett nivå ansluter Control Center till MCP-servern själv och skickar dess verktyg till körningen, så att det inbyggda harnesset och Claude Code får samma verktyg och samma godkännandefrågor. En Claude Code-körning ser dem under MCP-servern `control-center` som `mcp__control-center__mcp__<server>__<tool>`.
 
-De upptäckta servrarna kommer från serverns användares egen verktygskonfiguration
-och agerar med den användarens identitet och uppgifter, så de tillhör
-serverägaren:
+### MCP-servrar för arbetsytan
 
-- De är bara tillgängliga inom inbyggda harness-körningar som serverägaren startar
-  eller svarar för, inklusive automatisering i en arbetsyta som ägaren svarar för.
-- En medlems körning, automatisering bunden till en medlem och varje körning på en
-  server utan någon registrerad ägare får ingen av dem. Där listas verktygen inte,
-  kan inte anropas och syns inte i verktygssökningen.
-- Slutpunkten här listar, anropar eller söker aldrig dem, för någon, ägarens token
-  inräknad, och den vidarebefordrar inte deras resurser eller prompts. En agent-CLI
-  som når Control Center över MCP, som Claude Code, får alltså inte dem genom
-  Control Center heller; den använder sin egen konfiguration.
+Arbetsytans administratörer lägger till dessa under **MCP-servrar för arbetsytan**. Varje agentkörning på arbetsytan får deras verktyg, och körningar på andra arbetsytor gör det inte.
 
-MCP-servrar som konfigurerats för arbetsytan påverkas inte av något av detta.
+1. Välj **Lägg till server** och ge den ett kort namn: bokstäver, siffror, `-` och `_`, upp till 24 tecken. Verktygen visas som `mcp__<name>__<tool>`.
+2. Välj hur MCP-servern nås:
+   - **Kommando (stdio):** ett körbart program och dess argument, plus eventuella miljövariabler som behövs.
+   - **URL (HTTP eller SSE):** slutpunkten, plus eventuella headers som behövs, till exempel `Authorization: Bearer …`.
+3. Spara. Kontrollpunkt: MCP-servern visar **Ansluten** med ett antal verktyg.
+
+Värden för miljövariabler och headers lagras i MCP-serverns hemlighetsfil och visas aldrig igen. För att ändra ett värde ersätts det; för att ta bort det tas namnet bort.
+
+Ett kommando körs på MCP-serverns maskin som serverns egen användare, så det startar inte förrän serverägaren godkänner det. Tills dess står det **Väntar på godkännande**. En URL-server fungerar direkt men når bara publika adresser tills serverägaren godkänner den, vilket också tillåter `localhost` och privata nätverk. När serverägaren sparar en MCP-server räknas det som godkännande. Om någon annan ändrar hur en MCP-server startar eller var den ansluter behövs nytt godkännande. Att slå på eller av en MCP-server behåller godkännandet.
+
+### Personliga MCP-servrar
+
+Personliga MCP-servrar tillhör serverägaren och listas under **Externa MCP-servrar**. MCP-servrar som är konfigurerade på serverns maskin för Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode eller i en `.mcp.json` hittas där automatiskt. Serverägaren kan också lägga till egna MCP-servrar via **Lägg till server**, med samma formulär. En MCP-server som läggs till går före en upptäckt MCP-server med samma namn.
+
+De agerar med serverägarens identitet och uppgifter:
+
+- De är bara tillgängliga i körningar som serverägaren startar eller ansvarar för, inklusive automatisering på en arbetsyta som ägaren ansvarar för. Det gäller både inbyggda harness-körningar och Claude Code-körningar.
+- En medlems körning, automatisering bunden till en medlem och varje körning på en MCP-server utan registrerad ägare får ingen av dem. Där listas verktygen inte, de kan inte anropas och de syns inte i verktygssökningen.
+- Varken personliga MCP-servrar eller MCP-servrar för arbetsytan skickas till MCP-token eller till parkopplade enheter, och deras resurser och prompts vidarebefordras inte.
+
+Att logga in på en MCP-server med OAuth går inte via formuläret. Använd en MCP-server som accepterar en token i en header, eller konfigurera den för något av verktygen ovan, där den upptäcks.
 
 ## Felsökning
 

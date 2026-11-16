@@ -6,6 +6,8 @@ import 'package:control_center/features/inbox/presentation/models/inbox_attentio
 import 'package:control_center/features/inbox/presentation/widgets/inbox_attention_card.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_empty_state.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_hero_header.dart';
+import 'package:control_center/features/inbox/presentation/widgets/inbox_pr_row.dart'
+    show InboxRowMetrics;
 import 'package:control_center/features/inbox/presentation/widgets/inbox_rail.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_section_card.dart';
 import 'package:control_center/features/inbox/providers/inbox_providers.dart';
@@ -68,6 +70,21 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   /// considered "current". A small lead makes the rail switch to a section
   /// just as its card reaches the top, rather than a beat behind it.
   static const double _railActivationLead = 72;
+
+  /// The section rail's fixed width.
+  static const double _railWidth = 224;
+
+  /// The body width below which the rail is dropped: with it, the list would
+  /// fall under the rows' full column layout (the list's scrollbar inset and
+  /// the card's two side borders come off its width first). The pinned
+  /// section headers still name and collapse every section, so the list
+  /// stands on its own.
+  static const double _railBreakpoint =
+      _railWidth +
+      AppSpacing.xl +
+      AppSpacing.md +
+      2 +
+      InboxRowMetrics.compactBelow;
 
   /// The fraction of the viewport occupied by the pinned attention strip
   /// (0 when it is absent), so a section "revealed at the top" lands just
@@ -360,119 +377,129 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 // identity empties the inbox identically, and [InboxEmptyState]
                 // says so instead.
                 ? const InboxEmptyState()
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 224,
-                        child: InboxRail(
-                          counts: counts,
-                          selected: _railSelection,
-                          onSelect: _jumpTo,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xl),
-                      Expanded(
-                        // The bottom spacing sits OUTSIDE the scroll view
-                        // (as margin, not padding): inside, it would stretch
-                        // the scroll viewport — and with it the scrollbar
-                        // track — past the last card to the window edge.
-                        // Outside, the viewport ends at the last card.
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-                          // Trailing edge only: the attention strip and the
-                          // section headers are PINNED, so a leading fade
-                          // would dim chrome that is not scrolling — the same
-                          // false "there is more above" signal the hint exists
-                          // to avoid.
-                          child: CcScrollArea(
-                            fadeStart: false,
-                            child: CustomScrollView(
-                              // Exact scroll restoration (PRD 19 §8): the
-                              // offset is restored when the operator navigates
-                              // back to the inbox.
-                              key: const PageStorageKey('inbox-sections'),
-                              controller: _scrollController,
-                              // Every section is a pinned header plus an atomic
-                              // body sliver, so each sliver always reports its
-                              // real extent. The old single SliverList
-                              // estimated the total from the average height of
-                              // its VISIBLE children — with 12px spacers, 42px
-                              // headers and 1000px cards in one list, that
-                              // estimate swung as they scrolled through the
-                              // window and the desktop scrollbar's thumb
-                              // visibly grew and shrank.
-                              slivers: [
-                                SliverPadding(
-                                  // The trailing inset keeps the cards (and
-                                  // their age column) clear of the overlaying
-                                  // scrollbar, which follows the ambient
-                                  // directionality.
-                                  padding: const EdgeInsetsDirectional.only(
-                                    end: AppSpacing.md,
-                                  ),
-                                  sliver: SliverMainAxisGroup(
-                                    slivers: [
-                                      if (attention.isNotEmpty)
-                                        // The attention strip is PINNED
-                                        // (PRD 19 §7): it never scrolls away;
-                                        // section headers pin beneath it. The
-                                        // 12px gap under the card is part of
-                                        // the pinned block and painted with
-                                        // the page canvas, so rows sliding
-                                        // underneath are covered instead of
-                                        // peeking through above the next
-                                        // pinned header.
-                                        PinnedHeaderSliver(
-                                          // Guarded like the section headers:
-                                          // it too pins over scrolling rows, so
-                                          // it too can leave a partial device
-                                          // pixel uncovered at its top edge.
-                                          child: PinnedHeaderBleedGuard(
-                                            child: Container(
-                                              key: _attentionStripKey,
-                                              color: tokens.canvas,
-                                              padding: const EdgeInsets.only(
-                                                bottom: AppSpacing.md,
-                                              ),
-                                              child: InboxAttentionCard(
-                                                items: attention,
+                : LayoutBuilder(
+                    builder: (context, constraints) => Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (constraints.maxWidth >= _railBreakpoint) ...[
+                          SizedBox(
+                            width: _railWidth,
+                            child: InboxRail(
+                              counts: counts,
+                              selected: _railSelection,
+                              onSelect: _jumpTo,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xl),
+                        ],
+                        Expanded(
+                          // Keyed so the list keeps its element (scroll view,
+                          // collapse animations) when the rail comes or goes
+                          // and shifts it to another child index.
+                          key: const ValueKey('inbox-list'),
+                          // The bottom spacing sits OUTSIDE the scroll view
+                          // (as margin, not padding): inside, it would stretch
+                          // the scroll viewport — and with it the scrollbar
+                          // track — past the last card to the window edge.
+                          // Outside, the viewport ends at the last card.
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.xl,
+                            ),
+                            // Trailing edge only: the attention strip and the
+                            // section headers are PINNED, so a leading fade
+                            // would dim chrome that is not scrolling — the same
+                            // false "there is more above" signal the hint exists
+                            // to avoid.
+                            child: CcScrollArea(
+                              fadeStart: false,
+                              child: CustomScrollView(
+                                // Exact scroll restoration (PRD 19 §8): the
+                                // offset is restored when the operator navigates
+                                // back to the inbox.
+                                key: const PageStorageKey('inbox-sections'),
+                                controller: _scrollController,
+                                // Every section is a pinned header plus an atomic
+                                // body sliver, so each sliver always reports its
+                                // real extent. The old single SliverList
+                                // estimated the total from the average height of
+                                // its VISIBLE children — with 12px spacers, 42px
+                                // headers and 1000px cards in one list, that
+                                // estimate swung as they scrolled through the
+                                // window and the desktop scrollbar's thumb
+                                // visibly grew and shrank.
+                                slivers: [
+                                  SliverPadding(
+                                    // The trailing inset keeps the cards (and
+                                    // their age column) clear of the overlaying
+                                    // scrollbar, which follows the ambient
+                                    // directionality.
+                                    padding: const EdgeInsetsDirectional.only(
+                                      end: AppSpacing.md,
+                                    ),
+                                    sliver: SliverMainAxisGroup(
+                                      slivers: [
+                                        if (attention.isNotEmpty)
+                                          // The attention strip is PINNED
+                                          // (PRD 19 §7): it never scrolls away;
+                                          // section headers pin beneath it. The
+                                          // 12px gap under the card is part of
+                                          // the pinned block and painted with
+                                          // the page canvas, so rows sliding
+                                          // underneath are covered instead of
+                                          // peeking through above the next
+                                          // pinned header.
+                                          PinnedHeaderSliver(
+                                            // Guarded like the section headers:
+                                            // it too pins over scrolling rows, so
+                                            // it too can leave a partial device
+                                            // pixel uncovered at its top edge.
+                                            child: PinnedHeaderBleedGuard(
+                                              child: Container(
+                                                key: _attentionStripKey,
+                                                color: tokens.canvas,
+                                                padding: const EdgeInsets.only(
+                                                  bottom: AppSpacing.md,
+                                                ),
+                                                child: InboxAttentionCard(
+                                                  items: attention,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      // Empty sections render no card at all —
-                                      // the rail is the always-complete map;
-                                      // the list shows only work. Spacers sit
-                                      // BETWEEN cards only, so the viewport
-                                      // ends at the last card's bottom edge.
-                                      for (
-                                        var i = 0;
-                                        i < presentSections.length;
-                                        i++
-                                      ) ...[
-                                        InboxSectionCard(
-                                          section: presentSections[i],
-                                          items: data.of(presentSections[i]),
-                                          headerKey:
-                                              _sectionKeys[presentSections[i]],
-                                        ),
-                                        if (i < presentSections.length - 1)
-                                          const SliverToBoxAdapter(
-                                            child: SizedBox(
-                                              height: AppSpacing.md,
-                                            ),
+                                        // Empty sections render no card at all —
+                                        // the rail is the always-complete map;
+                                        // the list shows only work. Spacers sit
+                                        // BETWEEN cards only, so the viewport
+                                        // ends at the last card's bottom edge.
+                                        for (
+                                          var i = 0;
+                                          i < presentSections.length;
+                                          i++
+                                        ) ...[
+                                          InboxSectionCard(
+                                            section: presentSections[i],
+                                            items: data.of(presentSections[i]),
+                                            headerKey:
+                                                _sectionKeys[presentSections[i]],
                                           ),
+                                          if (i < presentSections.length - 1)
+                                            const SliverToBoxAdapter(
+                                              child: SizedBox(
+                                                height: AppSpacing.md,
+                                              ),
+                                            ),
+                                        ],
                                       ],
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
           ),
         ],

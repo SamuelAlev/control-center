@@ -2,7 +2,7 @@
 title: Den MCP-Server nutzen
 description: Richte einen externen MCP-Client auf den Werkzeugserver von Control Center, sende sein Bearer-Token und erfahre, was die Oberfläche anbietet.
 slug: de-DE/handbuch/anleitungen/mcp-server
-sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
+sourceHash: 0239917dba7349533ef1ce70536453187e8d3591
 ---
 
 Diese Anleitung zeigt, wie du einen externen MCP-Client — Claude Code, einen
@@ -141,17 +141,35 @@ ausgeblendet wird — ein externer MCP-Client weigert sich, ein Werkzeug
 aufzurufen, das nicht in seiner zwischengespeicherten Liste steht. Werkzeuge
 zu verstecken macht sie kaputt, statt die Liste aufzuräumen.
 
-## Persönliche MCP-Server bleiben beim Inhaber
+## MCP-Server, die Agenten nutzen
 
-Diese Anleitung beschreibt den eigenen Endpunkt von Control Center. Die andere Richtung, also MCP-Server, die Control Center den Agenten übergibt, die es startet, steht unter **Einstellungen → Server → MCP-Server → Externe MCP-Server**. Auf der Maschine des Servers für Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode oder in einer `.mcp.json` eingerichtete Server werden dort automatisch gefunden.
+Diese Anleitung beschreibt den eigenen Endpunkt von Control Center. Die andere Richtung sind MCP-Server, zu denen Control Center sich verbindet und die es an die Agenten weitergibt, die es startet. Sie werden unter **Einstellungen → Server → MCP-Server** eingerichtet, auf zwei Ebenen. In beiden Fällen verbindet sich Control Center mit dem Server selbst und übergibt dessen Werkzeuge an den Lauf. Dadurch erhalten das eingebaute Harness und Claude Code dieselben Werkzeuge und dieselben Freigabeabfragen. Ein Claude-Code-Lauf sieht sie unter dem Server `control-center` als `mcp__control-center__mcp__<server>__<tool>`.
 
-Diese gefundenen Server stammen aus der Werkzeugkonfiguration des Serverbenutzers und handeln mit dessen Identität und Zugangsdaten, deshalb gehören sie dem Serverinhaber:
+### Arbeitsbereich-Server
 
-- Sie stehen nur in eingebauten Harness-Läufen zur Verfügung, die der Serverinhaber startet oder für die er einsteht, einschließlich der Automatisierung in einem Arbeitsbereich, für den der Inhaber einsteht.
-- Der Lauf eines Mitglieds, eine Automatisierung, die an ein Mitglied gebunden ist, und jeder Lauf auf einem Server ohne eingetragenen Inhaber bekommen keine davon. Dort werden die Werkzeuge nicht aufgelistet, können nicht aufgerufen werden und tauchen auch nicht in der Werkzeugsuche auf.
-- Dieser Endpunkt listet, ruft oder durchsucht sie nie, für niemanden, auch nicht mit dem Token des Inhabers, und gibt ihre Ressourcen oder Prompts nicht weiter. Ein Agent-CLI, das über MCP zu Control Center findet, etwa Claude Code, bekommt sie deshalb auch nicht über Control Center; es nutzt seine eigene Konfiguration.
+Arbeitsbereich-Admins fügen diese unter **Workspace-MCP-Server** hinzu. Jeder Agentenlauf im Arbeitsbereich erhält deren Werkzeuge, Läufe in anderen Arbeitsbereichen nicht.
 
-MCP-Server, die für den Arbeitsbereich eingerichtet sind, sind davon nicht betroffen.
+1. **Server hinzufügen** auswählen und einen kurzen Namen vergeben: Buchstaben, Ziffern, `-` und `_`, bis zu 24 Zeichen. Werkzeuge erscheinen als `mcp__<name>__<tool>`.
+2. Festlegen, wie der Server erreicht wird:
+   - **Befehl (stdio):** ein ausführbares Programm mit seinen Argumenten sowie alle benötigten Umgebungsvariablen.
+   - **URL (HTTP oder SSE):** der Endpunkt sowie alle benötigten Header, etwa `Authorization: Bearer …`.
+3. Speichern. Kontrollpunkt: Der Server zeigt **Verbunden** mit einer Anzahl an Werkzeugen.
+
+Werte von Umgebungsvariablen und Headern werden in der Secrets-Datei des Servers gespeichert und danach nie mehr angezeigt. Zum Ändern eines Werts wird er ersetzt; zum Entfernen wird der Name gelöscht.
+
+Ein Befehl läuft auf der Maschine des Servers unter dessen eigenem Benutzer und startet daher erst, wenn der Serverinhaber ihn freigibt. Bis dahin steht dort **Wartet auf Freigabe**. Ein URL-Server funktioniert sofort, erreicht aber nur öffentliche Adressen, bis der Serverinhaber ihn freigibt; danach sind auch `localhost` und private Netzwerke erlaubt. Wenn der Serverinhaber einen Server speichert, gilt das als Freigabe. Ändert jemand anderes, wie ein Server startet oder wohin er sich verbindet, ist erneut eine Freigabe nötig. Einen Server ein- oder auszuschalten behält die Freigabe.
+
+### Persönliche Server
+
+Persönliche Server gehören dem Serverinhaber und sind unter **Externe MCP-Server** aufgelistet. Server, die auf der Maschine des Servers für Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode oder in einer `.mcp.json` eingerichtet sind, werden dort automatisch gefunden. Der Serverinhaber kann eigene Server über dasselbe Formular mit **Server hinzufügen** anlegen. Ein selbst angelegter Server hat Vorrang vor einem gefundenen Server mit demselben Namen.
+
+Sie handeln mit der Identität und den Zugangsdaten des Serverinhabers:
+
+- Sie sind nur in Läufen verfügbar, die der Serverinhaber startet oder für die er einsteht, einschließlich Automatisierung in einem Arbeitsbereich, für den der Inhaber einsteht. Das gilt für eingebaute Harness-Läufe und Claude-Code-Läufe gleichermaßen.
+- Der Lauf eines Mitglieds, eine an ein Mitglied gebundene Automatisierung und jeder Lauf auf einem Server ohne eingetragenen Inhaber erhalten keinen davon. Dort werden die Werkzeuge nicht aufgelistet, können nicht aufgerufen werden und tauchen auch nicht in der Werkzeugsuche auf.
+- Weder persönliche noch Arbeitsbereich-Server werden an den MCP-Token oder an gekoppelte Geräte ausgeliefert, und ihre Ressourcen und Prompts werden nicht weitergegeben.
+
+Die Anmeldung an einem Server per OAuth ist über das Formular nicht möglich. Einen Server verwenden, der ein Token in einem Header akzeptiert, oder ihn für eines der oben genannten Werkzeuge einrichten, wo er automatisch gefunden wird.
 
 ## Fehlerbehebung
 

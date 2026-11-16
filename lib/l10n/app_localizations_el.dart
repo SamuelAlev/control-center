@@ -18929,4 +18929,208 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get importHoldNotApplied =>
       'Δεν χορηγήθηκε τίποτα: αυτός ή αυτό για το οποίο ήταν δεν υπάρχει πλέον σε αυτόν τον χώρο εργασίας.';
+
+  @override
+  String get mcpWorkspaceServers => 'Διακομιστές MCP χώρου εργασίας';
+
+  @override
+  String get mcpWorkspaceServersDescription =>
+      'Κάθε εκτέλεση πράκτορα σε αυτόν τον χώρο εργασίας λαμβάνει τα εργαλεία αυτών των διακομιστών, τόσο στο Claude Code όσο και στο ενσωματωμένο harness. Το Control Center συνδέεται σε κάθε διακομιστή και περνά τα εργαλεία του.';
+
+  @override
+  String get mcpWorkspaceServersAdminsOnly =>
+      'Μόνο οι διαχειριστές του χώρου εργασίας μπορούν να δουν και να αλλάξουν τους διακομιστές MCP αυτού του χώρου εργασίας.';
+
+  @override
+  String get mcpWorkspaceServersUnavailable =>
+      'Οι διακομιστές MCP χώρου εργασίας δεν είναι διαθέσιμοι στον συνδεδεμένο διακομιστή.';
+
+  @override
+  String get mcpWorkspaceServersEmpty =>
+      'Δεν υπάρχουν ακόμη διακομιστές MCP χώρου εργασίας';
+
+  @override
+  String get mcpWorkspaceServersEmptyDescription =>
+      'Προσθέστε έναν διακομιστή για να δώσετε σε κάθε εκτέλεση πράκτορα αυτού του χώρου εργασίας τα εργαλεία του.';
+
+  @override
+  String get mcpAddServer => 'Προσθήκη διακομιστή';
+
+  @override
+  String get mcpHandAddedSource => 'Προστέθηκε στο Control Center';
+
+  @override
+  String get mcpStatusAwaitingApproval => 'Αναμονή έγκρισης';
+
+  @override
+  String get mcpPublicAddressesOnly => 'Μόνο δημόσιες διευθύνσεις';
+
+  @override
+  String get mcpApproveServer => 'Έγκριση';
+
+  @override
+  String get mcpApprovalStdioOwner =>
+      'Αυτός ο διακομιστής εκτελεί μια εντολή στον υπολογιστή του διακομιστή, ως ο χρήστης του διακομιστή. Δεν θα ξεκινήσει μέχρι να τον εγκρίνετε.';
+
+  @override
+  String get mcpApprovalStdioMember =>
+      'Αυτός ο διακομιστής εκτελεί μια εντολή στον υπολογιστή του διακομιστή, οπότε δεν θα ξεκινήσει μέχρι να τον εγκρίνει ο κάτοχος του διακομιστή.';
+
+  @override
+  String get mcpApprovalRemoteOwner =>
+      'Αυτός ο διακομιστής μπορεί να συνδεθεί μόνο σε δημόσιες διευθύνσεις. Εγκρίνετε τον για να μπορεί να φτάνει και στο ιδιωτικό δίκτυο του υπολογιστή, όπως το localhost και το τοπικό δίκτυο.';
+
+  @override
+  String get mcpApprovalRemoteMember =>
+      'Αυτός ο διακομιστής μπορεί να φτάνει μόνο σε δημόσιες διευθύνσεις μέχρι να τον εγκρίνει ο κάτοχος του διακομιστή.';
+
+  @override
+  String get mcpRemoveServer => 'Κατάργηση διακομιστή';
+
+  @override
+  String mcpRemoveServerTitle(String name) {
+    return 'Κατάργηση του $name;';
+  }
+
+  @override
+  String get mcpRemoveServerBody =>
+      'Οι εκτελέσεις πρακτόρων χάνουν τα εργαλεία αυτού του διακομιστή, και οι αποθηκευμένες μυστικές τιμές του διαγράφονται.';
+
+  @override
+  String mcpServerEnabledToggle(String name) {
+    return 'Ενεργοποίηση ή απενεργοποίηση του $name';
+  }
+
+  @override
+  String get mcpServerEditorAddTitle => 'Προσθήκη διακομιστή MCP';
+
+  @override
+  String mcpServerEditorEditTitle(String name) {
+    return 'Επεξεργασία του $name';
+  }
+
+  @override
+  String get mcpServerNameHelper =>
+      'Γράμματα, ψηφία, παύλες και κάτω παύλες. Οι πράκτορες βλέπουν τα εργαλεία του με αυτό το όνομα.';
+
+  @override
+  String get mcpServerNameInvalid =>
+      'Χρησιμοποιήστε έως 24 γράμματα, ψηφία, παύλες ή κάτω παύλες, που ξεκινούν με γράμμα ή ψηφίο.';
+
+  @override
+  String get mcpServerNameTaken =>
+      'Ένας άλλος διακομιστής εδώ έχει ήδη αυτό το όνομα.';
+
+  @override
+  String get mcpServerTransportLabel => 'Μεταφορά';
+
+  @override
+  String get mcpServerTransportStdio => 'Εντολή';
+
+  @override
+  String get mcpServerTransportHttp => 'HTTP';
+
+  @override
+  String get mcpServerTransportSse => 'SSE';
+
+  @override
+  String get mcpServerCommandLabel => 'Εντολή';
+
+  @override
+  String get mcpServerCommandRequired =>
+      'Εισαγάγετε την εντολή που θα εκτελεστεί.';
+
+  @override
+  String get mcpServerArgsLabel => 'Ορίσματα';
+
+  @override
+  String get mcpServerArgsHelper => 'Ένα όρισμα ανά γραμμή.';
+
+  @override
+  String get mcpServerUrlLabel => 'URL';
+
+  @override
+  String get mcpServerUrlInvalid =>
+      'Εισαγάγετε ένα URL http ή https χωρίς όνομα χρήστη, κωδικό πρόσβασης ή #fragment.';
+
+  @override
+  String get mcpServerEnvLabel => 'Μεταβλητές περιβάλλοντος';
+
+  @override
+  String get mcpServerHeadersLabel => 'Κεφαλίδες';
+
+  @override
+  String get mcpServerSecretsDescription =>
+      'Οι τιμές αποθηκεύονται ως μυστικά και δεν εμφανίζονται ξανά.';
+
+  @override
+  String get mcpServerHeadersExample =>
+      'Για παράδειγμα, μια κεφαλίδα Authorization με bearer token.';
+
+  @override
+  String get mcpServerEnvAdd => 'Προσθήκη μεταβλητής';
+
+  @override
+  String get mcpServerHeaderAdd => 'Προσθήκη κεφαλίδας';
+
+  @override
+  String get mcpServerSecretValueHint => 'Τιμή';
+
+  @override
+  String get mcpServerSecretNewValueHint => 'Νέα τιμή';
+
+  @override
+  String get mcpServerSecretReplace => 'Αντικατάσταση τιμής';
+
+  @override
+  String get mcpServerSecretUndo => 'Αναίρεση';
+
+  @override
+  String get mcpServerSecretRemovedOnSave => 'Θα αφαιρεθεί κατά την αποθήκευση';
+
+  @override
+  String mcpServerEnvNameInvalid(String name) {
+    return 'Το $name δεν είναι έγκυρο όνομα μεταβλητής. Χρησιμοποιήστε γράμματα, ψηφία και κάτω παύλες, χωρίς να ξεκινά με ψηφίο.';
+  }
+
+  @override
+  String mcpServerHeaderNameInvalid(String name) {
+    return 'Το $name δεν μπορεί να οριστεί. Χρησιμοποιήστε έγκυρο όνομα κεφαλίδας που η σύνδεση δεν διαχειρίζεται μόνη της.';
+  }
+
+  @override
+  String get mcpServerTransportDropsValues =>
+      'Η αλλαγή του τρόπου μεταφοράς αφαιρεί τις αποθηκευμένες τιμές.';
+
+  @override
+  String get mcpServerEnabledDescription =>
+      'Όταν είναι απενεργοποιημένο, ο διακομιστής δεν ξεκινά και οι πράκτορες δεν βλέπουν τα εργαλεία του.';
+
+  @override
+  String get mcpServerEditorStdioMember =>
+      'Εκτελείται στον υπολογιστή του διακομιστή, οπότε δεν θα ξεκινήσει μέχρι να τον εγκρίνει ο κάτοχος του διακομιστή. Η αλλαγή του τρόπου εκκίνησής του ζητά νέα έγκριση.';
+
+  @override
+  String get mcpServerEditorRemoteMember =>
+      'Μπορεί να φτάνει μόνο σε δημόσιες διευθύνσεις μέχρι να τον εγκρίνει ο κάτοχος του διακομιστή. Η αλλαγή του τρόπου σύνδεσής του ζητά νέα έγκριση.';
+
+  @override
+  String get mcpServerEditorStdioOwner =>
+      'Εκτελείται στον υπολογιστή του διακομιστή ως ο χρήστης του διακομιστή. Η αποθήκευση τον εγκρίνει.';
+
+  @override
+  String get mcpServerEditorRemoteOwner =>
+      'Η αποθήκευση τον εγκρίνει ώστε να φτάνει και στο ιδιωτικό δίκτυο του υπολογιστή.';
+
+  @override
+  String get mcpServerEditorPersonal =>
+      'Χρησιμοποιείται μόνο σε εκτελέσεις που ξεκινάτε ή για τις οποίες είστε υπεύθυνοι.';
+
+  @override
+  String get mcpServerRefusedInvalid =>
+      'Το Control Center δεν μπόρεσε να αποθηκεύσει αυτόν τον διακομιστή. Ελέγξτε τις ρυθμίσεις του και δοκιμάστε ξανά.';
+
+  @override
+  String get mcpServerNotFound =>
+      'Αυτός ο διακομιστής δεν υπάρχει πια. Ίσως κάποιος τον αφαίρεσε.';
 }

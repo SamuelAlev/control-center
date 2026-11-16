@@ -70,6 +70,18 @@ import 'package:drift/drift.dart';
   'ON conversation_messages (conversation_id) '
   "WHERE message_type = 'user_question' AND answered = 0 AND reverted = 0",
 )
+// Covering index for `MessagingDaoHistory.conversationOutlineSql`: the whole
+// conversation's outline is read from index entries alone, never from a row
+// (whose content can run to overflow pages). `revision >= 0` holds for every
+// row; only the outline query states it, so no other query's plan can pick
+// this wide index over the narrow one meant for it.
+@TableIndex.sql(
+  'CREATE INDEX idx_conversation_messages_outline '
+  'ON conversation_messages '
+  '(conversation_id, created_at, space_id, id, sender_id, sender_type, '
+  'message_type, content_chars, answered, steer_state, revision) '
+  'WHERE reverted = 0 AND revision >= 0',
+)
 // Queued steering cards: `MessagingDao.queuedSteeringSql`.
 @TableIndex.sql(
   'CREATE INDEX idx_conversation_messages_queued_steering '
@@ -100,6 +112,15 @@ class ConversationMessagesTable extends Table {
     // ignore: recursive_getters
     senderType.isIn(SpacesStoredValues.senderType),
   )();
+
+  /// The row's change counter: 0 on insert, one more on every `UPDATE`.
+  ///
+  /// Kept by the `conversation_messages_revision_au` trigger
+  /// (`WorkspaceDatabase`), never written by a query: a list subscriber
+  /// compares it to reuse the message it decoded last time when the row has
+  /// not changed. Declared ahead of [content] so reading it never walks a
+  /// long body's overflow pages.
+  IntColumn get revision => integer().withDefault(const Constant(0))();
 
   /// Content.
   TextColumn get content => text()();

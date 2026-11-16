@@ -60,6 +60,7 @@ class AgentRunGrant {
     this.readOnlyWorktrees = const [],
     this.runnerStateDirs = const [],
     this.autonomy,
+    this.personalMcp = false,
   });
 
   /// Workspace the run belongs to — every rule is resolved against it.
@@ -79,6 +80,11 @@ class AgentRunGrant {
 
   /// The member the run acts for; bounds the forge credential to their reach.
   final String? actingUserId;
+
+  /// Whether the run may use the server owner's personal MCP servers through
+  /// the Control Center MCP endpoint: decided once, when the run starts, from
+  /// whether the owner is accountable for it (`HostExecutionGate`).
+  final bool personalMcp;
 
   /// The dispatch id, threaded into the audit trail.
   final String? runId;
@@ -540,6 +546,7 @@ class AgentRunGateway {
             conversationId: grant.conversationId,
             spaceId: grant.spaceId,
             attested: true,
+            personalMcp: grant.personalMcp,
           );
   }
 

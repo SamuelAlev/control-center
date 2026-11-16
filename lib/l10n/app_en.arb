@@ -17636,5 +17636,259 @@
   "importHoldNotApplied": "Nothing was granted: who or what it was for is no longer in this workspace.",
   "@importHoldNotApplied": {
     "description": "Toast after accepting a held grant whose subject (a member or repository) is gone"
+  },
+  "mcpWorkspaceServers": "Workspace MCP servers",
+  "@mcpWorkspaceServers": {
+    "description": "Title of the section listing the MCP servers a workspace admin configured for every agent run in the workspace (Settings → Server → MCP servers)"
+  },
+  "mcpWorkspaceServersDescription": "Every agent run in this workspace gets these servers' tools, in Claude Code and the built-in harness alike. Control Center connects to each server and passes its tools through.",
+  "@mcpWorkspaceServersDescription": {
+    "description": "Description under the Workspace MCP servers title"
+  },
+  "mcpWorkspaceServersAdminsOnly": "Only workspace admins can see and change this workspace's MCP servers.",
+  "@mcpWorkspaceServersAdminsOnly": {
+    "description": "Shown instead of the workspace MCP server list to someone who is not an admin of the current workspace"
+  },
+  "mcpWorkspaceServersUnavailable": "Workspace MCP servers aren't available on the connected server.",
+  "@mcpWorkspaceServersUnavailable": {
+    "description": "Shown when the connected server is too old to offer workspace MCP servers"
+  },
+  "mcpWorkspaceServersEmpty": "No workspace MCP servers yet",
+  "@mcpWorkspaceServersEmpty": {
+    "description": "Empty state title of the workspace MCP server list"
+  },
+  "mcpWorkspaceServersEmptyDescription": "Add a server to give every agent run in this workspace its tools.",
+  "@mcpWorkspaceServersEmptyDescription": {
+    "description": "Empty state description of the workspace MCP server list"
+  },
+  "mcpAddServer": "Add server",
+  "@mcpAddServer": {
+    "description": "Button that opens the editor to add an MCP server (workspace or personal)"
+  },
+  "mcpHandAddedSource": "Added in Control Center",
+  "@mcpHandAddedSource": {
+    "description": "Identity line of a personal MCP server the owner added by hand, in place of the tool it was discovered from (Claude, Cursor, …)"
+  },
+  "mcpStatusAwaitingApproval": "Awaiting approval",
+  "@mcpStatusAwaitingApproval": {
+    "description": "Status tag of a workspace MCP server that runs a command on the server host and waits for the server owner's approval before it starts"
+  },
+  "mcpPublicAddressesOnly": "Public addresses only",
+  "@mcpPublicAddressesOnly": {
+    "description": "Small fact on a remote workspace MCP server the server owner has not approved: it may reach only public internet addresses, not the host's private network"
+  },
+  "mcpApproveServer": "Approve",
+  "@mcpApproveServer": {
+    "description": "Button for the server owner to approve a workspace MCP server as it stands"
+  },
+  "mcpApprovalStdioOwner": "This server runs a command on the server host, as the server's user. It won't start until you approve it.",
+  "@mcpApprovalStdioOwner": {
+    "description": "Note under an unapproved command (stdio) workspace MCP server, shown to the server owner next to the Approve button"
+  },
+  "mcpApprovalStdioMember": "This server runs a command on the server host, so it won't start until the server owner approves it.",
+  "@mcpApprovalStdioMember": {
+    "description": "Note under an unapproved command (stdio) workspace MCP server, shown to a workspace admin who is not the server owner"
+  },
+  "mcpApprovalRemoteOwner": "This server can reach only public addresses. Approve it to let it reach the host's private network too, such as localhost and the local network.",
+  "@mcpApprovalRemoteOwner": {
+    "description": "Note under an unapproved remote (HTTP/SSE) workspace MCP server, shown to the server owner next to the Approve button"
+  },
+  "mcpApprovalRemoteMember": "This server can reach only public addresses until the server owner approves it.",
+  "@mcpApprovalRemoteMember": {
+    "description": "Note under an unapproved remote (HTTP/SSE) workspace MCP server, shown to a workspace admin who is not the server owner"
+  },
+  "mcpRemoveServer": "Remove server",
+  "@mcpRemoveServer": {
+    "description": "Tooltip of the remove action on an MCP server row, and the confirm button of the remove dialog"
+  },
+  "mcpRemoveServerTitle": "Remove {name}?",
+  "@mcpRemoveServerTitle": {
+    "description": "Title of the dialog confirming an MCP server's removal",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "github"
+      }
+    }
+  },
+  "mcpRemoveServerBody": "Agent runs lose this server's tools, and its stored secret values are deleted.",
+  "@mcpRemoveServerBody": {
+    "description": "Body of the dialog confirming an MCP server's removal"
+  },
+  "mcpServerEnabledToggle": "Turn {name} on or off",
+  "@mcpServerEnabledToggle": {
+    "description": "Accessibility label of the on/off switch on an MCP server row",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "github"
+      }
+    }
+  },
+  "mcpServerEditorAddTitle": "Add MCP server",
+  "@mcpServerEditorAddTitle": {
+    "description": "Title of the MCP server editor dialog when adding"
+  },
+  "mcpServerEditorEditTitle": "Edit {name}",
+  "@mcpServerEditorEditTitle": {
+    "description": "Title of the MCP server editor dialog when changing an existing server",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "github"
+      }
+    }
+  },
+  "mcpServerNameHelper": "Letters, digits, hyphens and underscores. Agents see its tools under this name.",
+  "@mcpServerNameHelper": {
+    "description": "Helper text under the name field of the MCP server editor"
+  },
+  "mcpServerNameInvalid": "Use up to 24 letters, digits, hyphens or underscores, starting with a letter or digit.",
+  "@mcpServerNameInvalid": {
+    "description": "Error under the name field of the MCP server editor"
+  },
+  "mcpServerNameTaken": "Another server here already has this name.",
+  "@mcpServerNameTaken": {
+    "description": "Error under the name field when the name is already used in the same scope"
+  },
+  "mcpServerTransportLabel": "Transport",
+  "@mcpServerTransportLabel": {
+    "description": "Label of the picker choosing how an MCP server is reached"
+  },
+  "mcpServerTransportStdio": "Command",
+  "@mcpServerTransportStdio": {
+    "description": "Transport option: a local process speaking MCP on stdio"
+  },
+  "mcpServerTransportHttp": "HTTP",
+  "@mcpServerTransportHttp": {
+    "description": "Transport option: Streamable HTTP"
+  },
+  "mcpServerTransportSse": "SSE",
+  "@mcpServerTransportSse": {
+    "description": "Transport option: the legacy Server-Sent Events transport"
+  },
+  "mcpServerCommandLabel": "Command",
+  "@mcpServerCommandLabel": {
+    "description": "Label of the executable field of a command (stdio) MCP server"
+  },
+  "mcpServerCommandRequired": "Enter the command to run.",
+  "@mcpServerCommandRequired": {
+    "description": "Error under an empty command field"
+  },
+  "mcpServerArgsLabel": "Arguments",
+  "@mcpServerArgsLabel": {
+    "description": "Label of the arguments field of a command (stdio) MCP server"
+  },
+  "mcpServerArgsHelper": "One argument per line.",
+  "@mcpServerArgsHelper": {
+    "description": "Helper text under the arguments field"
+  },
+  "mcpServerUrlLabel": "URL",
+  "@mcpServerUrlLabel": {
+    "description": "Label of the endpoint field of a remote MCP server"
+  },
+  "mcpServerUrlInvalid": "Enter an http or https URL with no user name, password or #fragment.",
+  "@mcpServerUrlInvalid": {
+    "description": "Error under the URL field"
+  },
+  "mcpServerEnvLabel": "Environment variables",
+  "@mcpServerEnvLabel": {
+    "description": "Heading of the environment variables of a command MCP server"
+  },
+  "mcpServerHeadersLabel": "Headers",
+  "@mcpServerHeadersLabel": {
+    "description": "Heading of the HTTP headers sent to a remote MCP server"
+  },
+  "mcpServerSecretsDescription": "Values are stored as secrets and never shown again.",
+  "@mcpServerSecretsDescription": {
+    "description": "Note under the environment variables / headers heading: values are write-only"
+  },
+  "mcpServerHeadersExample": "For example, an Authorization header with a bearer token.",
+  "@mcpServerHeadersExample": {
+    "description": "Hint under the headers heading of a remote MCP server"
+  },
+  "mcpServerEnvAdd": "Add variable",
+  "@mcpServerEnvAdd": {
+    "description": "Button adding an environment variable row"
+  },
+  "mcpServerHeaderAdd": "Add header",
+  "@mcpServerHeaderAdd": {
+    "description": "Button adding a header row"
+  },
+  "mcpServerSecretValueHint": "Value",
+  "@mcpServerSecretValueHint": {
+    "description": "Placeholder of a secret value field"
+  },
+  "mcpServerSecretNewValueHint": "New value",
+  "@mcpServerSecretNewValueHint": {
+    "description": "Placeholder of the field holding a stored secret's replacement value"
+  },
+  "mcpServerSecretReplace": "Replace value",
+  "@mcpServerSecretReplace": {
+    "description": "Action on a stored environment variable or header: type a new value for it"
+  },
+  "mcpServerSecretUndo": "Undo",
+  "@mcpServerSecretUndo": {
+    "description": "Action on a stored environment variable or header being replaced or removed: keep it as stored"
+  },
+  "mcpServerSecretRemovedOnSave": "Removed on save",
+  "@mcpServerSecretRemovedOnSave": {
+    "description": "Tag on a stored environment variable or header marked for removal"
+  },
+  "mcpServerEnvNameInvalid": "{name} isn't a valid variable name. Use letters, digits and underscores, not starting with a digit.",
+  "@mcpServerEnvNameInvalid": {
+    "description": "Error under the environment variables of the MCP server editor",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "MY-TOKEN"
+      }
+    }
+  },
+  "mcpServerHeaderNameInvalid": "{name} can't be set. Use a valid header name the connection doesn't manage itself.",
+  "@mcpServerHeaderNameInvalid": {
+    "description": "Error under the headers of the MCP server editor; reserved headers include Host and Content-Type",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Host"
+      }
+    }
+  },
+  "mcpServerTransportDropsValues": "Changing the transport removes the stored values.",
+  "@mcpServerTransportDropsValues": {
+    "description": "Note in the MCP server editor when the transport differs from the stored one, which had secret values"
+  },
+  "mcpServerEnabledDescription": "When off, the server isn't started and agents don't see its tools.",
+  "@mcpServerEnabledDescription": {
+    "description": "Description of the Enabled switch in the MCP server editor"
+  },
+  "mcpServerEditorStdioMember": "It runs on the server host, so it won't start until the server owner approves it. Changing how it starts asks for approval again.",
+  "@mcpServerEditorStdioMember": {
+    "description": "Note in the workspace MCP server editor (command transport) for a workspace admin who is not the server owner"
+  },
+  "mcpServerEditorRemoteMember": "It reaches only public addresses until the server owner approves it. Changing how it connects asks for approval again.",
+  "@mcpServerEditorRemoteMember": {
+    "description": "Note in the workspace MCP server editor (HTTP/SSE transport) for a workspace admin who is not the server owner"
+  },
+  "mcpServerEditorStdioOwner": "It runs on the server host as the server's user. Saving approves it.",
+  "@mcpServerEditorStdioOwner": {
+    "description": "Note in the workspace MCP server editor (command transport) for the server owner"
+  },
+  "mcpServerEditorRemoteOwner": "Saving approves it to reach the host's private network too.",
+  "@mcpServerEditorRemoteOwner": {
+    "description": "Note in the workspace MCP server editor (HTTP/SSE transport) for the server owner"
+  },
+  "mcpServerEditorPersonal": "Used only in runs you start or are accountable for.",
+  "@mcpServerEditorPersonal": {
+    "description": "Note in the personal MCP server editor (the server owner's own servers)"
+  },
+  "mcpServerRefusedInvalid": "Control Center couldn't save this server. Check its settings and try again.",
+  "@mcpServerRefusedInvalid": {
+    "description": "Shown when the server refuses an MCP server configuration for a field the editor has no message for"
+  },
+  "mcpServerNotFound": "This server no longer exists. Someone may have removed it.",
+  "@mcpServerNotFound": {
+    "description": "Shown when an MCP server action targets a server that was removed"
   }
 }

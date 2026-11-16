@@ -179,3 +179,20 @@ typedef ListedMessageRow = ({
   bool hasTranscript,
   int? segmentCount,
 });
+
+/// One message as the conversation outline reads it
+/// (`MessagingDao.conversationOutline`): stored values only, the enums in
+/// their stored form, and the transcript's segment count once the turn
+/// finished.
+typedef ConversationOutlineRow = ({
+  String id,
+  DateTime createdAt,
+  String senderId,
+  String senderType,
+  String messageType,
+  int contentChars,
+  int? segmentCount,
+  String? steerState,
+  bool answered,
+  int revision,
+});
