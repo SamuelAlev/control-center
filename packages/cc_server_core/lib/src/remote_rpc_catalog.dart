@@ -100,6 +100,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_activity
 import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
@@ -1378,10 +1379,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (id is! String || id.isEmpty) {
       throw const ValidationException('Missing notification item id');
     }
-    final list = await notificationFeedRepository
+    final page = await notificationFeedRepository
         .watchFeed(ctx.workspaceId!, limit: NotificationFeedDao.retainedRows)
         .first;
-    final item = list.where((row) => row.id == id).firstOrNull;
+    final item = page.items.where((row) => row.id == id).firstOrNull;
     if (item == null || item.workspaceId != ctx.workspaceId) {
       throw const NotFoundException('Notification not found in this workspace');
     }
@@ -14698,23 +14699,38 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // CALLER's read mark (keyed on the session user, never a client arg).
     // Re-filtered when the caller's PR visibility moves too, so a PR-derived
     // row appears once their forge reach is listed and goes when it is lost.
+    //
+    // `limit` sizes the window (the bell grows it as it is scrolled), clamped
+    // to the feed's retention. `has_more` is about the STORED rows, computed
+    // before the visibility filter: a window this caller sees only part of
+    // still has older rows behind it.
     WatchQuery(
       name: 'notifications.watch',
       handler: (ctx) => combineWithVisibility(
         notificationFeedRepository
-            .watchFeed(ctx.workspaceId!)
-            .map((list) => {'rows': list}),
-        watchPrVisibility(ctx.workspaceId!, ctx.userId),
-        (frame, visibility) async => {
-          'items': [
-            for (final item in await visibleNotificationItems(
+            .watchFeed(
               ctx.workspaceId!,
-              ctx.userId,
-              frame['rows'] as List<NotificationFeedItem>,
-              prVisibility: visibility,
-            ))
-              notificationFeedItemToWire(item),
-          ],
+              limit:
+                  ((ctx.args['limit'] as num?)?.toInt() ??
+                          NotificationFeedRepository.pageSize)
+                      .clamp(1, NotificationFeedDao.retainedRows),
+            )
+            .map((page) => {'page': page}),
+        watchPrVisibility(ctx.workspaceId!, ctx.userId),
+        (frame, visibility) async {
+          final page = frame['page'] as NotificationFeedPage;
+          return {
+            'items': [
+              for (final item in await visibleNotificationItems(
+                ctx.workspaceId!,
+                ctx.userId,
+                page.items,
+                prVisibility: visibility,
+              ))
+                notificationFeedItemToWire(item),
+            ],
+            'has_more': page.hasMore,
+          };
         },
       ),
     ),

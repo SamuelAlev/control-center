@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
@@ -30,13 +31,20 @@ class DaoNotificationFeedRepository implements NotificationFeedRepository {
   NotificationFeedDao _dao(String workspaceId) =>
       _dbs.of(workspaceId).notificationFeedDao;
 
+  /// Reads one row past [limit]: its presence is what
+  /// [NotificationFeedPage.hasMore] reports, exactly, without a COUNT query.
   @override
-  Stream<List<NotificationFeedItem>> watchFeed(
+  Stream<NotificationFeedPage> watchFeed(
     String workspaceId, {
-    int limit = 50,
-  }) => _dao(
-    workspaceId,
-  ).watchRecent(workspaceId, limit: limit).map(_mapper.toDomainList);
+    int limit = NotificationFeedRepository.pageSize,
+  }) =>
+      _dao(workspaceId).watchRecent(workspaceId, limit: limit + 1).map((rows) {
+        final hasMore = rows.length > limit;
+        return NotificationFeedPage(
+          items: _mapper.toDomainList(hasMore ? rows.sublist(0, limit) : rows),
+          hasMore: hasMore,
+        );
+      });
 
   @override
   Stream<NotificationReadMark?> watchReadMark(

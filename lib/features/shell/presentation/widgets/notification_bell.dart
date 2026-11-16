@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 part 'notification_bell_button.dart';
+part 'notification_bell_list.dart';
 
 /// Sidebar-header notification center: a bell with an unread badge that opens a
 /// popover listing recent activity (the durable in-app history of events the
@@ -85,6 +86,8 @@ class _NotificationPanel extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final entries = ref.watch(notificationCenterProvider);
     final unread = entries.where((e) => !e.read).length;
+    final hasMore = ref.watch(notificationFeedHasMoreProvider);
+    final loadingMore = ref.watch(notificationFeedLoadingMoreProvider);
     final actions = ref.read(notificationCenterActionsProvider);
 
     return ConstrainedBox(
@@ -104,7 +107,9 @@ class _NotificationPanel extends ConsumerWidget {
             onClearAll: () => unawaited(actions.clearAll()),
           ),
           const CcDivider(),
-          if (entries.isEmpty)
+          // An empty window with older rows behind it is not "no
+          // notifications" yet: the list loads the next page itself.
+          if (entries.isEmpty && !hasMore && !loadingMore)
             Padding(
               // Compact: the title-sized default message outweighs the 14px
               // panel header above it.
@@ -119,23 +124,10 @@ class _NotificationPanel extends ConsumerWidget {
             // The popover is height-capped, so the history scrolls under the
             // pinned header instead of overflowing.
             Flexible(
-              child: CcScrollbar(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (final entry in entries.take(15))
-                        _EntryTile(
-                          key: ValueKey(entry.id),
-                          entry: entry,
-                          tokens: t,
-                          onNavigate: onNavigate,
-                        ),
-                    ],
-                  ),
-                ),
+              child: _NotificationList(
+                entries: entries,
+                tokens: t,
+                onNavigate: onNavigate,
               ),
             ),
         ],

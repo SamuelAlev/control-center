@@ -7,6 +7,7 @@ import 'package:control_center/l10n/localizations_loader.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,6 +21,10 @@ class _RecordingActions implements NotificationCenterActions {
   int clearAllCalls = 0;
   final List<(String id, bool read)> readCalls = [];
   final List<String> dismissed = [];
+  int loadMoreCalls = 0;
+
+  @override
+  void loadMore() => loadMoreCalls++;
 
   @override
   Future<void> markAllRead() async => markAllReadCalls++;
@@ -56,20 +61,39 @@ NotificationEntry _entry({
 void main() {
   late _RecordingActions actions;
 
+  List<Override> feedOverrides(
+    List<NotificationEntry> entries, {
+    bool hasMore = false,
+    bool loadingMore = false,
+  }) => [
+    notificationCenterProvider.overrideWithValue(entries),
+    notificationCenterActionsProvider.overrideWithValue(actions),
+    notificationFeedHasMoreProvider.overrideWithValue(hasMore),
+    notificationFeedLoadingMoreProvider.overrideWithValue(loadingMore),
+  ];
+
   Future<void> pumpBell(
     WidgetTester tester,
-    List<NotificationEntry> entries,
-  ) async {
+    List<NotificationEntry> entries, {
+    bool hasMore = false,
+    bool loadingMore = false,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          notificationCenterProvider.overrideWithValue(entries),
-          notificationCenterActionsProvider.overrideWithValue(actions),
-        ],
+        overrides: feedOverrides(
+          entries,
+          hasMore: hasMore,
+          loadingMore: loadingMore,
+        ),
         child: testWrap(const Align(child: NotificationBell())),
       ),
     );
-    await tester.pumpAndSettle();
+    // The footer spinner never settles.
+    if (loadingMore) {
+      await tester.pump();
+    } else {
+      await tester.pumpAndSettle();
+    }
   }
 
   /// Mounts the bell under a real router, for the tests that follow a row.
@@ -95,10 +119,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          notificationCenterProvider.overrideWithValue(entries),
-          notificationCenterActionsProvider.overrideWithValue(actions),
-        ],
+        overrides: feedOverrides(entries),
         child: MaterialApp.router(
           routerConfig: router,
           localizationsDelegates: appLocalizationsDelegates,
@@ -129,7 +150,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  setUp(() => actions = _RecordingActions());
+  setUp(() {
+    actions = _RecordingActions();
+  });
 
   testWidgets('badges the unread count', (tester) async {
     await pumpBell(tester, [
@@ -464,5 +487,73 @@ void main() {
     // Nothing to act on, so neither bulk action is offered.
     expect(find.byIcon(AppIcons.checkCheck), findsNothing);
     expect(find.byIcon(AppIcons.trash2), findsNothing);
+  });
+
+  group('lazy loading', () {
+    List<NotificationEntry> many(int n) => [
+      for (var i = 0; i < n; i++)
+        _entry(id: 'n$i', read: i > 0, title: 'Notification $i'),
+    ];
+
+    testWidgets('shows every loaded row, not a fixed first few', (
+      tester,
+    ) async {
+      await pumpBell(tester, many(40));
+      await openPanel(tester);
+
+      // Rows are built lazily, so the last one exists once scrolled to.
+      await tester.scrollUntilVisible(
+        find.text('Notification 39'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text('Notification 39'), findsOneWidget);
+    });
+
+    testWidgets('nearing the end asks for the next page', (tester) async {
+      await pumpBell(tester, many(40), hasMore: true);
+      await openPanel(tester);
+      expect(actions.loadMoreCalls, 0);
+
+      await tester.scrollUntilVisible(
+        find.text('Notification 39'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(actions.loadMoreCalls, greaterThan(0));
+    });
+
+    testWidgets('a short window with more behind it loads without a scroll', (
+      tester,
+    ) async {
+      // Every row of the window was filtered out for this viewer: nothing to
+      // scroll, so the list must ask on its own instead of claiming "empty".
+      await pumpBell(tester, const [], hasMore: true);
+      await openPanel(tester);
+
+      expect(actions.loadMoreCalls, greaterThan(0));
+      expect(find.text("You're all caught up"), findsNothing);
+    });
+
+    testWidgets('the end of the stored feed asks for nothing', (tester) async {
+      await pumpBell(tester, many(40));
+      await openPanel(tester);
+      await tester.scrollUntilVisible(
+        find.text('Notification 39'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      // The notifier refuses past the end, but the list should not even call.
+      expect(actions.loadMoreCalls, 0);
+    });
+
+    testWidgets('a page in flight shows a footer spinner', (tester) async {
+      await pumpBell(tester, many(3), hasMore: true, loadingMore: true);
+      await tester.tap(find.byIcon(AppIcons.bell));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(CcSpinner), findsOneWidget);
+    });
   });
 }

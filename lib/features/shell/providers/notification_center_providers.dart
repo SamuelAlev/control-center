@@ -1,9 +1,10 @@
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
-import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
+import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/notifications/notification_frame_mapper.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
@@ -55,20 +56,64 @@ class NotificationEntry {
   final String? repoFullName;
 }
 
+/// How many of the newest stored feed rows the notification center asks the
+/// server for.
+///
+/// Starts at one page and grows a page at a time as the bell's list is
+/// scrolled toward its end ([NotificationCenterActions.loadMore], which owns
+/// the "is there more, is a page already loading" guard: this notifier cannot
+/// read the feed it sizes). A different workspace starts over at one page.
+/// The server clamps the window to the feed's retention.
+class NotificationFeedWindow extends Notifier<int> {
+  @override
+  int build() {
+    // Re-evaluated per workspace: one workspace's scroll depth says nothing
+    // about another's.
+    ref.watch(activeWorkspaceIdProvider);
+    return NotificationFeedRepository.pageSize;
+  }
+
+  /// Grows the window by one page.
+  void grow() => state += NotificationFeedRepository.pageSize;
+}
+
+/// The notification center's feed window size.
+final notificationFeedWindowProvider =
+    NotifierProvider<NotificationFeedWindow, int>(NotificationFeedWindow.new);
+
 /// The active workspace's durable notification feed, straight from the
-/// server (`notifications.watch`). Stored per workspace in that workspace's
-/// own database — never in device-local preferences, so a dev build and a
-/// production install no longer share (or leak) a bell history.
+/// server (`notifications.watch`), newest [notificationFeedWindowProvider]
+/// rows. Stored per workspace in that workspace's own database — never in
+/// device-local preferences, so a dev build and a production install no
+/// longer share (or leak) a bell history.
+///
+/// Growing the window resubscribes; meanwhile the previous page stays as the
+/// value, so the list does not blank out while the next page loads.
 final notificationFeedProvider =
-    StreamProvider.autoDispose<List<NotificationFeedItem>>((ref) {
+    StreamProvider.autoDispose<NotificationFeedPage>((ref) {
       final workspaceId = ref.watch(activeWorkspaceIdProvider);
       if (workspaceId == null || workspaceId.isEmpty) {
-        return const Stream<List<NotificationFeedItem>>.empty();
+        return const Stream<NotificationFeedPage>.empty();
       }
       return ref
           .watch(notificationFeedRepositoryProvider)
-          .watchFeed(workspaceId);
+          .watchFeed(
+            workspaceId,
+            limit: ref.watch(notificationFeedWindowProvider),
+          );
     });
+
+/// Whether the stored feed holds rows older than the loaded window, so the
+/// bell's list can offer (and trigger) loading them.
+final notificationFeedHasMoreProvider = Provider<bool>(
+  (ref) => ref.watch(notificationFeedProvider).value?.hasMore ?? false,
+);
+
+/// Whether a grown window is still loading — the list's footer spinner.
+final notificationFeedLoadingMoreProvider = Provider<bool>((ref) {
+  final feed = ref.watch(notificationFeedProvider);
+  return feed.isLoading && feed.hasValue;
+});
 
 /// The current user's read/cleared watermarks over the active workspace's
 /// feed (`notifications.watchReadMark`). Per user server-side, so read state
@@ -111,7 +156,7 @@ final notificationItemStatesProvider =
 /// PRD 16 §7 principal routing applies identically at read time: a frame that
 /// would not have pinged this user live is simply not rendered here either.
 final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
-  final items = ref.watch(notificationFeedProvider).value;
+  final items = ref.watch(notificationFeedProvider).value?.items;
   if (items == null || items.isEmpty) {
     return const [];
   }
@@ -223,6 +268,18 @@ class NotificationCenterActions {
       return null;
     }
     return (workspaceId: workspaceId, userId: userId);
+  }
+
+  /// Loads the next page of older entries. No-op when the stored feed has
+  /// nothing older or the previous page is still loading, so scroll ticks
+  /// cannot stack requests.
+  void loadMore() {
+    final feed = _ref.read(notificationFeedProvider);
+    final page = feed.value;
+    if (feed.isLoading || page == null || !page.hasMore) {
+      return;
+    }
+    _ref.read(notificationFeedWindowProvider.notifier).grow();
   }
 
   /// Marks every entry as seen. No-op when nothing is unread.

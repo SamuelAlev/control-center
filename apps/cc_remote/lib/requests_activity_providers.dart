@@ -101,7 +101,7 @@ final activityFeedProvider = StreamProvider<List<NotificationFeedItem>>((ref) {
   final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
   final repo = ref.watch(notificationFeedRepositoryProvider);
   if (workspaceId == null || repo == null) return const Stream.empty();
-  return repo.watchFeed(workspaceId);
+  return repo.watchFeed(workspaceId).map((page) => page.items);
 });
 
 final activityReadMarkProvider = StreamProvider<NotificationReadMark?>((ref) {

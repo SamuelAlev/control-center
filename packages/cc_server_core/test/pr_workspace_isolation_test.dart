@@ -35,6 +35,7 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
@@ -859,6 +860,28 @@ void main() {
     ]);
   });
 
+  test('the notification feed windows stored rows, and says when older '
+      'ones exist', () async {
+    List<Object?> ids(Map<String, dynamic> frame) => [
+      for (final i in (frame['items'] as List).cast<Map>()) i['id'],
+    ];
+
+    // `has_more` is about the stored rows: gina's window of two holds a vault
+    // row she cannot see, and the window is still not the end of the feed.
+    final gina = await watchWith('notifications.watch', 'gina', {'limit': 2});
+    expect(ids(gina), ['n-widgets']);
+    expect(gina['has_more'], isTrue);
+
+    final ada = await watchWith('notifications.watch', 'ada', {'limit': 4});
+    expect(ids(ada), hasLength(4));
+    expect(ada['has_more'], isFalse);
+
+    // Clamped: a zero window still shows the newest row.
+    final zero = await watchWith('notifications.watch', 'ada', {'limit': 0});
+    expect(ids(zero), ['n-widgets']);
+    expect(zero['has_more'], isTrue);
+  });
+
   test('per-repo review ops refuse a caller without forge access', () async {
     // No grant.
     var res = await call('pr_review.listAssignableUsers', 'nora', {
@@ -1517,12 +1540,25 @@ class _Todos implements TodoRepository {
 }
 
 /// A review request on every ws1 repo, plus one row that is not PR data.
+///
+/// Windowed like the real feed: the newest `limit` rows, and whether older
+/// ones exist beyond them.
 class _NotificationFeed implements NotificationFeedRepository {
   @override
-  Stream<List<NotificationFeedItem>> watchFeed(
+  Stream<NotificationFeedPage> watchFeed(
     String workspaceId, {
-    int limit = 50,
-  }) => Stream.value([
+    int limit = NotificationFeedRepository.pageSize,
+  }) {
+    final rows = _rows();
+    return Stream.value(
+      NotificationFeedPage(
+        hasMore: rows.length > limit,
+        items: rows.take(limit).toList(),
+      ),
+    );
+  }
+
+  List<NotificationFeedItem> _rows() => [
     for (final r in [_widgets, _vault, _labyrinth])
       NotificationFeedItem(
         id: 'n-${r.remoteName}',
@@ -1546,7 +1582,7 @@ class _NotificationFeed implements NotificationFeedRepository {
       seq: 0,
       createdAt: DateTime(2026),
     ),
-  ]);
+  ];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

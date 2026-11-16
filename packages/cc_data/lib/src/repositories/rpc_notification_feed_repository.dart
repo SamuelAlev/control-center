@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
@@ -84,15 +85,21 @@ class RpcNotificationFeedRepository implements NotificationFeedRepository {
   final RemoteRpcClient _client;
 
   @override
-  Stream<List<NotificationFeedItem>> watchFeed(
+  Stream<NotificationFeedPage> watchFeed(
     String workspaceId, {
-    int limit = 50,
+    int limit = NotificationFeedRepository.pageSize,
   }) => _client
-      .subscribe('notifications.watch', {'workspace_id': workspaceId})
+      .subscribe('notifications.watch', {
+        'workspace_id': workspaceId,
+        'limit': limit,
+      })
       .map(
-        (data) => _maps(
-          data['items'],
-        ).map(_itemFromWire).whereType<NotificationFeedItem>().toList(),
+        (data) => NotificationFeedPage(
+          items: _maps(
+            data['items'],
+          ).map(_itemFromWire).whereType<NotificationFeedItem>().toList(),
+          hasMore: data['has_more'] == true,
+        ),
       );
 
   @override
@@ -108,9 +115,7 @@ class RpcNotificationFeedRepository implements NotificationFeedRepository {
     String workspaceId,
     String userId,
   ) => _client
-      .subscribe('notifications.watchItemStates', {
-        'workspace_id': workspaceId,
-      })
+      .subscribe('notifications.watchItemStates', {'workspace_id': workspaceId})
       .map(
         (data) => _maps(
           data['states'],
@@ -138,14 +143,11 @@ class RpcNotificationFeedRepository implements NotificationFeedRepository {
   });
 
   @override
-  Future<void> dismissItem(
-    String workspaceId,
-    String userId,
-    String itemId,
-  ) => _client.call('notifications.dismissItem', {
-    'workspace_id': workspaceId,
-    'item_id': itemId,
-  });
+  Future<void> dismissItem(String workspaceId, String userId, String itemId) =>
+      _client.call('notifications.dismissItem', {
+        'workspace_id': workspaceId,
+        'item_id': itemId,
+      });
 
   // Reached through `space_read.markSpaceRead`'s `conversation_id` instead:
   // reading a conversation is what acknowledges it.

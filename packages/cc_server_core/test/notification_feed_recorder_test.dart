@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/notification_feed_recorder.dart';
 import 'package:test/test.dart';
@@ -9,6 +10,11 @@ import 'package:test/test.dart';
 import 'helpers/test_database.dart';
 
 Future<void> _pump() => Future<void>.delayed(const Duration(milliseconds: 50));
+
+Future<List<NotificationFeedItem>> _feed(
+  DaoNotificationFeedRepository repository,
+  String workspaceId,
+) async => (await repository.watchFeed(workspaceId).first).items;
 
 void main() {
   late DomainEventBus bus;
@@ -41,14 +47,32 @@ void main() {
     );
     await _pump();
 
-    final items = await repository.watchFeed('ws-1').first;
+    final items = await _feed(repository, 'ws-1');
     expect(items, hasLength(1));
     expect(items.single.method, 'notifications/pr_merged');
     expect(items.single.params['pr_id'], 'pr-1');
     expect(items.single.params['workspace_id'], 'ws-1');
 
     // The row landed in ws-1's file only.
-    expect(await repository.watchFeed('ws-2').first, isEmpty);
+    expect(await _feed(repository, 'ws-2'), isEmpty);
+  });
+
+  test('a window reports whether older rows exist beyond it', () async {
+    for (var i = 0; i < 3; i++) {
+      await repository.record('ws-1', 'notifications/pr_merged', {
+        'workspace_id': 'ws-1',
+        'pr_id': 'pr-$i',
+      });
+    }
+
+    final two = await repository.watchFeed('ws-1', limit: 2).first;
+    expect([for (final i in two.items) i.params['pr_id']], ['pr-2', 'pr-1']);
+    expect(two.hasMore, isTrue);
+
+    // Exactly as many rows as asked for: nothing older, so no false "more".
+    final three = await repository.watchFeed('ws-1', limit: 3).first;
+    expect(three.items, hasLength(3));
+    expect(three.hasMore, isFalse);
   });
 
   test('applies the forwarding gate: un-mentioned human messages are not '
@@ -77,7 +101,7 @@ void main() {
     );
     await _pump();
 
-    final items = await repository.watchFeed('ws-1').first;
+    final items = await _feed(repository, 'ws-1');
     expect(items, hasLength(1));
     expect(items.single.params['message_id'], 'm-2');
   });
@@ -96,7 +120,7 @@ void main() {
     );
     await _pump();
 
-    expect(await repository.watchFeed('ws-1').first, isEmpty);
+    expect(await _feed(repository, 'ws-1'), isEmpty);
   });
 
   test('records an agent waiting on the operator', () async {
@@ -114,7 +138,7 @@ void main() {
     );
     await _pump();
 
-    final item = (await repository.watchFeed('ws-1').first).single;
+    final item = (await _feed(repository, 'ws-1')).single;
     expect(item.method, 'notifications/agent_awaiting_input');
     expect(item.params['kind'], 'question');
     expect(item.params['summary'], 'Which database?');
@@ -138,7 +162,7 @@ void main() {
     );
     await _pump();
 
-    final item = (await repository.watchFeed('ws-1').first).single;
+    final item = (await _feed(repository, 'ws-1')).single;
     expect(item.method, 'notifications/agent_action_blocked');
     expect(
       item.params['reason'],
@@ -150,7 +174,7 @@ void main() {
     // Not a wait: nothing will ever stamp this row resolved.
     expect(item.isResolved, isFalse);
     // It landed in the owning workspace's file only.
-    expect(await repository.watchFeed('ws-2').first, isEmpty);
+    expect(await _feed(repository, 'ws-2'), isEmpty);
   });
 
   test('stamps the waiting row resolved when the wait ends', () async {
@@ -174,7 +198,7 @@ void main() {
       );
     await _pump();
 
-    final items = await repository.watchFeed('ws-1').first;
+    final items = await _feed(repository, 'ws-1');
     final resolved = {
       for (final item in items) item.params['wait_id']: item.isResolved,
     };
@@ -188,7 +212,7 @@ void main() {
     Future<String> methodFor(DomainEvent event) async {
       bus.publish(event);
       await _pump();
-      final items = await repository.watchFeed('ws-1').first;
+      final items = await _feed(repository, 'ws-1');
       expect(items, hasLength(1));
       return items.single.method;
     }
@@ -225,7 +249,7 @@ void main() {
         ),
       );
       await _pump();
-      final item = (await repository.watchFeed('ws-1').first).single;
+      final item = (await _feed(repository, 'ws-1')).single;
       expect(item.method, 'notifications/pr_merge_blocked');
       expect(item.params['reason'], 'conflicts');
     });
@@ -250,7 +274,7 @@ void main() {
           ),
         );
         await _pump();
-        final items = await repository.watchFeed('ws-${entry.key}').first;
+        final items = await _feed(repository, 'ws-${entry.key}');
         expect(items.single.method, entry.value, reason: entry.key);
         expect(items.single.params['reviewers_remaining'], 1);
       }
@@ -271,7 +295,7 @@ void main() {
         ),
       );
       await _pump();
-      final item = (await repository.watchFeed('ws-1').first).single;
+      final item = (await _feed(repository, 'ws-1')).single;
       expect(item.method, 'notifications/pr_checks_failed');
       expect(item.params['check_name'], 'build');
     });
@@ -294,7 +318,7 @@ void main() {
         ),
       );
       await _pump();
-      final item = (await repository.watchFeed('ws-1').first).single;
+      final item = (await _feed(repository, 'ws-1')).single;
       expect(item.method, 'notifications/pr_comment_mentioned');
       expect(item.params['comment_id'], 9001);
       expect(item.params['path'], 'lib/foo.dart');
@@ -335,7 +359,7 @@ void main() {
         ),
       );
       await _pump();
-      final item = (await repository.watchFeed('ws-1').first).single;
+      final item = (await _feed(repository, 'ws-1')).single;
       expect(item.method, 'notifications/pr_thread_resolved');
       expect(item.params['thread_id'], 'PRRT_abc');
     });
@@ -354,7 +378,7 @@ void main() {
         ),
       );
       await _pump();
-      final item = (await repository.watchFeed('ws-1').first).single;
+      final item = (await _feed(repository, 'ws-1')).single;
       expect(item.params['for_user_id'], 'user-1');
     });
   });

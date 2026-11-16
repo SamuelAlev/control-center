@@ -3,12 +3,16 @@ import 'dart:ui';
 import 'package:cc_domain/core/domain/notifications/notification_category.dart';
 import 'package:cc_domain/core/domain/value_objects/feed_position.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
+import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/di/notification_providers.dart';
+import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/shell/providers/notification_center_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -33,7 +37,98 @@ NotificationFeedItem _wait(String id, {String? resolvedAt, int seq = 0}) =>
       seq: seq,
     );
 
+class _ActiveWorkspace extends ActiveWorkspaceIdNotifier {
+  @override
+  String? build() => 'ws-1';
+
+  void select(String id) => state = id;
+}
+
+/// A stored feed of [total] rows: each window gets the newest `limit` of them.
+class _WindowedFeed implements NotificationFeedRepository {
+  _WindowedFeed(this.total);
+
+  final int total;
+  final List<int> limits = [];
+
+  @override
+  Stream<NotificationFeedPage> watchFeed(
+    String workspaceId, {
+    int limit = NotificationFeedRepository.pageSize,
+  }) {
+    limits.add(limit);
+    return Stream.value(
+      NotificationFeedPage(
+        items: [
+          for (var i = 0; i < limit && i < total; i++)
+            _wait('$workspaceId-$i', seq: total - i),
+        ],
+        hasMore: total > limit,
+      ),
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
+  group('feed window', () {
+    Future<ProviderContainer> containerFor(_WindowedFeed feed) async {
+      final container = ProviderContainer(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(_ActiveWorkspace.new),
+          notificationFeedRepositoryProvider.overrideWithValue(feed),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(notificationFeedProvider, (_, _) {});
+      await container.read(notificationFeedProvider.future);
+      return container;
+    }
+
+    test('grows a page at a time while older rows exist', () async {
+      final feed = _WindowedFeed(120);
+      final container = await containerFor(feed);
+      final actions = container.read(notificationCenterActionsProvider);
+
+      actions.loadMore();
+      // A second call while the grown page is still loading stacks nothing.
+      actions.loadMore();
+      await container.read(notificationFeedProvider.future);
+      expect(
+        container.read(notificationFeedProvider).value!.items,
+        hasLength(100),
+      );
+
+      actions.loadMore();
+      await container.read(notificationFeedProvider.future);
+      expect(container.read(notificationFeedHasMoreProvider), isFalse);
+      expect(
+        container.read(notificationFeedProvider).value!.items,
+        hasLength(120),
+      );
+
+      // Past the end of the stored feed, nothing more is asked for.
+      actions.loadMore();
+      await container.read(notificationFeedProvider.future);
+      expect(feed.limits, [50, 100, 150]);
+    });
+
+    test('a different workspace starts over at one page', () async {
+      final feed = _WindowedFeed(120);
+      final container = await containerFor(feed);
+      container.read(notificationCenterActionsProvider).loadMore();
+      await container.read(notificationFeedProvider.future);
+
+      (container.read(activeWorkspaceIdProvider.notifier) as _ActiveWorkspace)
+          .select('ws-2');
+      await container.read(notificationFeedProvider.future);
+      expect(container.read(notificationFeedWindowProvider), 50);
+      expect(feed.limits.last, 50);
+    });
+  });
+
   Future<Map<String, bool>> readById(
     List<NotificationFeedItem> items, {
     List<NotificationItemState> states = const [],
@@ -49,7 +144,10 @@ void main() {
           (ref) async => disabled,
         ),
         viewerLoginSetProvider.overrideWithValue(const <String>{}),
-        notificationFeedProvider.overrideWith((ref) => Stream.value(items)),
+        notificationFeedProvider.overrideWith(
+          (ref) =>
+              Stream.value(NotificationFeedPage(items: items, hasMore: false)),
+        ),
         // Never acknowledged anything: only the item itself can say read.
         notificationReadMarkProvider.overrideWith(
           (ref) => Stream.value(

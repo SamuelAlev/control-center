@@ -593,7 +593,7 @@ void main() {
       });
       final repo = RpcNotificationFeedRepository(client);
 
-      final item = (await repo.watchFeed(_ws).first).single;
+      final item = (await repo.watchFeed(_ws).first).items.single;
       expect(item.seq, 12);
       final mark = (await repo.watchReadMark(_ws, 'u1').first)!;
       expect(

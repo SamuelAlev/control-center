@@ -1,4 +1,4 @@
-import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
+import 'package:cc_domain/features/notifications/domain/entities/notification_feed_page.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_item_state.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_read_mark.dart';
 
@@ -12,11 +12,17 @@ import 'package:cc_domain/features/notifications/domain/entities/notification_re
 /// server-side implementation alone and a client adapter cannot fabricate
 /// history.
 abstract interface class NotificationFeedRepository {
+  /// Default window size: what the notification center shows before it is
+  /// scrolled, and the step it grows by when it is.
+  static const int pageSize = 50;
+
   /// Watches the newest [limit] feed items for [workspaceId],
-  /// most-recent-first.
-  Stream<List<NotificationFeedItem>> watchFeed(
+  /// most-recent-first, and whether older items exist beyond them.
+  ///
+  /// Over RPC the server clamps [limit] to the feed's retention.
+  Stream<NotificationFeedPage> watchFeed(
     String workspaceId, {
-    int limit = 50,
+    int limit = pageSize,
   });
 
   /// Watches [userId]'s read mark in [workspaceId]. Emits null until the user
