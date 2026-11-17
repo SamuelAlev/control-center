@@ -375,11 +375,24 @@ class FakeGroups implements EnvironmentProcessGroups {
 }
 
 /// A temp directory removed when the test ends.
-Directory tempDir(void Function(void Function()) addTearDown) {
+///
+/// Windows refuses to delete a file another handle still has open (errno 32).
+/// A supervisor's restart and exit paths finish their last pid-file and log
+/// writes a moment after the test body returns, so the delete retries briefly;
+/// a handle that stays open past the deadline still fails the test.
+Directory tempDir(void Function(dynamic Function()) addTearDown) {
   final directory = Directory.systemTemp.createTempSync('cc_env_');
-  addTearDown(() {
-    if (directory.existsSync()) {
-      directory.deleteSync(recursive: true);
+  addTearDown(() async {
+    final deadline = DateTime.now().add(const Duration(seconds: 5));
+    while (directory.existsSync()) {
+      try {
+        directory.deleteSync(recursive: true);
+      } on FileSystemException {
+        if (DateTime.now().isAfter(deadline)) {
+          rethrow;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
     }
   });
   return Directory(directory.resolveSymbolicLinksSync());

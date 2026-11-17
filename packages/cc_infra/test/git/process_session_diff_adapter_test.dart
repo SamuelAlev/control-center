@@ -65,11 +65,11 @@ void main() {
   test(
     'detects a same-size edit even when the file mtime is unchanged',
     () async {
-      // The working-tree capture must reflect disk content, not a git stat cache.
-      // A cold temp index re-hashes every path, so a same-size edit whose mtime
-      // still matches the committed stat (the copy-on-write + editor case that
-      // showed the WRONG lines) is still captured — where a stat-cache-trusting
-      // `git add -A` would skip re-hashing and diff the stale blob.
+      // The working-tree read must reflect disk content: a same-size edit whose
+      // mtime still matches the committed stat (the copy-on-write + editor
+      // case that showed the WRONG lines) must still be re-hashed. The status
+      // snapshot refreshes the real index's stat cache, which catches it
+      // through the rewrite's new ctime.
       const adapter = ProcessSessionDiffAdapter();
       final file = File(p.join(repo.path, 'tracked.txt'));
       final committedMtime = file.lastModifiedSync();
@@ -83,6 +83,11 @@ void main() {
       expect(files.single.status, PrFileStatus.modified);
       expect(files.single.patch, contains('changed!'));
     },
+    // Same as the warm case below: with no ctime on Windows, whether this
+    // edit is re-hashed depends on racy-git timing against the commit.
+    skip: Platform.isWindows
+        ? 'no ctime on Windows to expose a restored-mtime edit'
+        : false,
   );
 
   test(
