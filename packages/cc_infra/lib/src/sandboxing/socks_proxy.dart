@@ -17,9 +17,12 @@ import 'package:cc_infra/src/sandboxing/domain_matcher.dart';
 /// IPv6 and `BIND` / `UDP ASSOCIATE` are rejected. Hosts are filtered against
 /// the same allow/deny list the HTTP proxy uses.
 class SandboxSocksProxy {
-  SandboxSocksProxy._(this._server);
+  SandboxSocksProxy._(this._server, this._dial);
 
   final ServerSocket _server;
+
+  /// Opens the upstream connection for an allowed CONNECT.
+  final Future<Socket> Function(String host, int port) _dial;
 
   /// The active filtering rules.
   ///
@@ -35,9 +38,15 @@ class SandboxSocksProxy {
   int get port => _server.port;
 
   /// Starts a SOCKS5 listener on `127.0.0.1:0`.
-  static Future<SandboxSocksProxy> start({NetworkConfig? network}) async {
+  ///
+  /// [dial] opens the upstream connection once a CONNECT passes the filter;
+  /// it is [Socket.connect] unless a test keeps the proxy off the network.
+  static Future<SandboxSocksProxy> start({
+    NetworkConfig? network,
+    Future<Socket> Function(String host, int port) dial = Socket.connect,
+  }) async {
     final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-    final proxy = SandboxSocksProxy._(server);
+    final proxy = SandboxSocksProxy._(server, dial);
     if (network != null) {
       proxy._network = network;
     }
@@ -108,7 +117,7 @@ class SandboxSocksProxy {
 
       final Socket upstream;
       try {
-        upstream = await Socket.connect(host, port);
+        upstream = await _dial(host, port);
       } catch (_) {
         client.add(_reply(0x05)); // connection refused
         await client.close();

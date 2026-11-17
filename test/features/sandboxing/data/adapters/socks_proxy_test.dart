@@ -165,9 +165,22 @@ Future<ServerSocket> startEchoServer() async {
 void main() {
   group('SandboxSocksProxy', () {
     late SandboxSocksProxy proxy;
+    // Every host an allowed CONNECT dialed. Only loopback is really dialed
+    // (the echo-server tests); anything else is refused without touching the
+    // network, so a rule test never waits on a remote host.
+    late List<String> dialed;
 
     setUp(() async {
-      proxy = await SandboxSocksProxy.start();
+      dialed = [];
+      proxy = await SandboxSocksProxy.start(
+        dial: (host, port) {
+          dialed.add(host);
+          if (host == 'localhost' || host == '127.0.0.1') {
+            return Socket.connect(host, port);
+          }
+          throw SocketException('test: no network for $host');
+        },
+      );
     });
 
     tearDown(() async {
@@ -323,6 +336,7 @@ void main() {
       );
       // Should try to connect, not return 0x02 (denied by ruleset).
       expect(reply[1], isNot(0x02));
+      expect(dialed, ['example.com']);
       await conn.close();
     });
 
@@ -464,6 +478,7 @@ void main() {
         80,
       );
       expect(reply[1], 0x02); // blocked
+      expect(dialed, isEmpty);
       await conn.close();
 
       // Update to also allow other.com
@@ -477,6 +492,7 @@ void main() {
       conn = await _connect(proxy);
       reply = await _socksConnect(conn.reader, conn.socket, 'other.com', 80);
       expect(reply[1], isNot(0x02)); // now allowed
+      expect(dialed, ['other.com']);
       await conn.close();
     });
 
@@ -498,6 +514,7 @@ void main() {
         80,
       );
       expect(reply[1], isNot(0x02));
+      expect(dialed, ['example.com']);
       await conn.close();
 
       // Denied subdomain is blocked
@@ -509,6 +526,7 @@ void main() {
         80,
       );
       expect(reply[1], 0x02);
+      expect(dialed, ['example.com']);
       await conn.close();
     });
 

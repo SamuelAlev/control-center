@@ -127,6 +127,10 @@
 # (github +8, gitlab +4) and open_pr_polling_service.dart (+30);
 # cc_server_runtime.dart (+50) wires the configured MCP servers (workspace and
 # owner-personal) into the catalog and keeps a demo from connecting any.
+# Lowered 2026-11-17: boot optimization grew cc_server_runtime.dart (+62:
+# models.dev load moved to the top of boot, post-ready scheduling); the
+# speech/code-server/Claude Code warm-ups and on-device model installs moved to
+# runtime/server_warm_up_wiring.dart, leaving it under the old floor.
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
 packages/cc_domain/lib/src/dtos/dtos.dart  3686
@@ -144,7 +148,7 @@ packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
 packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1660
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2803
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3118
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8414
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8405
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2865
 packages/cc_server_core/lib/src/local_rpc_server.dart  2503
 packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1864

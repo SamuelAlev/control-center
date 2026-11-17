@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/services/cache_stats.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show compute;
 
 /// On-disk cache for `/proxy/media` bytes (desktop only; web uses the browser).
 ///
@@ -234,10 +234,11 @@ class MediaDiskCache {
     final maxBytes = this.maxBytes;
     final ({int entries, int bytes, int evicted})? swept;
     try {
-      swept = await Isolate.run(
-        () => _sweepTree(path, ttl, maxBytes),
-        debugName: 'media-cache-sweep',
-      );
+      swept = await compute(_sweepTree, (
+        path: path,
+        ttl: ttl,
+        maxBytes: maxBytes,
+      ), debugLabel: 'media-cache-sweep');
     } on Object {
       // The tree was moved or removed under us; the next sweep re-measures.
       return;
@@ -255,14 +256,13 @@ class MediaDiskCache {
     _stats.size(entries: swept.entries, bytes: swept.bytes);
   }
 
-  /// Drops what is past [ttl] under [path], then the oldest entries until the
-  /// total is back under [maxBytes]. Null when the tree changed under the walk.
+  /// Drops what is past `ttl` under `path`, then the oldest entries until the
+  /// total is back under `maxBytes`. Null when the tree changed under the walk.
   /// Static, with plain arguments: it runs on another isolate.
   static ({int entries, int bytes, int evicted})? _sweepTree(
-    String path,
-    Duration ttl,
-    int maxBytes,
+    ({String path, Duration ttl, int maxBytes}) args,
   ) {
+    final (:path, :ttl, :maxBytes) = args;
     try {
       final root = Directory(path);
       if (!root.existsSync()) {
