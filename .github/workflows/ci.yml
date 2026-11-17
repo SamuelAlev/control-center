@@ -206,9 +206,12 @@ jobs:
           echo "Running ${#files[@]} test files"
           flutter test --concurrency=2 "${files[@]}"
 
-  # Workspace package suites. Grouped so checkout + SDK setup is not paid per package.
+  # Workspace package suites. Grouped so checkout + SDK setup is not paid per
+  # package, except cc_infra and cc_server_core: each takes about as long as
+  # every other dart package together, so each gets its own job and `rest`
+  # runs the others (scripts/ci/test_packages.sh owns that list).
   test-packages:
-    name: packages (${{ matrix.runner }})
+    name: packages (${{ matrix.pkg.label }})
     runs-on: ubuntu-26.04
     timeout-minutes: 25
     permissions:
@@ -216,7 +219,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [dart, flutter]
+        pkg:
+          - { label: "dart, cc_infra", runner: dart, shard: packages/cc_infra }
+          - { label: "dart, cc_server_core", runner: dart, shard: packages/cc_server_core }
+          - { label: "dart, rest", runner: dart, shard: rest }
+          - { label: "flutter", runner: flutter, shard: all }
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
@@ -258,14 +265,17 @@ jobs:
       - name: Allow unprivileged user namespaces (bwrap)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
-      - name: Test ${{ matrix.runner }} packages
+      - name: Test ${{ matrix.pkg.label }} packages
         shell: bash
-        run: scripts/ci/test_packages.sh ${{ matrix.runner }}
+        env:
+          PKG_RUNNER: ${{ matrix.pkg.runner }}
+          PKG_SHARD: ${{ matrix.pkg.shard }}
+        run: scripts/ci/test_packages.sh "$PKG_RUNNER" "$PKG_SHARD"
 
   # macOS and Windows package tests, push and dispatch only (10x / 2x minutes).
   # Not a PR gate.
   test-packages-os:
-    name: packages (${{ matrix.runner }}, ${{ matrix.os }})
+    name: packages (${{ matrix.pkg.label }}, ${{ matrix.os }})
     if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
@@ -275,7 +285,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-26, windows-latest]
-        runner: [dart, flutter]
+        # Same shards as test-packages.
+        pkg:
+          - { label: "dart, cc_infra", runner: dart, shard: packages/cc_infra }
+          - { label: "dart, cc_server_core", runner: dart, shard: packages/cc_server_core }
+          - { label: "dart, rest", runner: dart, shard: rest }
+          - { label: "flutter", runner: flutter, shard: all }
     steps:
       - name: Harden runner
         # block is Linux-only.
@@ -295,9 +310,12 @@ jobs:
           windowing: ${{ runner.os != 'Windows' }}
 
       # Default Windows shell is PowerShell.
-      - name: Test ${{ matrix.runner }} packages
+      - name: Test ${{ matrix.pkg.label }} packages
         shell: bash
-        run: scripts/ci/test_packages.sh ${{ matrix.runner }}
+        env:
+          PKG_RUNNER: ${{ matrix.pkg.runner }}
+          PKG_SHARD: ${{ matrix.pkg.shard }}
+        run: scripts/ci/test_packages.sh "$PKG_RUNNER" "$PKG_SHARD"
 
   # Committed *.g.dart and l10n must match a fresh build_runner + gen-l10n.
   codegen:
