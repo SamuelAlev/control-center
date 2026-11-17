@@ -28,6 +28,10 @@ CLI flags override environment variables, which override defaults:
 | `--port` | `CC_SERVER_PORT` | `9030`; `0` selects an ephemeral port. |
 | `--bind` | `CC_SERVER_BIND` | `loopback`; `any` requires TLS. |
 
+Beside the ready banner the server prints one line saying where the boot went (`boot took 93ms (loading harness model catalog 54ms), 124 MB resident, up from 63 MB when boot began (…)`), and 90 seconds and 10 minutes later what it holds: resident memory, its peak, and each open workspace database with what keeps it open. All three print at the default log level; `--log-level info` adds every boot phase.
+
+Run the server with `DART_VM_OPTIONS=--new_gen_semi_max_size=8`. The desktop app and the container image set it; a server started by hand or from a service unit takes it from you. Without it the Dart VM grows its young generation to two 16 MB halves and keeps them, some 25 MB more than an idle server needs (150 to 157 MB against 127 MB written, measured with two workspaces). The variable is read by the executable itself, before `main`, so it cannot come from `.env`.
+
 Provider secrets (`GITHUB_APP_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_SECRET`, `LINEAR_API_KEY`, any `SLACK_*SECRET*`) come from a `.env` file or Settings, never the exported environment: the server refuses to boot when one is exported. It reads `.env` from its working directory, beside the executable, or a source checkout above it (copy [`.env.template`](../../.env.template)). In Docker, mount the file at `/app/bin/.env` (`-v /secure/cc.env:/app/bin/.env:ro`) instead of passing `-e` or `--env-file`.
 
 ## Pair a web client

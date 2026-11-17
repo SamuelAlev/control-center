@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_domain/features/settings/domain/repositories/harness_provider_repository.dart';
 import 'package:cc_harness/provider.dart';
@@ -21,12 +23,17 @@ CcCheckbox _checkbox(WidgetTester tester, String label) {
   );
 }
 
+/// The catalog of a models.dev-shaped [document], parsed the way a source
+/// parses it: from the document's text.
+ModelCatalog _catalogOf(Map<String, dynamic> document) =>
+    ModelCatalog(ModelsDevParser.parse(jsonEncode(document)));
+
 void main() {
   late _FakeHarnessProviderRepository repository;
 
   /// A models.dev fixture enriching `anthropic/claude-live` — the live report
   /// carries no price/context for it, so the row must show the catalog's.
-  final catalog = ModelCatalog.fromModelsDev({
+  final catalog = _catalogOf({
     'anthropic': {
       'id': 'anthropic',
       'name': 'Anthropic',

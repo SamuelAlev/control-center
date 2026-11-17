@@ -1,6 +1,8 @@
 @TestOn('!windows')
 library;
 
+import 'dart:io';
+
 import 'package:cc_infra/src/process/cc_server_process.dart';
 import 'package:test/test.dart';
 
@@ -12,6 +14,11 @@ import 'package:test/test.dart';
 /// packages/cc_server_core/test/cc_server_e2e_test.dart.
 CcServerProcess _sh(String script, {void Function(String, String)? onLog}) =>
     CcServerProcess(executable: 'sh', args: ['-c', script], onLog: onLog);
+
+/// A fake server that reports the VM options it was started with.
+const _echoVmOptionsThenServe =
+    r'echo "vm=$DART_VM_OPTIONS"; '
+    'echo "cc_server ready on 127.0.0.1:1"; sleep 30';
 
 void main() {
   test('parses the ready line and exposes the bound loopback endpoint', () async {
@@ -31,6 +38,35 @@ void main() {
     expect(server.isRunning, isTrue);
     expect(lines, contains(contains('cc_server ready on 127.0.0.1:54321')));
   });
+
+  test(
+    'the child runs with the server\'s VM options, unless the caller '
+    'sets its own',
+    () async {
+      Future<String> vmOptionsSeenBy(Map<String, String>? environment) async {
+        final lines = <String>[];
+        final server = CcServerProcess(
+          executable: 'sh',
+          args: const ['-c', _echoVmOptionsThenServe],
+          environment: environment,
+          onLog: (_, message) => lines.add(message),
+        );
+        await server.start();
+        await server.stop();
+        return lines.firstWhere((line) => line.startsWith('vm=')).substring(3);
+      }
+
+      expect(await vmOptionsSeenBy(null), ccServerVmOptions);
+      expect(await vmOptionsSeenBy(const {'OTHER': '1'}), ccServerVmOptions);
+      expect(
+        await vmOptionsSeenBy(const {dartVmOptionsEnvVar: '--verbose_gc'}),
+        '--verbose_gc',
+      );
+    },
+    skip: Platform.environment.containsKey(dartVmOptionsEnvVar)
+        ? 'DART_VM_OPTIONS is set for this run, and the child inherits it'
+        : null,
+  );
 
   test('stop() terminates the child and resolves its exit code', () async {
     final server = _sh('echo "cc_server ready on 127.0.0.1:9999"; sleep 30');

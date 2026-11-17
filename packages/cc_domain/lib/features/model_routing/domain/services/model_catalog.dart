@@ -1,6 +1,5 @@
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/model_routing/domain/entities/model_provider.dart';
-import 'package:cc_domain/features/model_routing/domain/services/models_dev_parser.dart';
 import 'package:cc_domain/features/model_routing/domain/services/provider_policy_engine.dart';
 import 'package:cc_domain/features/model_routing/domain/services/small_model_router.dart';
 import 'package:cc_harness/provider.dart';
@@ -19,30 +18,6 @@ typedef ProviderEnablementResolver =
 class ModelCatalog {
   /// Creates a catalog from an ordered provider map.
   const ModelCatalog(this._providers, {this.defaultModel});
-
-  /// Assembles a catalog from a parsed models.dev document plus optional
-  /// per-provider overrides (merged shallowly onto the parsed models).
-  factory ModelCatalog.fromModelsDev(
-    Map<String, dynamic> modelsDevJson, {
-    Map<String, ModelInfo> overrides = const {},
-  }) {
-    final providers = ModelsDevParser.parse(modelsDevJson);
-    if (overrides.isEmpty) {
-      return ModelCatalog(providers);
-    }
-    final merged = <String, ProviderEntry>{};
-    for (final e in providers.entries) {
-      final models = Map<String, ModelInfo>.from(e.value.models);
-      merged[e.key] = ProviderEntry(provider: e.value.provider, models: models);
-    }
-    for (final ov in overrides.values) {
-      final entry = merged[ov.providerId];
-      if (entry != null) {
-        entry.models[ov.id] = ov;
-      }
-    }
-    return ModelCatalog(merged);
-  }
 
   /// An empty catalog.
   static const ModelCatalog empty = ModelCatalog({});

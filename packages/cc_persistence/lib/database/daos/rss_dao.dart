@@ -180,6 +180,24 @@ class RssDao extends DatabaseAccessor<GlobalDatabase> with _$RssDaoMixin {
     return rssArticlesTable.map(rows.first.data);
   }
 
+  /// The image each stored article of [feedId] already has, by guid. Articles
+  /// stored without one are left out.
+  ///
+  /// What a refresh hands the fetcher, so that an article a feed lists
+  /// without an image is looked up on its own page once, not on every pass.
+  Future<Map<String, String>> articleImagesByGuid(String feedId) async {
+    final query = selectOnly(rssArticlesTable)
+      ..addColumns([rssArticlesTable.guid, rssArticlesTable.imageUrl])
+      ..where(
+        rssArticlesTable.feedId.equals(feedId) &
+            rssArticlesTable.imageUrl.equals('').not(),
+      );
+    return {
+      for (final row in await query.get())
+        row.read(rssArticlesTable.guid)!: row.read(rssArticlesTable.imageUrl)!,
+    };
+  }
+
   /// Stale-while-revalidate upsert keyed on `(feedId, guid)`.
   ///
   /// Inserts the article when the `(feedId, guid)` pair is new. When it

@@ -171,6 +171,33 @@ void main() {
       expect(repos.first.name, 'Repo 1');
     });
 
+    test('watchReposWithoutHolding gives the list a watch gives, and follows '
+        'a repo being added', () async {
+      await repository.upsert(makeWorkspace());
+      await addRepo('ws-1', 'repo-1', name: 'Repo 1');
+      await addRepo('ws-1', 'repo-2', name: 'Repo 2', path: '/path/repo-2');
+
+      final seen = <List<String>>[];
+      final subscription = repository
+          .watchReposWithoutHolding('ws-1')
+          .listen((repos) => seen.add([for (final repo in repos) repo.id]));
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+
+      Future<List<String>> watched() async => [
+        for (final repo
+            in await repository.watchReposForWorkspace('ws-1').first)
+          repo.id,
+      ];
+      expect(seen.last, hasLength(2));
+      expect(seen.last, await watched());
+
+      await addRepo('ws-1', 'repo-3', name: 'Repo 3', path: '/path/repo-3');
+      await pumpEventQueue();
+      expect(seen.last, hasLength(3));
+      expect(seen.last, await watched());
+    });
+
     test('isRepoLinkedToWorkspace is the isolation gate', () async {
       await repository.upsert(makeWorkspace());
       await addRepo('ws-1', 'repo-1');

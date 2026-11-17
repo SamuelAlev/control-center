@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_server_core/cc_server_core.dart';
@@ -66,6 +68,11 @@ Map<String, dynamic> _fixture() => {
   },
 };
 
+/// The catalog of a models.dev-shaped [document], parsed the way a source
+/// parses it: from the document's text.
+ModelCatalog _catalogOf(Map<String, dynamic> document) =>
+    ModelCatalog(ModelsDevParser.parse(jsonEncode(document)));
+
 void main() {
   late _Store store;
   late HarnessModelOverrideCache cache;
@@ -76,7 +83,7 @@ void main() {
   setUp(() async {
     store = _Store();
     cache = HarnessModelOverrideCache(credentials: store);
-    catalog = ModelCatalog.fromModelsDev(_fixture());
+    catalog = _catalogOf(_fixture());
     await cache.refresh();
   });
 
@@ -115,31 +122,34 @@ void main() {
       expect(resolved.cost!.input, 5);
     });
 
-    test('unknown model with an override resolves from the override alone', () async {
-      // Custom-provider models are never in the models.dev catalog; the
-      // override is their only metadata (cost stays unknown).
-      store.credentials['custom-llm'] = [
-        const ProviderCredential(
-          providerId: 'custom-llm',
-          method: HarnessAuthMethod.none,
-          dialect: CustomProviderDialect.openai,
-          baseUrl: 'http://localhost:8080/v1',
-          modelOverrides: {
-            'llama-3': ProviderModelOverride(
-              contextWindow: 131072,
-              manual: true,
-            ),
-          },
-        ),
-      ];
-      await cache.refresh();
+    test(
+      'unknown model with an override resolves from the override alone',
+      () async {
+        // Custom-provider models are never in the models.dev catalog; the
+        // override is their only metadata (cost stays unknown).
+        store.credentials['custom-llm'] = [
+          const ProviderCredential(
+            providerId: 'custom-llm',
+            method: HarnessAuthMethod.none,
+            dialect: CustomProviderDialect.openai,
+            baseUrl: 'http://localhost:8080/v1',
+            modelOverrides: {
+              'llama-3': ProviderModelOverride(
+                contextWindow: 131072,
+                manual: true,
+              ),
+            },
+          ),
+        ];
+        await cache.refresh();
 
-      final resolved = cache.resolve(base, 'custom-llm/llama-3')!;
-      expect(resolved.name, 'llama-3');
-      expect(resolved.limits.context, 131072);
-      expect(resolved.cost, isNull);
-      expect(resolved.isTextCapable, isTrue);
-    });
+        final resolved = cache.resolve(base, 'custom-llm/llama-3')!;
+        expect(resolved.name, 'llama-3');
+        expect(resolved.limits.context, 131072);
+        expect(resolved.cost, isNull);
+        expect(resolved.isTextCapable, isTrue);
+      },
+    );
 
     test('setEntry updates the cache without a store round-trip', () {
       cache.setEntry(
@@ -158,31 +168,34 @@ void main() {
       );
     });
 
-    test('overrides merge across a rotation, first stored row winning', () async {
-      store.credentials['anthropic'] = [
-        const ProviderCredential(
-          providerId: 'anthropic',
-          method: HarnessAuthMethod.apiKey,
-          apiKey: 'sk-1',
-          modelOverrides: {
-            'claude-opus': ProviderModelOverride(contextWindow: 500000),
-          },
-        ),
-        const ProviderCredential(
-          providerId: 'anthropic',
-          method: HarnessAuthMethod.apiKey,
-          apiKey: 'sk-2',
-          modelOverrides: {
-            'claude-opus': ProviderModelOverride(contextWindow: 999999),
-          },
-        ),
-      ];
-      await cache.refreshProvider('anthropic');
-      expect(
-        cache.resolve(base, 'anthropic/claude-opus')!.limits.context,
-        500000,
-      );
-    });
+    test(
+      'overrides merge across a rotation, first stored row winning',
+      () async {
+        store.credentials['anthropic'] = [
+          const ProviderCredential(
+            providerId: 'anthropic',
+            method: HarnessAuthMethod.apiKey,
+            apiKey: 'sk-1',
+            modelOverrides: {
+              'claude-opus': ProviderModelOverride(contextWindow: 500000),
+            },
+          ),
+          const ProviderCredential(
+            providerId: 'anthropic',
+            method: HarnessAuthMethod.apiKey,
+            apiKey: 'sk-2',
+            modelOverrides: {
+              'claude-opus': ProviderModelOverride(contextWindow: 999999),
+            },
+          ),
+        ];
+        await cache.refreshProvider('anthropic');
+        expect(
+          cache.resolve(base, 'anthropic/claude-opus')!.limits.context,
+          500000,
+        );
+      },
+    );
 
     test('removeProvider drops its overrides', () async {
       store.credentials['custom-llm'] = [

@@ -17,6 +17,7 @@ import 'package:control_center/bootstrap/desktop_boot_app.dart';
 import 'package:control_center/bootstrap/desktop_server_switcher.dart';
 import 'package:control_center/bootstrap/desktop_session.dart';
 import 'package:control_center/bootstrap/server_backend.dart';
+import 'package:control_center/core/analytics/client_analytics_context.dart';
 import 'package:control_center/core/keybindings/stuck_keys.dart';
 import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/core/media/media_disk_cache.dart';
@@ -59,6 +60,15 @@ final ObservableKeyValueBackend desktopPrefsBackend = ObservableKeyValueBackend(
 /// [_prepareDesktop]'s scope.
 WindowGeometryWatcher? _windowGeometryWatcher;
 
+/// Where this launch spent its time between `main()` and its first frame,
+/// each step with the milliseconds since launch at which it was reached.
+/// Logged as one line: the numbers a "the app opens slowly" report starts
+/// from, which no log carried before.
+final List<String> _launchMarks = [];
+
+void _markLaunch(String reached) =>
+    _launchMarks.add('$reached +${millisecondsSinceAppLaunch()}ms');
+
 /// Desktop bootstrap: full-featured native multi-window app.
 ///
 /// This is the verbatim desktop startup sequence — logging installs,
@@ -91,6 +101,18 @@ Future<void> bootstrapAndRun([List<String> arguments = const []]) async {
     return;
   }
   await runAppWithSentry(() => const DesktopAppHost());
+  _markLaunch('app mounted');
+  AppLog.i('main', 'desktop launch: ${_launchMarks.join(', ')}');
+  // Never awaited: a login launch that starts hidden draws no frame until
+  // its window is revealed.
+  unawaited(
+    WidgetsBinding.instance.waitUntilFirstFrameRasterized.then(
+      (_) => AppLog.i(
+        'main',
+        'desktop launch: first frame +${millisecondsSinceAppLaunch()}ms',
+      ),
+    ),
+  );
 }
 
 /// Prepares the authenticated app, showing a boot surface only on first run.
@@ -295,6 +317,7 @@ Future<void> _prepareDesktop(List<String> arguments) async {
     const DesktopBootApp(),
     isServerConfigured: ServerConnectionStore(prefs, secureStore).isConfigured,
   );
+  _markLaunch('window services');
 
   // Load the libmpv-backed player (media_kit) before any Player is created —
   // every playback surface (soundscape, meeting audio, rig listen,
@@ -345,6 +368,7 @@ Future<void> _prepareDesktop(List<String> arguments) async {
   if (!Platform.isMacOS) {
     await localNotifier.setup(appName: 'Control Center');
   }
+  _markLaunch('client runtime');
   // The desktop opens NO database. It connects to a
   // `cc_server` that owns the data over loopback/WSS RPC — the same path the web
   // build uses. The user's persisted choice decides which server:
@@ -360,6 +384,7 @@ Future<void> _prepareDesktop(List<String> arguments) async {
     prefs: prefs,
     secureStore: secureStore,
   );
+  _markLaunch('server connected');
 
   final env = DesktopSessionEnv(
     prefsBackend: desktopPrefsBackend,
@@ -375,6 +400,7 @@ Future<void> _prepareDesktop(List<String> arguments) async {
     rethrow;
   }
   switcher.start(session, env);
+  _markLaunch('session');
 
   // Tear the spawned server down on a clean app exit so it does not orphan and
   // keep the SQLite file open (which would fail the next boot). The listener

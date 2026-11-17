@@ -14,6 +14,9 @@ class _Triggers implements PipelineTriggerRepository {
 
   PipelineTrigger trigger;
 
+  /// How many times the schedule was written.
+  int writes = 0;
+
   @override
   Future<List<PipelineTrigger>> scheduled() async => [trigger];
 
@@ -24,6 +27,7 @@ class _Triggers implements PipelineTriggerRepository {
     DateTime? nextRunAt,
     DateTime? lastFiredAt,
   }) async {
+    writes++;
     trigger = trigger.copyWith(nextRunAt: nextRunAt, lastFiredAt: lastFiredAt);
   }
 
@@ -148,6 +152,37 @@ void main() {
 
       expect(engine.started, ['t1:${sundaySlot.toIso8601String()}']);
       expect(triggers.trigger.nextRunAt, nextSundaySlot);
+    },
+  );
+
+  test('a trigger that is not due is not written again, in whichever zone '
+      'its stored time comes back', () async {
+    // The database hands a stored time back as a local one.
+    final triggers = _Triggers(
+      _trigger(schedule: '0 3 * * 0', nextRunAt: nextSundaySlot.toLocal()),
+    );
+    final scheduler = service(triggers);
+
+    await scheduler.tick(mondayBoot);
+    await scheduler.tick(mondayBoot.add(const Duration(minutes: 1)));
+
+    expect(triggers.writes, 0);
+    expect(engine.started, isEmpty);
+  });
+
+  test(
+    'a trigger with no stored slot gets its first one written once',
+    () async {
+      // Created on Sunday 2026-09-27 at midnight: its first slot is 03:00.
+      final triggers = _Triggers(_trigger(schedule: '0 3 * * 0'));
+      final scheduler = service(triggers);
+
+      await scheduler.tick(DateTime.utc(2026, 9, 27, 1));
+      await scheduler.tick(DateTime.utc(2026, 9, 27, 1, 1));
+
+      expect(triggers.writes, 1);
+      expect(triggers.trigger.nextRunAt, DateTime.utc(2026, 9, 27, 3));
+      expect(engine.started, isEmpty);
     },
   );
 

@@ -612,8 +612,10 @@ class WorkspaceDatabase extends _$WorkspaceDatabase with ConvergedDatabase {
   /// database: on a 2.6GB graph-heavy file it took 21s warm (worse cold).
   /// `quick_check` catches the corruption that actually happens (bad page
   /// structure, broken b-trees) while skipping the exhaustive cross-checks:
-  /// 2.8s on that same file. It is paid per workspace, on first touch of that
-  /// workspace, never at boot.
+  /// 2.8s on that same file. It is paid once per file per process, on the
+  /// file's first open. For a live workspace that is at boot: the owner
+  /// membership pass touches every one of them before the server listens,
+  /// side by side, so boot waits for the largest file and not for their sum.
   Future<bool> _foundDamaged() async {
     if (skipIntegrityCheck) {
       return false;

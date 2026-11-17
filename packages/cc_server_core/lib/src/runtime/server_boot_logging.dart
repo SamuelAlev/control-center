@@ -19,8 +19,142 @@ const Duration _watchActivityWindow = Duration(days: 7);
 
 RotatingFileLogSink? _fileSink;
 
+/// Where the boot in flight has spent its time, by announced phase.
+final _BootTimeline _bootTimeline = _BootTimeline();
+
+/// Attributes a boot's wall time, and the memory it took, to the phases
+/// [_bootMark] announced.
+///
+/// The per-phase lines are info-level and the default level is warning, so a
+/// slow boot used to leave nothing behind but the gap between the booting line
+/// and the ready banner. This keeps the same numbers for one summary line that
+/// always prints ([_announceBootSummary]).
+///
+/// Memory is the process's resident size at each phase's edges. Work started
+/// in one phase and still running in the next (a load on another isolate) is
+/// charged to whichever phase it lands in, so read the figures as "where to
+/// look", not as an allocation profile.
+class _BootTimeline {
+  /// Creates a timeline that reads resident memory through [residentBytes].
+  _BootTimeline({int Function()? residentBytes})
+    : _residentBytes = residentBytes ?? (() => ProcessInfo.currentRss);
+
+  final int Function() _residentBytes;
+  final Stopwatch _clock = Stopwatch();
+  final Map<String, int> _spentMs = {};
+  final Map<String, int> _grewBytes = {};
+  String? _open;
+  int _openedAtMs = 0;
+  int _openedAtBytes = 0;
+  int _startedAtBytes = 0;
+
+  /// What the process held when this boot began, in MiB: the runtime and the
+  /// program itself, before the server has built anything.
+  int get startedAtMb => _startedAtBytes ~/ (1024 * 1024);
+
+  /// Starts a new boot: one process can boot more than one server (tests).
+  void restart() {
+    _spentMs.clear();
+    _grewBytes.clear();
+    _open = null;
+    _startedAtBytes = _residentBytes();
+    _clock
+      ..reset()
+      ..start();
+  }
+
+  /// Opens [label]; whatever was open ends here.
+  void open(String label) {
+    _end();
+    _begin(label);
+  }
+
+  /// Ends the open phase. What runs until the next [open] is charged to
+  /// `after <label>`: boot does real work between its announced phases (most
+  /// of the object graph is built there), and leaving that out of the account
+  /// hid more than half of what a boot allocates.
+  void close() {
+    final label = _end();
+    if (label != null && !label.startsWith(_afterPrefix)) {
+      _begin('$_afterPrefix$label');
+    }
+  }
+
+  static const _afterPrefix = 'after ';
+
+  void _begin(String label) {
+    _open = label;
+    _openedAtMs = _clock.elapsedMilliseconds;
+    _openedAtBytes = _residentBytes();
+  }
+
+  String? _end() {
+    final label = _open;
+    if (label == null) {
+      return null;
+    }
+    _open = null;
+    _spentMs[label] =
+        (_spentMs[label] ?? 0) + _clock.elapsedMilliseconds - _openedAtMs;
+    _grewBytes[label] =
+        (_grewBytes[label] ?? 0) + _residentBytes() - _openedAtBytes;
+    return label;
+  }
+
+  /// `phase +38 MB, phase +21 MB`: the [top] phases that grew the process the
+  /// most, each by at least [floorMb]. Empty when none did.
+  String describeMemory({int top = 4, int floorMb = 5}) {
+    _end();
+    const mb = 1024 * 1024;
+    final largest =
+        _grewBytes.entries
+            .where((phase) => phase.value >= floorMb * mb)
+            .toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+    return largest
+        .take(top)
+        .map((phase) => '${phase.key} +${phase.value ~/ mb} MB')
+        .join(', ');
+  }
+
+  /// `412ms (phase 180ms, phase 98ms)`: the total and the [top] slowest
+  /// phases that took at least [floorMs].
+  String describe({int top = 4, int floorMs = 10}) {
+    _end();
+    final slowest =
+        _spentMs.entries.where((phase) => phase.value >= floorMs).toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+    final total = '${_clock.elapsedMilliseconds}ms';
+    if (slowest.isEmpty) {
+      return total;
+    }
+    final phases = slowest
+        .take(top)
+        .map((phase) => '${phase.key} ${phase.value}ms')
+        .join(', ');
+    return '$total ($phases)';
+  }
+}
+
+/// This process's resident memory in MiB, as the OS reports it.
+int _residentMemoryMb() => ProcessInfo.currentRss ~/ (1024 * 1024);
+
+/// Prints what the boot spent its time on and what the process holds, next to
+/// the ready banner. Visible at the default log level: it is one line per
+/// boot, and it is the line a "the server starts slowly" report needs.
+void _announceBootSummary() {
+  final grew = _bootTimeline.describeMemory();
+  _announce(
+    'cc_server: boot took ${_bootTimeline.describe()}, '
+    '${_residentMemoryMb()} MB resident, up from '
+    '${_bootTimeline.startedAtMb} MB when boot began'
+    '${grew.isEmpty ? '' : ' ($grew)'}',
+  );
+}
+
 void _configureBootLogging(CcServerConfig config) {
   _logLevel = config.logLevel;
+  _bootTimeline.restart();
 
   // A rotating on-disk log under the data dir, so a long-lived headless server
   // keeps a bounded, persistent record (and a crash trail) beyond ephemeral
@@ -119,54 +253,71 @@ Future<T> _bootStep<T>(String label, Future<T> Function() action) async {
 /// Announces a boot phase that is about to start. Use directly for a stretch of
 /// SYNCHRONOUS construction, which [_bootStep] cannot wrap but which can still
 /// take real time (dylib loads, catalog parsing, building the tool registry).
-void _bootMark(String label) => CcHostLog.info('cc_server: $label…');
+/// The phase runs until the next mark or its [_bootDone].
+void _bootMark(String label) {
+  _bootTimeline.open(label);
+  CcHostLog.info('cc_server: $label…');
+}
 
-/// Ceiling for a boot phase that reaches the NETWORK.
+/// Starts a boot phase that reaches the NETWORK and returns without waiting
+/// for it.
 ///
 /// Boot must not depend on a remote host answering: the relay's signaling
 /// broker and the mDNS/tunnel stack are both best-effort and both retry on
 /// their own, so a slow or unreachable one should cost that feature, never the
-/// server's startup. On timeout the phase is left running in the background and
-/// boot proceeds.
-Future<void> _bootStepBounded(
+/// server's startup. Waiting for them, even with a bound, still put a remote
+/// round trip in front of the ready banner on every start: measured on an
+/// otherwise idle data dir, the relay dial was 2.8s of a 3.0s first boot and
+/// 0.4s of every 0.7s boot after it. The phase reports its own outcome
+/// instead: how long it took (a warning past [slowAfter]) or why it failed,
+/// with [meanwhile] saying what is missing until it lands.
+void _bootStepInBackground(
   String label,
   Future<void> Function() action, {
-  required String onTimeout,
-  Duration limit = const Duration(seconds: 10),
-}) async {
-  _bootMark(label);
-  final startedAt = DateTime.now();
+  required String meanwhile,
+  Duration slowAfter = const Duration(seconds: 10),
+}) {
+  CcHostLog.info('cc_server: $label (in the background)…');
+  final clock = Stopwatch()..start();
+  final Future<void> running;
   try {
-    // Split the synchronous head from the awaited tail. `.timeout()` cannot arm
-    // its timer until `action()` returns a future, so work done synchronously
-    // inside it is invisible to the bound AND freezes the event loop — which is
-    // exactly how a "10s" timeout was observed firing 56s late. Timing the two
-    // halves separately says which one is at fault instead of leaving it to
-    // inference.
-    final future = action();
-    final syncMs = DateTime.now().difference(startedAt).inMilliseconds;
-    if (syncMs >= 1000) {
-      CcHostLog.warning(
-        'cc_server: $label blocked the isolate for ${syncMs}ms BEFORE yielding '
-        '— synchronous work on the boot path, not a slow peer',
-      );
-    }
-    await future.timeout(limit);
-    _bootDone(label, startedAt);
-  } on TimeoutException {
-    CcHostLog.warning(
-      'cc_server: $label did not finish within ${limit.inSeconds}s — '
-      'continuing boot ($onTimeout)',
-    );
+    running = action();
   } on Object catch (e) {
-    CcHostLog.warning('cc_server: $label failed: $e ($onTimeout)');
+    CcHostLog.warning('cc_server: $label failed: $e ($meanwhile)');
+    return;
   }
+  // The synchronous head of `action()` runs right here, on the boot path, and
+  // freezes the event loop for as long as it takes. Timing it apart from the
+  // awaited tail says which one is at fault.
+  final syncMs = clock.elapsedMilliseconds;
+  if (syncMs >= 1000) {
+    CcHostLog.warning(
+      'cc_server: $label blocked the isolate for ${syncMs}ms BEFORE yielding '
+      '— synchronous work on the boot path, not a slow peer',
+    );
+  }
+  unawaited(
+    running.then(
+      (_) {
+        final line = 'cc_server: ✓ $label (${clock.elapsedMilliseconds}ms)';
+        if (clock.elapsed >= slowAfter) {
+          CcHostLog.warning('$line — until then: $meanwhile');
+        } else {
+          CcHostLog.info(line);
+        }
+      },
+      onError: (Object e) {
+        CcHostLog.warning('cc_server: $label failed: $e ($meanwhile)');
+      },
+    ),
+  );
 }
 
 /// Closes a phase opened with [_bootMark]. Slow phases are called out at info
 /// with their duration; quick ones only surface at the debug log level, so a
 /// normal boot stays readable while still proving the phase finished.
 void _bootDone(String label, DateTime startedAt) {
+  _bootTimeline.close();
   final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
   if (elapsedMs >= 1000) {
     CcHostLog.info('cc_server: ✓ $label (${elapsedMs}ms)');

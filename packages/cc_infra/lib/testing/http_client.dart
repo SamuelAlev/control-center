@@ -20,6 +20,12 @@ class TestHttpClient implements RhttpClient {
 
   /// Requests sent through this client, in dispatch order.
   final List<HttpRequest> requests = [];
+
+  /// The size of the pieces a streamed response arrives in.
+  int streamChunkSize = 16 * 1024;
+
+  /// How many pieces of streamed responses were handed to their listeners.
+  int streamedChunks = 0;
   bool _disposed = false;
 
   @override
@@ -38,7 +44,10 @@ class TestHttpClient implements RhttpClient {
       throw RhttpClientDisposedException(outgoing);
     }
     requests.add(outgoing);
-    final response = await handler(outgoing);
+    final handled = await handler(outgoing);
+    final response = outgoing.expectBody == HttpExpectBody.stream
+        ? _asStream(handled)
+        : handled;
     if (settings.throwOnStatusCode && response.statusCode >= 400) {
       throw RhttpStatusCodeException(
         request: outgoing,
@@ -52,6 +61,42 @@ class TestHttpClient implements RhttpClient {
       );
     }
     return response;
+  }
+
+  /// A handler describes the response; the request decides its shape. A
+  /// caller that asked for a stream gets the handler's text or bytes in
+  /// [streamChunkSize] pieces, and counts in [streamedChunks] how many of
+  /// them it took before it stopped listening.
+  HttpResponse _asStream(HttpResponse response) {
+    final Uint8List bytes;
+    switch (response) {
+      case HttpStreamResponse():
+        return response;
+      case HttpTextResponse():
+        bytes = utf8.encode(response.body);
+      case HttpBytesResponse():
+        bytes = response.body;
+    }
+    Stream<Uint8List> chunks() async* {
+      for (var at = 0; at < bytes.length; at += streamChunkSize) {
+        final end = at + streamChunkSize;
+        streamedChunks++;
+        yield Uint8List.sublistView(
+          bytes,
+          at,
+          end < bytes.length ? end : bytes.length,
+        );
+      }
+    }
+
+    return HttpStreamResponse(
+      remoteIp: response.remoteIp,
+      request: response.request,
+      version: response.version,
+      statusCode: response.statusCode,
+      headers: response.headers,
+      body: chunks(),
+    );
   }
 
   @override

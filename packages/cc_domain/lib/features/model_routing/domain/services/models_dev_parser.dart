@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_classes_with_only_static_members
 
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
@@ -13,20 +14,65 @@ import 'package:cc_harness/provider.dart';
 /// each model carries cost, limits, modalities, reasoning options and status.
 /// Unknown / malformed entries are skipped rather than throwing so a partial or
 /// drifted upstream document still yields a usable catalog.
+///
+/// It is parsed as it is read and never held decoded: each provider is built
+/// the moment its closing brace is read, and what was decoded for it is
+/// dropped there. The document is several megabytes describing about ten
+/// thousand models. Decoded in one piece it is tens of megabytes of maps that
+/// exist only to be read once, and a process that allocated them keeps the
+/// room for them: measured, a server held 67 MB more after loading the
+/// catalog that way than it does after loading it provider by provider.
 abstract final class ModelsDevParser {
-  /// Parses the full document. Providers start [ProviderDisabled]; enablement
-  /// is resolved later (it depends on the host's env/accounts).
-  static Map<String, ProviderEntry> parse(Map<String, dynamic> json) {
-    final out = <String, ProviderEntry>{};
-    for (final entry in json.entries) {
-      final raw = entry.value;
-      if (raw is! Map) {
-        continue;
+  /// Parses the document's JSON text. Providers start [ProviderDisabled];
+  /// enablement is resolved later (it depends on the host's env/accounts).
+  ///
+  /// Throws [FormatException] when [source] is not JSON.
+  static Map<String, ProviderEntry> parse(String source) =>
+      _parseAsRead((reviver) => JsonDecoder(reviver).convert(source));
+
+  /// [parse] for the document's UTF-8 [bytes], which also skips building the
+  /// text.
+  static Map<String, ProviderEntry> parseUtf8(List<int> bytes) => _parseAsRead(
+    (reviver) => const Utf8Decoder().fuse(JsonDecoder(reviver)).convert(bytes),
+  );
+
+  static Map<String, ProviderEntry> _parseAsRead(
+    Object? Function(Object? Function(Object? key, Object? value) reviver)
+    decode,
+  ) {
+    // The decoder calls this with each value as soon as it is complete. A
+    // provider is the only object in the document that holds a `models`
+    // object, so that is the moment to swap what was decoded for it with the
+    // entry built from it.
+    Object? asRead(Object? key, Object? value) {
+      if (key is String && value is Map && value['models'] is Map) {
+        return _parseProvider(
+          (value['id'] as String?) ?? key,
+          value.cast<String, dynamic>(),
+        );
       }
-      final providerId = (raw['id'] as String?) ?? entry.key;
-      final parsed = _parseProvider(providerId, raw.cast<String, dynamic>());
-      if (parsed != null) {
-        out[providerId] = parsed;
+      return value;
+    }
+
+    final document = decode(asRead);
+    if (document is! Map) {
+      return {};
+    }
+    final out = <String, ProviderEntry>{};
+    for (final entry in document.entries) {
+      final value = entry.value;
+      if (value is ProviderEntry) {
+        out[value.provider.id] = value;
+      } else if (value is Map) {
+        // A provider with no `models` object is kept, with none.
+        final providerId = (value['id'] as String?) ?? entry.key.toString();
+        final parsed = _parseProvider(
+          providerId,
+          value.cast<String, dynamic>(),
+        );
+        if (parsed != null) {
+          out[providerId] = parsed;
+        }
       }
     }
     return out;

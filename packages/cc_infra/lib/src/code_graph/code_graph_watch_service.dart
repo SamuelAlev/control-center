@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_index_run_reporter.dart';
 import 'package:cc_domain/features/code_graph/domain/services/code_indexer.dart';
@@ -25,7 +24,7 @@ import 'package:path/path.dart' as p;
 ///   revision ≠ PR/conversation worktree.
 /// - [DirectoryChangeWatcher] per checkout debounces IDE/agent/`git checkout`
 ///   saves into incremental [CodeIndexer] runs (hash-skip keeps no-ops cheap).
-/// Discovery: [WorkspaceRepository.watchAll] + [IsolatedRepoRepository.watchForWorkspace],
+/// Discovery: [WorkspaceRepository.watchAll] + each workspace's linked repos and worktrees,
 /// plus a slow reconcile for lost events / late-materialized dirs. Deleting an
 /// `isolated_repos` row FK-cascades its partition. Failures log+swallow; retry
 /// on next event/sweep — never take the service down.
@@ -34,10 +33,19 @@ class CodeGraphWatchService {
   /// [_defaultWatcherFactory], the required native `cc_watcher`).
   /// [_armStagger] spaces out arming consecutive checkouts; zero by default
   /// because a native watch costs O(1) to create.
+  ///
+  /// [_linkedRepos] and [_worktrees] give each workspace's checkout lists: the
+  /// current list on listen, and again whenever it changes. This service
+  /// listens to them for as long as it runs, so they must not be database
+  /// watches. A watch holds its workspace's database open while it is
+  /// listened to, and one that never ends means no workspace is ever closed
+  /// for being idle (`WorkspaceDatabaseManager.watchWithoutHolding` is the
+  /// kind to pass).
   CodeGraphWatchService({
     required this._indexer,
     required this._workspaces,
-    required this._isolatedRepos,
+    required this._linkedRepos,
+    required this._worktrees,
     this._runReporter,
     this._debounce = const Duration(seconds: 2),
     this._maxDebounce = const Duration(seconds: 15),
@@ -58,7 +66,8 @@ class CodeGraphWatchService {
   /// reporter) indexes identically and silently.
   final CodeIndexRunReporter? _runReporter;
   final WorkspaceRepository _workspaces;
-  final IsolatedRepoRepository _isolatedRepos;
+  final Stream<List<Repo>> Function(String workspaceId) _linkedRepos;
+  final Stream<List<IsolatedRepo>> Function(String workspaceId) _worktrees;
   final Duration _debounce;
 
   /// Ceiling on how long coalescing may defer a run. Each event restarts the
@@ -305,8 +314,8 @@ class CodeGraphWatchService {
       }
       final sources = _WorkspaceSources(
         workspaceId: workspace.id,
-        workspaces: _workspaces,
-        isolatedRepos: _isolatedRepos,
+        linkedRepos: _linkedRepos(workspace.id),
+        worktrees: _worktrees(workspace.id),
         onChanged: _reconcile,
         onError: (Object e) => CcInfraLog.warning(
           'code-graph watch: source stream error for ${workspace.id}: $e',
@@ -885,18 +894,18 @@ class _DesiredCheckout {
 class _WorkspaceSources {
   _WorkspaceSources({
     required this.workspaceId,
-    required WorkspaceRepository workspaces,
-    required IsolatedRepoRepository isolatedRepos,
+    required Stream<List<Repo>> linkedRepos,
+    required Stream<List<IsolatedRepo>> worktrees,
     required void Function() onChanged,
     required void Function(Object error) onError,
   }) {
     _subs = [
-      workspaces.watchReposForWorkspace(workspaceId).listen((repos) {
-        linkedRepos = repos;
+      linkedRepos.listen((repos) {
+        this.linkedRepos = repos;
         onChanged();
       }, onError: onError),
-      isolatedRepos.watchForWorkspace(workspaceId).listen((rows) {
-        worktrees = rows;
+      worktrees.listen((rows) {
+        this.worktrees = rows;
         onChanged();
       }, onError: onError),
     ];

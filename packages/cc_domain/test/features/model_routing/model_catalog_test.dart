@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:test/test.dart';
 
@@ -100,12 +102,128 @@ Map<String, dynamic> _fixture() => {
   },
 };
 
+/// The providers of a models.dev-shaped [document], parsed the way a source
+/// parses it: from the document's text.
+Map<String, ProviderEntry> _providers(Map<String, dynamic> document) =>
+    ModelsDevParser.parse(jsonEncode(document));
+
+/// The catalog of a models.dev-shaped [document].
+ModelCatalog _catalogOf(Map<String, dynamic> document) =>
+    ModelCatalog(_providers(document));
+
+/// What a parse produced, as plain values: the entities compare by identity
+/// of their keys, and these tests are about every field arriving.
+List<Object?> _summary(Map<String, ProviderEntry> providers) => [
+  for (final MapEntry(key: id, value: entry) in providers.entries)
+    [
+      id,
+      entry.provider.name,
+      entry.provider.envKeys,
+      entry.provider.docUrl,
+      for (final model in entry.models.values)
+        [
+          model.id,
+          model.providerId,
+          model.name,
+          model.family,
+          model.reasoning,
+          model.supportsTools,
+          model.supportsTemperature,
+          model.inputModalities,
+          model.outputModalities,
+          model.limits.context,
+          model.limits.maxOutput,
+          model.cost?.input,
+          model.cost?.output,
+          model.cost?.cacheRead,
+          model.cost?.cacheWrite,
+          model.status,
+          model.releasedAt,
+          model.thinking?.efforts,
+          model.thinking?.defaultLevel,
+        ],
+    ],
+];
+
 void main() {
   final clock = DateTime.utc(2025, 12, 1);
 
+  group('ModelsDevParser as the document is read', () {
+    test('the document parses to the same catalog from its text and from '
+        'its bytes', () {
+      final text = jsonEncode(_fixture());
+
+      final fromText = ModelsDevParser.parse(text);
+      expect(fromText.keys, ['anthropic', 'openai']);
+      expect(fromText['anthropic']!.models.keys, [
+        'claude-opus-4-5',
+        'claude-haiku-4-5',
+        'claude-2-legacy',
+      ]);
+      expect(
+        _summary(ModelsDevParser.parseUtf8(utf8.encode(text))),
+        _summary(fromText),
+      );
+    });
+
+    test('keeps a provider with no models object, in document order, and '
+        'skips what is not a provider', () {
+      final document = {
+        'first': {
+          'id': 'first',
+          'name': 'First',
+          'models': {
+            'a': {'id': 'a', 'name': 'A'},
+          },
+        },
+        'note': 'not a provider',
+        'bare': {'name': 'Bare'},
+        'last': {'id': 'last', 'name': 'Last', 'models': <String, dynamic>{}},
+      };
+
+      final parsed = _providers(document);
+
+      expect(parsed.keys, ['first', 'bare', 'last']);
+      expect(parsed['first']!.models.keys, ['a']);
+      expect(parsed['bare']!.provider.name, 'Bare');
+      expect(parsed['bare']!.models, isEmpty);
+      expect(parsed['last']!.models, isEmpty);
+    });
+
+    test('a provider is filed under its own id, not its key', () {
+      final parsed = ModelsDevParser.parse(
+        jsonEncode({
+          'key': {
+            'id': 'real-id',
+            'name': 'Real',
+            'models': {
+              'm': {'id': 'm', 'name': 'M'},
+            },
+          },
+        }),
+      );
+
+      expect(parsed.keys, ['real-id']);
+      expect(parsed['real-id']!.models['m']!.providerId, 'real-id');
+    });
+
+    test('a document that is not an object has no providers', () {
+      expect(ModelsDevParser.parse('[]'), isEmpty);
+      expect(ModelsDevParser.parse('{}'), isEmpty);
+    });
+
+    test('text that is not JSON is a FormatException', () {
+      expect(() => ModelsDevParser.parse('<html>'), throwsFormatException);
+      expect(
+        () => ModelsDevParser.parseUtf8(utf8.encode('{"cut":')),
+        throwsFormatException,
+      );
+    });
+  });
+
   group('ModelsDevParser', () {
     test('parses providers, models, cost, limits, modalities, thinking', () {
-      final providers = ModelsDevParser.parse(_fixture());
+      final providers = _providers(_fixture());
       expect(providers.keys, containsAll(['anthropic', 'openai']));
 
       final opus = providers['anthropic']!.models['claude-opus-4-5']!;
@@ -135,7 +253,7 @@ void main() {
           'm': {'id': 'm', 'name': 'M', 'reasoning': true},
         },
       };
-      final providers = ModelsDevParser.parse({
+      final providers = _providers({
         'anthropic': providerDoc('anthropic'),
         'openai': providerDoc('openai'),
         'zhipuai': providerDoc('zhipuai'),
@@ -174,7 +292,7 @@ void main() {
     test(
       'explicit reasoning_options always win over the provider fallback',
       () {
-        final providers = ModelsDevParser.parse({
+        final providers = _providers({
           'anthropic': {
             'id': 'anthropic',
             'name': 'Anthropic',
@@ -201,7 +319,7 @@ void main() {
     );
 
     test('preserves context pricing and refuses malformed tier prices', () {
-      final parsed = ModelCatalog.fromModelsDev({
+      final parsed = _catalogOf({
         'openai': {
           'id': 'openai',
           'models': {
@@ -254,7 +372,7 @@ void main() {
     });
 
     test('skips malformed entries instead of throwing', () {
-      final providers = ModelsDevParser.parse({
+      final providers = _providers({
         'broken': 'not a map',
         'ok': {
           'id': 'ok',
@@ -271,7 +389,7 @@ void main() {
   });
 
   group('ModelCatalog queries', () {
-    final catalog = ModelCatalog.fromModelsDev(_fixture());
+    final catalog = _catalogOf(_fixture());
 
     test('providerGet / providerAll', () {
       expect(catalog.providerCount, 2);
@@ -291,7 +409,7 @@ void main() {
     test(
       'resolve retries kimi-code under the models.dev kimi-for-coding id',
       () {
-        final catalog = ModelCatalog.fromModelsDev({
+        final catalog = _catalogOf({
           'kimi-for-coding': {
             'id': 'kimi-for-coding',
             'name': 'Kimi For Coding',
@@ -326,7 +444,7 @@ void main() {
     );
 
     test('resolve retries zai under the models.dev zhipuai id', () {
-      final catalog = ModelCatalog.fromModelsDev({
+      final catalog = _catalogOf({
         'zhipuai': {
           'id': 'zhipuai',
           'name': 'Zhipu AI',
@@ -359,7 +477,7 @@ void main() {
 
   group('finalize: enablement + policy', () {
     test('only providers with a present env key are enabled', () {
-      final catalog = ModelCatalog.fromModelsDev(_fixture()).finalize(
+      final catalog = _catalogOf(_fixture()).finalize(
         enablement: const ProviderEnablementChecker(
           presentEnvKeys: {'ANTHROPIC_API_KEY'},
         ).resolve,
@@ -387,7 +505,7 @@ void main() {
     });
 
     test('account login enables via account provenance', () {
-      final catalog = ModelCatalog.fromModelsDev(_fixture()).finalize(
+      final catalog = _catalogOf(_fixture()).finalize(
         enablement: const ProviderEnablementChecker(
           accountProviders: {'anthropic': 'anthropic-oauth'},
         ).resolve,
@@ -400,7 +518,7 @@ void main() {
       final policy = ProviderPolicyEngine.fromStatements(const [
         PolicyStatement.denyProvider('openai'),
       ]);
-      final catalog = ModelCatalog.fromModelsDev(_fixture()).finalize(
+      final catalog = _catalogOf(_fixture()).finalize(
         enablement: const ProviderEnablementChecker(
           presentEnvKeys: {'ANTHROPIC_API_KEY', 'OPENAI_API_KEY'},
         ).resolve,
@@ -412,7 +530,7 @@ void main() {
   });
 
   group('modelDefault / modelSmall', () {
-    final catalog = ModelCatalog.fromModelsDev(_fixture()).finalize(
+    final catalog = _catalogOf(_fixture()).finalize(
       enablement: const ProviderEnablementChecker(
         presentEnvKeys: {'ANTHROPIC_API_KEY', 'OPENAI_API_KEY'},
       ).resolve,

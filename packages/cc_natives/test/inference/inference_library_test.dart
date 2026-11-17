@@ -86,10 +86,9 @@ void main() {
         return;
       }
       final source = header.readAsStringSync();
-      final declared = RegExp(r'\b(cc_[a-z_]+)\s*\(')
-          .allMatches(source)
-          .map((m) => m.group(1)!)
-          .toSet();
+      final declared = RegExp(
+        r'\b(cc_[a-z_]+)\s*\(',
+      ).allMatches(source).map((m) => m.group(1)!).toSet();
       final bound = RegExp("'(cc_[a-z_]+)'")
           .allMatches(
             File(
@@ -126,7 +125,11 @@ void main() {
       final match = RegExp(
         r'#define CC_INFERENCE_ABI_VERSION (\d+)u',
       ).firstMatch(header.readAsStringSync());
-      expect(match, isNotNull, reason: 'the header lost its ABI version define');
+      expect(
+        match,
+        isNotNull,
+        reason: 'the header lost its ABI version define',
+      );
       expect(int.parse(match!.group(1)!), ccInferenceAbiVersion);
     });
   });
@@ -143,7 +146,9 @@ void main() {
           ? 'libc.so.6'
           : null;
       if (system == null) {
-        markTestSkipped('no known symbol-free system library for this platform');
+        markTestSkipped(
+          'no known symbol-free system library for this platform',
+        );
         return;
       }
       final DynamicLibrary lib;
@@ -174,6 +179,32 @@ void main() {
       );
       // A NULL-safe destroy is the cheapest possible proof we reached real code.
       bindings!.embedderDestroy(nullptr);
+    });
+  });
+
+  group('inferenceLibraryLoads', () {
+    test('is true for the staged library, without loading a model', () async {
+      final path = resolveInferenceLibraryPath();
+      if (path == null) {
+        markTestSkipped(
+          'cc_inference not staged — run scripts/natives/build_inference.sh',
+        );
+        return;
+      }
+      expect(await inferenceLibraryLoads(explicitPath: path), isTrue);
+    });
+
+    test('is false where the library does not resolve', () async {
+      if (resolveInferenceLibraryPath() != null) {
+        markTestSkipped('cc_inference resolves here, so the check passes');
+        return;
+      }
+      final missing = p.join(
+        Directory.systemTemp.path,
+        'no-such-dir',
+        platformInferenceLibraryFileName(),
+      );
+      expect(await inferenceLibraryLoads(explicitPath: missing), isFalse);
     });
   });
 }

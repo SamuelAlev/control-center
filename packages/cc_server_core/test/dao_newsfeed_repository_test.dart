@@ -29,6 +29,9 @@ class FakeRssFetcherService extends RssFetcherService {
   /// Every `(feedId, url)` this fake was actually asked to fetch.
   final List<({String feedId, String url})> fetches = [];
 
+  /// The stored images each fetch was handed, in fetch order.
+  final List<Map<String, String>> knownImages = [];
+
   /// Stubs by URL rather than feed id, so two users subscribed to the same
   /// publication resolve to the same body — the shape the memo is about.
   final Map<String, ParsedFeed> _byUrl = {};
@@ -60,8 +63,10 @@ class FakeRssFetcherService extends RssFetcherService {
     required String url,
     String? userAgent,
     CancelToken? cancelToken,
+    required Map<String, String> knownImages,
   }) async {
     fetches.add((feedId: feedId, url: url));
+    this.knownImages.add(knownImages);
     return _feeds[feedId] ?? _byUrl[url] ?? const ParsedFeed(articles: []);
   }
 }
@@ -672,6 +677,39 @@ void main() {
         articles.map((a) => a.title),
         containsAll(['Fetched A', 'Fetched B']),
       );
+    });
+
+    test('hands the fetcher the images already stored for the feed, so an '
+        'article is not looked up on its page again', () async {
+      final fetcher = FakeRssFetcherService();
+      final refreshRepo = DaoNewsfeedRepository(dao, fetcher);
+      final feed = await refreshRepo.addFeed(
+        _user,
+        name: 'Known images',
+        url: 'https://known-images.example.com/rss',
+      );
+      RssArticle article(String guid, String imageUrl) => RssArticle(
+        id: _uuid.v4(),
+        feedId: feed.id,
+        guid: guid,
+        title: guid,
+        link: 'https://known-images.example.com/$guid',
+        imageUrl: imageUrl,
+        createdAt: DateTime.now(),
+      );
+      fetcher.stubArticles(feed.id, [
+        article('with', 'https://known-images.example.com/cover.png'),
+        article('without', ''),
+      ]);
+
+      await refreshRepo.refreshFeed(_user, feed.id);
+      // The next sweep: a repository whose fetch memo has nothing in it.
+      await DaoNewsfeedRepository(dao, fetcher).refreshFeed(_user, feed.id);
+
+      expect(fetcher.knownImages, [
+        isEmpty,
+        {'with': 'https://known-images.example.com/cover.png'},
+      ]);
     });
 
     test('does nothing for nonexistent feed id', () async {

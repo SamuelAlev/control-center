@@ -59,8 +59,28 @@ void main() {
       final source = sourceOver(httpClient);
 
       final loaded = await source.load();
-      expect(loaded?['anthropic'], isA<Map>());
+      expect(loaded?['anthropic']?.models.keys, ['claude-opus-4-5']);
       expect(httpClient.requests, isEmpty);
+    });
+  });
+
+  group('documentText', () {
+    test('is the cache file as written, without parsing it', () async {
+      final file = File(cachePath())..parent.createSync(recursive: true);
+      file.writeAsStringSync(jsonEncode(_doc()));
+      final source = sourceOver(
+        TestHttpClient(handler: (_) => throw Exception('offline')),
+      );
+
+      expect(await source.documentText(), jsonEncode(_doc()));
+    });
+
+    test('is null before anything was cached', () async {
+      final source = sourceOver(
+        TestHttpClient(handler: (_) => throw Exception('offline')),
+      );
+
+      expect(await source.documentText(), isNull);
     });
   });
 
@@ -72,7 +92,7 @@ void main() {
       final source = sourceOver(httpClient);
 
       final json = await source.refresh(force: true);
-      expect(json?['anthropic'], isA<Map>());
+      expect(json?['anthropic']?.provider.name, 'Anthropic');
       expect(httpClient.requests, hasLength(1));
       expect(File(cachePath()).existsSync(), isTrue);
       expect(await source.load(), isNotNull);
@@ -81,16 +101,101 @@ void main() {
     test(
       'skips the network when a fresh cache exists and force is false',
       () async {
+        final file = File(cachePath())..parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(_doc()));
         final httpClient = TestHttpClient(
-          handler: (request) => httpTextResponse(request, _doc()),
+          handler: (_) => throw Exception('offline'),
         );
         final source = sourceOver(httpClient);
-        await source.refresh(force: true);
-        httpClient.requests.clear();
 
         final json = await source.refresh();
-        expect(json?['anthropic'], isA<Map>());
+        expect(json?['anthropic']?.provider.name, 'Anthropic');
         expect(httpClient.requests, isEmpty);
+      },
+    );
+
+    test(
+      'hands a fresh cache out once: a refresh right after a load is null',
+      () async {
+        final file = File(cachePath())..parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(_doc()));
+        final httpClient = TestHttpClient(
+          handler: (_) => throw Exception('offline'),
+        );
+        final source = sourceOver(httpClient);
+
+        expect(await source.load(), isNotNull);
+        expect(await source.refresh(), isNull);
+        expect(httpClient.requests, isEmpty);
+        // Still readable on demand: only the redundant refresh is skipped.
+        expect(await source.load(), isNotNull);
+      },
+    );
+
+    test('a refresh right after a fetch is null, without a request', () async {
+      final httpClient = TestHttpClient(
+        handler: (request) => httpTextResponse(request, _doc()),
+      );
+      final source = sourceOver(httpClient);
+      expect(await source.refresh(force: true), isNotNull);
+      httpClient.requests.clear();
+
+      expect(await source.refresh(), isNull);
+      expect(httpClient.requests, isEmpty);
+    });
+
+    test('a changed cache file is handed out again', () async {
+      final file = File(cachePath())..parent.createSync(recursive: true);
+      file.writeAsStringSync(jsonEncode(_doc()));
+      final source = sourceOver(
+        TestHttpClient(handler: (_) => throw Exception('offline')),
+      );
+      expect(await source.load(), isNotNull);
+
+      file.writeAsStringSync(
+        jsonEncode({
+          ..._doc(),
+          'openai': {'id': 'openai', 'name': 'OpenAI', 'models': const {}},
+        }),
+      );
+      final json = await source.refresh();
+      expect(json?['openai']?.provider.name, 'OpenAI');
+    });
+
+    test('caches the response as received', () async {
+      final httpClient = TestHttpClient(
+        handler: (request) => httpTextResponse(request, _doc()),
+      );
+      final source = sourceOver(httpClient);
+      await source.refresh(force: true);
+
+      expect(jsonDecode(File(cachePath()).readAsStringSync()), _doc());
+    });
+
+    test('a response that is not a catalog is not cached', () async {
+      final source = sourceOver(
+        TestHttpClient(
+          handler: (request) => httpTextResponse(request, 'not json'),
+        ),
+      );
+
+      expect(await source.refresh(force: true), isNull);
+      expect(File(cachePath()).existsSync(), isFalse);
+    });
+
+    test(
+      'offline with a stale cache the caller has: null, the cache untouched',
+      () async {
+        final file = File(cachePath())..parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(_doc()));
+        final source = sourceOver(
+          TestHttpClient(handler: (_) => throw Exception('offline')),
+          ttl: Duration.zero,
+        );
+        expect(await source.load(), isNotNull);
+
+        expect(await source.refresh(force: true), isNull);
+        expect(await source.load(), isNotNull);
       },
     );
 
@@ -103,7 +208,7 @@ void main() {
       final source = sourceOver(httpClient);
 
       final json = await source.refresh(force: true);
-      expect(json?['anthropic'], isA<Map>());
+      expect(json?['anthropic']?.provider.name, 'Anthropic');
     });
 
     test('does not fetch when the network is disallowed', () async {

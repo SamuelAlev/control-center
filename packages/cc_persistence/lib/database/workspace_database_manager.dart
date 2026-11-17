@@ -308,7 +308,13 @@ class WorkspaceDatabaseManager {
       workspaceId,
       () => _WorkspaceLease(_clock),
     )..touch();
-    final watches = _LeaseStreamQueryStore();
+    final watches = _LeaseStreamQueryStore(
+      onUpdates: (updates) {
+        if (_workspaceUpdates.hasListener) {
+          _workspaceUpdates.add((workspaceId: workspaceId, updates: updates));
+        }
+      },
+    );
     lease.workspaceWatches = watches;
     final db = WorkspaceDatabase(
       DatabaseConnection(
@@ -447,6 +453,92 @@ class WorkspaceDatabaseManager {
     if (firstReport) {
       onIntegrityFailure?.call(workspaceId, failure);
     }
+  }
+
+  /// The table updates written through every workspace database, each with
+  /// the workspace it was written in. A listener holds no file open, and it
+  /// keeps hearing a workspace across idle closes: a closed file has no
+  /// writer, so there is nothing to miss while it is closed.
+  final StreamController<({String workspaceId, Set<TableUpdate> updates})>
+  _workspaceUpdates = StreamController.broadcast();
+
+  /// [read]'s result now, and again after every write to one of [tables] in
+  /// [workspaceId]'s database, without holding the file open.
+  ///
+  /// A `select.watch()` keeps its file open for as long as it is listened
+  /// to. That is right for a screen and wrong for a service that listens for
+  /// the whole life of the server: one such watch per workspace kept every
+  /// workspace's isolates, page caches and mappings resident, which is the
+  /// thing [idleAfter] exists to release. This reads once (opening the file
+  /// if it is closed), lets the file close when idle, and reads again only
+  /// when a write to [tables] goes through an open connection. Like a watch,
+  /// it does not hear a write made by another process.
+  ///
+  /// Reads never overlap: a write that lands during one is answered by one
+  /// more read after it. A failed read is an error event, and the stream
+  /// stays open.
+  Stream<T> watchWithoutHolding<T>(
+    String workspaceId, {
+    required Iterable<TableInfo<Table, dynamic>> Function(WorkspaceDatabase db)
+    tables,
+    required Future<T> Function(WorkspaceDatabase db) read,
+  }) {
+    late final StreamController<T> controller;
+    StreamSubscription<Object?>? updates;
+    Set<String>? watched;
+    var reading = false;
+    var again = false;
+    var cancelled = false;
+
+    Future<void> refresh() async {
+      if (reading) {
+        again = true;
+        return;
+      }
+      reading = true;
+      try {
+        do {
+          again = false;
+          try {
+            final db = of(workspaceId);
+            watched ??= {for (final table in tables(db)) table.actualTableName};
+            final value = await read(db);
+            if (!cancelled) {
+              controller.add(value);
+            }
+          } on Object catch (error, stack) {
+            if (!cancelled) {
+              controller.addError(error, stack);
+            }
+          }
+        } while (again && !cancelled);
+      } finally {
+        reading = false;
+      }
+    }
+
+    controller = StreamController<T>(
+      onListen: () {
+        updates = _workspaceUpdates.stream.listen((event) {
+          final names = watched;
+          if (event.workspaceId != workspaceId ||
+              // Not read yet: the read in flight opens the file and may have
+              // started before this write.
+              (names != null &&
+                  !event.updates.any((u) => names.contains(u.table)))) {
+            return;
+          }
+          unawaited(refresh());
+        });
+        unawaited(refresh());
+      },
+      onCancel: () {
+        cancelled = true;
+        unawaited(controller.close());
+        return updates?.cancel();
+      },
+    );
+    return controller.stream;
   }
 
   /// Runs [body] against [workspaceId], then closes the file if this call is
@@ -622,6 +714,50 @@ class WorkspaceDatabaseManager {
 
   /// How many workspace databases are open.
   int get openCount => _open.length;
+
+  /// What is keeping each open workspace open, by workspace id, worded for a
+  /// log line: the tables its live watches read (with a count when several
+  /// watches read one), statements in flight, or how long it has been quiet
+  /// and the SQL (never the arguments) it last ran.
+  ///
+  /// A watch that lasts as long as the server shows up here on every report,
+  /// which is how one that should have been [watchWithoutHolding] is found.
+  /// So does a poller: a file that is always "quiet for 0s" names the
+  /// statement that keeps touching it.
+  Map<String, String> describeOpen() {
+    final now = _clock();
+    final out = <String, String>{};
+    for (final MapEntry(key: id, value: lease) in _leases.entries) {
+      final watched = <String, int>{};
+      for (final store in [lease.workspaceWatches, lease.codeIndexWatches]) {
+        store?.watchedTables.forEach((table, count) {
+          watched[table] = (watched[table] ?? 0) + count;
+        });
+      }
+      final parts = [
+        if (watched.isNotEmpty)
+          'watched: ${[for (final MapEntry(key: table, value: count) in watched.entries) count == 1 ? table : '$table x$count'].join(', ')}',
+        if (lease.statements > 0) '${lease.statements} statement(s) in flight',
+        if (_transientDepth.containsKey(id)) 'a cross-workspace read',
+      ];
+      final quiet = now.difference(lease.lastTouch).inSeconds;
+      // What ran in the last minute: one poller per workspace is enough to
+      // keep a file from ever going idle, and this names each of them.
+      final recent = [
+        for (final MapEntry(key: sql, value: at)
+            in lease.recentStatements.entries)
+          if (now.difference(at) < const Duration(minutes: 1))
+            sql.length > 100 ? '${sql.substring(0, 100)}…' : sql,
+      ];
+      out[id] = parts.isNotEmpty
+          ? parts.join('; ')
+          : recent.isEmpty
+          ? 'quiet for ${quiet}s'
+          : 'quiet for ${quiet}s, ran in the last minute: '
+                '${recent.reversed.join(' | ')}';
+    }
+    return out;
+  }
 
   /// Ids of workspaces whose code index is open.
   Iterable<String> get openCodeIndexIds => _openCodeIndexes.keys;
@@ -828,6 +964,26 @@ final class _WorkspaceLease {
       (workspaceWatches?.hasListeners ?? false) ||
       (codeIndexWatches?.hasListeners ?? false);
 
+  /// Statements and transactions in flight on either file.
+  int get statements => _depth;
+
+  /// The SQL of the last few distinct statements run outside a transaction,
+  /// without their arguments, each with when it last ran; most recent last.
+  /// What [WorkspaceDatabaseManager.describeOpen] names when a file never
+  /// goes quiet for long enough to close.
+  final Map<String, DateTime> recentStatements = {};
+
+  static const _recentStatementLimit = 6;
+
+  void noteStatement(String statement) {
+    recentStatements
+      ..remove(statement)
+      ..[statement] = _clock();
+    if (recentStatements.length > _recentStatementLimit) {
+      recentStatements.remove(recentStatements.keys.first);
+    }
+  }
+
   void touch() => lastTouch = _clock();
 
   void enter() {
@@ -849,15 +1005,40 @@ final class _WorkspaceLease {
 /// so a quiet screen that is still subscribed keeps the file open. The count
 /// drops when the last listener cancels, after drift's one-turn grace.
 final class _LeaseStreamQueryStore extends StreamQueryStore {
+  _LeaseStreamQueryStore({this._onUpdates});
+
+  /// Hears every update this connection dispatches. Not a listener: it is
+  /// not counted, so it never holds the file open.
+  final void Function(Set<TableUpdate> updates)? _onUpdates;
   int _listeners = 0;
 
+  /// The tables live watches read, each with how many watches read it. `*`
+  /// stands for a watch on every table.
+  final Map<String, int> watchedTables = {};
+
   bool get hasListeners => _listeners > 0;
+
+  static Iterable<String> _tablesOf(TableUpdateQuery query) => switch (query) {
+    SpecificUpdateQuery(:final table) => [table],
+    MultipleUpdateQuery(:final queries) => queries.expand(_tablesOf),
+    _ => const ['*'],
+  };
+
+  @override
+  void handleTableUpdates(Set<TableUpdate> updates) {
+    super.handleTableUpdates(updates);
+    _onUpdates?.call(updates);
+  }
 
   @override
   Stream<Set<TableUpdate>> updatesForSync(TableUpdateQuery query) {
     final inner = super.updatesForSync(query);
+    final tables = _tablesOf(query).toSet();
     return Stream<Set<TableUpdate>>.multi((listener) {
       _listeners++;
+      for (final table in tables) {
+        watchedTables[table] = (watchedTables[table] ?? 0) + 1;
+      }
       var released = false;
       void release() {
         if (released) {
@@ -865,6 +1046,14 @@ final class _LeaseStreamQueryStore extends StreamQueryStore {
         }
         released = true;
         _listeners--;
+        for (final table in tables) {
+          final left = (watchedTables[table] ?? 1) - 1;
+          if (left > 0) {
+            watchedTables[table] = left;
+          } else {
+            watchedTables.remove(table);
+          }
+        }
       }
 
       // Drift invalidates a watch's cached row inside the table-update
@@ -898,8 +1087,11 @@ final class _ActivityExecutor implements QueryExecutor {
   final _WorkspaceLease _lease;
   void Function()? _onClose;
 
-  Future<T> _track<T>(Future<T> future) {
+  Future<T> _track<T>(Future<T> future, [String? statement]) {
     _lease.enter();
+    if (statement != null) {
+      _lease.noteStatement(statement);
+    }
     return future.whenComplete(_lease.leave);
   }
 
@@ -914,23 +1106,23 @@ final class _ActivityExecutor implements QueryExecutor {
   Future<List<Map<String, Object?>>> runSelect(
     String statement,
     List<Object?> args,
-  ) => _track(_inner.runSelect(statement, args));
+  ) => _track(_inner.runSelect(statement, args), statement);
 
   @override
   Future<int> runInsert(String statement, List<Object?> args) =>
-      _track(_inner.runInsert(statement, args));
+      _track(_inner.runInsert(statement, args), statement);
 
   @override
   Future<int> runUpdate(String statement, List<Object?> args) =>
-      _track(_inner.runUpdate(statement, args));
+      _track(_inner.runUpdate(statement, args), statement);
 
   @override
   Future<int> runDelete(String statement, List<Object?> args) =>
-      _track(_inner.runDelete(statement, args));
+      _track(_inner.runDelete(statement, args), statement);
 
   @override
   Future<void> runCustom(String statement, [List<Object?>? args]) =>
-      _track(_inner.runCustom(statement, args));
+      _track(_inner.runCustom(statement, args), statement);
 
   @override
   Future<void> runBatched(BatchedStatements statements) =>
@@ -939,6 +1131,7 @@ final class _ActivityExecutor implements QueryExecutor {
   @override
   TransactionExecutor beginTransaction() {
     _lease.enter();
+    _lease.noteStatement('a transaction');
     try {
       return _ActivityTransaction(_inner.beginTransaction(), _lease.leave);
     } catch (_) {

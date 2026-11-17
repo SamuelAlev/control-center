@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:cc_natives/src/inference/cc_inference_bindings.dart';
 import 'package:cc_natives/src/native_library.dart';
@@ -128,6 +129,23 @@ CcInferenceBindings? ensureInferenceBindings({
   }
   return bindings;
 }
+
+/// Whether the `cc_inference` native at [explicitPath] loads and speaks this
+/// build's ABI, checked on a throwaway isolate.
+///
+/// Opening the library maps it and resolves its symbols; no model is read, so
+/// this costs milliseconds and no memory worth naming. It is the check a host
+/// wants at boot: "will speech work in THIS process?" has one common wrong
+/// answer (the dylib does not resolve here), and loading a recognizer to find
+/// out read several hundred MB of weights only to free them again.
+///
+/// On its own isolate for the reason [resolveInferenceLibraryPath] gives: the
+/// open has been seen hanging under the JIT VM, and a wedged worker costs
+/// nothing where a wedged caller is the whole host.
+Future<bool> inferenceLibraryLoads({String? explicitPath}) => Isolate.run(
+  () => ensureInferenceBindings(explicitPath: explicitPath) != null,
+  debugName: 'inference-preflight',
+);
 
 /// The message a caller should throw when [ensureInferenceBindings] returns
 /// null, naming what to run. Kept here so every consumer says the same thing.

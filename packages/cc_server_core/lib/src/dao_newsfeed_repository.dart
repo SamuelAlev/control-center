@@ -174,6 +174,7 @@ class DaoNewsfeedRepository implements NewsfeedRepository {
             feedId: feed.id,
             url: feed.url,
             userAgent: feed.userAgent,
+            knownImages: await _dao.articleImagesByGuid(feed.id),
           );
       if (cached == null) {
         _memoize(feed.url, parsed);

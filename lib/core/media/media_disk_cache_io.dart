@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/services/cache_stats.dart';
@@ -223,11 +224,49 @@ class MediaDiskCache {
     return next;
   }
 
+  /// The walk runs on a worker isolate. It stats (and may delete) every file
+  /// under [root], which for a full cache is thousands of blocking calls, and
+  /// the first sweep runs while the app is still starting: on the UI isolate
+  /// that was frames the window could not draw.
   Future<void> _sweep() async {
+    final path = root.path;
+    final ttl = this.ttl;
+    final maxBytes = this.maxBytes;
+    final ({int entries, int bytes, int evicted})? swept;
     try {
+      swept = await Isolate.run(
+        () => _sweepTree(path, ttl, maxBytes),
+        debugName: 'media-cache-sweep',
+      );
+    } on Object {
+      // The tree was moved or removed under us; the next sweep re-measures.
+      return;
+    }
+    if (swept == null) {
+      return;
+    }
+    // A body written while the walk ran may or may not be in its total. The
+    // next sweep measures again, and until then the figure is off by at most
+    // what was written in that window.
+    _approxBytes = swept.bytes;
+    if (swept.evicted > 0) {
+      _stats.evicted(swept.evicted);
+    }
+    _stats.size(entries: swept.entries, bytes: swept.bytes);
+  }
+
+  /// Drops what is past [ttl] under [path], then the oldest entries until the
+  /// total is back under [maxBytes]. Null when the tree changed under the walk.
+  /// Static, with plain arguments: it runs on another isolate.
+  static ({int entries, int bytes, int evicted})? _sweepTree(
+    String path,
+    Duration ttl,
+    int maxBytes,
+  ) {
+    try {
+      final root = Directory(path);
       if (!root.existsSync()) {
-        _approxBytes = 0;
-        return;
+        return (entries: 0, bytes: 0, evicted: 0);
       }
       final now = DateTime.now();
       final entries = <({File file, DateTime modified, int length})>[];
@@ -255,6 +294,7 @@ class MediaDiskCache {
         entries.add((file: entity, modified: stat.modified, length: stat.size));
         total += stat.size;
       }
+      var kept = entries.length;
       if (total > maxBytes) {
         entries.sort((a, b) => a.modified.compareTo(b.modified));
         for (final entry in entries) {
@@ -265,18 +305,15 @@ class MediaDiskCache {
             entry.file.deleteSync();
             total -= entry.length;
             evicted++;
+            kept--;
           } on FileSystemException {
             // Skip and keep going; the next sweep retries.
           }
         }
       }
-      _approxBytes = total;
-      if (evicted > 0) {
-        _stats.evicted(evicted);
-      }
-      _stats.size(entries: entries.length, bytes: total);
+      return (entries: kept, bytes: total, evicted: evicted);
     } on FileSystemException {
-      // The tree was moved or removed under us; the next sweep re-measures.
+      return null;
     }
   }
 

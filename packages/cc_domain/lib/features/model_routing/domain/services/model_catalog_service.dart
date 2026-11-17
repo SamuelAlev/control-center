@@ -22,7 +22,7 @@ class ModelCatalogService {
     required this._source,
     Set<String> Function()? presentEnvKeys,
     Map<String, String> Function()? accountProviders,
-    this._backgroundRefreshInterval = const Duration(hours: 1),
+    this._backgroundRefreshInterval = const Duration(hours: 6),
   }) : _presentEnvKeys = presentEnvKeys ?? (() => const <String>{}),
        _accountProviders = accountProviders ?? (() => const <String, String>{});
 
@@ -53,9 +53,9 @@ class ModelCatalogService {
   }
 
   Future<void> _load() async {
-    final json = await _source.load();
-    if (json != null && json.isNotEmpty) {
-      _raw = ModelCatalog.fromModelsDev(json);
+    final providers = await _source.load();
+    if (providers != null && providers.isNotEmpty) {
+      _raw = ModelCatalog(providers);
       _loaded = true;
       if (!_controller.isClosed) {
         _controller.add(_raw);
@@ -84,9 +84,9 @@ class ModelCatalogService {
 
   /// Forces a refresh from models.dev (past the TTL when `force`).
   Future<ModelCatalog> refresh({bool force = true}) async {
-    final json = await _source.refresh(force: force);
-    if (json != null && json.isNotEmpty) {
-      _raw = ModelCatalog.fromModelsDev(json);
+    final providers = await _source.refresh(force: force);
+    if (providers != null && providers.isNotEmpty) {
+      _raw = ModelCatalog(providers);
       _loaded = true;
       if (!_controller.isClosed) {
         _controller.add(_raw);
@@ -95,7 +95,8 @@ class ModelCatalogService {
     return _finalize(null);
   }
 
-  /// Starts the hourly background refresh. Safe to call once; subsequent calls are ignored.
+  /// Starts the background refresh (every six hours by default). Safe to call
+  /// once; subsequent calls are ignored.
   void startBackgroundRefresh() {
     _timer ??= Timer.periodic(_backgroundRefreshInterval, (_) {
       // Best-effort; failures fall back to the on-disk cache inside the source.

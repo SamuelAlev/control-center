@@ -124,8 +124,18 @@ class _Thumbnail extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: radius,
-            child: Image.network(
-              url,
+            child: Image(
+              // Decoded at the size it is drawn. A desktop screenshot held at
+              // its own size is tens of megabytes of pixels for a strip this
+              // tall, for as long as the transcript keeps it on screen; the
+              // lightbox above still loads the whole picture. Only ever
+              // scaled down: a small or very wide image is left as it is.
+              image: ResizeImage(
+                NetworkImage(url),
+                height: (height * MediaQuery.devicePixelRatioOf(context))
+                    .round(),
+                policy: ResizeImagePolicy.fit,
+              ),
               height: height,
               fit: BoxFit.contain,
               errorBuilder: (context, _, _) =>

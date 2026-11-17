@@ -76,41 +76,56 @@ class IdentityBootstrap {
   ///
   /// Live workspaces only: a deleted workspace has no database, and opening
   /// its id to write a membership would create one.
+  ///
+  /// This is the first statement on every workspace's database, so it is what
+  /// opens each file, and a file's first open in a process runs its
+  /// `quick_check`. The workspaces are checked side by side: each database has
+  /// its own isolate, so the server waits for the largest file instead of for
+  /// the sum of them all before it listens.
   Future<void> _ensureOwnerMemberships() async {
     final rows = await (_global.select(
       _global.workspacesTable,
     )..where((t) => t.deletedAt.isNull())).get();
-    for (final ws in rows) {
-      final ownerUserId = ws.ownerUserId;
-      if (ownerUserId == null) {
-        continue;
-      }
-      final db = _workspaces.of(ws.id);
-      final member = await db.workspaceMemberDao.getMember(ws.id, ownerUserId);
-      if (member == null) {
-        final joinedAt = DateTime.now();
-        await db.workspaceMemberDao.upsert(
-          WorkspaceMembersTableCompanion(
-            id: Value(_uuid.v4()),
-            workspaceId: Value(ws.id),
-            userId: Value(ownerUserId),
-            role: Value(WorkspaceRole.owner.wireName),
-            joinedAt: Value(joinedAt),
-          ),
-        );
-        // Announced like any other membership write. Inert on a normal boot
-        // (this runs before the RPC surface accepts connections), but the
-        // bootstrap is idempotent and also runs from `pair_device`, so the
-        // row must never appear without its event.
-        _eventBus?.publish(
-          WorkspaceMemberAdded(
-            workspaceId: ws.id,
-            userId: ownerUserId,
-            role: WorkspaceRole.owner,
-            occurredAt: joinedAt,
-          ),
-        );
-      }
+    await Future.wait([
+      for (final ws in rows)
+        if (ws.ownerUserId case final ownerUserId?)
+          _ensureOwnerMembership(ws.id, ownerUserId),
+    ]);
+  }
+
+  Future<void> _ensureOwnerMembership(
+    String workspaceId,
+    String ownerUserId,
+  ) async {
+    final db = _workspaces.of(workspaceId);
+    final member = await db.workspaceMemberDao.getMember(
+      workspaceId,
+      ownerUserId,
+    );
+    if (member != null) {
+      return;
     }
+    final joinedAt = DateTime.now();
+    await db.workspaceMemberDao.upsert(
+      WorkspaceMembersTableCompanion(
+        id: Value(_uuid.v4()),
+        workspaceId: Value(workspaceId),
+        userId: Value(ownerUserId),
+        role: Value(WorkspaceRole.owner.wireName),
+        joinedAt: Value(joinedAt),
+      ),
+    );
+    // Announced like any other membership write. Inert on a normal boot (this
+    // runs before the RPC surface accepts connections), but the bootstrap is
+    // idempotent and also runs from `pair_device`, so the row must never
+    // appear without its event.
+    _eventBus?.publish(
+      WorkspaceMemberAdded(
+        workspaceId: workspaceId,
+        userId: ownerUserId,
+        role: WorkspaceRole.owner,
+        occurredAt: joinedAt,
+      ),
+    );
   }
 }

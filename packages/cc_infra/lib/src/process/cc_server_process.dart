@@ -37,6 +37,25 @@ class CcServerStartException implements Exception {
   String toString() => 'CcServerStartException: $message';
 }
 
+/// The environment variable a Dart executable reads its VM options from.
+const dartVmOptionsEnvVar = 'DART_VM_OPTIONS';
+
+/// The Dart VM options `cc_server` is meant to run with. A spawned server
+/// gets them unless `DART_VM_OPTIONS` is already set; the container image
+/// sets the same value, and a server started by hand takes it from the
+/// operator (see the server README).
+///
+/// `--new_gen_semi_max_size=8` caps each half of the young generation at
+/// 8 MB. The VM's own bound is 16 MB a half, it grows towards that with the
+/// number of isolates as much as with the garbage they make (every database
+/// connection is one), and it never shrinks again. Measured on an idle server
+/// with two workspaces, forty-five seconds after it came up: 150 to 157 MB
+/// of written memory at the VM's bound, 127 MB at this one, with boot
+/// unchanged. Lower still (4 MB) bought nothing more. The price is more
+/// frequent collections of a smaller young generation while the server is
+/// busy.
+const ccServerVmOptions = '--new_gen_semi_max_size=8';
+
 /// Spawns and supervises the pure-Dart `cc_server` binary as a child process,
 /// then exposes the loopback [CcServerEndpoint] it bound.
 ///
@@ -130,7 +149,13 @@ class CcServerProcess {
       process = await Process.start(
         executable,
         args,
-        environment: environment,
+        environment: {
+          // The child inherits this process's environment, so one set there
+          // (or by the caller) is the operator's own choice and wins.
+          if (!Platform.environment.containsKey(dartVmOptionsEnvVar))
+            dartVmOptionsEnvVar: ccServerVmOptions,
+          ...?environment,
+        },
         workingDirectory: workingDirectory,
       );
     } on ProcessException catch (e) {

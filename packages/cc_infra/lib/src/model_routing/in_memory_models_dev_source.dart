@@ -1,4 +1,8 @@
+import 'dart:convert';
+
+import 'package:cc_domain/features/model_routing/domain/entities/model_provider.dart';
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
+import 'package:cc_domain/features/model_routing/domain/services/models_dev_parser.dart';
 
 /// A [ModelsDevSource] that serves a caller-supplied in-memory document.
 ///
@@ -8,14 +12,20 @@ import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.
 /// tests pass a fixture.
 class InMemoryModelsDevSource implements ModelsDevSource {
   /// Creates an [InMemoryModelsDevSource] over a caller-supplied document.
-  InMemoryModelsDevSource(this._document);
+  InMemoryModelsDevSource(Map<String, dynamic> document)
+    : _text = jsonEncode(document);
 
-  final Map<String, dynamic> _document;
+  /// The document as models.dev serves it: its JSON text.
+  final String _text;
 
   @override
-  Future<Map<String, dynamic>?> load() async => _document;
+  Future<Map<String, ProviderEntry>?> load() async =>
+      ModelsDevParser.parse(_text);
 
   @override
-  Future<Map<String, dynamic>?> refresh({bool force = false}) async =>
-      _document;
+  Future<Map<String, ProviderEntry>?> refresh({bool force = false}) async =>
+      ModelsDevParser.parse(_text);
+
+  @override
+  Future<String?> documentText() async => _text;
 }

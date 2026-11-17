@@ -99,6 +99,16 @@ class DaoWorkspaceRepository implements WorkspaceRepository {
   Stream<List<Repo>> watchReposForWorkspace(String workspaceId) =>
       _dbs.of(workspaceId).repoDao.watchAll().map(_repoMapper.toDomainList);
 
+  /// [watchReposForWorkspace] for a listener that lasts as long as the
+  /// server: the same lists, without holding the workspace's database open
+  /// (see [WorkspaceDatabaseManager.watchWithoutHolding]).
+  Stream<List<Repo>> watchReposWithoutHolding(String workspaceId) =>
+      _dbs.watchWithoutHolding(
+        workspaceId,
+        tables: (db) => [db.reposTable],
+        read: (db) async => _repoMapper.toDomainList(await db.repoDao.getAll()),
+      );
+
   @override
   Future<void> setReposForWorkspace(String workspaceId, List<String> repoIds) =>
       _dbs.of(workspaceId).repoDao.reorderRepos(repoIds);

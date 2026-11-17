@@ -81,7 +81,8 @@ void main() {
     service = CodeGraphWatchService(
       indexer: indexer,
       workspaces: workspaces,
-      isolatedRepos: isolated,
+      linkedRepos: workspaces.watchReposForWorkspace,
+      worktrees: isolated.watchForWorkspace,
       debounce: debounce,
       // These tests are not about the linked-vs-worktree window split, so the
       // two are pinned together and every checkout coalesces on the same tick.
@@ -224,7 +225,8 @@ void main() {
       reporting = CodeGraphWatchService(
         indexer: indexer,
         workspaces: workspaces,
-        isolatedRepos: isolated,
+        linkedRepos: workspaces.watchReposForWorkspace,
+        worktrees: isolated.watchForWorkspace,
         runReporter: reporter,
         debounce: debounce,
         linkedDebounce: debounce,
@@ -410,7 +412,8 @@ void main() {
     final split = CodeGraphWatchService(
       indexer: splitIndexer,
       workspaces: splitWorkspaces,
-      isolatedRepos: splitIsolated,
+      linkedRepos: splitWorkspaces.watchReposForWorkspace,
+      worktrees: splitIsolated.watchForWorkspace,
       debounce: const Duration(milliseconds: 30),
       maxDebounce: const Duration(seconds: 10),
       linkedDebounce: const Duration(seconds: 10),
@@ -580,7 +583,8 @@ void main() {
       final busy = CodeGraphWatchService(
         indexer: indexer,
         workspaces: busyWorkspaces,
-        isolatedRepos: _FakeIsolatedRepoRepository(),
+        linkedRepos: busyWorkspaces.watchReposForWorkspace,
+        worktrees: _FakeIsolatedRepoRepository().watchForWorkspace,
         debounce: const Duration(milliseconds: 200),
         maxDebounce: const Duration(milliseconds: 120),
         // The subject is a linked checkout, so the linked pair is what this
@@ -625,7 +629,8 @@ void main() {
     final throttled = CodeGraphWatchService(
       indexer: indexer,
       workspaces: workspaces,
-      isolatedRepos: isolated,
+      linkedRepos: workspaces.watchReposForWorkspace,
+      worktrees: isolated.watchForWorkspace,
       debounce: debounce,
       // These tests are not about the linked-vs-worktree window split, so the
       // two are pinned together and every checkout coalesces on the same tick.
@@ -703,7 +708,8 @@ void main() {
       queued = CodeGraphWatchService(
         indexer: indexer,
         workspaces: workspaces,
-        isolatedRepos: isolated,
+        linkedRepos: workspaces.watchReposForWorkspace,
+        worktrees: isolated.watchForWorkspace,
         debounce: debounce,
         linkedDebounce: debounce,
         reconcileInterval: const Duration(milliseconds: 50),
@@ -850,7 +856,8 @@ void main() {
     final scoped = CodeGraphWatchService(
       indexer: indexer,
       workspaces: workspaces,
-      isolatedRepos: isolated,
+      linkedRepos: workspaces.watchReposForWorkspace,
+      worktrees: isolated.watchForWorkspace,
       debounce: debounce,
       // These tests are not about the linked-vs-worktree window split, so the
       // two are pinned together and every checkout coalesces on the same tick.
@@ -1021,7 +1028,8 @@ void main() {
     final held = CodeGraphWatchService(
       indexer: late,
       workspaces: heldWorkspaces,
-      isolatedRepos: _FakeIsolatedRepoRepository(),
+      linkedRepos: heldWorkspaces.watchReposForWorkspace,
+      worktrees: _FakeIsolatedRepoRepository().watchForWorkspace,
       debounce: debounce,
       // These tests are not about the linked-vs-worktree window split, so the
       // two are pinned together and every checkout coalesces on the same tick.
@@ -1061,7 +1069,8 @@ void main() {
     final flaky = CodeGraphWatchService(
       indexer: indexer,
       workspaces: workspaces,
-      isolatedRepos: isolated,
+      linkedRepos: workspaces.watchReposForWorkspace,
+      worktrees: isolated.watchForWorkspace,
       debounce: debounce,
       // These tests are not about the linked-vs-worktree window split, so the
       // two are pinned together and every checkout coalesces on the same tick.
@@ -1137,7 +1146,8 @@ void main() {
       final native = CodeGraphWatchService(
         indexer: nativeIndexer,
         workspaces: nativeWorkspaces,
-        isolatedRepos: _FakeIsolatedRepoRepository(),
+        linkedRepos: nativeWorkspaces.watchReposForWorkspace,
+        worktrees: _FakeIsolatedRepoRepository().watchForWorkspace,
         debounce: const Duration(milliseconds: 100),
         linkedDebounce: const Duration(milliseconds: 100),
         reconcileInterval: const Duration(milliseconds: 100),

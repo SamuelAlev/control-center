@@ -119,6 +119,7 @@ ENV CC_SERVER_BINARY=${CC_SERVER_BINARY} \
     CC_SERVER_INSECURE=1 \
     CC_NATIVE_LIB_DIR=/app/bin/lib \
     LD_LIBRARY_PATH=/app/lib:/app/bin/lib \
+    DART_VM_OPTIONS=--new_gen_semi_max_size=8 \
     LANG=C.UTF-8
 
 # Persist the SQLite DB, downloaded models, paired-device secrets and meeting

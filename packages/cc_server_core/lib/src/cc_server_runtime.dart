@@ -155,6 +155,7 @@ import 'package:cc_natives/cc_natives.dart'
         nativeLibDirEnvVar,
         nativeLibraryCandidates,
         inferenceLibraryBaseName,
+        inferenceLibraryLoads,
         initializeRhttp,
         resolveInferenceLibraryPath,
         samlLibraryBaseName,
@@ -426,6 +427,26 @@ Future<CcServer> runCcServer({
   await _bootStep(
     'initializing the HTTP runtime',
     () => initializeRhttp(appSupportRoot: config.dataDir),
+  );
+
+  // models.dev catalog for the built-in harness: supplies per-model
+  // reasoning support (effort clamping), USD pricing and context-window size.
+  // Cached under the data dir — never a bundled snapshot. Boot reads the
+  // disk cache only so a first-run fetch cannot hold the ready banner; the
+  // background refresh fills an empty cache after listen. The demo does not
+  // dial models.dev (`allowNetwork: false`).
+  //
+  // The cache is megabytes of JSON. Its load starts here, decoding on its
+  // own isolate, and is collected where the wiring first needs it, so it
+  // overlaps the database open instead of following it.
+  final modelsDevSource = FileModelsDevSource(
+    cacheFilePath: p.join(config.dataDir, 'models_dev', 'api.json'),
+    allowNetwork: demoBuilder == null,
+  );
+  final modelCatalogService = ModelCatalogService(source: modelsDevSource);
+  final modelCatalogLoad = modelCatalogService.ensureLoaded().then<Object?>(
+    (_) => null,
+    onError: (Object e) => e,
   );
 
   // Persistence is two halves. `global.db` holds only server-wide state (the
@@ -2071,6 +2092,7 @@ Future<CcServer> runCcServer({
   // the same shape as `networkRuntimeHolder`.
   WorkspaceSeeder? demoBaseSeeder;
   final bootWork = _BootWork();
+  final afterReady = _AfterReady();
   DemoMeetingService? demoMeeting;
   DemoReviewService? demoReview;
   // Assigned once the dispatch service exists: a reaped visitor's replays
@@ -2408,23 +2430,15 @@ Future<CcServer> runCcServer({
     store: harnessCreds,
     dataDir: config.dataDir,
   );
-  // models.dev catalog for the built-in harness: supplies per-model
-  // reasoning support (effort clamping), USD pricing and context-window size.
-  // Cached under the data dir — never a bundled snapshot. Boot reads the
-  // disk cache only so a first-run fetch cannot hold the ready banner; the
-  // background refresh fills an empty cache after listen. The demo does not
-  // dial models.dev (`allowNetwork: false`).
-  final modelsDevSource = FileModelsDevSource(
-    cacheFilePath: p.join(config.dataDir, 'models_dev', 'api.json'),
-    allowNetwork: demo == null,
-  );
-  final modelCatalogService = ModelCatalogService(source: modelsDevSource);
+  // The models.dev catalog, whose load started at the top of boot: the
+  // wiring below reads it synchronously, so this is where it is collected.
   final catalogStartedAt = DateTime.now();
   _bootMark('loading harness model catalog');
-  try {
-    await modelCatalogService.ensureLoaded();
-  } on Object catch (e) {
-    CcHostLog.warning('cc_server: harness model catalog load failed: $e');
+  final catalogFailure = await modelCatalogLoad;
+  if (catalogFailure != null) {
+    CcHostLog.warning(
+      'cc_server: harness model catalog load failed: $catalogFailure',
+    );
   }
   _bootDone('loading harness model catalog', catalogStartedAt);
   modelCatalogService.startBackgroundRefresh();
@@ -4077,7 +4091,11 @@ Future<CcServer> runCcServer({
   final codeGraphWatch = CodeGraphWatchService(
     indexer: codeIndexer,
     workspaces: workspaceRepository,
-    isolatedRepos: isolatedRepoRepository,
+    // This service listens for the life of the server. Ordinary watches
+    // would hold every workspace's database open for that long, so nothing
+    // would ever be closed for being idle.
+    linkedRepos: workspaceRepository.watchReposWithoutHolding,
+    worktrees: isolatedRepoRepository.watchForWorkspaceWithoutHolding,
     runReporter: codeIndexRunReporter,
     // Hold the first arm/index sweep a little past ready, keeping it out of
     // the desktop's initial RPC burst (workspace list, space hydration).
@@ -4894,6 +4912,7 @@ Future<CcServer> runCcServer({
     ticketRepository: ticketRepository,
   );
 
+  _bootMark('wiring the IDE + skill evaluations');
   // Messaging IDE repo views (Explorer file tree, Source Control diffs, file
   // viewer, conversation changes) served over RPC. The SERVER owns the linked
   // repo checkouts + per-conversation worktrees; every client (desktop thin +
@@ -5086,7 +5105,10 @@ Future<CcServer> runCcServer({
     factory: demo?.harnessProviderFactory ?? const HarnessProviderFactory(),
     onWarning: CcHostLog.warning,
   );
-  await skillEvaluationService.start();
+  await _bootStep(
+    'recovering skill evaluations',
+    skillEvaluationService.start,
+  );
   fleetOps.addAll(buildSkillEvaluationOps(skillEvaluationService));
   fleetWatchQueries.addAll(
     buildSkillEvaluationWatchQueries(skillEvaluationService),
@@ -5105,6 +5127,7 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
   );
 
+  _bootMark('wiring spaces + environments');
   // Close the loop for the `messaging.createSpace` body wired into the pipeline
   // executor above: the review pipeline and the PR workbench now resolve the
   // PR's space through one implementation, so they can never disagree about
@@ -5758,6 +5781,7 @@ Future<CcServer> runCcServer({
           databases: workspaceDbs,
         );
 
+  _bootMark('assembling the RPC catalog');
   final linkPreviews = _linkPreviewFetchers(forActor: githubClientForActor);
   final catalog = buildRemoteRpcCatalog(
     manualPairingEnabled: ssoSettings.isPairingEnabled,
@@ -6616,6 +6640,7 @@ Future<CcServer> runCcServer({
     resolveStudioKey: resolvePrExternalId,
   );
 
+  _bootMark('provisioning the local device');
   // Bootstrap device provisioning: a desktop that SPAWNS this server as a local
   // subprocess passes a one-time device id + PSK via env (it can no longer
   // pre-seed the DB it doesn't open). Provision them as an active paired device
@@ -7119,6 +7144,7 @@ Future<CcServer> runCcServer({
     };
   }
 
+  _bootMark('building the RPC server');
   final canViewNotification = _notificationViewCheck(notificationDelivery);
 
   final server = LocalRpcServer(
@@ -7476,78 +7502,67 @@ Future<CcServer> runCcServer({
   // The editor bridge is server-internal IPC, not the public RPC listener.
   codeServerSessions.resolveBridgeBase = () => server.codeServerBridgeBase;
 
-  // Load the recognizer once (off the ready path, so it never delays boot)
-  // when a voice model resolved, then UNLOAD it again. This surfaces — loudly,
-  // in the server log the desktop pipes through — whether the inference native
-  // actually loaded in THIS pure-Dart process: the #1 cause of "audio captured
-  // + WAV retained, but transcript empty" is the dylib failing to resolve here
-  // (nothing bundles it into a pure-Dart binary; the desktop must hand us its
-  // bundled-dylib dir via CC_NATIVE_LIB_DIR).
-  // The model is NOT kept warm: loaded ASR weights are hundreds of MB and most
-  // sessions never record, so the first recording pays a one-time reload while
-  // its first audio window buffers (capture is never lost — audio queues).
+  // Says, loudly, in the server log the desktop pipes through, whether the
+  // inference native loads in THIS pure-Dart process: the #1 cause of "audio
+  // captured + WAV retained, but transcript empty" is the dylib failing to
+  // resolve here (nothing bundles it into a pure-Dart binary; the desktop must
+  // hand us its bundled-dylib dir via CC_NATIVE_LIB_DIR).
+  // The check opens the library and stops there. It used to load the whole
+  // recognizer and unload it again, which answered the same question by
+  // reading several hundred MB of ASR weights on every boot, right while the
+  // first client was connecting. The model itself loads when a recording
+  // starts, while its first audio window buffers (capture is never lost —
+  // audio queues), and a model that cannot load says so then.
   if (meetingTranscriber != null) {
-    final transcriber = meetingTranscriber;
-    CcHostLog.info(
-      'cc_server: preflighting speech recognizer (inference dylib: '
-      '${inferenceLibPath ?? '<unresolved — set $nativeLibDirEnvVar, drop the '
-              'dylib in ${config.dataDir}, or ship it beside the binary>'})',
-    );
-    unawaited(
-      transcriber
-          .initialize()
-          .then((_) async {
-            CcHostLog.info(
-              'cc_server: speech recognizer verified — meeting transcription '
-              'enabled (model unloaded until a recording starts)',
-            );
-            await transcriber.unload();
-          })
-          .catchError((Object e) {
-            CcHostLog.error(
-              'cc_server: speech recognizer FAILED to load — meeting transcripts '
-              'will be EMPTY. The cc_inference dylib did not resolve in this '
-              'process; ensure $nativeLibDirEnvVar points at a dir containing '
-              '${platformLibraryFileName(inferenceLibraryBaseName)}. Cause: $e',
-            );
-          }),
-    );
+    afterReady.add(const Duration(seconds: 3), 'speech native check', () async {
+      if (await inferenceLibraryLoads(explicitPath: inferenceLibPath)) {
+        CcHostLog.info(
+          'cc_server: speech native verified — meeting transcription enabled '
+          '(the model loads when a recording starts)',
+        );
+        return;
+      }
+      CcHostLog.error(
+        'cc_server: speech native FAILED to load — meeting transcripts will '
+        'be EMPTY. The cc_inference dylib did not resolve in this process '
+        '(looked at ${inferenceLibPath ?? '<unresolved>'}); ensure '
+        '\$$nativeLibDirEnvVar points at a dir containing '
+        '${platformLibraryFileName(inferenceLibraryBaseName)}, drop the dylib '
+        'in ${config.dataDir}, or ship it beside the binary.',
+      );
+    });
   }
 
-  // Eagerly download the pinned code-server standalone archive + the curated
-  // language extensions, OFF the ready path so the embedded editor is warm by
-  // the time a user opens a file — the first `codeServer.open` then only spawns
-  // an already-installed binary instead of paying a multi-second download.
+  // Download the pinned code-server standalone archive + the curated language
+  // extensions OFF the ready path, so the embedded editor is warm by the time
+  // a user opens a file — the first `codeServer.open` then only spawns an
+  // already-installed binary instead of paying a multi-second download.
   // Best-effort + non-fatal on real servers. The public demo offers no editor
   // and must not download or extract the archive at boot.
   if (demo == null) {
-    CcHostLog.info(
-      'cc_server: warming code-server (managed dir: ${config.dataDir}/code-server)',
-    );
-    unawaited(
-      codeServerSessions
-          .warmUp()
-          .then((_) {
-            CcHostLog.info(
-              'cc_server: code-server ready — embedded editor enabled',
-            );
-          })
-          .catchError((Object e) {
-            CcHostLog.warning(
-              'cc_server: code-server warm-up failed — the editor will retry on '
-              'first open. Cause: $e',
-            );
-          }),
-    );
+    afterReady.add(const Duration(seconds: 2), 'code-server warm-up', () async {
+      CcHostLog.info(
+        'cc_server: warming code-server (managed dir: '
+        '${config.dataDir}/code-server)',
+      );
+      await codeServerSessions.warmUp();
+      CcHostLog.info('cc_server: code-server ready — embedded editor enabled');
+    });
   }
 
   // Claude Code's model list, read off the ready path: a cold read drives
   // the CLI through every model (~10s), and the first picker open should not
   // be what waits for it. Read-only and token-free (see
   // [ClaudeCodeModelProbe]); a host without `claude` makes it a no-op. The
-  // demo never spawns the CLI.
+  // demo never spawns the CLI. Held a few seconds past the banner: the read
+  // is a Node process at full tilt, and a picker opened before then starts
+  // the same read itself.
   if (demo == null) {
-    unawaited(claudeCodeModels.models());
+    afterReady.add(
+      const Duration(seconds: 5),
+      'Claude Code model list',
+      claudeCodeModels.models,
+    );
   }
 
   // On-device model warm-up (embedding + diarization + ASR) via the same
@@ -7568,22 +7583,6 @@ Future<CcServer> runCcServer({
       'speech) under ${config.dataDir}/models',
     );
     unawaited(embeddingModelControl.install());
-    // Facts, messages and symbols written while the model was missing have
-    // no vector: fill them whenever the model is installed, now included.
-    BackfillEmbeddingsUseCase(
-      workspaces: workspaceDbs,
-      facts: memoryFactRepository,
-      messages: messagingRepository,
-      codeGraph: DaoCodeGraphRepository(
-        workspaceDbs,
-        embeddingService: embeddingService,
-      ),
-      embedder: embeddingService,
-      onError: (workspaceId, error, _) => CcHostLog.warning(
-        'cc_server: embedding backfill failed for workspace $workspaceId: '
-        '$error',
-      ),
-    ).runWhenInstalled(embeddingModelControl.watch());
     unawaited(diarizationModelControl.install());
     unawaited(voiceModelControl.install());
   }
@@ -7632,15 +7631,14 @@ Future<CcServer> runCcServer({
   }());
 
   // Dials the EXTERNAL signaling broker (`wss://signaling.usectrl.dev` by
-  // default). Awaited on the boot path with no bound, it made an unreachable or
-  // slow broker look like a hung server: boot simply stopped after the last
-  // warm-up line and never reached the MCP server or the ready banner. Bounded
-  // and announced — the relay retries on its own, so a timeout costs remote
-  // pairing until it reconnects, not the whole server.
-  await _bootStepBounded(
+  // default). Never awaited: the ready banner does not wait for a remote host,
+  // however quickly it usually answers. The relay retries on its own, so a
+  // slow or unreachable broker costs remote pairing until it connects, not
+  // the server's start.
+  _bootStepInBackground(
     'connecting relay (${config.signalingUrl})',
     relayHost.start,
-    onTimeout: 'remote pairing will connect in the background',
+    meanwhile: 'devices that reach this server over the relay cannot connect',
   );
 
   // mDNS LAN advertisement, the persisted share-this-server tunnel and
@@ -7653,15 +7651,15 @@ Future<CcServer> runCcServer({
     relayHost: relayHost,
   );
   networkRuntimeHolder.value = networkRuntime;
-  // mDNS + tunnel: also network, also previously unbounded on the boot path.
+  // mDNS + tunnel: also network, also off the path to the banner.
   //
   // demo: skipped. A public demo is reached at a known URL behind a proxy; it
   // has no business advertising itself on the host's LAN or opening a tunnel.
   if (demo == null) {
-    await _bootStepBounded(
+    _bootStepInBackground(
       'starting network runtime (mDNS + tunnel)',
       networkRuntime.start,
-      onTimeout: 'LAN discovery / tunnel will come up in the background',
+      meanwhile: 'LAN discovery and the tunnel are not up',
     );
   }
 
@@ -7824,9 +7822,17 @@ Future<CcServer> runCcServer({
     // A trigger's `timezone` is an IANA zone; evaluate its cron there.
     scheduler: TimezoneZoneConverter.instance.scheduler(),
   );
+  // After the reconcile, so a schedule that is due fires against the seeded
+  // templates. Chained rather than awaited: the reconcile opens every
+  // workspace's database, and the ready banner does not wait for that.
   if (demo == null) {
-    await templateReconcile;
-    pipelineScheduler.start();
+    unawaited(
+      templateReconcile.whenComplete(() {
+        if (!bootWork.stopping) {
+          pipelineScheduler.start();
+        }
+      }),
+    );
   }
   final subPipelineResumeListener = SubPipelineResumeListener(
     eventBus: eventBus,
@@ -8120,6 +8126,30 @@ Future<CcServer> runCcServer({
     .._forgeHttpClients = forgeHttpClients;
 
   telemetry.analytics?.reportStarted(workspaceRepository);
+  // Facts, messages and symbols written while the embedding model was missing
+  // have no vector: fill them whenever the model is installed, now included.
+  // "Now" is half a minute after the banner. The pass opens every workspace's
+  // database and code index and scans each for rows without a vector, which
+  // is the heaviest read a boot does, and it finds nothing on most of them.
+  // demo: no model is installed and seeded memory is keyword-only by design.
+  if (demo == null) {
+    afterReady.add(const Duration(seconds: 30), 'embedding backfill', () {
+      ccServer._embeddingBackfill = BackfillEmbeddingsUseCase(
+        workspaces: workspaceDbs,
+        facts: memoryFactRepository,
+        messages: messagingRepository,
+        codeGraph: DaoCodeGraphRepository(
+          workspaceDbs,
+          embeddingService: embeddingService,
+        ),
+        embedder: embeddingService,
+        onError: (workspaceId, error, _) => CcHostLog.warning(
+          'cc_server: embedding backfill failed for workspace $workspaceId: '
+          '$error',
+        ),
+      ).runWhenInstalled(embeddingModelControl.watch());
+    });
+  }
   // Connect the owner's personal MCP servers and every workspace's
   // configured ones; never blocks boot. demo: none. The personal ones are the
   // host OS user's own tool configs, started as that user, and a demo has no
@@ -8260,11 +8290,12 @@ Future<CcServer> runCcServer({
   // fetched SERVER-SIDE only — the thin clients (web / desktop) just read
   // the synced articles, they never fetch RSS themselves. So the server owns
   // the schedule: seed the default feeds for every user on first run, fetch
-  // once now so a freshly-connected client sees articles immediately, then
-  // refresh on a fixed cadence. Users created after boot seed lazily via
-  // `newsfeed.seedDefaultFeedsIfEmpty` when they first open the newsfeed.
-  // Relocated here from the old desktop bootstrap (which no longer opens the
-  // DB). Best-effort: a network failure is logged, never fatal.
+  // once shortly after the banner so a freshly-connected client sees new
+  // articles without asking, then refresh on a fixed cadence. Users created
+  // after boot seed lazily via `newsfeed.seedDefaultFeedsIfEmpty` when they
+  // first open the newsfeed. Relocated here from the old desktop bootstrap
+  // (which no longer opens the DB). Best-effort: a network failure is logged,
+  // never fatal.
   Future<void> refreshAllUsersNewsfeeds() async {
     // CROSS-WORKSPACE BY DESIGN: the newsfeed is per-USER and users are a
     // global registry — the sweep fans out to every user's own feeds.
@@ -8278,15 +8309,20 @@ Future<CcServer> runCcServer({
     }
   }
 
-  bootWork.track(() async {
-    try {
-      await refreshAllUsersNewsfeeds();
-    } on Object catch (e, st) {
-      CcHostLog.error('cc_server: newsfeed seed/refresh failed: $e', e, st);
-    }
-  }());
+  // A dozen feeds fetched and parsed on this isolate: not beside the first
+  // client's requests. The articles of the last run are already stored.
+  afterReady.add(const Duration(seconds: 10), 'newsfeed refresh', () {
+    bootWork.track(() async {
+      try {
+        await refreshAllUsersNewsfeeds();
+      } on Object catch (e, st) {
+        CcHostLog.error('cc_server: newsfeed seed/refresh failed: $e', e, st);
+      }
+    }());
+  });
   ccServer
     .._bootWork = bootWork
+    .._afterReady = afterReady
     .._newsfeedRefreshTimer = Timer.periodic(const Duration(minutes: 30), (_) {
       bootWork.track(() async {
         try {
@@ -8338,6 +8374,32 @@ Future<CcServer> runCcServer({
     'cc_server ready on ${config.bindHost}:${server.boundPort} '
     '(data: ${config.dataDir}, workspaces: ${initialWorkspaces.length})',
   );
+  _announceBootSummary();
+  // What the process holds once the work boot started has settled, and again
+  // once idle workspaces have had time to close: the numbers a "the server
+  // uses a lot of memory" report starts from. The peak covers the boot itself.
+  void reportMemory(String when) {
+    _announce(
+      'cc_server: $when after ready: ${_residentMemoryMb()} MB resident '
+      '(peak ${ProcessInfo.maxRss ~/ (1024 * 1024)} MB), '
+      '${workspaceDbs.openCount} workspace database(s) open',
+    );
+    // Each open workspace keeps its isolates and page caches. One that is
+    // open because something watches or polls it stays open until that stops.
+    for (final MapEntry(key: id, value: why)
+        in workspaceDbs.describeOpen().entries.take(8)) {
+      _announce('cc_server:   workspace $id is open ($why)');
+    }
+  }
+
+  afterReady
+    ..add(const Duration(seconds: 90), 'memory report', () {
+      reportMemory('90s');
+    })
+    ..add(const Duration(minutes: 10), 'memory report', () {
+      reportMemory('10min');
+    })
+    ..start();
 
   // The demo's pool warm-up and reaper start here for exactly the reason
   // indexing does: seeding a workspace is seconds of SQLite writes, and the

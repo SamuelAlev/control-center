@@ -209,6 +209,49 @@ void main() {
     );
 
     test(
+      'watchForWorkspaceWithoutHolding gives the list a watch gives, newest '
+      'first, and follows a new worktree',
+      timeout: const Timeout.factor(2),
+      () async {
+        IsolatedRepo worktree(String id, String spaceId, DateTime createdAt) =>
+            IsolatedRepo(
+              id: id,
+              workspaceId: 'ws1',
+              spaceId: spaceId,
+              repoId: 'repo1',
+              path: '/ws1/$spaceId/repos/acme',
+              branch: 'feature-x',
+              backend: RepoIsolationBackend.rift,
+              sourcePath: '/repos/acme',
+              createdAt: createdAt,
+            );
+        await repository.upsert(worktree('older', 'ch1', DateTime(2026, 6, 1)));
+        await repository.upsert(worktree('newer', 'ch2', DateTime(2026, 6, 2)));
+
+        final seen = <List<String>>[];
+        final subscription = repository
+            .watchForWorkspaceWithoutHolding('ws1')
+            .listen((rows) => seen.add([for (final row in rows) row.id]));
+        addTearDown(subscription.cancel);
+        await pumpEventQueue();
+
+        Future<List<String>> watched() async => [
+          for (final row in await repository.watchForWorkspace('ws1').first)
+            row.id,
+        ];
+        expect(seen.last, ['newer', 'older']);
+        expect(seen.last, await watched());
+
+        await repository.upsert(
+          worktree('newest', 'ch3', DateTime(2026, 6, 3)),
+        );
+        await pumpEventQueue();
+        expect(seen.last, ['newest', 'newer', 'older']);
+        expect(seen.last, await watched());
+      },
+    );
+
+    test(
       'watchForWorkspace returns empty for workspace with no isolated repos',
       timeout: const Timeout.factor(2),
       () async {

@@ -416,6 +416,115 @@ void main() {
       },
     );
 
+    const imagelessFeed = '''<?xml version="1.0"?>
+<rss version="2.0"><channel><title>F</title>
+<item>
+  <title>No img</title>
+  <guid>guid-1</guid>
+  <link>https://example.com/post</link>
+</item>
+</channel></rss>''';
+
+    test('stops reading the page where its head ends', () async {
+      final page =
+          '<html><HEAD><meta property="og:image" '
+          'content="https://example.com/og.png"/></he'
+          'ad><body>${'x' * 4096}</body></html>';
+      final b = build(
+        (r) => httpRequestUri(r).toString() == 'https://example.com/feed'
+            ? _xmlBody(r, imagelessFeed)
+            : htmlBody(r, page),
+      );
+      // Pieces small enough that `</head>` straddles two of them.
+      b.fake.streamChunkSize = page.indexOf('</he') + 4;
+
+      final articles = await b.svc.fetchAndParse(
+        feedId: 'f1',
+        url: 'https://example.com/feed',
+      );
+
+      expect(articles.single.imageUrl, 'https://example.com/og.png');
+      expect(b.fake.streamedChunks, 2);
+    });
+
+    test('gives up on a page with no head after a bounded read', () async {
+      final b = build(
+        (r) => httpRequestUri(r).toString() == 'https://example.com/feed'
+            ? _xmlBody(r, imagelessFeed)
+            : htmlBody(r, 'x' * (1024 * 1024)),
+      );
+
+      final articles = await b.svc.fetchAndParse(
+        feedId: 'f1',
+        url: 'https://example.com/feed',
+      );
+
+      expect(articles.single.imageUrl, isEmpty);
+      // 256 KB of the megabyte, in 16 KB pieces.
+      expect(b.fake.streamedChunks, 16);
+    });
+
+    test('an article keeps the image already stored for it, and its page is '
+        'not fetched', () async {
+      final b = build((r) => _xmlBody(r, imagelessFeed));
+
+      final parsed = await b.svc.fetchAndParseFeed(
+        feedId: 'f1',
+        url: 'https://example.com/feed',
+        knownImages: const {'guid-1': 'https://example.com/stored.png'},
+      );
+
+      expect(parsed.articles.single.imageUrl, 'https://example.com/stored.png');
+      expect(b.fake.requests, hasLength(1));
+    });
+
+    test('a page without an og:image is not asked again', () async {
+      final b = build(
+        (r) => httpRequestUri(r).toString() == 'https://example.com/feed'
+            ? _xmlBody(r, imagelessFeed)
+            : htmlBody(r, '<html><head><title>x</title></head></html>'),
+      );
+
+      await b.svc.fetchAndParse(feedId: 'f1', url: 'https://example.com/feed');
+      await b.svc.fetchAndParse(feedId: 'f1', url: 'https://example.com/feed');
+
+      expect(
+        b.fake.requests
+            .map((r) => httpRequestUri(r).toString())
+            .where((url) => url == 'https://example.com/post'),
+        hasLength(1),
+      );
+    });
+
+    test('a page that refuses the request is not asked again, one that '
+        'could not be reached is', () async {
+      var reachable = false;
+      final b = build((r) {
+        final url = httpRequestUri(r).toString();
+        if (url == 'https://example.com/feed') {
+          return _xmlBody(r, imagelessFeed);
+        }
+        if (!reachable) {
+          throw Exception('offline');
+        }
+        return httpTextResponse(r, 'forbidden', statusCode: 403);
+      });
+      Future<void> refresh() =>
+          b.svc.fetchAndParse(feedId: 'f1', url: 'https://example.com/feed');
+      int pageRequests() => b.fake.requests
+          .where((r) => httpRequestUri(r).toString().endsWith('/post'))
+          .length;
+
+      await refresh();
+      await refresh();
+      expect(pageRequests(), 2);
+
+      reachable = true;
+      await refresh();
+      await refresh();
+      expect(pageRequests(), 3);
+    });
+
     test('Hacker News: fetches og:image from the external story, '
         'never the discussion page', () async {
       const feed = '''<?xml version="1.0"?>
@@ -497,6 +606,7 @@ void main() {
         final parsed = await b.svc.fetchAndParseFeed(
           feedId: 'tc',
           url: 'https://techcrunch.com/feed/',
+          knownImages: const {},
         );
         expect(parsed.articles, hasLength(1));
         expect(
@@ -512,6 +622,7 @@ void main() {
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'f1',
         url: 'https://example.com/feed',
+        knownImages: const {},
       );
       expect(parsed.iconUrl, isNull);
     });
@@ -535,6 +646,7 @@ void main() {
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'a1',
         url: 'https://blog.example.com/feed.xml',
+        knownImages: const {},
       );
       expect(parsed.iconUrl, 'https://blog.example.com/icon.png');
       expect(parsed.siteUrl, 'https://blog.example.com/');
@@ -557,6 +669,7 @@ void main() {
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'a2',
         url: 'https://blog.example.com/feed.xml',
+        knownImages: const {},
       );
       expect(parsed.iconUrl, 'https://blog.example.com/logo.png');
     });
@@ -578,6 +691,7 @@ void main() {
       final parsed = await b.svc.fetchAndParseFeed(
         feedId: 'a3',
         url: 'https://lea.verou.me/feed.xml',
+        knownImages: const {},
       );
       expect(parsed.iconUrl, 'https://lea.verou.me/favicon.ico');
     });

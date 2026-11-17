@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_harness/provider.dart' show HarnessAuthMethod;
@@ -39,8 +41,13 @@ Map<String, dynamic> _modelsDevTerra() => {
   },
 };
 
+/// The catalog of a models.dev-shaped [document], parsed the way a source
+/// parses it: from the document's text.
+ModelCatalog _catalogOf(Map<String, dynamic> document) =>
+    ModelCatalog(ModelsDevParser.parse(jsonEncode(document)));
+
 void main() {
-  final catalog = ModelCatalog.fromModelsDev(
+  final catalog = _catalogOf(
     _modelsDevTerra(),
   ).finalize(enablement: (_) => const ProviderDisabled());
   final codex = catalog.resolve('codex/gpt-5.6-terra');
@@ -235,7 +242,7 @@ void main() {
           ),
         ),
       );
-      final incomplete = ModelCatalog.fromModelsDev({
+      final incomplete = _catalogOf({
         'openai': {
           'models': {
             'incomplete': {

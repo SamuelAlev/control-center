@@ -90,11 +90,18 @@ class PipelineSchedulerService {
   Future<void> _evaluate(PipelineTrigger trigger, DateTime nowUtc) async {
     final eval = _scheduler.evaluate(trigger, nowUtc);
     if (!eval.shouldFire) {
-      if (eval.nextRunAt != null && eval.nextRunAt != trigger.nextRunAt) {
+      // The same instant, not the same object: the evaluation is in UTC and
+      // the stored time comes back local, which `==` calls different. Compared
+      // that way every idle trigger was rewritten on every tick, a write a
+      // minute per trigger in every workspace, each one waking whatever
+      // watches the table.
+      final next = eval.nextRunAt;
+      final stored = trigger.nextRunAt;
+      if (next != null && (stored == null || !next.isAtSameMomentAs(stored))) {
         await _triggers.setSchedule(
           trigger.workspaceId,
           trigger.id,
-          nextRunAt: eval.nextRunAt,
+          nextRunAt: next,
         );
       }
       return;

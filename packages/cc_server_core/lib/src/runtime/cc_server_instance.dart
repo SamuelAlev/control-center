@@ -87,6 +87,14 @@ class CcServer {
   /// before the databases close.
   _BootWork? _bootWork;
 
+  /// The work boot holds back until a while after the ready banner. What has
+  /// not started yet is dropped on [shutdown].
+  _AfterReady? _afterReady;
+
+  /// The embedding backfill's subscription to the model's install state.
+  /// Cancelled on [shutdown] so an install landing then starts no run.
+  StreamSubscription<Object?>? _embeddingBackfill;
+
   /// The open-PR poller behind the live PR list (null when the server holds
   /// no gh token). Disposed on [shutdown].
   OpenPrPollingService? _openPrPoller;
@@ -355,6 +363,11 @@ class CcServer {
     await step('auditStream', () async => _auditStream?.stop());
     await guard('analytics', () async => _serverAnalytics?.dispose());
     await step('backgroundJobs', () async {
+      // First, so nothing boot left chained starts a service this step is
+      // about to dispose.
+      _bootWork?.beginStopping();
+      _afterReady?.cancel();
+      unawaited(_embeddingBackfill?.cancel());
       _newsfeedRefreshTimer?.cancel();
       _runtimeStateGcSweepTimer?.cancel();
       _fleetReapTimer?.cancel();
@@ -483,6 +496,56 @@ class CcServer {
   }
 }
 
+/// Background work that starts a while after the ready banner instead of
+/// beside it.
+///
+/// A client connects the moment the banner prints and asks for everything at
+/// once. Work nobody is waiting for (a model list read, a warm-up, a backfill,
+/// a feed refresh) used to start in that same moment and compete with those
+/// first requests for the isolate, the disk and the database connections. Each
+/// piece now waits its own delay after the banner, so it lands neither on the
+/// first requests nor on the other pieces.
+class _AfterReady {
+  final List<({Duration delay, String label, FutureOr<void> Function() work})>
+  _queued = [];
+  final List<Timer> _timers = [];
+  bool _cancelled = false;
+
+  /// Queues [work] to start [delay] after [start]. A failure is logged under
+  /// [label] and goes no further.
+  void add(Duration delay, String label, FutureOr<void> Function() work) =>
+      _queued.add((delay: delay, label: label, work: work));
+
+  /// Arms everything queued. Called once, right after the ready banner.
+  void start() {
+    for (final entry in _queued) {
+      _timers.add(Timer(entry.delay, () => _run(entry.label, entry.work)));
+    }
+    _queued.clear();
+  }
+
+  Future<void> _run(String label, FutureOr<void> Function() work) async {
+    if (_cancelled) {
+      return;
+    }
+    try {
+      await work();
+    } on Object catch (e, st) {
+      CcHostLog.warning('cc_server: $label failed: $e\n$st');
+    }
+  }
+
+  /// Drops whatever has not started. Work already running finishes on its own.
+  void cancel() {
+    _cancelled = true;
+    for (final timer in _timers) {
+      timer.cancel();
+    }
+    _timers.clear();
+    _queued.clear();
+  }
+}
+
 /// Database work boot starts and does not await.
 ///
 /// Drift rolls back a transaction still open when its database closes, from
@@ -501,6 +564,9 @@ class _BootWork {
     _pending.add(work);
     unawaited(work.whenComplete(() => _pending.remove(work)));
   }
+
+  /// Marks [stopping] without waiting: shutdown has begun.
+  void beginStopping() => _stopping = true;
 
   /// Marks [stopping] and waits for everything [track]ed.
   Future<void> drain() {

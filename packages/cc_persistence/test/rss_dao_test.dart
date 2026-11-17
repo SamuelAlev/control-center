@@ -291,6 +291,36 @@ void main() {
       expect(articles.first.title, 'Breaking News');
     });
 
+    test('articleImagesByGuid lists the feed\'s stored images and leaves out '
+        'articles without one', () async {
+      await db.rssDao.upsertFeed(
+        RssFeedsTableCompanion.insert(
+          id: 'feed-2',
+          userId: _user,
+          name: 'Other Feed',
+          url: 'https://example.com/other',
+        ),
+      );
+      Future<void> store(String feed, String guid, String imageUrl) =>
+          db.rssDao.upsertArticleFromFeed(
+            RssArticlesTableCompanion.insert(
+              id: '$feed-$guid',
+              feedId: feed,
+              title: guid,
+              guid: guid,
+              link: 'https://example.com/$guid',
+              imageUrl: Value(imageUrl),
+            ),
+          );
+      await store(feedId, 'with', 'https://example.com/cover.png');
+      await store(feedId, 'without', '');
+      await store('feed-2', 'elsewhere', 'https://example.com/other.png');
+
+      expect(await db.rssDao.articleImagesByGuid(feedId), {
+        'with': 'https://example.com/cover.png',
+      });
+    });
+
     test('upsertArticleFromFeed does not duplicate by guid', () async {
       final entry = RssArticlesTableCompanion.insert(
         id: 'art-1',

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:any_date/any_date.dart';
 import 'package:cc_domain/core/utils/string_utils.dart' show decodeHtmlEntities;
@@ -96,7 +98,22 @@ class RssFetcherService {
   /// stretch a refresh unboundedly.
   static const _ogImageBudget = Duration(seconds: 15);
 
-  /// Fetches and parses [url]. Throws on network or parse errors.
+  /// How much of an article page is read looking for its og:image. The tag
+  /// lives in `<head>`, and the read stops where that ends; this bounds a
+  /// page that has no `</head>` this early, or none at all.
+  static const _pageHeadLimit = 256 * 1024;
+
+  /// Pages that were read and advertise no og:image, or that refuse the
+  /// request outright. A feed is refreshed every half hour and lists the same
+  /// articles for days: asking such a page again on every pass fetched it
+  /// some hundred times for an answer that does not change. Forgotten with
+  /// the process, and when it grows past [_pagesWithoutImageLimit].
+  final Set<String> _pagesWithoutImage = {};
+
+  static const _pagesWithoutImageLimit = 4096;
+
+  /// Fetches and parses [url] for a feed with nothing stored yet. Throws on
+  /// network or parse errors.
   Future<List<RssArticle>> fetchAndParse({
     required String feedId,
     required String url,
@@ -107,16 +124,22 @@ class RssFetcherService {
     url: url,
     userAgent: userAgent,
     cancelToken: cancelToken,
+    knownImages: const {},
   )).articles;
 
   /// Fetches and parses [url], returning the articles plus the space-level
   /// metadata ([ParsedFeed.iconUrl] / [ParsedFeed.siteUrl]). Throws on
   /// network or parse errors.
+  ///
+  /// [knownImages] is the image already stored for this feed's articles, by
+  /// guid. An article the feed lists without an image keeps the one found
+  /// there, and its page is not fetched for it again.
   Future<ParsedFeed> fetchAndParseFeed({
     required String feedId,
     required String url,
     String? userAgent,
     CancelToken? cancelToken,
+    required Map<String, String> knownImages,
   }) async {
     final response = await _httpClient.getText(
       url,
@@ -139,6 +162,7 @@ class RssFetcherService {
       parsed,
       userAgent: userAgent,
       cancelToken: cancelToken,
+      knownImages: knownImages,
     );
   }
 
@@ -172,19 +196,33 @@ class RssFetcherService {
     }
   }
 
-  /// Best-effort `og:image` fallback for image-less articles: fetches each
-  /// article's page (bounded concurrency, per-request timeouts, failures
-  /// ignored) and fills `imageUrl` from its `og:image` meta tag.
+  /// Best-effort `og:image` fallback for image-less articles: fetches the
+  /// head of each article's page (bounded concurrency, per-request timeouts,
+  /// failures ignored) and fills `imageUrl` from its `og:image` meta tag.
+  ///
+  /// Only for articles that are new: one whose image is in [knownImages]
+  /// keeps it, and a page already seen without an image is not asked again.
   Future<ParsedFeed> _resolveOgImages(
     _ParsedEntries parsed, {
     String? userAgent,
     CancelToken? cancelToken,
+    required Map<String, String> knownImages,
   }) async {
     final articles = List<RssArticle>.of(parsed.articles.map((e) => e.article));
-    final pending = [
-      for (var i = 0; i < parsed.articles.length; i++)
-        if (articles[i].imageUrl.isEmpty) i,
-    ];
+    final pending = <int>[];
+    for (var i = 0; i < articles.length; i++) {
+      if (articles[i].imageUrl.isNotEmpty) {
+        continue;
+      }
+      final known = knownImages[articles[i].guid];
+      if (known != null && known.isNotEmpty) {
+        articles[i] = _withImage(articles[i], known);
+      } else if (!_pagesWithoutImage.contains(
+        parsed.articles[i].ogImageSource,
+      )) {
+        pending.add(i);
+      }
+    }
     if (pending.isNotEmpty) {
       var next = 0;
       final deadline = DateTime.now().add(_ogImageBudget);
@@ -239,9 +277,15 @@ class RssFetcherService {
     );
   }
 
-  /// Fetches [url] and extracts its `og:image` meta tag, resolved against
-  /// the page URL when relative. Returns null on any failure — the fallback
-  /// is best-effort and must never break a feed refresh.
+  /// Fetches the head of [url] and extracts its `og:image` meta tag, resolved
+  /// against the page URL when relative. Returns null on any failure — the
+  /// fallback is best-effort and must never break a feed refresh.
+  ///
+  /// The page is read as it arrives and dropped at `</head>`. Fetched whole,
+  /// each one was a megabyte or more of markup held twice over (as received,
+  /// then as text) to read one tag near its top, for every image-less article
+  /// of every feed, four at a time: the larger part of what a refresh cost
+  /// the server in memory.
   Future<String?> _fetchOgImage(
     String url, {
     String? userAgent,
@@ -255,10 +299,18 @@ class RssFetcherService {
     if (uri.host.toLowerCase() == 'news.ycombinator.com') {
       return null;
     }
+    // The page's own token: stopping the read at `</head>` has to stop the
+    // rest of the page arriving, without cancelling its siblings.
+    final pageToken = CancelToken();
+    if (cancelToken != null) {
+      unawaited(
+        cancelToken.whenCancelRequested.then((_) => pageToken.cancel()),
+      );
+    }
     try {
-      final response = await _pageHttpClient.getText(
+      final response = await _pageHttpClient.getStream(
         url,
-        cancelToken: cancelToken,
+        cancelToken: pageToken,
         headers: HttpHeaders.rawMap({
           'User-Agent': userAgent?.isNotEmpty == true
               ? userAgent!
@@ -266,14 +318,56 @@ class RssFetcherService {
           'Accept': 'text/html, application/xhtml+xml;q=0.9, */*;q=0.5',
         }),
       );
-      final body = response.body;
-      if (body.isEmpty) {
-        return null;
+      final head = await _readHead(response.body);
+      final image = head.isEmpty ? null : _extractOgImage(head, uri);
+      if (image == null) {
+        _rememberPageWithoutImage(url);
       }
-      return _extractOgImage(body, uri);
+      return image;
+    } on RhttpStatusCodeException {
+      // Refused (a paywall, a bot challenge, a page that is gone): the same
+      // request gets the same answer half an hour from now.
+      _rememberPageWithoutImage(url);
+      return null;
     } on Object catch (_) {
       return null;
+    } finally {
+      unawaited(pageToken.cancel());
     }
+  }
+
+  void _rememberPageWithoutImage(String url) {
+    if (_pagesWithoutImage.length >= _pagesWithoutImageLimit) {
+      _pagesWithoutImage.clear();
+    }
+    _pagesWithoutImage.add(url);
+  }
+
+  /// Reads [body] up to the end of the page's `<head>`, or to
+  /// [_pageHeadLimit] bytes for a page that has none by then, and stops
+  /// listening there.
+  static Future<String> _readHead(Stream<Uint8List> body) async {
+    const endOfHead = '</head>';
+    final chunks = <Uint8List>[];
+    var length = 0;
+    // The end of what was read so far, for a `</head>` that straddles two
+    // chunks. Latin-1 maps a byte to a character, so it never fails on a
+    // chunk cut inside a multi-byte one.
+    var tail = '';
+    await for (final chunk in body) {
+      chunks.add(chunk);
+      length += chunk.length;
+      final text = tail + latin1.decode(chunk).toLowerCase();
+      if (length >= _pageHeadLimit || text.contains(endOfHead)) {
+        break;
+      }
+      tail = text.length < endOfHead.length
+          ? text
+          : text.substring(text.length - (endOfHead.length - 1));
+    }
+    final bytes = BytesBuilder(copy: false);
+    chunks.forEach(bytes.add);
+    return utf8.decode(bytes.takeBytes(), allowMalformed: true);
   }
 
   /// Extracts the `og:image` URL from a page's `<head>`.

@@ -11,6 +11,13 @@ import 'package:cc_infra/cc_infra.dart' show ModelCatalogService;
 /// snapshot in source — a first run with no cache yields an empty document
 /// until a refresh lands.
 ///
+/// The document travels as `document_json`: the JSON text exactly as the
+/// server cached it, inside one string. It is megabytes describing thousands
+/// of models that only the client's own parser reads, so the server relays
+/// the text instead of decoding it to encode it again, and the client parses
+/// it provider by provider (`ModelsDevParser`) instead of
+/// receiving it as tens of megabytes of decoded maps.
+///
 /// Not workspace-scoped: the catalogue is install-wide reference data.
 ///
 /// Injected via `extraOps` (the same seam weather/fonts/fleet use), so the
@@ -25,12 +32,12 @@ List<RepoOp> buildModelsDevOps({
     workspaceScoped: false,
     handler: (ctx) async {
       await catalog.ensureLoaded();
-      var json = await source.load();
-      if (json == null || json.isEmpty) {
+      var text = await source.documentText();
+      if (text == null || text.isEmpty) {
         await catalog.refresh(force: false);
-        json = await source.load();
+        text = await source.documentText();
       }
-      return {'document': json ?? const <String, dynamic>{}};
+      return {'document_json': text ?? ''};
     },
   ),
   RepoOp(
@@ -43,8 +50,7 @@ List<RepoOp> buildModelsDevOps({
           ? ctx.args['force'] as bool
           : true;
       await catalog.refresh(force: force);
-      final json = await source.load();
-      return {'document': json ?? const <String, dynamic>{}};
+      return {'document_json': await source.documentText() ?? ''};
     },
   ),
 ];

@@ -91,6 +91,22 @@ class DaoIsolatedRepoRepository implements IsolatedRepoRepository {
     workspaceId,
   ).watchForWorkspace(workspaceId).map((rows) => rows.map(_toEntity).toList());
 
+  /// [watchForWorkspace] for a listener that lasts as long as the server:
+  /// the same lists, without holding the workspace's database open (see
+  /// [WorkspaceDatabaseManager.watchWithoutHolding]).
+  Stream<List<IsolatedRepo>> watchForWorkspaceWithoutHolding(
+    String workspaceId,
+  ) => _dbs.watchWithoutHolding(
+    workspaceId,
+    tables: (db) => [db.isolatedReposTable],
+    read: (db) async {
+      final rows = await db.isolatedRepoDao.listForWorkspace(workspaceId);
+      // Newest first, the order [watchForWorkspace] gives.
+      rows.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return rows.map(_toEntity).toList();
+    },
+  );
+
   @override
   Future<void> upsert(IsolatedRepo repo) =>
       // The worktree names its own workspace, so the file is picked from the

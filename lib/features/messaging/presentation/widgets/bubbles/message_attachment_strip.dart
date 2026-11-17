@@ -128,8 +128,18 @@ class _Thumbnail extends ConsumerWidget {
             ),
             child: ClipRRect(
               borderRadius: radius,
-              child: Image.network(
-                resolved,
+              child: Image(
+                // Decoded at the size it is drawn: a photo or screenshot held
+                // at its own size is tens of megabytes of pixels for a strip
+                // this tall. The preview a click opens loads the whole
+                // picture. Only ever scaled down: a small or very wide image
+                // is left as it is.
+                image: ResizeImage(
+                  NetworkImage(resolved),
+                  height: (height * MediaQuery.devicePixelRatioOf(context))
+                      .round(),
+                  policy: ResizeImagePolicy.fit,
+                ),
                 height: height,
                 fit: BoxFit.contain,
                 errorBuilder: (context, _, _) =>
