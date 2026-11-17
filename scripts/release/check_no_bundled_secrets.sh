@@ -28,17 +28,20 @@ usage() {
 [ "$#" -gt 0 ] || usage
 
 # name<TAB>extended regex. Each regex matches a credential's full shape.
+# Prefixed tokens must start at an identifier boundary: C++ mangled names in
+# the Flutter engine's dSYM contain `…force_highp_kEPKN24SkRasterPipeline…`,
+# which is `ghp_` plus 36 alphanumerics.
 PATTERNS=(
-  $'GitHub App client id\tIv(1\\.[0-9a-f]{16}|23[A-Za-z0-9]{16})'
-  $'GitHub token\t(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}'
-  $'GitHub fine-grained token\tgithub_pat_[A-Za-z0-9_]{60,}'
-  $'Google OAuth client secret\tGOCSPX-[A-Za-z0-9_-]{28}'
-  $'Google API key\tAIza[0-9A-Za-z_-]{35}'
+  $'GitHub App client id\t(^|[^A-Za-z0-9_])Iv(1\\.[0-9a-f]{16}|23[A-Za-z0-9]{16})'
+  $'GitHub token\t(^|[^A-Za-z0-9_])(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}'
+  $'GitHub fine-grained token\t(^|[^A-Za-z0-9_])github_pat_[A-Za-z0-9_]{60,}'
+  $'Google OAuth client secret\t(^|[^A-Za-z0-9_])GOCSPX-[A-Za-z0-9_-]{28}'
+  $'Google API key\t(^|[^A-Za-z0-9_])AIza[0-9A-Za-z_-]{35}'
   $'Google OAuth client id\t[0-9]{6,}-[a-z0-9]{32}\\.apps\\.googleusercontent\\.com'
   $'Google OAuth redirect scheme\tcom\\.googleusercontent\\.apps\\.[0-9]{6,}-[a-z0-9]{32}'
-  $'Slack token\txox[abposre]-[0-9]{6,}-[0-9A-Za-z-]{10,}'
-  $'Slack app token\txapp-[0-9]-[A-Z0-9]{6,}-[0-9]{6,}-[0-9a-f]{32,}'
-  $'Linear key\tlin_(api|oauth)_[A-Za-z0-9]{32,}'
+  $'Slack token\t(^|[^A-Za-z0-9_])xox[abposre]-[0-9]{6,}-[0-9A-Za-z-]{10,}'
+  $'Slack app token\t(^|[^A-Za-z0-9_])xapp-[0-9]-[A-Z0-9]{6,}-[0-9]{6,}-[0-9a-f]{32,}'
+  $'Linear key\t(^|[^A-Za-z0-9_])lin_(api|oauth)_[A-Za-z0-9]{32,}'
   $'Builtin credential plumbing\t(CC_BUILTIN_[A-Z_]+|[bB]uiltin[A-Za-z]*(Credential|ClientId|ClientSecret|ApiKey|AppKey))'
 )
 
@@ -78,6 +81,10 @@ if [ "$1" = "--self-test" ]; then
   plant builtin "kBuilt""inGoogleClientId"
   printf '%s' "RegExp(r'\\bghp_[A-Za-z0-9]{36}\\b') xox[abeoprs]- GOCSPX- AIza Iv23" \
     > "$dir/redaction_source.bin"
+  # Skia symbol fragment from FlutterMacOS.framework.dSYM.
+  printf 'pre\000%s\000post' \
+    "_clamp_8888_force_hi""ghp_kEPKN24SkRasterPipelineContexts9GatherCtxEmmRP" \
+    > "$dir/mangled_symbol.bin"
   found="$(scan "$dir")"
   failed=0
   for plant in github github_app google_secret google_key google_client google_scheme slack linear builtin; do
@@ -88,6 +95,10 @@ if [ "$1" = "--self-test" ]; then
   done
   if grep -q "/redaction_source.bin\$" <<< "$found"; then
     echo "self-test: redaction regex source was flagged" >&2
+    failed=1
+  fi
+  if grep -q "/mangled_symbol.bin\$" <<< "$found"; then
+    echo "self-test: mangled C++ symbol was flagged" >&2
     failed=1
   fi
   [ "$failed" -eq 0 ] || exit 1
